@@ -8,13 +8,15 @@ import {
   BarChart3, 
   Link as LinkIcon, 
   Settings,
-  Dog
+  Dog,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: Server, label: 'Nodes', path: '/nodes' },
+  { icon: ShieldCheck, label: 'Inbounds', path: '/inbounds' },
   { icon: Users, label: 'Users', path: '/users' },
   { icon: Activity, label: 'Online Users', path: '/online' },
   { icon: BarChart3, label: 'Traffic', path: '/traffic' },
@@ -22,7 +24,7 @@ const menuItems = [
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <aside className="w-64 border-r border-white/10 bg-zinc-950 flex flex-col h-screen sticky top-0">
       <div className="p-6 flex items-center gap-3">
@@ -37,6 +39,7 @@ export function Sidebar() {
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={onNavigate}
             className={({ isActive }) => cn(
               "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
               isActive 

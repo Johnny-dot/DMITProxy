@@ -1,8 +1,8 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src/components/ui/Card';
 import { Badge } from '@/src/components/ui/Badge';
 import { Button } from '@/src/components/ui/Button';
-import { Globe, Signal, Zap, Plus } from 'lucide-react';
+import { Globe, Signal, Zap, Plus, Info } from 'lucide-react';
 import { mockNodes } from '@/src/mockData';
 import { cn } from '@/src/utils/cn';
 
@@ -12,12 +12,17 @@ export function NodesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Nodes</h1>
-          <p className="text-zinc-400 mt-1">Proxy server nodes across the globe.</p>
+          <p className="text-zinc-400 mt-1">Infrastructure nodes providing proxy services.</p>
         </div>
         <Button className="gap-2">
           <Plus className="w-4 h-4" />
           Add Node
         </Button>
+      </div>
+
+      <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4 flex gap-3 text-sm text-indigo-300">
+        <Info className="w-5 h-5 flex-shrink-0" />
+        <p>Note: These nodes represent the physical infrastructure. Connection configurations are managed via Inbounds, which are linked to these nodes through 3X-UI inbound configs.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

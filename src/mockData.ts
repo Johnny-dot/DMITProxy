@@ -1,4 +1,20 @@
-import { User, Node, OnlineUser, TrafficData, OnlineUsersData } from './types';
+import { User, Node, OnlineUser, TrafficData, OnlineUsersData, Inbound, ServerStatus } from './types';
+
+export const mockInbounds: Inbound[] = [
+  { id: 1, remark: 'US-Premium-VLESS', protocol: 'VLESS', port: 443, totalTraffic: 1024 * 1024 * 1024 * 1024, usedTraffic: 450 * 1024 * 1024 * 1024, clientCount: 12, status: 'enabled' },
+  { id: 2, remark: 'HK-Gaming-Trojan', protocol: 'Trojan', port: 8443, totalTraffic: 500 * 1024 * 1024 * 1024, usedTraffic: 120 * 1024 * 1024 * 1024, clientCount: 8, status: 'enabled' },
+  { id: 3, remark: 'JP-Standard-VMess', protocol: 'VMess', port: 10086, totalTraffic: 0, usedTraffic: 89 * 1024 * 1024 * 1024, clientCount: 5, status: 'enabled' },
+  { id: 4, remark: 'SG-Shadowsocks', protocol: 'Shadowsocks', port: 20000, totalTraffic: 200 * 1024 * 1024 * 1024, usedTraffic: 195 * 1024 * 1024 * 1024, clientCount: 3, status: 'disabled' },
+];
+
+export const mockServerStatus: ServerStatus = {
+  cpu: 12.5,
+  ram: { used: 1.2 * 1024 * 1024 * 1024, total: 4 * 1024 * 1024 * 1024 },
+  disk: { used: 15 * 1024 * 1024 * 1024, total: 50 * 1024 * 1024 * 1024 },
+  xrayStatus: 'running',
+  network: { up: 1.2 * 1024 * 1024, down: 5.4 * 1024 * 1024 },
+  uptime: '12d 4h 22m',
+};
 
 export const mockUsers: User[] = [
   { id: '1', username: 'alice_vpn', uuid: '550e8400-e29b-41d4-a716-446655440000', trafficUsed: 45 * 1024 * 1024 * 1024, trafficLimit: 100 * 1024 * 1024 * 1024, deviceLimit: 3, expireTime: '2025-12-31', status: 'active' },

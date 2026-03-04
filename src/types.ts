@@ -33,6 +33,26 @@ export interface TrafficData {
   download: number;
 }
 
+export interface Inbound {
+  id: number;
+  remark: string;
+  protocol: 'VMess' | 'VLESS' | 'Trojan' | 'Shadowsocks';
+  port: number;
+  totalTraffic: number; // bytes
+  usedTraffic: number; // bytes
+  clientCount: number;
+  status: 'enabled' | 'disabled';
+}
+
+export interface ServerStatus {
+  cpu: number;
+  ram: { used: number; total: number };
+  disk: { used: number; total: number };
+  xrayStatus: 'running' | 'stopped';
+  network: { up: number; down: number }; // bytes/s
+  uptime: string;
+}
+
 export interface OnlineUsersData {
   timestamp: string;
   count: number;

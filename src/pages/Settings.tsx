@@ -3,9 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { Badge } from '@/src/components/ui/Badge';
+import { useToast } from '@/src/components/ui/Toast';
 import { Save, Bell, Shield, Globe, Database } from 'lucide-react';
 
 export function SettingsPage() {
+  const { toast } = useToast();
+
+  const handleSave = (section: string) => {
+    toast(`${section} settings saved successfully`, 'success');
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -36,7 +43,7 @@ export function SettingsPage() {
                 <label className="text-sm font-medium">Support Telegram</label>
                 <Input defaultValue="@proxydog_support" />
               </div>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={() => handleSave('General')}>
                 <Save className="w-4 h-4" />
                 Save Changes
               </Button>
@@ -62,7 +69,7 @@ export function SettingsPage() {
                   <span className="text-sm text-zinc-400">Status:</span>
                   <Badge variant="success">Active</Badge>
                 </div>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={() => handleSave('Announcement')}>
                   <Save className="w-4 h-4" />
                   Update Announcement
                 </Button>
@@ -80,13 +87,13 @@ export function SettingsPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full justify-start gap-2">
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={() => toast('Password change initiated', 'info')}>
                 Change Admin Password
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-2">
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={() => toast('2FA settings opened', 'info')}>
                 Two-Factor Auth
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-2 text-red-500 hover:text-red-400 hover:bg-red-500/10">
+              <Button variant="outline" className="w-full justify-start gap-2 text-red-500 hover:text-red-400 hover:bg-red-500/10" onClick={() => toast('All sessions cleared', 'success')}>
                 Clear All Sessions
               </Button>
             </CardContent>
@@ -100,10 +107,10 @@ export function SettingsPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full justify-start gap-2">
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={() => toast('Database backup started', 'success')}>
                 Backup Database
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-2">
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={() => toast('Traffic logs cleared', 'success')}>
                 Clear Traffic Logs
               </Button>
               <div className="pt-4 border-t border-white/5">
