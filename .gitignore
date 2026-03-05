@@ -2,6 +2,12 @@ node_modules/
 build/
 dist/
 coverage/
+.tmp/
+data/
+.husky/_
+tmp_*.js
+tmp_*.txt
+tmp_*.html
 .DS_Store
 *.log
 .env*
