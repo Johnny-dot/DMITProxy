@@ -1,0 +1,19 @@
+# Default owner for unmatched paths.
+* @Johnny-dot
+
+# Frontend UI
+/src/pages/ @Johnny-dot
+/src/components/ @Johnny-dot
+/src/context/ @Johnny-dot
+/src/i18n/ @Johnny-dot
+
+# Application layer
+/src/api/ @Johnny-dot
+/src/utils/ @Johnny-dot
+/src/types/ @Johnny-dot
+
+# Infra and tooling
+/server/ @Johnny-dot
+/scripts/ @Johnny-dot
+/.github/ @Johnny-dot
+/docs/ @Johnny-dot
