@@ -1,0 +1,350 @@
+import { randomBytes, randomUUID } from 'node:crypto';
+import { IncomingHttpHeaders } from 'node:http';
+import {
+  buildXuiPath,
+  getXuiPathCandidates,
+  getXuiRequestFactory,
+  getXuiTarget,
+  resolveXuiRedirectPath,
+} from './xui.js';
+
+const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
+const MAX_REDIRECTS = 3;
+
+interface XuiEnvelope<T> {
+  success: boolean;
+  msg: string;
+  obj: T;
+}
+
+interface XuiInbound {
+  id: number;
+  protocol: string;
+  enable: boolean;
+  settings: string;
+}
+
+interface XuiRequestResult {
+  status: number;
+  body: string;
+  headers: IncomingHttpHeaders;
+  cookies: string[];
+}
+
+export class XuiAdminError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'XuiAdminError';
+  }
+}
+
+function normalizeSetCookie(setCookie: string[] | string | undefined): string[] {
+  if (!setCookie) return [];
+  return Array.isArray(setCookie) ? setCookie : [setCookie];
+}
+
+function getCookieHeader(setCookies: string[]): string {
+  return setCookies.map((cookie) => cookie.split(';')[0]).join('; ');
+}
+
+function ensureConfiguredServiceAccount() {
+  const enabled = (process.env.XUI_AUTO_CREATE_ON_REGISTER ?? 'false').toLowerCase() === 'true';
+  if (!enabled) return null;
+
+  const username =
+    process.env.XUI_ADMIN_USERNAME ?? process.env.XUI_USERNAME ?? process.env.ADMIN_USERNAME ?? '';
+  const password =
+    process.env.XUI_ADMIN_PASSWORD ?? process.env.XUI_PASSWORD ?? process.env.ADMIN_PASSWORD ?? '';
+
+  if (!username || !password) {
+    throw new XuiAdminError(
+      'XUI auto-provision is enabled but XUI admin credentials are missing in .env',
+    );
+  }
+
+  return { username, password };
+}
+
+async function requestXui(
+  path: string,
+  method: string,
+  headers: Record<string, string>,
+  body: string,
+  redirectsRemaining: number,
+  candidatePaths?: string[],
+  candidateIndex = 0,
+): Promise<XuiRequestResult> {
+  const target = getXuiTarget();
+  if (!target) throw new XuiAdminError('VITE_3XUI_SERVER is not configured');
+
+  const requestFactory = getXuiRequestFactory(target.protocol);
+  const candidates =
+    candidatePaths ??
+    getXuiPathCandidates(path).map((candidate) => buildXuiPath(target.basePath, candidate));
+  const targetPath = candidates[candidateIndex];
+  const upstreamOrigin = `${target.protocol}//${target.hostHeader}`;
+  const upstreamReferer = `${upstreamOrigin}${buildXuiPath(target.basePath, '/panel/')}`;
+
+  const requestHeaders: Record<string, string> = {
+    Host: target.hostHeader,
+    Origin: upstreamOrigin,
+    Referer: upstreamReferer,
+    'X-Requested-With': 'XMLHttpRequest',
+    ...headers,
+  };
+  if (body.length > 0) requestHeaders['Content-Length'] = String(Buffer.byteLength(body));
+
+  return new Promise<XuiRequestResult>((resolve, reject) => {
+    const options: any = {
+      hostname: target.hostname,
+      port: target.port,
+      path: targetPath,
+      method,
+      headers: requestHeaders,
+    };
+    if (target.protocol === 'https:') options.rejectUnauthorized = false;
+
+    const req = requestFactory(options, async (res) => {
+      const status = res.statusCode ?? 0;
+      const location = typeof res.headers.location === 'string' ? res.headers.location : undefined;
+      const receivedCookies = normalizeSetCookie(
+        res.headers['set-cookie'] as string[] | string | undefined,
+      );
+
+      let responseBody = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => {
+        responseBody += chunk;
+      });
+      res.on('end', async () => {
+        if (REDIRECT_STATUS_CODES.has(status) && location && redirectsRemaining > 0) {
+          const redirected = resolveXuiRedirectPath(target, location);
+          if (!redirected) {
+            return reject(new XuiAdminError(`Unsafe redirect blocked: ${location}`));
+          }
+          try {
+            const next = await requestXui(
+              redirected,
+              method,
+              headers,
+              body,
+              redirectsRemaining - 1,
+              [redirected],
+              0,
+            );
+            resolve({
+              ...next,
+              cookies: [...receivedCookies, ...next.cookies],
+            });
+          } catch (err) {
+            reject(err);
+          }
+          return;
+        }
+
+        if (status === 404 && candidateIndex + 1 < candidates.length) {
+          try {
+            const next = await requestXui(
+              path,
+              method,
+              headers,
+              body,
+              MAX_REDIRECTS,
+              candidates,
+              candidateIndex + 1,
+            );
+            resolve({
+              ...next,
+              cookies: [...receivedCookies, ...next.cookies],
+            });
+          } catch (err) {
+            reject(err);
+          }
+          return;
+        }
+
+        resolve({
+          status,
+          body: responseBody,
+          headers: res.headers,
+          cookies: receivedCookies,
+        });
+      });
+    });
+
+    req.on('error', (err) => reject(new XuiAdminError(`Failed to request 3X-UI: ${err.message}`)));
+    if (body.length > 0) req.write(body);
+    req.end();
+  });
+}
+
+async function requestXuiJson<T>(
+  path: string,
+  method: string,
+  payload: Record<string, unknown> | null,
+  cookieHeader: string | null,
+): Promise<XuiEnvelope<T>> {
+  const body = payload
+    ? new URLSearchParams(Object.entries(payload).map(([k, v]) => [k, String(v)])).toString()
+    : '';
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'X-Requested-With': 'XMLHttpRequest',
+  };
+  if (cookieHeader) headers.Cookie = cookieHeader;
+
+  const response = await requestXui(path, method, headers, body, MAX_REDIRECTS);
+  if (!response.body) throw new XuiAdminError(`3X-UI returned empty response for ${path}`);
+
+  let parsed: XuiEnvelope<T>;
+  try {
+    parsed = JSON.parse(response.body);
+  } catch {
+    throw new XuiAdminError(
+      `3X-UI returned non-JSON response for ${path} (HTTP ${response.status})`,
+    );
+  }
+  return parsed;
+}
+
+function parseInboundClients(settings: string): Array<Record<string, unknown>> {
+  try {
+    const obj = JSON.parse(settings);
+    return Array.isArray(obj?.clients) ? obj.clients : [];
+  } catch {
+    return [];
+  }
+}
+
+function pickInboundForAutoProvision(inbounds: XuiInbound[]): XuiInbound | null {
+  if (inbounds.length === 0) return null;
+
+  const configuredId = parseInt(process.env.XUI_AUTO_INBOUND_ID ?? '', 10);
+  if (!Number.isNaN(configuredId)) {
+    const configured = inbounds.find((inbound) => inbound.id === configuredId);
+    if (configured) return configured;
+  }
+
+  return inbounds.find((inbound) => inbound.enable) ?? inbounds[0];
+}
+
+function buildClientPayload(protocol: string, email: string) {
+  const lowerProtocol = protocol.toLowerCase();
+  const subId = randomBytes(8).toString('hex');
+  const limitIp = parseInt(process.env.XUI_AUTO_CLIENT_LIMIT_IP ?? '0', 10) || 0;
+  const totalGB = parseInt(process.env.XUI_AUTO_CLIENT_TOTAL_GB ?? '0', 10) || 0;
+  const expiryDays = parseInt(process.env.XUI_AUTO_CLIENT_EXPIRY_DAYS ?? '0', 10) || 0;
+  const expiryTime = expiryDays > 0 ? Date.now() + expiryDays * 24 * 60 * 60 * 1000 : 0;
+
+  const common = {
+    email,
+    enable: true,
+    limitIp,
+    totalGB: totalGB > 0 ? totalGB * 1024 * 1024 * 1024 : 0,
+    expiryTime,
+    tgId: '',
+    subId,
+    comment: 'Auto-created by ProxyDog',
+  };
+
+  if (lowerProtocol === 'trojan' || lowerProtocol === 'shadowsocks') {
+    return {
+      ...common,
+      password: randomBytes(16).toString('hex'),
+    };
+  }
+
+  return {
+    ...common,
+    id: randomUUID(),
+    flow: '',
+    alterId: 0,
+  };
+}
+
+function createUniqueEmail(username: string, existingEmails: Set<string>): string {
+  if (!existingEmails.has(username)) return username;
+  for (let i = 1; i <= 9999; i++) {
+    const candidate = `${username}_${i}`;
+    if (!existingEmails.has(candidate)) return candidate;
+  }
+  return `${username}_${randomBytes(2).toString('hex')}`;
+}
+
+async function loginWithServiceAccount(username: string, password: string): Promise<string> {
+  const form = new URLSearchParams({ username, password }).toString();
+  const response = await requestXui(
+    '/login',
+    'POST',
+    {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    form,
+    MAX_REDIRECTS,
+  );
+
+  let body: XuiEnvelope<null>;
+  try {
+    body = JSON.parse(response.body);
+  } catch {
+    throw new XuiAdminError(`3X-UI login returned invalid response (HTTP ${response.status})`);
+  }
+
+  if (!body.success) {
+    throw new XuiAdminError(body.msg || '3X-UI login failed');
+  }
+
+  const cookieHeader = getCookieHeader(response.cookies);
+  if (!cookieHeader)
+    throw new XuiAdminError('3X-UI login succeeded but no session cookie was returned');
+  return cookieHeader;
+}
+
+export async function autoProvisionClientForRegisteredUser(
+  username: string,
+): Promise<string | null> {
+  const serviceAccount = ensureConfiguredServiceAccount();
+  if (!serviceAccount) return null;
+
+  const cookieHeader = await loginWithServiceAccount(
+    serviceAccount.username,
+    serviceAccount.password,
+  );
+  const listResp = await requestXuiJson<XuiInbound[]>(
+    '/panel/api/inbounds/list',
+    'GET',
+    null,
+    cookieHeader,
+  );
+  if (!listResp.success || !Array.isArray(listResp.obj)) {
+    throw new XuiAdminError(listResp.msg || 'Failed to fetch inbounds from 3X-UI');
+  }
+
+  const inbound = pickInboundForAutoProvision(listResp.obj);
+  if (!inbound) throw new XuiAdminError('No inbound available for auto-provision');
+
+  const existingEmails = new Set(
+    parseInboundClients(inbound.settings)
+      .map((client) => String(client.email ?? ''))
+      .filter(Boolean),
+  );
+  const email = createUniqueEmail(username, existingEmails);
+  const client = buildClientPayload(inbound.protocol, email);
+
+  const addResp = await requestXuiJson<null>(
+    '/panel/api/inbounds/addClient',
+    'POST',
+    {
+      id: inbound.id,
+      settings: JSON.stringify({ clients: [client] }),
+    },
+    cookieHeader,
+  );
+
+  if (!addResp.success) {
+    throw new XuiAdminError(addResp.msg || 'Failed to add client in 3X-UI');
+  }
+
+  return String(client.subId ?? '');
+}
