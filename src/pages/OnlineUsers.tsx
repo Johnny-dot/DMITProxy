@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/src/components/ui/Table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
 import { Badge } from '@/src/components/ui/Badge';
@@ -13,101 +13,192 @@ import { Button } from '@/src/components/ui/Button';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { useToast } from '@/src/components/ui/Toast';
-import { Activity, RefreshCw, XCircle, Users as UsersIcon } from 'lucide-react';
-import { mockOnlineUsers } from '@/src/mockData';
+import { Activity, RefreshCw, XCircle, Users as UsersIcon, Copy } from 'lucide-react';
+import { getInbounds, Inbound } from '@/src/api/client';
+import { cn } from '@/src/utils/cn';
+import {
+  flattenInboundClients,
+  formatExpiry,
+  formatTraffic,
+  getClientStatus,
+} from '@/src/utils/xuiClients';
+import { useI18n } from '@/src/context/I18nContext';
+import { buildSubscriptionUrl } from '@/src/utils/subscription';
+import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 
-export function OnlineUsersPage() {
+interface OnlineUsersPageProps {
+  embedded?: boolean;
+}
+
+export function OnlineUsersPage({ embedded = false }: OnlineUsersPageProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [inbounds, setInbounds] = useState<Inbound[]>([]);
   const { toast } = useToast();
+  const { t } = useI18n();
+
+  const load = async (showSuccess = false) => {
+    setIsLoading(true);
+    try {
+      const data = await getInbounds();
+      setInbounds(data);
+      if (showSuccess) toast(t('online.listUpdated'), 'success');
+    } catch {
+      toast(t('online.failedLoad'), 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
+    load();
   }, []);
 
-  const handleRefresh = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast('Online users list updated', 'success');
-    }, 600);
+  const activeClients = useMemo(() => {
+    return flattenInboundClients(inbounds)
+      .filter((client) => getClientStatus(client) === 'active')
+      .filter((client) => client.up + client.down > 0)
+      .sort((a, b) => b.up + b.down - (a.up + a.down));
+  }, [inbounds]);
+
+  const copyLink = async (subId: string) => {
+    if (!subId) {
+      toast(t('online.missingSubOrUrl'), 'info');
+      return;
+    }
+    const link = buildSubscriptionUrl(subId);
+    if (!link) {
+      toast(t('online.missingSubOrUrl'), 'info');
+      return;
+    }
+    await navigator.clipboard.writeText(link);
+    toast(t('online.subCopied'), 'success');
   };
 
   const handleDisconnect = (username: string) => {
-    toast(`User ${username} disconnected`, 'success');
+    toast(t('online.disconnectUnavailable', { username }), 'info');
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Online Users</h1>
-          <p className="text-zinc-400 mt-1">Real-time connection monitoring.</p>
+      {!embedded ? (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{t('online.title')}</h1>
+            <p className="text-zinc-400 mt-1">{t('online.subtitle')}</p>
+          </div>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => load(true)}
+            disabled={isLoading}
+          >
+            <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
+            {t('online.refresh')}
+          </Button>
         </div>
-        <Button variant="outline" className="gap-2" onClick={handleRefresh}>
-          <RefreshCw className={isLoading ? "w-4 h-4 animate-spin" : "w-4 h-4"} />
-          Refresh
+      ) : (
+        <Button variant="outline" className="gap-2" onClick={() => load(true)} disabled={isLoading}>
+          <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
+          {t('online.refresh')}
         </Button>
-      </div>
+      )}
 
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-emerald-500" />
-            <CardTitle>Active Connections</CardTitle>
+            <CardTitle className="flex items-center gap-1">
+              <span>{t('online.activeConnections')}</span>
+              <InfoTooltip content={t('online.help.activeConnections')} />
+            </CardTitle>
           </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-4">
-              {[1, 2, 3].map(i => (
+              {[1, 2, 3].map((i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : mockOnlineUsers.length > 0 ? (
+          ) : activeClients.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Username</TableHead>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead>Node</TableHead>
-                  <TableHead className="hidden sm:table-cell">Connections</TableHead>
-                  <TableHead className="hidden md:table-cell">Duration</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('online.username')}</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    <span className="inline-flex items-center gap-1">
+                      <span>{t('online.inbound')}</span>
+                      <InfoTooltip content={t('online.help.inbound')} />
+                    </span>
+                  </TableHead>
+                  <TableHead>
+                    <span className="inline-flex items-center gap-1">
+                      <span>{t('online.traffic')}</span>
+                      <InfoTooltip content={t('online.help.traffic')} />
+                    </span>
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell">
+                    <span className="inline-flex items-center gap-1">
+                      <span>{t('online.expire')}</span>
+                      <InfoTooltip content={t('online.help.expire')} />
+                    </span>
+                  </TableHead>
+                  <TableHead>
+                    <span className="inline-flex items-center gap-1">
+                      <span>{t('online.status')}</span>
+                      <InfoTooltip content={t('online.help.status')} />
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-right">{t('online.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockOnlineUsers.map((user) => (
-                  <TableRow key={user.id}>
+                {activeClients.map((user) => (
+                  <TableRow key={user.key}>
                     <TableCell className="font-medium">{user.username}</TableCell>
-                    <TableCell className="font-mono text-xs">{user.ip}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{user.nodeName}</Badge>
+                    <TableCell className="hidden md:table-cell text-xs text-zinc-400">
+                      {user.inboundRemark} · {user.protocol.toUpperCase()}:{user.port}
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">{user.connectionCount}</TableCell>
-                    <TableCell className="hidden md:table-cell">{user.duration}</TableCell>
+                    <TableCell>{formatTraffic(user.up + user.down)}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-xs text-zinc-400">
+                      {formatExpiry(user.expiryTime)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="success">{t('common.active')}</Badge>
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-red-500 hover:text-red-400 hover:bg-red-500/10 gap-2"
-                        onClick={() => handleDisconnect(user.username)}
-                      >
-                        <XCircle className="w-4 h-4" />
-                        <span className="hidden sm:inline">Disconnect</span>
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => copyLink(user.subId)}
+                          title={t('online.copySubLink')}
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-400 hover:bg-red-500/10 gap-2"
+                          onClick={() => handleDisconnect(user.username)}
+                        >
+                          <XCircle className="w-4 h-4" />
+                          <span className="hidden sm:inline">{t('online.disconnect')}</span>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           ) : (
-            <EmptyState 
+            <EmptyState
               icon={UsersIcon}
-              title="No active connections"
-              description="There are currently no users connected to any nodes."
-              actionLabel="Refresh List"
-              onAction={handleRefresh}
+              title={t('online.noActiveClients')}
+              description={t('online.noActivity')}
+              actionLabel={t('online.refreshList')}
+              onAction={() => load(true)}
             />
           )}
         </CardContent>
