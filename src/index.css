@@ -1,14 +1,29 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
   body {
-    @apply bg-zinc-950 text-zinc-50 antialiased;
+    @apply bg-zinc-950 text-zinc-50 antialiased transition-colors duration-300;
   }
+}
+
+/* Theme variables: keep utility classes unchanged, remap zinc palette for light mode */
+:root[data-theme='light'] {
+  --color-zinc-50: oklch(20.5% 0.01 285.9);
+  --color-zinc-200: oklch(30% 0.012 286);
+  --color-zinc-300: oklch(40% 0.014 286);
+  --color-zinc-400: oklch(51% 0.015 286);
+  --color-zinc-500: oklch(60% 0.014 286);
+  --color-zinc-600: oklch(72% 0.011 286);
+  --color-zinc-700: oklch(83% 0.008 286);
+  --color-zinc-800: oklch(90% 0.006 286);
+  --color-zinc-900: oklch(96% 0.004 286);
+  --color-zinc-950: oklch(99% 0 0);
+  --color-white: oklch(23% 0.01 286);
 }
 
 /* Custom scrollbar for dark theme */
@@ -27,4 +42,12 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
+}
+
+:root[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: #a1a1aa;
+}
+
+:root[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background: #71717a;
 }
