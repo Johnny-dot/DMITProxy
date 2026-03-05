@@ -93,3 +93,16 @@ export function getXuiTarget(): XuiTarget | null {
 export function getXuiRequestFactory(protocol: XuiProtocol) {
   return protocol === 'https:' ? httpsRequest : httpRequest;
 }
+
+function parseBooleanEnv(raw: string | undefined, fallback: boolean): boolean {
+  if (!raw) return fallback;
+  const normalized = raw.trim().toLowerCase();
+  if (!normalized) return fallback;
+  if (normalized === '1' || normalized === 'true' || normalized === 'yes') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'no') return false;
+  return fallback;
+}
+
+export function shouldSkipXuiTlsVerification(): boolean {
+  return parseBooleanEnv(process.env.XUI_TLS_INSECURE_SKIP_VERIFY, false);
+}

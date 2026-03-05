@@ -3,7 +3,8 @@ import { scryptSync, randomBytes, createHash } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 
-const dataDir = path.resolve('./data');
+const configuredDataDir = (process.env.DATA_DIR ?? '').trim();
+const dataDir = path.resolve(configuredDataDir || './data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 export const dataDirectory = dataDir;

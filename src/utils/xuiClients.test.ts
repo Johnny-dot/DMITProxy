@@ -59,6 +59,7 @@ describe('xuiClients helpers', () => {
       inboundRemark: 'test',
       protocol: 'vless',
       port: 443,
+      email: 'alice@example.com',
       username: 'alice',
       uuid: 'uuid-1',
       subId: 'sub-1',

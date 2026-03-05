@@ -159,6 +159,12 @@ export const enUS = {
     editClient: 'Edit client',
     resetTraffic: 'Reset traffic',
     disableClient: 'Disable client',
+    deleteClient: 'Delete client',
+    deleteClientConfirm:
+      'Delete client {username} from inbound {inbound}? This action cannot be undone.',
+    deleteClientMissingIdentifier: 'Missing client identifier for {username}',
+    clientDeleted: 'Client deleted: {username}',
+    clientDeleteFailed: 'Failed to delete client {username}',
     noSubId: 'N/A',
     help: {
       inbound: 'Inbound route + protocol + port this client belongs to.',

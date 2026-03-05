@@ -25,13 +25,19 @@ import {
   Users as UsersIcon,
   RefreshCw,
 } from 'lucide-react';
-import { getInbounds, Inbound } from '@/src/api/client';
+import {
+  deleteInboundClient,
+  deleteInboundClientByEmail,
+  getInbounds,
+  Inbound,
+} from '@/src/api/client';
 import { cn } from '@/src/utils/cn';
 import {
   flattenInboundClients,
   formatExpiry,
   formatTraffic,
   getClientStatus,
+  XuiClientRow,
 } from '@/src/utils/xuiClients';
 import { useI18n } from '@/src/context/I18nContext';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
@@ -99,6 +105,38 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
     toast(t('users.actionNotExposed', { action, username }), 'info');
   };
 
+  const handleDeleteClient = async (user: XuiClientRow) => {
+    const confirmed = window.confirm(
+      t('users.deleteClientConfirm', {
+        username: user.username,
+        inbound: user.inboundRemark,
+      }),
+    );
+    if (!confirmed) return;
+
+    try {
+      if (user.email) {
+        try {
+          await deleteInboundClientByEmail(user.inboundId, user.email);
+        } catch (error) {
+          if (!user.uuid) throw error;
+          await deleteInboundClient(user.inboundId, user.uuid);
+        }
+      } else if (user.uuid) {
+        await deleteInboundClient(user.inboundId, user.uuid);
+      } else {
+        throw new Error(t('users.deleteClientMissingIdentifier', { username: user.username }));
+      }
+
+      toast(t('users.clientDeleted', { username: user.username }), 'success');
+      await load();
+    } catch (error) {
+      const baseMessage = t('users.clientDeleteFailed', { username: user.username });
+      const details = error instanceof Error ? error.message : '';
+      toast(details ? `${baseMessage}: ${details}` : baseMessage, 'error');
+    }
+  };
+
   const getStatusLabel = (status: 'active' | 'disabled' | 'expired') => {
     if (status === 'active') return t('common.active');
     if (status === 'disabled') return t('common.disabled');
@@ -110,7 +148,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
       onOpenAccounts();
       return;
     }
-    navigate('/user-accounts');
+    navigate('/portal?section=management&tab=accounts');
   };
 
   return (
@@ -297,7 +335,8 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-red-500 hover:bg-red-500/10"
-                            onClick={() => handleAction(t('users.disableClient'), user.username)}
+                            title={t('users.deleteClient')}
+                            onClick={() => handleDeleteClient(user)}
                           >
                             <UserX className="w-3.5 h-3.5" />
                           </Button>

@@ -10,6 +10,7 @@ export interface XuiClientRow {
   inboundRemark: string;
   protocol: string;
   port: number;
+  email: string;
   username: string;
   uuid: string;
   subId: string;
@@ -107,6 +108,7 @@ function buildClientRow(
     inboundRemark: inbound.remark,
     protocol: inbound.protocol,
     port: inbound.port,
+    email,
     username,
     uuid: id,
     subId,

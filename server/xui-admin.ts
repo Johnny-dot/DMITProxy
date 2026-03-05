@@ -6,10 +6,13 @@ import {
   getXuiRequestFactory,
   getXuiTarget,
   resolveXuiRedirectPath,
+  shouldSkipXuiTlsVerification,
 } from './xui.js';
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
+const skipTlsVerification = shouldSkipXuiTlsVerification();
+let insecureTlsWarningShown = false;
 
 interface XuiEnvelope<T> {
   success: boolean;
@@ -102,7 +105,15 @@ async function requestXui(
       method,
       headers: requestHeaders,
     };
-    if (target.protocol === 'https:') options.rejectUnauthorized = false;
+    if (target.protocol === 'https:' && skipTlsVerification) {
+      options.rejectUnauthorized = false;
+      if (!insecureTlsWarningShown) {
+        insecureTlsWarningShown = true;
+        console.warn(
+          '[ProxyDog] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, auto-provision TLS verification disabled.',
+        );
+      }
+    }
 
     const req = requestFactory(options, async (res) => {
       const status = res.statusCode ?? 0;

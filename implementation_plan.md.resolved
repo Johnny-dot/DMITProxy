@@ -1,0 +1,111 @@
+# ProxyDog 代码质量改进
+
+清理临时文件、统一 API 调用方式、拆分过大的 UserPortal 组件。这些改动都是纯重构，不改变功能行为。
+
+## Proposed Changes
+
+### 临时文件清理
+
+#### [DELETE] [tmp_axios.js](file:///e:/desktop/myFiles/DMITProxy/tmp_axios.js)
+#### [DELETE] [tmp_cookie.txt](file:///e:/desktop/myFiles/DMITProxy/tmp_cookie.txt)
+#### [DELETE] [tmp_inbound_model.js](file:///e:/desktop/myFiles/DMITProxy/tmp_inbound_model.js)
+#### [DELETE] [tmp_panel.html](file:///e:/desktop/myFiles/DMITProxy/tmp_panel.html)
+#### [DELETE] [tmp_util.js](file:///e:/desktop/myFiles/DMITProxy/tmp_util.js)
+
+同时在 [.gitignore](file:///e:/desktop/myFiles/DMITProxy/.gitignore) 中添加 `tmp_*` 规则防止今后再被提交。
+
+---
+
+### API 客户端统一
+
+#### [MODIFY] [client.ts](file:///e:/desktop/myFiles/DMITProxy/src/api/client.ts)
+
+新增 `localFetch<T>` 通用函数，处理 `/local/*` 请求的通用逻辑：
+- 自动添加 `credentials: 'include'`
+- 统一 JSON 错误解析（读取 `error` 字段）
+- 统一类型返回
+
+将现有 5 个函数 ([getAdminSettings](file:///e:/desktop/myFiles/DMITProxy/src/api/client.ts#172-178), [saveAdminSettings](file:///e:/desktop/myFiles/DMITProxy/src/api/client.ts#179-190), [clearPortalSessions](file:///e:/desktop/myFiles/DMITProxy/src/api/client.ts#191-200), [backupDatabase](file:///e:/desktop/myFiles/DMITProxy/src/api/client.ts#201-210), [clearTrafficLogs](file:///e:/desktop/myFiles/DMITProxy/src/api/client.ts#211-219)) 迁移为使用 `localFetch`，消除重复的 `fetch` + 手动错误处理模式。
+
+重构前（每个函数约 6-8 行重复模式）：
+```typescript
+export async function getAdminSettings(): Promise<AdminSettings> {
+  const res = await fetch('/local/admin/settings', { credentials: 'include' });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to load settings');
+  return data;
+}
+```
+
+重构后：
+```typescript
+export function getAdminSettings(): Promise<AdminSettings> {
+  return localFetch<AdminSettings>('/local/admin/settings');
+}
+```
+
+---
+
+### UserPortal 组件拆分
+
+将 1158 行的 [UserPortal.tsx](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx) 拆分为职责清晰的子组件。
+
+#### [NEW] [types.ts](file:///e:/desktop/myFiles/DMITProxy/src/pages/portal/types.ts)
+
+提取共享类型定义：[UserInfo](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#32-39), [PortalSettings](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#40-47), [PortalNotification](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#48-55), [PortalContextResponse](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#56-61), [SubscriptionFormat](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#62-63), [PlatformKey](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#63-64), [PortalTab](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#64-65), [ViewerRole](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#65-66), [ClientCard](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#67-77)，以及辅助函数 [toMillis](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#81-84), [isPortalTab](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx#85-93)。
+
+#### [NEW] [PortalHeader.tsx](file:///e:/desktop/myFiles/DMITProxy/src/pages/portal/PortalHeader.tsx)
+
+提取顶部 header 栏（logo、用户名、语言切换、主题切换、登出按钮）。
+
+#### [NEW] [HomeTab.tsx](file:///e:/desktop/myFiles/DMITProxy/src/pages/portal/HomeTab.tsx)
+
+提取 `activeTab === 'home'` 的全部渲染逻辑，包含 admin 视图和 user 视图两种模式。
+
+#### [NEW] [SubscriptionTab.tsx](file:///e:/desktop/myFiles/DMITProxy/src/pages/portal/SubscriptionTab.tsx)
+
+提取 `activeTab === 'subscription'` 的全部渲染逻辑（订阅链接、格式选择、客户端下载、教程、排查指南）。这是最大的一块 JSX（约 240 行）。
+
+#### [NEW] [NotificationsTab.tsx](file:///e:/desktop/myFiles/DMITProxy/src/pages/portal/NotificationsTab.tsx)
+
+提取 `activeTab === 'notifications'` 的全部渲染逻辑。
+
+#### [MODIFY] [UserPortal.tsx](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx)
+
+保留为组合入口，只负责：
+- 状态管理（context 加载、tab 切换、通知已读状态）
+- 通过 props 将状态传给各子组件
+- 顶层布局 + tab 按钮栏
+- `management` tab 继续直接渲染 `<UsersCenterPage />`
+
+预计从 1158 行缩减到 ~350 行。
+
+---
+
+## Verification Plan
+
+### Automated Tests
+
+所有改动均为纯重构，不改变外部行为。通过以下命令验证：
+
+```bash
+# 1. TypeScript 类型检查 — 确保类型拆分正确，无引用断裂
+npm run typecheck
+
+# 2. ESLint — 确保分层规则和代码规范通过
+npm run lint
+
+# 3. 现有单元测试 — 确保无回归（含 auth.integration.test 和 xuiClients.test）
+npm run test
+
+# 4. 生产构建 — 确保 Vite 打包成功，lazy import 正确解析
+npm run build
+```
+
+### Manual Verification
+
+由于 [UserPortal.tsx](file:///e:/desktop/myFiles/DMITProxy/src/pages/UserPortal.tsx) 的拆分是纯前端 UI 重构，建议在后端可用时由用户手动验证以下场景：
+
+1. 以普通用户登录 → 检查 `/portal` 的 home、subscription、notifications 三个 tab 显示正常
+2. 以管理员登录 → 检查 `/portal?section=management` 的 management tab 正常渲染 [UsersCenterPage](file:///e:/desktop/myFiles/DMITProxy/src/pages/UsersCenter.tsx#20-100)
+3. Tab 切换时 URL 参数同步正确

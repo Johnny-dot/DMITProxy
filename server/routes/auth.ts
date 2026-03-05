@@ -4,6 +4,25 @@ import { autoProvisionClientForRegisteredUser, XuiAdminError } from '../xui-admi
 
 const router = Router();
 const SESSION_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
+const SESSION_COOKIE_NAME = 'pd_session';
+const configuredCookieSecure = (process.env.COOKIE_SECURE ?? '').trim().toLowerCase();
+const SESSION_COOKIE_SECURE =
+  configuredCookieSecure === 'true'
+    ? true
+    : configuredCookieSecure === 'false'
+      ? false
+      : process.env.NODE_ENV === 'production';
+const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: 'lax' as const,
+  secure: SESSION_COOKIE_SECURE,
+  maxAge: SESSION_TTL * 1000,
+};
+const SESSION_COOKIE_CLEAR_OPTIONS = {
+  httpOnly: true,
+  sameSite: 'lax' as const,
+  secure: SESSION_COOKIE_SECURE,
+};
 
 interface UserSessionRow {
   user_id: number;
@@ -26,6 +45,7 @@ const findActiveResetTokenStmt = db.prepare(`
 
 function getUserSession(token: string | undefined): UserSessionRow | null {
   if (!token) return null;
+  const sessionTokenHash = hashToken(token);
 
   const session = db
     .prepare(
@@ -33,11 +53,11 @@ function getUserSession(token: string | undefined): UserSessionRow | null {
       SELECT s.user_id, u.username, u.role, u.sub_id, u.created_at
       FROM sessions s
       JOIN users u ON u.id = s.user_id
-      WHERE s.token = ? AND s.expires_at > unixepoch()
+      WHERE (s.token = ? OR s.token = ?) AND s.expires_at > unixepoch()
       LIMIT 1
     `,
     )
-    .get(token) as UserSessionRow | undefined;
+    .get(sessionTokenHash, token) as UserSessionRow | undefined;
 
   return session ?? null;
 }
@@ -111,28 +131,25 @@ router.post('/login', (req, res) => {
   }
 
   const token = generateToken();
+  const tokenHash = hashToken(token);
   const expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL;
   db.prepare('INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)').run(
     user.id,
-    token,
+    tokenHash,
     expiresAt,
   );
 
-  res.cookie('pd_session', token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    maxAge: SESSION_TTL * 1000,
-  });
+  res.cookie(SESSION_COOKIE_NAME, token, SESSION_COOKIE_OPTIONS);
 
   return res.json({ ok: true, role: user.role });
 });
 
 router.post('/logout', (req, res) => {
-  const token = req.cookies?.pd_session;
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
   if (token) {
-    db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+    db.prepare('DELETE FROM sessions WHERE token = ? OR token = ?').run(hashToken(token), token);
   }
-  res.clearCookie('pd_session');
+  res.clearCookie(SESSION_COOKIE_NAME, SESSION_COOKIE_CLEAR_OPTIONS);
   return res.json({ ok: true });
 });
 
@@ -199,13 +216,13 @@ router.post('/password-reset/confirm', (req, res) => {
 });
 
 router.get('/me', (req, res) => {
-  const token = req.cookies?.pd_session;
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
   if (!token) return res.status(401).json({ error: 'Not authenticated' });
 
   const session = getUserSession(token);
 
   if (!session) {
-    res.clearCookie('pd_session');
+    res.clearCookie(SESSION_COOKIE_NAME, SESSION_COOKIE_CLEAR_OPTIONS);
     return res.status(401).json({ error: 'Session expired' });
   }
 
@@ -218,11 +235,11 @@ router.get('/me', (req, res) => {
 });
 
 router.get('/portal/context', (req, res) => {
-  const token = req.cookies?.pd_session;
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
   const session = getUserSession(token);
 
   if (!session) {
-    res.clearCookie('pd_session');
+    res.clearCookie(SESSION_COOKIE_NAME, SESSION_COOKIE_CLEAR_OPTIONS);
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
