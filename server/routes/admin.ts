@@ -8,10 +8,12 @@ import {
   getXuiRequestFactory,
   getXuiTarget,
   resolveXuiRedirectPath,
+  shouldSkipXuiTlsVerification,
 } from '../xui.js';
 
 const router = Router();
 const xuiTarget = getXuiTarget();
+const skipTlsVerification = shouldSkipXuiTlsVerification();
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
 const configuredResetTtlSeconds = Number.parseInt(process.env.PASSWORD_RESET_TTL_SECONDS ?? '', 10);
@@ -19,6 +21,12 @@ const DEFAULT_RESET_TTL_SECONDS =
   Number.isFinite(configuredResetTtlSeconds) && configuredResetTtlSeconds > 0
     ? Math.max(5 * 60, Math.min(24 * 60 * 60, configuredResetTtlSeconds))
     : 30 * 60;
+
+if (xuiTarget?.protocol === 'https:' && skipTlsVerification) {
+  console.warn(
+    '[ProxyDog] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, admin upstream TLS verification disabled.',
+  );
+}
 
 interface AppSettings {
   siteName: string;
@@ -135,7 +143,9 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
           'X-Requested-With': 'XMLHttpRequest',
         },
       };
-      if (xuiTarget.protocol === 'https:') opts.rejectUnauthorized = false;
+      if (xuiTarget.protocol === 'https:' && skipTlsVerification) {
+        opts.rejectUnauthorized = false;
+      }
 
       const r = requestFactory(opts, (proxyRes) => {
         const statusCode = proxyRes.statusCode ?? 0;

@@ -159,6 +159,11 @@ export const zhCN = {
     editClient: '编辑客户端',
     resetTraffic: '重置流量',
     disableClient: '禁用客户端',
+    deleteClient: '删除客户端',
+    deleteClientConfirm: '确认删除入站 {inbound} 下的客户端 {username}？该操作不可撤销。',
+    deleteClientMissingIdentifier: '{username} 缺少可删除的客户端标识',
+    clientDeleted: '已删除客户端：{username}',
+    clientDeleteFailed: '删除客户端失败：{username}',
     noSubId: '无',
     help: {
       inbound: '该客户端所属的入站线路 + 协议 + 端口。',

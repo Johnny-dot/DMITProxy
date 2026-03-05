@@ -20,7 +20,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     { icon: LayoutDashboard, label: t('nav.dashboard'), path: '/' },
     { icon: Server, label: t('nav.nodes'), path: '/nodes' },
     { icon: ShieldCheck, label: t('nav.inbounds'), path: '/inbounds' },
-    { icon: Users, label: userCenterLabel, path: '/users' },
+    { icon: Users, label: userCenterLabel, path: '/portal?section=management' },
     { icon: BarChart3, label: t('nav.traffic'), path: '/traffic' },
     { icon: LinkIcon, label: t('nav.subscriptions'), path: '/subscriptions' },
     { icon: Settings, label: t('nav.settings'), path: '/settings' },

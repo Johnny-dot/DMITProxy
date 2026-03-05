@@ -134,6 +134,61 @@ export async function deleteInbound(id: number) {
   return apiFetch<null>(`/panel/api/inbounds/del/${id}`, { method: 'POST' });
 }
 
+export async function deleteInboundClient(inboundId: number, clientId: string) {
+  const normalizedClientId = clientId.trim();
+  if (!normalizedClientId) {
+    throw new Error('Missing client id');
+  }
+  return apiFetch<null>(
+    `/panel/api/inbounds/${inboundId}/delClient/${encodeURIComponent(normalizedClientId)}`,
+    {
+      method: 'POST',
+    },
+  );
+}
+
+export async function deleteInboundClientByEmail(inboundId: number, email: string) {
+  const normalizedEmail = email.trim();
+  if (!normalizedEmail) {
+    throw new Error('Missing client email');
+  }
+  return apiFetch<null>(
+    `/panel/api/inbounds/${inboundId}/delClientByEmail/${encodeURIComponent(normalizedEmail)}`,
+    {
+      method: 'POST',
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Local API helper — unified fetch for /local/* endpoints
+// ---------------------------------------------------------------------------
+
+async function localFetch<T>(
+  path: string,
+  options?: RequestInit & { fallbackError?: string },
+): Promise<T> {
+  const { fallbackError, ...fetchOptions } = options ?? {};
+  const res = await fetch(path, {
+    credentials: 'include',
+    ...fetchOptions,
+    headers: { 'Content-Type': 'application/json', ...fetchOptions.headers },
+  });
+
+  let data: Record<string, unknown>;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`Invalid JSON response (HTTP ${res.status}) for ${path}`);
+  }
+
+  if (!res.ok) {
+    const msg = typeof data.error === 'string' ? data.error : (fallbackError ?? 'Request failed');
+    throw new Error(msg);
+  }
+  return data as T;
+}
+
 // Local admin settings
 export interface AdminSettings {
   siteName: string;
@@ -143,50 +198,40 @@ export interface AdminSettings {
   announcementActive: boolean;
 }
 
-export async function getAdminSettings(): Promise<AdminSettings> {
-  const res = await fetch('/local/admin/settings', { credentials: 'include' });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to load settings');
-  return data;
+export function getAdminSettings(): Promise<AdminSettings> {
+  return localFetch<AdminSettings>('/local/admin/settings', {
+    fallbackError: 'Failed to load settings',
+  });
 }
 
 export async function saveAdminSettings(payload: Partial<AdminSettings>): Promise<AdminSettings> {
-  const res = await fetch('/local/admin/settings', {
+  const data = await localFetch<{ ok: boolean; settings: AdminSettings }>('/local/admin/settings', {
     method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    fallbackError: 'Failed to save settings',
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to save settings');
-  return data.settings as AdminSettings;
+  return data.settings;
 }
 
 export async function clearPortalSessions(): Promise<number> {
-  const res = await fetch('/local/admin/security/clear-sessions', {
+  const data = await localFetch<{ cleared?: number }>('/local/admin/security/clear-sessions', {
     method: 'POST',
-    credentials: 'include',
+    fallbackError: 'Failed to clear sessions',
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to clear sessions');
   return Number(data.cleared ?? 0);
 }
 
 export async function backupDatabase(): Promise<string> {
-  const res = await fetch('/local/admin/maintenance/backup', {
+  const data = await localFetch<{ file?: string }>('/local/admin/maintenance/backup', {
     method: 'POST',
-    credentials: 'include',
+    fallbackError: 'Failed to backup database',
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to backup database');
   return String(data.file ?? '');
 }
 
 export async function clearTrafficLogs(): Promise<void> {
-  const res = await fetch('/local/admin/maintenance/clear-traffic', {
+  await localFetch<{ ok: boolean }>('/local/admin/maintenance/clear-traffic', {
     method: 'POST',
-    credentials: 'include',
+    fallbackError: 'Failed to clear traffic logs',
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to clear traffic logs');
 }

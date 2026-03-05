@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, Search, User } from 'lucide-react';
+import { Bell, LogOut, Search, User } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useToast } from '../ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
+import { useAuth } from '@/src/context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { NotificationsPanel } from './NotificationsPanel';
 import type { NotificationItem } from '@/src/types/notifications';
@@ -24,12 +25,14 @@ interface AdminSettings {
 }
 
 export function Navbar() {
+  const { logout } = useAuth();
   const { toast } = useToast();
   const { t, language, setLanguage } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isRefreshingNotifications, setIsRefreshingNotifications] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -143,7 +146,7 @@ export function Navbar() {
             title: t('systemNotifications.autoProvisionReadyTitle'),
             message: t('systemNotifications.autoProvisionReadyBody'),
             createdAt: now,
-            actionPath: '/user-accounts',
+            actionPath: '/portal?section=management&tab=accounts',
             actionLabel: t('notifications.open'),
           });
         } else if (systemFlags.xuiAutoProvisionEnabled) {
@@ -153,7 +156,7 @@ export function Navbar() {
             title: t('systemNotifications.autoProvisionCredsMissingTitle'),
             message: t('systemNotifications.autoProvisionCredsMissingBody'),
             createdAt: now,
-            actionPath: '/user-accounts',
+            actionPath: '/portal?section=management&tab=accounts',
             actionLabel: t('notifications.open'),
           });
         }
@@ -216,6 +219,17 @@ export function Navbar() {
     if (item.actionPath) {
       setIsNotificationsOpen(false);
       navigate(item.actionPath);
+    }
+  }
+
+  async function handleLogout() {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } finally {
+      setIsLoggingOut(false);
     }
   }
 
@@ -288,6 +302,26 @@ export function Navbar() {
           onClick={() => navigate('/profile')}
         >
           <User className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 hidden sm:flex"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
+          <LogOut className="w-4 h-4" />
+          {t('portal.signOut')}
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="sm:hidden"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          title={t('portal.signOut')}
+        >
+          <LogOut className="w-4 h-4" />
         </Button>
       </div>
       <NotificationsPanel

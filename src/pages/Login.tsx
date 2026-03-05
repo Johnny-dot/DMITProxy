@@ -20,7 +20,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (!isChecking && isAuthenticated) {
-      navigate('/', { replace: true });
+      navigate('/portal?section=management', { replace: true });
     }
   }, [isAuthenticated, isChecking, navigate]);
 
@@ -68,7 +68,7 @@ export function LoginPage() {
         typeof localData?.error === 'string' ? localData.error : t('userAuth.loginFailed');
 
       await adminLogin(username, password);
-      navigate('/', { replace: true });
+      navigate('/portal?section=management', { replace: true });
     } catch (err) {
       const adminError = err instanceof Error ? err.message : t('login.loginFailed');
       setError(adminError || userLoginError || t('login.loginFailed'));
