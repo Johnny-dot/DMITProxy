@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { db, hashPassword, verifyPassword, generateToken, hashToken } from '../db.js';
-import { autoProvisionClientForRegisteredUser, XuiAdminError } from '../xui-admin.js';
+import {
+  autoProvisionClientForRegisteredUser,
+  fetchClientStatsBySubId,
+  XuiAdminError,
+} from '../xui-admin.js';
 
 const router = Router();
 const SESSION_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -331,6 +335,25 @@ router.get('/portal/context', (req, res) => {
     },
     notifications,
   });
+});
+
+router.get('/portal/stats', async (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  const session = getUserSession(token);
+  if (!session || session.role !== 'user') {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  if (!session.sub_id) {
+    return res.json({ stats: null });
+  }
+
+  try {
+    const stats = await fetchClientStatsBySubId(session.sub_id);
+    return res.json({ stats });
+  } catch {
+    return res.json({ stats: null });
+  }
 });
 
 export default router;

@@ -20,11 +20,30 @@ interface XuiEnvelope<T> {
   obj: T;
 }
 
+interface XuiClientStat {
+  email: string;
+  up: number;
+  down: number;
+  total: number;
+  expiryTime: number;
+  enable: boolean;
+}
+
 interface XuiInbound {
   id: number;
   protocol: string;
   enable: boolean;
   settings: string;
+  clientStats?: XuiClientStat[];
+}
+
+export interface XuiClientUsage {
+  protocol: string;
+  up: number;
+  down: number;
+  total: number;
+  expiryTime: number;
+  enable: boolean;
 }
 
 interface XuiRequestResult {
@@ -358,4 +377,40 @@ export async function autoProvisionClientForRegisteredUser(
   }
 
   return String(client.subId ?? '');
+}
+
+export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientUsage | null> {
+  const serviceAccount = ensureConfiguredServiceAccount();
+  if (!serviceAccount) return null;
+
+  const cookieHeader = await loginWithServiceAccount(
+    serviceAccount.username,
+    serviceAccount.password,
+  );
+  const listResp = await requestXuiJson<XuiInbound[]>(
+    '/panel/api/inbounds/list',
+    'GET',
+    null,
+    cookieHeader,
+  );
+  if (!listResp.success || !Array.isArray(listResp.obj)) return null;
+
+  for (const inbound of listResp.obj) {
+    const clients = parseInboundClients(inbound.settings);
+    const client = clients.find((c) => String(c.subId ?? '') === subId);
+    if (!client) continue;
+
+    const email = String(client.email ?? '');
+    const stats = inbound.clientStats?.find((s) => s.email === email) ?? null;
+    return {
+      protocol: inbound.protocol,
+      up: stats?.up ?? 0,
+      down: stats?.down ?? 0,
+      total: stats?.total ?? 0,
+      expiryTime: stats?.expiryTime ?? Number(client.expiryTime ?? 0),
+      enable: stats?.enable ?? Boolean(client.enable ?? true),
+    };
+  }
+
+  return null;
 }

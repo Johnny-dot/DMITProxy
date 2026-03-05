@@ -20,14 +20,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     { icon: LayoutDashboard, label: t('nav.dashboard'), path: '/' },
     { icon: Server, label: t('nav.nodes'), path: '/nodes' },
     { icon: ShieldCheck, label: t('nav.inbounds'), path: '/inbounds' },
-    { icon: Users, label: userCenterLabel, path: '/portal?section=management' },
+    { icon: Users, label: userCenterLabel, path: '/users' },
     { icon: BarChart3, label: t('nav.traffic'), path: '/traffic' },
     { icon: LinkIcon, label: t('nav.subscriptions'), path: '/subscriptions' },
     { icon: Settings, label: t('nav.settings'), path: '/settings' },
   ];
 
   return (
-    <aside className="w-64 border-r border-white/10 bg-zinc-950 flex flex-col h-screen sticky top-0">
+    <aside className="w-64 border-r border-white/10 bg-zinc-950 flex flex-col h-full">
       <div className="p-6 flex items-center gap-3">
         <div className="w-8 h-8 bg-zinc-50 rounded-lg flex items-center justify-center">
           <Dog className="w-5 h-5 text-zinc-950" />

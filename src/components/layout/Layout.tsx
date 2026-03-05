@@ -10,9 +10,9 @@ export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-zinc-50 selection:text-zinc-950 overflow-x-hidden">
+    <div className="flex h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-zinc-50 selection:text-zinc-950 overflow-hidden">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block">
+      <div className="hidden md:block shrink-0">
         <Sidebar />
       </div>
 
@@ -40,8 +40,8 @@ export function Layout() {
         )}
       </AnimatePresence>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-white/10 bg-zinc-950/50 backdrop-blur-md flex items-center px-4 md:px-8 sticky top-0 z-50">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <header className="h-16 shrink-0 border-b border-white/10 bg-zinc-950/50 backdrop-blur-md flex items-center px-4 md:px-8 z-50">
           <div className="flex items-center gap-4 w-full min-w-0">
             <Button
               variant="ghost"
@@ -57,7 +57,7 @@ export function Layout() {
           </div>
         </header>
 
-        <main className="p-4 md:p-8 flex-1 overflow-y-auto">
+        <main className="p-4 md:p-8 flex-1 overflow-y-auto min-h-0">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

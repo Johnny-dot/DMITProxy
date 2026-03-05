@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Ca
 import { Badge } from '@/src/components/ui/Badge';
 import { Button } from '@/src/components/ui/Button';
 import { Skeleton } from '@/src/components/ui/Skeleton';
-import { Globe, Zap, Plus, Info, ShieldCheck, Users, RefreshCw } from 'lucide-react';
+import { Globe, Zap, Plus, ShieldCheck, Users, RefreshCw } from 'lucide-react';
 import { getInbounds, Inbound } from '@/src/api/client';
 import { cn } from '@/src/utils/cn';
 import { useToast } from '@/src/components/ui/Toast';
@@ -69,11 +69,6 @@ export function NodesPage() {
             {t('nodes.manageInbounds')}
           </Button>
         </div>
-      </div>
-
-      <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4 flex gap-3 text-sm text-indigo-300">
-        <Info className="w-5 h-5 flex-shrink-0" />
-        <p>{t('nodes.intro')}</p>
       </div>
 
       {isLoading ? (
