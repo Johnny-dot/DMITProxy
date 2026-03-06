@@ -142,7 +142,7 @@ export function SettingsPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('settings.title')}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('settings.title')}</h1>
           <p className="text-zinc-400 mt-1">{t('settings.subtitle')}</p>
         </div>
         <Button variant="outline" size="icon" onClick={load}>
@@ -150,8 +150,8 @@ export function SettingsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid gap-6 xl:grid-cols-3">
+        <div className="xl:col-span-2 space-y-6">
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">

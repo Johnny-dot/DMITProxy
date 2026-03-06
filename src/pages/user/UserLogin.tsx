@@ -119,15 +119,6 @@ export function UserLoginPage() {
             {t('userAuth.registerWithInvite')}
           </Link>
         </p>
-        <p className="text-center text-xs text-zinc-600">
-          {t('userAuth.haveResetLink')}{' '}
-          <Link
-            to="/reset-password"
-            className="text-zinc-300 hover:text-zinc-100 transition-colors"
-          >
-            {t('userAuth.resetNow')}
-          </Link>
-        </p>
       </div>
     </div>
   );

@@ -315,7 +315,7 @@ export function UserPortalPage() {
         onLogout={handleLogout}
       />
 
-      <main className="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
         {/* Hero section */}
         <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-500/10 via-zinc-900 to-zinc-900 p-6 md:p-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">

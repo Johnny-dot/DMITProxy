@@ -155,11 +155,9 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
-          <p className="text-zinc-400 mt-1">{t('dashboard.subtitle')}</p>
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
+        <p className="text-zinc-400 mt-1">{t('dashboard.subtitle')}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

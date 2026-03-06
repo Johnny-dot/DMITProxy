@@ -15,6 +15,7 @@ import { Input } from '@/src/components/ui/Input';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { useToast } from '@/src/components/ui/Toast';
+import QRCode from 'qrcode';
 import {
   UserPlus,
   Search,
@@ -24,6 +25,9 @@ import {
   Edit2,
   Users as UsersIcon,
   RefreshCw,
+  Link2,
+  X,
+  Check,
 } from 'lucide-react';
 import {
   deleteInboundClient,
@@ -55,6 +59,9 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
   const [searchQuery, setSearchQuery] = useState('');
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [subModal, setSubModal] = useState<XuiClientRow | null>(null);
+  const [subQrImage, setSubQrImage] = useState('');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const load = async () => {
     setIsLoading(true);
@@ -72,6 +79,21 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
     load();
   }, []);
 
+  useEffect(() => {
+    if (!subModal?.subId) {
+      setSubQrImage('');
+      return;
+    }
+    const url = buildSubscriptionUrl(subModal.subId, 'universal');
+    if (!url) {
+      setSubQrImage('');
+      return;
+    }
+    QRCode.toDataURL(url, { width: 200, margin: 1 })
+      .then(setSubQrImage)
+      .catch(() => setSubQrImage(''));
+  }, [subModal]);
+
   const users = useMemo(() => {
     return flattenInboundClients(inbounds).sort((a, b) => b.up + b.down - (a.up + a.down));
   }, [inbounds]);
@@ -87,18 +109,11 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
     );
   }, [searchQuery, users]);
 
-  const copySubscriptionLink = async (subId: string) => {
-    if (!subId) {
-      toast(t('users.subIdMissing'), 'info');
-      return;
-    }
-    const link = buildSubscriptionUrl(subId);
-    if (!link) {
-      toast(t('users.subUrlMissing'), 'error');
-      return;
-    }
-    await navigator.clipboard.writeText(link);
-    toast(t('users.subCopied'), 'success');
+  const copyLink = async (url: string, key: string) => {
+    if (!url) return;
+    await navigator.clipboard.writeText(url);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
   };
 
   const handleAction = (action: string, username: string) => {
@@ -162,9 +177,9 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
   return (
     <div className="space-y-6">
       {!embedded ? (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t('users.title')}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('users.title')}</h1>
             <p className="text-zinc-400 mt-1">{t('users.subtitle')}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -318,10 +333,10 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => copySubscriptionLink(user.subId)}
-                            title={t('users.copySubLink')}
+                            onClick={() => setSubModal(user)}
+                            title={t('users.viewSubLinks')}
                           >
-                            <Copy className="w-3.5 h-3.5" />
+                            <Link2 className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -370,6 +385,79 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
           )}
         </CardContent>
       </Card>
+      {subModal &&
+        (() => {
+          const formats = [
+            { key: 'universal', label: 'Universal', format: 'universal' as const },
+            { key: 'clash', label: 'Clash', format: 'clash' as const },
+            { key: 'v2ray', label: 'V2Ray', format: 'v2ray' as const },
+            { key: 'singbox', label: 'Sing-box', format: 'singbox' as const },
+          ];
+          return (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={() => setSubModal(null)}
+            >
+              <div
+                className="bg-zinc-900 border border-white/10 rounded-xl w-full max-w-md shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                  <div>
+                    <p className="font-semibold text-zinc-50">{subModal.username}</p>
+                    <p className="text-xs text-zinc-500 font-mono mt-0.5">
+                      {subModal.subId || t('users.noSubId')}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSubModal(null)}
+                    className="text-zinc-500 hover:text-zinc-200 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="px-5 py-4 space-y-2">
+                  {formats.map(({ key, label, format }) => {
+                    const url = subModal.subId ? buildSubscriptionUrl(subModal.subId, format) : '';
+                    const isCopied = copiedKey === key;
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-center gap-2 bg-zinc-800/50 rounded-lg px-3 py-2"
+                      >
+                        <span className="text-xs font-medium text-zinc-400 w-16 shrink-0">
+                          {label}
+                        </span>
+                        <span className="flex-1 text-xs font-mono text-zinc-300 truncate">
+                          {url || <span className="text-zinc-600">{t('users.subUrlMissing')}</span>}
+                        </span>
+                        <button
+                          disabled={!url}
+                          onClick={() => copyLink(url, key)}
+                          className="shrink-0 text-zinc-500 hover:text-emerald-400 disabled:opacity-30 transition-colors"
+                        >
+                          {isCopied ? (
+                            <Check className="w-4 h-4 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {subQrImage && (
+                  <div className="px-5 pb-5 flex flex-col items-center gap-2">
+                    <p className="text-xs text-zinc-500">Universal QR</p>
+                    <img src={subQrImage} alt="QR Code" className="w-40 h-40 rounded-lg" />
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 }
