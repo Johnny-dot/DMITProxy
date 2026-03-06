@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastProvider } from './components/ui/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -25,8 +25,8 @@ const UsersCenterPage = lazy(() =>
   import('./pages/UsersCenter').then((m) => ({ default: m.UsersCenterPage })),
 );
 const LoginPage = lazy(() => import('./pages/Login').then((m) => ({ default: m.LoginPage })));
-const UserPortalPage = lazy(() =>
-  import('./pages/UserPortal').then((m) => ({ default: m.UserPortalPage })),
+const MySubscriptionPage = lazy(() =>
+  import('./pages/MySubscription').then((m) => ({ default: m.MySubscriptionPage })),
 );
 const ProfilePage = lazy(() => import('./pages/Profile').then((m) => ({ default: m.ProfilePage })));
 const UserRegisterPage = lazy(() =>
@@ -44,8 +44,11 @@ function RouteLoading() {
   );
 }
 
+const ADMIN_ONLY_PATHS = ['/inbounds', '/users', '/nodes', '/traffic', '/subscriptions'];
+
 function ProtectedRoutes() {
-  const { isAuthenticated, isChecking } = useAuth();
+  const { isAuthenticated, isChecking, role } = useAuth();
+  const location = useLocation();
 
   if (isChecking) {
     return <RouteLoading />;
@@ -53,6 +56,14 @@ function ProtectedRoutes() {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Redirect regular users away from admin-only routes
+  if (role === 'user') {
+    const isAdminPath = ADMIN_ONLY_PATHS.some((p) => location.pathname.startsWith(p));
+    if (isAdminPath || location.pathname === '/') {
+      return <Navigate to="/my-subscription" replace />;
+    }
   }
 
   return <Layout />;
@@ -66,14 +77,13 @@ export default function App() {
           <AuthProvider>
             <Suspense fallback={<RouteLoading />}>
               <Routes>
-                {/* Admin auth */}
                 <Route path="/login" element={<LoginPage />} />
-                {/* User auth & portal */}
                 <Route path="/user/login" element={<Navigate to="/login" replace />} />
                 <Route path="/register" element={<UserRegisterPage />} />
                 <Route path="/reset-password" element={<UserResetPasswordPage />} />
-                <Route path="/portal" element={<UserPortalPage />} />
-                {/* Admin panel */}
+                {/* Legacy portal redirect */}
+                <Route path="/portal" element={<Navigate to="/my-subscription" replace />} />
+                {/* Main layout (admin + user) */}
                 <Route path="/" element={<ProtectedRoutes />}>
                   <Route index element={<DashboardPage />} />
                   <Route path="inbounds" element={<InboundsPage />} />
@@ -83,6 +93,7 @@ export default function App() {
                   <Route path="subscriptions" element={<SubscriptionsPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="profile" element={<ProfilePage />} />
+                  <Route path="my-subscription" element={<MySubscriptionPage />} />
                 </Route>
               </Routes>
             </Suspense>
