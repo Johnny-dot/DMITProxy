@@ -351,8 +351,9 @@ router.get('/portal/stats', async (req, res) => {
   try {
     const stats = await fetchClientStatsBySubId(session.sub_id);
     return res.json({ stats });
-  } catch {
-    return res.json({ stats: null });
+  } catch (error) {
+    console.error('[ProxyDog] /portal/stats: fetchClientStatsBySubId failed:', error);
+    return res.status(502).json({ error: 'Unable to fetch usage stats from upstream' });
   }
 });
 

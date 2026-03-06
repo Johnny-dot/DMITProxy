@@ -147,12 +147,17 @@ export function UserPortalPage() {
     try {
       const res = await fetch('/local/auth/portal/stats', { credentials: 'include' });
       if (!res.ok) {
+        console.error('[portal] loadStats: server returned', res.status);
         setClientStats(null);
         return;
       }
-      const data = await res.json().catch(() => null);
+      const data = await res.json().catch((err: unknown) => {
+        console.error('[portal] loadStats: failed to parse response:', err);
+        return null;
+      });
       setClientStats(data?.stats ?? null);
-    } catch {
+    } catch (error) {
+      console.error('[portal] loadStats: network error:', error);
       setClientStats(null);
     }
   }, []);
