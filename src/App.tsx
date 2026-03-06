@@ -18,6 +18,12 @@ const SubscriptionsPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('./pages/Settings').then((m) => ({ default: m.SettingsPage })),
 );
+const DashboardPage = lazy(() =>
+  import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
+);
+const UsersCenterPage = lazy(() =>
+  import('./pages/UsersCenter').then((m) => ({ default: m.UsersCenterPage })),
+);
 const LoginPage = lazy(() => import('./pages/Login').then((m) => ({ default: m.LoginPage })));
 const UserPortalPage = lazy(() =>
   import('./pages/UserPortal').then((m) => ({ default: m.UserPortalPage })),
@@ -69,23 +75,12 @@ export default function App() {
                 <Route path="/portal" element={<UserPortalPage />} />
                 {/* Admin panel */}
                 <Route path="/" element={<ProtectedRoutes />}>
-                  <Route index element={<Navigate to="/portal?section=management" replace />} />
+                  <Route index element={<DashboardPage />} />
                   <Route path="inbounds" element={<InboundsPage />} />
-                  <Route
-                    path="users"
-                    element={<Navigate to="/portal?section=management" replace />}
-                  />
+                  <Route path="users" element={<UsersCenterPage />} />
                   <Route path="nodes" element={<NodesPage />} />
-                  <Route
-                    path="online"
-                    element={<Navigate to="/portal?section=management&tab=online" replace />}
-                  />
                   <Route path="traffic" element={<TrafficPage />} />
                   <Route path="subscriptions" element={<SubscriptionsPage />} />
-                  <Route
-                    path="user-accounts"
-                    element={<Navigate to="/portal?section=management&tab=accounts" replace />}
-                  />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="profile" element={<ProfilePage />} />
                 </Route>

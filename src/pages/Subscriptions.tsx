@@ -59,6 +59,9 @@ export function SubscriptionsPage() {
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState('');
 
+  // Pre-rendered QR images for the protocol share cards
+  const [cardQrImages, setCardQrImages] = useState<Record<string, string>>({});
+
   const tutorialMap = useMemo(
     () => ({
       windows: [
@@ -187,6 +190,32 @@ export function SubscriptionsPage() {
     window.open(url, '_blank', 'noopener,noreferrer');
     toast(t('subscriptions.opening', { label }), 'info');
   };
+
+  // Generate QR codes for protocol cards whenever links change
+  useEffect(() => {
+    const entries = Object.entries(generatedLinks).filter(([, url]) => Boolean(url));
+    if (entries.length === 0) {
+      setCardQrImages({});
+      return;
+    }
+    void Promise.all(
+      entries.map(async ([key, url]) => {
+        try {
+          const dataUrl = await QRCode.toDataURL(url, {
+            width: 200,
+            margin: 2,
+            errorCorrectionLevel: 'M',
+            color: { dark: '#000000', light: '#ffffff' },
+          });
+          return [key, dataUrl] as const;
+        } catch {
+          return [key, ''] as const;
+        }
+      }),
+    ).then((results) => {
+      setCardQrImages(Object.fromEntries(results));
+    });
+  }, [generatedLinks]);
 
   const activeLink = generatedLinks[activeSubTab as keyof typeof generatedLinks] ?? '';
 
@@ -380,6 +409,7 @@ export function SubscriptionsPage() {
         <div className="grid gap-4 md:grid-cols-3">
           {[
             {
+              key: 'universal' as const,
               name: 'Universal',
               icon: Shield,
               color: 'text-indigo-500',
@@ -387,6 +417,7 @@ export function SubscriptionsPage() {
               link: generatedLinks.universal,
             },
             {
+              key: 'v2ray' as const,
               name: 'V2Ray',
               icon: Zap,
               color: 'text-emerald-500',
@@ -394,6 +425,7 @@ export function SubscriptionsPage() {
               link: generatedLinks.v2ray,
             },
             {
+              key: 'clash' as const,
               name: 'Clash',
               icon: Lock,
               color: 'text-amber-500',
@@ -422,16 +454,29 @@ export function SubscriptionsPage() {
                     {copiedId === proto.name ? t('common.copied') : t('common.copyLink')}
                   </Button>
                 </div>
-                <div className="p-8 flex flex-col items-center justify-center bg-zinc-900/20">
+                <div className="p-6 flex flex-col items-center justify-center bg-zinc-900/20">
                   <button
                     type="button"
                     onClick={() => openQr(proto.link, proto.name)}
-                    className="w-32 h-32 border-2 border-dashed border-white/10 rounded-xl flex items-center justify-center relative group cursor-pointer hover:border-white/20 transition-colors"
+                    className="w-36 h-36 rounded-xl flex items-center justify-center relative group cursor-pointer transition-opacity hover:opacity-80"
+                    title={t('subscriptions.showQr')}
                   >
-                    <QrCode className="w-12 h-12 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
+                    {cardQrImages[proto.key] ? (
+                      <img
+                        src={cardQrImages[proto.key]}
+                        alt={`${proto.name} QR`}
+                        className="w-full h-full rounded-lg p-1 bg-white"
+                      />
+                    ) : (
+                      <div className="w-full h-full border-2 border-dashed border-white/10 rounded-xl flex items-center justify-center group-hover:border-white/20 transition-colors">
+                        <QrCode className="w-12 h-12 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
+                      </div>
+                    )}
                   </button>
-                  <p className="mt-4 text-[10px] text-zinc-500 uppercase tracking-widest">
-                    {t('subscriptions.scanToImport', { name: proto.name })}
+                  <p className="mt-3 text-[10px] text-zinc-500 uppercase tracking-widest">
+                    {proto.link
+                      ? t('subscriptions.scanToImport', { name: proto.name })
+                      : t('subscriptions.waitingSubId')}
                   </p>
                 </div>
               </CardContent>

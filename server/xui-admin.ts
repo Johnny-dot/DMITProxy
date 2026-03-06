@@ -20,11 +20,30 @@ interface XuiEnvelope<T> {
   obj: T;
 }
 
+interface XuiClientStat {
+  email: string;
+  up: number;
+  down: number;
+  total: number;
+  expiryTime: number;
+  enable: boolean;
+}
+
 interface XuiInbound {
   id: number;
   protocol: string;
   enable: boolean;
   settings: string;
+  clientStats?: XuiClientStat[];
+}
+
+export interface XuiClientUsage {
+  protocol: string;
+  up: number;
+  down: number;
+  total: number;
+  expiryTime: number;
+  enable: boolean;
 }
 
 interface XuiRequestResult {
@@ -50,22 +69,45 @@ function getCookieHeader(setCookies: string[]): string {
   return setCookies.map((cookie) => cookie.split(';')[0]).join('; ');
 }
 
-function ensureConfiguredServiceAccount() {
-  const enabled = (process.env.XUI_AUTO_CREATE_ON_REGISTER ?? 'false').toLowerCase() === 'true';
-  if (!enabled) return null;
-
+function getXuiCredentials(): { username: string; password: string } | null {
   const username =
     process.env.XUI_ADMIN_USERNAME ?? process.env.XUI_USERNAME ?? process.env.ADMIN_USERNAME ?? '';
   const password =
     process.env.XUI_ADMIN_PASSWORD ?? process.env.XUI_PASSWORD ?? process.env.ADMIN_PASSWORD ?? '';
+  if (!username || !password) return null;
+  return { username, password };
+}
 
-  if (!username || !password) {
+function ensureConfiguredServiceAccount() {
+  const enabled = (process.env.XUI_AUTO_CREATE_ON_REGISTER ?? 'false').toLowerCase() === 'true';
+  if (!enabled) return null;
+
+  const creds = getXuiCredentials();
+  if (!creds) {
     throw new XuiAdminError(
       'XUI auto-provision is enabled but XUI admin credentials are missing in .env',
     );
   }
 
-  return { username, password };
+  return creds;
+}
+
+// Module-level session cache for stats fetches (TTL: 10 minutes)
+let cachedStatsCookie: { cookie: string; expiresAt: number } | null = null;
+
+async function getStatsCookieHeader(username: string, password: string): Promise<string> {
+  const now = Date.now();
+  if (cachedStatsCookie && cachedStatsCookie.expiresAt > now) {
+    return cachedStatsCookie.cookie;
+  }
+  const cookie = await loginWithServiceAccount(username, password);
+  cachedStatsCookie = { cookie, expiresAt: now + 10 * 60 * 1000 };
+  return cookie;
+}
+
+function safeNonNegativeInt(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.trunc(n) : fallback;
 }
 
 async function requestXui(
@@ -222,7 +264,8 @@ function parseInboundClients(settings: string): Array<Record<string, unknown>> {
   try {
     const obj = JSON.parse(settings);
     return Array.isArray(obj?.clients) ? obj.clients : [];
-  } catch {
+  } catch (error) {
+    console.warn('[ProxyDog] parseInboundClients: failed to parse inbound settings:', error);
     return [];
   }
 }
@@ -358,4 +401,42 @@ export async function autoProvisionClientForRegisteredUser(
   }
 
   return String(client.subId ?? '');
+}
+
+export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientUsage | null> {
+  const creds = getXuiCredentials();
+  if (!creds) {
+    console.warn(
+      '[ProxyDog] fetchClientStatsBySubId: XUI credentials not configured, stats unavailable',
+    );
+    return null;
+  }
+
+  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
+  const listResp = await requestXuiJson<XuiInbound[]>(
+    '/panel/api/inbounds/list',
+    'GET',
+    null,
+    cookieHeader,
+  );
+  if (!listResp.success || !Array.isArray(listResp.obj)) return null;
+
+  for (const inbound of listResp.obj) {
+    const clients = parseInboundClients(inbound.settings);
+    const client = clients.find((c) => String(c.subId ?? '') === subId);
+    if (!client) continue;
+
+    const email = String(client.email ?? '');
+    const stats = inbound.clientStats?.find((s) => s.email === email) ?? null;
+    return {
+      protocol: inbound.protocol,
+      up: safeNonNegativeInt(stats?.up),
+      down: safeNonNegativeInt(stats?.down),
+      total: safeNonNegativeInt(stats?.total),
+      expiryTime: safeNonNegativeInt(stats?.expiryTime ?? client.expiryTime),
+      enable: stats?.enable === true,
+    };
+  }
+
+  return null;
 }

@@ -47,6 +47,15 @@ export interface ClientCard {
   links: ReturnType<typeof getClientDownloadLinks>;
 }
 
+export interface ClientStats {
+  protocol: string;
+  up: number;
+  down: number;
+  total: number; // bytes, 0 = unlimited
+  expiryTime: number; // ms, 0 = never expires
+  enable: boolean;
+}
+
 export const COPY_RESET_DELAY_MS = 2000;
 
 export function toMillis(value: number): number {

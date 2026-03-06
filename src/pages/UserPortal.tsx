@@ -17,6 +17,7 @@ import type {
   PortalTab,
   ViewerRole,
   PortalNotification,
+  ClientStats,
 } from './portal/types';
 import { isPortalTab, toMillis, COPY_RESET_DELAY_MS } from './portal/types';
 
@@ -47,6 +48,7 @@ export function UserPortalPage() {
     return isPortalTab(requestedSection) ? requestedSection : 'home';
   });
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
+  const [clientStats, setClientStats] = useState<ClientStats | null | 'loading'>('loading');
 
   // -----------------------------------------------------------------------
   // Derived state
@@ -127,22 +129,8 @@ export function UserPortalPage() {
         return;
       }
 
-      const settingsRes = await fetch('/local/admin/settings', { credentials: 'include' });
-      const settingsData = await settingsRes.json().catch(() => null);
-      if (!settingsRes.ok) {
-        throw new Error(settingsData?.error ?? 'Failed to load admin context');
-      }
-
-      const incoming = (settingsData ?? {}) as Partial<PortalSettings>;
-      setAdminSettings({
-        siteName: String(incoming.siteName ?? '').trim(),
-        publicUrl: String(incoming.publicUrl ?? '').trim(),
-        supportTelegram: String(incoming.supportTelegram ?? '').trim(),
-        announcementText: String(incoming.announcementText ?? ''),
-        announcementActive: Boolean(incoming.announcementActive),
-      });
-      setContext(null);
-      setViewerRole('admin');
+      // Admin should use the main sidebar layout, not the portal
+      navigate('/users', { replace: true });
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Failed to load portal context');
     } finally {
@@ -153,6 +141,31 @@ export function UserPortalPage() {
   useEffect(() => {
     void loadContext();
   }, [loadContext]);
+
+  const loadStats = useCallback(async () => {
+    setClientStats('loading');
+    try {
+      const res = await fetch('/local/auth/portal/stats', { credentials: 'include' });
+      if (!res.ok) {
+        console.error('[portal] loadStats: server returned', res.status);
+        setClientStats(null);
+        return;
+      }
+      const data = await res.json().catch((err: unknown) => {
+        console.error('[portal] loadStats: failed to parse response:', err);
+        return null;
+      });
+      setClientStats(data?.stats ?? null);
+    } catch (error) {
+      console.error('[portal] loadStats: network error:', error);
+      setClientStats(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (viewerRole === 'user') void loadStats();
+    else setClientStats(null);
+  }, [viewerRole, loadStats]);
 
   // Sync URL → activeTab
   useEffect(() => {
@@ -371,6 +384,8 @@ export function UserPortalPage() {
             effectiveSettings={effectiveSettings}
             hasSubscription={hasSubscription}
             subscriptionUniversalUrl={subscriptionLinks.universal}
+            clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
+            isStatsLoading={clientStats === 'loading'}
             onCopy={handleCopy}
             onSetSection={setSection}
             onNavigate={navigate}
