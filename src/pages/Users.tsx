@@ -131,9 +131,17 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
       toast(t('users.clientDeleted', { username: user.username }), 'success');
       await load();
     } catch (error) {
-      const baseMessage = t('users.clientDeleteFailed', { username: user.username });
-      const details = error instanceof Error ? error.message : '';
-      toast(details ? `${baseMessage}: ${details}` : baseMessage, 'error');
+      const raw = error instanceof Error ? error.message : '';
+      const isLastClient = raw.toLowerCase().includes('no client remained');
+      if (isLastClient) {
+        toast(
+          `${user.username}: 该 Inbound 里只剩此 Client，3X-UI 不允许删除最后一个。请先在 3X-UI 面板新增一个临时 Client，再回来删除。`,
+          'error',
+        );
+      } else {
+        const baseMessage = t('users.clientDeleteFailed', { username: user.username });
+        toast(raw ? `${baseMessage}: ${raw}` : baseMessage, 'error');
+      }
     }
   };
 

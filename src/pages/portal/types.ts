@@ -31,7 +31,7 @@ export interface PortalContextResponse {
   notifications: PortalNotification[];
 }
 
-export type SubscriptionFormat = 'universal' | 'clash' | 'v2ray' | 'singbox';
+export type SubscriptionFormat = 'universal' | 'clash' | 'v2ray' | 'singbox' | 'surge' | 'quanx';
 export type PlatformKey = 'all' | 'windows' | 'macos' | 'android' | 'ios';
 export type PortalTab = 'home' | 'subscription' | 'notifications' | 'management';
 export type ViewerRole = 'user' | 'admin';

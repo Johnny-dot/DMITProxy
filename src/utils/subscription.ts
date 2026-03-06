@@ -1,7 +1,7 @@
 const SUB_BASE = (import.meta.env.VITE_SUB_URL ?? '').replace(/\/+$/, '');
 const SUB_TEMPLATE = (import.meta.env.VITE_SUB_URL_TEMPLATE ?? '').trim();
 
-type SubscriptionFormat = 'universal' | 'clash' | 'v2ray' | 'singbox';
+type SubscriptionFormat = 'universal' | 'clash' | 'v2ray' | 'singbox' | 'surge' | 'quanx';
 
 function appendQuery(url: string, key: string, value: string): string {
   const join = url.includes('?') ? '&' : '?';
@@ -27,5 +27,7 @@ export function buildSubscriptionUrl(
   if (format === 'clash') return appendQuery(baseLink, 'flag', 'clash');
   if (format === 'v2ray') return appendQuery(baseLink, 'flag', 'v2ray');
   if (format === 'singbox') return appendQuery(baseLink, 'flag', 'sing-box');
+  if (format === 'surge') return appendQuery(baseLink, 'flag', 'surge');
+  if (format === 'quanx') return appendQuery(baseLink, 'flag', 'quanx');
   return baseLink;
 }

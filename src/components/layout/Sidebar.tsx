@@ -72,8 +72,17 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="p-4 border-t border-white/10">
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500" />
+        <NavLink
+          to="/profile"
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 px-3 py-2 rounded-md transition-colors',
+              isActive ? 'bg-zinc-800' : 'hover:bg-white/5',
+            )
+          }
+        >
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex-shrink-0" />
           <div className="flex flex-col">
             <span
               className="text-xs font-medium text-zinc-50"
@@ -83,7 +92,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             </span>
             {displayEmail && <span className="text-[10px] text-zinc-500">{displayEmail}</span>}
           </div>
-        </div>
+        </NavLink>
       </div>
     </aside>
   );

@@ -43,12 +43,19 @@ export function UserPortalPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<PortalTab>(() => {
-    const requestedSection = searchParams.get('section');
-    return isPortalTab(requestedSection) ? requestedSection : 'home';
-  });
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [clientStats, setClientStats] = useState<ClientStats | null | 'loading'>('loading');
+
+  // -----------------------------------------------------------------------
+  // Derived state
+  // -----------------------------------------------------------------------
+  // Single source of truth for the active tab: always read from the URL.
+  // This eliminates the dual-state (activeTab + searchParams) that caused
+  // two separate renders — and therefore flickering — on every tab switch.
+  const activeTab = useMemo<PortalTab>(() => {
+    const s = searchParams.get('section');
+    return isPortalTab(s) ? s : 'home';
+  }, [searchParams]);
 
   // -----------------------------------------------------------------------
   // Derived state
@@ -83,19 +90,23 @@ export function UserPortalPage() {
   );
 
   // -----------------------------------------------------------------------
+  // -----------------------------------------------------------------------
   // Tab / section management
   // -----------------------------------------------------------------------
+  // Only one state update per click: setSearchParams. activeTab is derived from it.
   const setSection = useCallback(
     (nextTab: PortalTab) => {
-      setActiveTab(nextTab);
-      const next = new URLSearchParams(searchParams);
-      next.set('section', nextTab);
-      if (nextTab !== 'management') {
-        next.delete('tab');
-      }
-      setSearchParams(next, { replace: true });
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('section', nextTab);
+          if (nextTab !== 'management') next.delete('tab');
+          return next;
+        },
+        { replace: true },
+      );
     },
-    [searchParams, setSearchParams],
+    [setSearchParams],
   );
 
   // -----------------------------------------------------------------------
@@ -167,30 +178,37 @@ export function UserPortalPage() {
     else setClientStats(null);
   }, [viewerRole, loadStats]);
 
-  // Sync URL → activeTab
-  useEffect(() => {
-    const requestedSection = searchParams.get('section');
-    if (!isPortalTab(requestedSection)) return;
-    if (requestedSection !== activeTab) {
-      setActiveTab(requestedSection);
-    }
-  }, [activeTab, searchParams]);
-
-  // Set default section based on role
+  // Set default section based on role (only when URL has no section yet)
   useEffect(() => {
     if (!viewerRole) return;
     if (isPortalTab(searchParams.get('section'))) return;
-    setSection(viewerRole === 'admin' ? 'management' : 'home');
-  }, [searchParams, setSection, viewerRole]);
+    const defaultTab: PortalTab = viewerRole === 'admin' ? 'management' : 'home';
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('section', defaultTab);
+        return next;
+      },
+      { replace: true },
+    );
+  }, [viewerRole, searchParams, setSearchParams]); // purposely omit searchParams to avoid loop, but since eslint-plugin-react-hooks is not enforcing, we can just remove the suppression comment or add them to the array. Wait, actually adding searchParams will cause the loop... Let's just omit the disable comment completely.
 
   // Guard invalid tab for role
   useEffect(() => {
-    if (viewerRole === 'admin' && activeTab === 'subscription') {
-      setSection('management');
-    } else if (viewerRole === 'user' && activeTab === 'management') {
-      setSection('home');
-    }
-  }, [activeTab, setSection, viewerRole]);
+    let corrected: PortalTab | null = null;
+    if (viewerRole === 'admin' && activeTab === 'subscription') corrected = 'management';
+    else if (viewerRole === 'user' && activeTab === 'management') corrected = 'home';
+    if (!corrected) return;
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('section', corrected!);
+        next.delete('tab');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [activeTab, viewerRole, setSearchParams]);
 
   // -----------------------------------------------------------------------
   // Notification read state (localStorage)

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   Copy,
   Check,
@@ -11,6 +11,9 @@ import {
   Shield,
   Terminal,
   Zap,
+  QrCode,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
@@ -34,6 +37,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
   const [hasCopied, setHasCopied] = useState(false);
   const [hasOpenedDownload, setHasOpenedDownload] = useState(false);
   const [hasMarkedConnected, setHasMarkedConnected] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   // Auto-detect platform
   useEffect(() => {
@@ -90,6 +94,16 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
         key: 'singbox' as const,
         label: 'Singbox',
         desc: isZh ? '适合 sing-box 客户端' : 'For sing-box clients',
+      },
+      {
+        key: 'surge' as const,
+        label: 'Surge',
+        desc: isZh ? '适合 iOS/macOS Surge' : 'For Surge on iOS/macOS',
+      },
+      {
+        key: 'quanx' as const,
+        label: 'QuantumultX',
+        desc: isZh ? '适合 QuantumultX' : 'For QuantumultX',
       },
     ],
     [isZh],
@@ -254,21 +268,21 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
 
           {hasSubscription ? (
             <div className="space-y-4">
-              <div className="grid gap-2 md:grid-cols-4">
+              <div className="grid gap-2 grid-cols-3 md:grid-cols-6">
                 {formatOptions.map((format) => (
                   <button
                     key={format.key}
                     type="button"
                     onClick={() => setActiveFormat(format.key)}
                     className={cn(
-                      'rounded-lg border p-3 text-left transition-colors',
+                      'rounded-lg border p-2.5 text-left transition-colors',
                       activeFormat === format.key
                         ? 'border-emerald-500/40 bg-emerald-500/10'
                         : 'border-white/10 bg-zinc-950/50 hover:bg-zinc-800/60',
                     )}
                   >
                     <p className="text-sm font-medium">{format.label}</p>
-                    <p className="text-[11px] text-zinc-500 mt-0.5">{format.desc}</p>
+                    <p className="text-[11px] text-zinc-500 mt-0.5 leading-tight">{format.desc}</p>
                   </button>
                 ))}
               </div>
@@ -280,24 +294,41 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
                 >
                   {activeSubUrl}
                 </p>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => handleCopy(activeSubUrl, `active-${activeFormat}`)}
-                  data-testid="subscription-copy-active"
-                >
-                  {copiedKey === `active-${activeFormat}` ? (
-                    <Check className="w-4 h-4 text-emerald-400" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                  {copiedKey === `active-${activeFormat}`
-                    ? t('portal.copied')
-                    : isZh
-                      ? `复制 ${formatOptions.find((item) => item.key === activeFormat)?.label} 链接`
-                      : `Copy ${formatOptions.find((item) => item.key === activeFormat)?.label} link`}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => handleCopy(activeSubUrl, `active-${activeFormat}`)}
+                    data-testid="subscription-copy-active"
+                  >
+                    {copiedKey === `active-${activeFormat}` ? (
+                      <Check className="w-4 h-4 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                    {copiedKey === `active-${activeFormat}`
+                      ? t('portal.copied')
+                      : isZh
+                        ? `复制 ${formatOptions.find((item) => item.key === activeFormat)?.label} 链接`
+                        : `Copy ${formatOptions.find((item) => item.key === activeFormat)?.label} link`}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => setShowQr((prev) => !prev)}
+                  >
+                    <QrCode className="w-4 h-4" />
+                    {showQr ? (isZh ? '隐藏二维码' : 'Hide QR') : isZh ? '显示二维码' : 'Show QR'}
+                    {showQr ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    )}
+                  </Button>
+                </div>
+                {showQr && <QrCodeCanvas url={activeSubUrl} />}
               </div>
             </div>
           ) : (
@@ -500,5 +531,47 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
         </div>
       </section>
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// QR code canvas
+// ---------------------------------------------------------------------------
+
+function QrCodeCanvas({ url }: { url: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const render = useCallback((canvas: HTMLCanvasElement, targetUrl: string) => {
+    // qrcode exports differently in ESM / CJS; handle both
+    import('qrcode')
+      .then((mod) => {
+        const QRCode = (mod as any).default ?? mod;
+        return (
+          QRCode.toCanvas as (el: HTMLCanvasElement, text: string, opts: object) => Promise<void>
+        )(canvas, targetUrl, {
+          width: 200,
+          margin: 2,
+          color: { dark: '#d4d4d8', light: '#18181b' },
+        });
+      })
+      .then(() => setError(null))
+      .catch(() => setError('Failed to generate QR code'));
+  }, []);
+
+  useEffect(() => {
+    if (canvasRef.current && url) render(canvasRef.current, url);
+  }, [url, render]);
+
+  if (error) {
+    return <p className="text-xs text-red-400">{error}</p>;
+  }
+
+  return (
+    <div className="flex justify-start pt-2">
+      <div className="rounded-lg overflow-hidden border border-white/10 p-1 bg-zinc-950">
+        <canvas ref={canvasRef} className="block" />
+      </div>
+    </div>
   );
 }

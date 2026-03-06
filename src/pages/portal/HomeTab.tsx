@@ -283,31 +283,33 @@ function AdminMessagesCard({
   supportContact: string;
   onViewAll: () => void;
 }) {
+  const hasContent = Boolean(latestAnnouncement || supportContact);
+
   return (
     <div
       className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
       data-testid="subscription-home-admin-messages"
     >
       <h2 className="text-lg font-semibold">{isZh ? '管理员消息' : 'Admin messages'}</h2>
-      {latestAnnouncement ? (
-        <div className="rounded-xl border border-white/10 bg-zinc-950/60 p-4 text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
-          {latestAnnouncement}
+
+      {hasContent ? (
+        <div className="space-y-3">
+          {latestAnnouncement && (
+            <div className="rounded-xl border border-white/10 bg-zinc-950/60 p-4 text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+              {latestAnnouncement}
+            </div>
+          )}
+          {supportContact && (
+            <p className="text-sm text-zinc-300">
+              <span className="text-zinc-500">{isZh ? '联系方式：' : 'Support: '}</span>
+              {supportContact}
+            </p>
+          )}
         </div>
       ) : (
-        <p className="text-sm text-zinc-500">
-          {isZh ? '当前没有启用公告。' : 'No active announcement.'}
-        </p>
+        <p className="text-sm text-zinc-600 italic">{isZh ? '暂无公告' : 'No announcements'}</p>
       )}
-      {supportContact ? (
-        <p className="text-sm text-zinc-300">
-          <span className="text-zinc-500">{isZh ? '客服联系：' : 'Support: '}</span>
-          {supportContact}
-        </p>
-      ) : (
-        <p className="text-sm text-zinc-500">
-          {isZh ? '暂未配置客服联系方式。' : 'Support contact is not configured.'}
-        </p>
-      )}
+
       <Button variant="outline" size="sm" onClick={onViewAll}>
         {isZh ? '查看全部通知' : 'View all notifications'}
       </Button>
