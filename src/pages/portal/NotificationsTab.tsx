@@ -60,7 +60,10 @@ export function NotificationsTab({
   };
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
+    <section
+      className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
+      data-testid="subscription-notifications"
+    >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Bell className="w-4 h-4 text-emerald-400" />
@@ -86,6 +89,7 @@ export function NotificationsTab({
             return (
               <div
                 key={item.id}
+                data-testid="subscription-notification-item"
                 className={cn(
                   'rounded-xl border p-4 space-y-2',
                   item.level === 'success' && 'border-emerald-500/20 bg-emerald-500/5',

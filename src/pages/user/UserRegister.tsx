@@ -5,9 +5,11 @@ import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { useI18n } from '@/src/context/I18nContext';
+import { useAuth } from '@/src/context/AuthContext';
 
 export function UserRegisterPage() {
   const navigate = useNavigate();
+  const { refreshAuth } = useAuth();
   const { t, language, setLanguage } = useI18n();
   const [params] = useSearchParams();
   const [inviteCode, setInviteCode] = useState(params.get('invite') ?? '');
@@ -38,7 +40,8 @@ export function UserRegisterPage() {
         body: JSON.stringify({ username, password }),
       });
       if (loginRes.ok) {
-        navigate('/portal', { replace: true });
+        await refreshAuth();
+        navigate('/my-subscription', { replace: true });
       } else {
         navigate('/login', { replace: true });
       }
@@ -50,17 +53,21 @@ export function UserRegisterPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+    <div
+      className="relative min-h-screen bg-zinc-950 flex items-center justify-center p-4"
+      data-testid="register-page"
+    >
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
           className="h-9 px-2 text-xs"
           onClick={() => setLanguage(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
+          data-testid="public-language-toggle"
         >
           {language === 'zh-CN' ? t('common.en') : t('common.zh')}
         </Button>
-        <ThemeToggle />
+        <ThemeToggle testId="public-theme-toggle" />
       </div>
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-3">
@@ -82,6 +89,7 @@ export function UserRegisterPage() {
               onChange={(e) => setInviteCode(e.target.value)}
               required
               className="font-mono"
+              data-testid="register-invite"
             />
             <Input
               type="text"
@@ -90,6 +98,7 @@ export function UserRegisterPage() {
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
               required
+              data-testid="register-username"
             />
             <div className="relative">
               <Input
@@ -100,6 +109,7 @@ export function UserRegisterPage() {
                 autoComplete="new-password"
                 className="pr-10"
                 required
+                data-testid="register-password"
               />
               <button
                 type="button"
@@ -113,7 +123,12 @@ export function UserRegisterPage() {
 
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
-          <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full gap-2"
+            disabled={isLoading}
+            data-testid="register-submit"
+          >
             {isLoading ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
@@ -125,7 +140,11 @@ export function UserRegisterPage() {
 
         <p className="text-center text-sm text-zinc-500">
           {t('userAuth.alreadyHave')}{' '}
-          <Link to="/login" className="text-emerald-500 hover:text-emerald-400 transition-colors">
+          <Link
+            to="/login"
+            className="text-emerald-500 hover:text-emerald-400 transition-colors"
+            data-testid="register-login-link"
+          >
             {t('userAuth.signIn')}
           </Link>
         </p>

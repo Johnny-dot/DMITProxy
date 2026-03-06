@@ -3,6 +3,7 @@ build/
 dist/
 coverage/
 .tmp/
+output/
 data/
 .husky/_
 tmp_*.js

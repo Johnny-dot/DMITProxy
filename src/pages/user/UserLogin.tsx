@@ -5,9 +5,11 @@ import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { useI18n } from '@/src/context/I18nContext';
+import { useAuth } from '@/src/context/AuthContext';
 
 export function UserLoginPage() {
   const navigate = useNavigate();
+  const { refreshAuth } = useAuth();
   const { t, language, setLanguage } = useI18n();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +35,8 @@ export function UserLoginPage() {
         }
         throw new Error(data.error ?? t('userAuth.loginFailed'));
       }
-      navigate('/portal', { replace: true });
+      await refreshAuth();
+      navigate('/my-subscription', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('userAuth.loginFailed'));
     } finally {

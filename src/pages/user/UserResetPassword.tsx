@@ -96,17 +96,21 @@ export function UserResetPasswordPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+    <div
+      className="relative min-h-screen bg-zinc-950 flex items-center justify-center p-4"
+      data-testid="reset-password-page"
+    >
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
           className="h-9 px-2 text-xs"
           onClick={() => setLanguage(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
+          data-testid="public-language-toggle"
         >
           {language === 'zh-CN' ? t('common.en') : t('common.zh')}
         </Button>
-        <ThemeToggle />
+        <ThemeToggle testId="public-theme-toggle" />
       </div>
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-3">
@@ -130,27 +134,27 @@ export function UserResetPasswordPage() {
         )}
 
         {status === 'invalid' && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="reset-password-invalid">
             <p className="text-red-400 text-sm text-center">
               {error || t('userAuth.resetInvalid')}
             </p>
-            <Link to="/login">
+            <Link to="/login" data-testid="reset-password-back-login">
               <Button className="w-full">{t('userAuth.backToLogin')}</Button>
             </Link>
           </div>
         )}
 
         {status === 'success' && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="reset-password-success">
             <p className="text-emerald-400 text-sm text-center">{t('userAuth.resetSuccess')}</p>
-            <Link to="/login">
+            <Link to="/login" data-testid="reset-password-back-login">
               <Button className="w-full">{t('userAuth.signIn')}</Button>
             </Link>
           </div>
         )}
 
         {status === 'ready' && (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" data-testid="reset-password-form">
             {expiresAt && (
               <p className="text-xs text-zinc-500 text-center">
                 {t('userAuth.resetExpiresAt', {

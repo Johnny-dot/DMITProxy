@@ -242,7 +242,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
   return (
     <>
       {/* Step 1: Copy subscription URL + Setup checklist */}
-      <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+      <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]" data-testid="subscription-tab">
         <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -274,12 +274,18 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
               </div>
 
               <div className="rounded-xl border border-white/10 bg-zinc-950/60 p-4 space-y-3">
-                <p className="font-mono text-xs text-zinc-300 break-all">{activeSubUrl}</p>
+                <p
+                  className="font-mono text-xs text-zinc-300 break-all"
+                  data-testid="subscription-active-url"
+                >
+                  {activeSubUrl}
+                </p>
                 <Button
                   variant="secondary"
                   size="sm"
                   className="gap-2"
                   onClick={() => handleCopy(activeSubUrl, `active-${activeFormat}`)}
+                  data-testid="subscription-copy-active"
                 >
                   {copiedKey === `active-${activeFormat}` ? (
                     <Check className="w-4 h-4 text-emerald-400" />
@@ -295,7 +301,10 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-white/10 bg-zinc-950/50 p-6 text-center space-y-2">
+            <div
+              className="rounded-xl border border-white/10 bg-zinc-950/50 p-6 text-center space-y-2"
+              data-testid="subscription-not-ready"
+            >
               <p className="text-zinc-300 text-sm">{t('portal.notReadyTitle')}</p>
               <p className="text-zinc-500 text-xs">{t('portal.notReadyDesc')}</p>
             </div>
@@ -355,7 +364,10 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
       </section>
 
       {/* Step 2: Download client */}
-      <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
+      <section
+        className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
+        data-testid="subscription-downloads-section"
+      >
         <div className="space-y-1">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Download className="w-4 h-4 text-emerald-400" />
@@ -442,7 +454,10 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
 
       {/* Step 3: Import and connect + Troubleshooting */}
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
+        <div
+          className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
+          data-testid="subscription-guide-section"
+        >
           <div className="space-y-1">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Terminal className="w-4 h-4 text-emerald-400" />
@@ -464,7 +479,10 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
+        <div
+          className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
+          data-testid="subscription-troubleshooting-section"
+        >
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Zap className="w-4 h-4 text-amber-400" />
             <span>{isZh ? '连接失败排查' : 'Troubleshooting'}</span>

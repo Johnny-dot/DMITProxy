@@ -186,19 +186,21 @@ export function MySubscriptionPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-5xl mx-auto px-6 py-8 space-y-6" data-testid="my-subscription-page">
       <div className="flex flex-wrap gap-2">
         <TabButton
           icon={<LayoutDashboard className="w-4 h-4" />}
           label={isZh ? '概览' : 'Overview'}
           active={activeTab === 'home'}
           onClick={() => setSection('home')}
+          testId="my-subscription-tab-home"
         />
         <TabButton
           icon={<ListChecks className="w-4 h-4" />}
           label={isZh ? '订阅与客户端' : 'Subscription & Clients'}
           active={activeTab === 'subscription'}
           onClick={() => setSection('subscription')}
+          testId="my-subscription-tab-subscription"
         />
         <TabButton
           icon={<Bell className="w-4 h-4" />}
@@ -206,6 +208,7 @@ export function MySubscriptionPage() {
           active={activeTab === 'notifications'}
           onClick={() => setSection('notifications')}
           badge={unreadCount > 0 ? unreadCount : undefined}
+          testId="my-subscription-tab-notifications"
         />
       </div>
 
@@ -246,17 +249,20 @@ function TabButton({
   active,
   onClick,
   badge,
+  testId,
 }: {
   icon: React.ReactNode;
   label: string;
   active: boolean;
   onClick: () => void;
   badge?: number;
+  testId?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      data-testid={testId}
       className={cn(
         'px-3 py-2 rounded-lg text-sm border transition-colors inline-flex items-center gap-2',
         active

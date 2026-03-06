@@ -8,9 +8,10 @@ import { useI18n } from '@/src/context/I18nContext';
 interface ThemeToggleProps {
   className?: string;
   showLabel?: boolean;
+  testId?: string;
 }
 
-export function ThemeToggle({ className, showLabel = false }: ThemeToggleProps) {
+export function ThemeToggle({ className, showLabel = false, testId }: ThemeToggleProps) {
   const { isDark, toggleTheme } = useTheme();
   const { t } = useI18n();
 
@@ -23,6 +24,7 @@ export function ThemeToggle({ className, showLabel = false }: ThemeToggleProps) 
       className={cn('gap-2', className)}
       aria-label={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}
       title={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}
+      data-testid={testId}
     >
       {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       {showLabel ? (isDark ? t('theme.light') : t('theme.dark')) : null}

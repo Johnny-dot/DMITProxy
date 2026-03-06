@@ -251,6 +251,7 @@ export function Navbar() {
           size="sm"
           className="sm:hidden h-9 px-2 text-xs"
           onClick={() => setLanguage(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
+          data-testid="navbar-language-toggle-mobile"
         >
           {language === 'zh-CN' ? t('common.en') : t('common.zh')}
         </Button>
@@ -260,6 +261,7 @@ export function Navbar() {
             size="sm"
             className="h-7 px-2 text-xs"
             onClick={() => setLanguage('zh-CN')}
+            data-testid="navbar-language-zh"
           >
             {t('common.zh')}
           </Button>
@@ -268,11 +270,12 @@ export function Navbar() {
             size="sm"
             className="h-7 px-2 text-xs"
             onClick={() => setLanguage('en-US')}
+            data-testid="navbar-language-en"
           >
             {t('common.en')}
           </Button>
         </div>
-        <ThemeToggle />
+        <ThemeToggle testId="navbar-theme-toggle" />
         <Button
           variant="ghost"
           size="icon"
@@ -309,6 +312,7 @@ export function Navbar() {
           className="gap-2 hidden sm:flex"
           onClick={handleLogout}
           disabled={isLoggingOut}
+          data-testid="navbar-signout"
         >
           <LogOut className="w-4 h-4" />
           {t('portal.signOut')}
@@ -320,6 +324,7 @@ export function Navbar() {
           onClick={handleLogout}
           disabled={isLoggingOut}
           title={t('portal.signOut')}
+          data-testid="navbar-signout-mobile"
         >
           <LogOut className="w-4 h-4" />
         </Button>

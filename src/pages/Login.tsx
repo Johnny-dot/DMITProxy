@@ -66,17 +66,21 @@ export function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+    <div
+      className="relative min-h-screen bg-zinc-950 flex items-center justify-center p-4"
+      data-testid="login-page"
+    >
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
           className="h-9 px-2 text-xs"
           onClick={() => setLanguage(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
+          data-testid="public-language-toggle"
         >
           {language === 'zh-CN' ? t('common.en') : t('common.zh')}
         </Button>
-        <ThemeToggle />
+        <ThemeToggle testId="public-theme-toggle" />
       </div>
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-3">
@@ -100,6 +104,7 @@ export function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
               required
+              data-testid="login-username"
             />
             <div className="relative">
               <Input
@@ -110,6 +115,7 @@ export function LoginPage() {
                 autoComplete="current-password"
                 className="pr-10"
                 required
+                data-testid="login-password"
               />
               <button
                 type="button"
@@ -123,7 +129,12 @@ export function LoginPage() {
 
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
-          <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full gap-2"
+            disabled={isLoading}
+            data-testid="login-submit"
+          >
             {isLoading ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
@@ -138,6 +149,7 @@ export function LoginPage() {
           <Link
             to="/reset-password"
             className="text-zinc-300 hover:text-zinc-100 transition-colors"
+            data-testid="login-reset-link"
           >
             {t('userAuth.resetNow')}
           </Link>

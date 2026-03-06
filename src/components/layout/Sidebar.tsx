@@ -53,6 +53,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             to={item.path}
             end={item.path === '/'}
             onClick={onNavigate}
+            data-testid={
+              item.path === '/my-subscription' ? 'sidebar-user-my-subscription' : undefined
+            }
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
@@ -72,7 +75,12 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500" />
           <div className="flex flex-col">
-            <span className="text-xs font-medium text-zinc-50">{displayName}</span>
+            <span
+              className="text-xs font-medium text-zinc-50"
+              data-testid="sidebar-user-display-name"
+            >
+              {displayName}
+            </span>
             {displayEmail && <span className="text-[10px] text-zinc-500">{displayEmail}</span>}
           </div>
         </div>

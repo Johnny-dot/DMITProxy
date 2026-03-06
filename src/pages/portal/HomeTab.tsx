@@ -46,7 +46,10 @@ export function HomeTab({
   if (isAdminView) {
     return (
       <section className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
+        <div
+          className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
+          data-testid="subscription-home-account-status"
+        >
           <h2 className="text-lg font-semibold">{isZh ? '管理视图' : 'Management overview'}</h2>
           <div className="space-y-2 text-sm">
             <p className="text-zinc-300">
@@ -81,7 +84,10 @@ export function HomeTab({
   return (
     <div className="space-y-6">
       <section className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
+        <div
+          className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
+          data-testid="subscription-home-account-status"
+        >
           <h2 className="text-lg font-semibold">{isZh ? '账户状态' : 'Account status'}</h2>
           <div className="space-y-2 text-sm">
             <p className="text-zinc-300">
@@ -92,7 +98,10 @@ export function HomeTab({
               <span className="text-zinc-500">{isZh ? '创建时间：' : 'Created at: '}</span>
               {context ? formatDateTime(context.user.createdAt) : '-'}
             </p>
-            <p className={`font-medium ${hasSubscription ? 'text-emerald-300' : 'text-amber-300'}`}>
+            <p
+              className={`font-medium ${hasSubscription ? 'text-emerald-300' : 'text-amber-300'}`}
+              data-testid="subscription-home-status"
+            >
               {hasSubscription
                 ? isZh
                   ? '订阅已就绪，可随时导入客户端。'
@@ -275,7 +284,10 @@ function AdminMessagesCard({
   onViewAll: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
+    <div
+      className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
+      data-testid="subscription-home-admin-messages"
+    >
       <h2 className="text-lg font-semibold">{isZh ? '管理员消息' : 'Admin messages'}</h2>
       {latestAnnouncement ? (
         <div className="rounded-xl border border-white/10 bg-zinc-950/60 p-4 text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
