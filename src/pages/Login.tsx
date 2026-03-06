@@ -8,7 +8,7 @@ import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { useI18n } from '@/src/context/I18nContext';
 
 export function LoginPage() {
-  const { login: adminLogin, isAuthenticated, isChecking } = useAuth();
+  const { login: adminLogin, isAuthenticated, isChecking, role, refreshAuth } = useAuth();
   const navigate = useNavigate();
   const { t, language, setLanguage } = useI18n();
   const [username, setUsername] = useState('');
@@ -16,34 +16,13 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingUserSession, setIsCheckingUserSession] = useState(true);
 
+  // Redirect if already authenticated
   useEffect(() => {
-    if (!isChecking && isAuthenticated) {
-      navigate('/portal?section=management', { replace: true });
-    }
-  }, [isAuthenticated, isChecking, navigate]);
-
-  useEffect(() => {
-    let active = true;
-    fetch('/local/auth/me', { credentials: 'include' })
-      .then(async (res) => {
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!active) return;
-        if (data.role === 'user') {
-          navigate('/portal', { replace: true });
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setIsCheckingUserSession(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [navigate]);
+    if (isChecking) return;
+    if (!isAuthenticated) return;
+    navigate(role === 'user' ? '/my-subscription' : '/', { replace: true });
+  }, [isAuthenticated, isChecking, navigate, role]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,7 +39,8 @@ export function LoginPage() {
 
       const localData = await localRes.json().catch(() => null);
       if (localRes.ok) {
-        navigate('/portal', { replace: true });
+        await refreshAuth();
+        navigate('/my-subscription', { replace: true });
         return;
       }
 
@@ -68,7 +48,7 @@ export function LoginPage() {
         typeof localData?.error === 'string' ? localData.error : t('userAuth.loginFailed');
 
       await adminLogin(username, password);
-      navigate('/portal?section=management', { replace: true });
+      navigate('/', { replace: true });
     } catch (err) {
       const adminError = err instanceof Error ? err.message : t('login.loginFailed');
       setError(adminError || userLoginError || t('login.loginFailed'));
@@ -77,7 +57,7 @@ export function LoginPage() {
     }
   }
 
-  if (isChecking || isCheckingUserSession) {
+  if (isChecking) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />

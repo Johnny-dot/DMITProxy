@@ -12,11 +12,15 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
+import { useAuth } from '@/src/context/AuthContext';
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { t, language } = useI18n();
+  const { role, username } = useAuth();
   const userCenterLabel = language === 'zh-CN' ? '用户中心' : 'User Center';
-  const menuItems = [
+  const mySubscriptionLabel = language === 'zh-CN' ? '我的订阅' : 'My Subscription';
+
+  const adminMenuItems = [
     { icon: LayoutDashboard, label: t('nav.dashboard'), path: '/' },
     { icon: Server, label: t('nav.nodes'), path: '/nodes' },
     { icon: ShieldCheck, label: t('nav.inbounds'), path: '/inbounds' },
@@ -25,6 +29,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     { icon: LinkIcon, label: t('nav.subscriptions'), path: '/subscriptions' },
     { icon: Settings, label: t('nav.settings'), path: '/settings' },
   ];
+
+  const userMenuItems = [{ icon: LinkIcon, label: mySubscriptionLabel, path: '/my-subscription' }];
+
+  const menuItems = role === 'user' ? userMenuItems : adminMenuItems;
+
+  const displayName = username ?? (language === 'zh-CN' ? t('nav.adminUser') : t('nav.adminUser'));
+  const displayEmail = role === 'user' ? '' : t('nav.adminEmail');
 
   return (
     <aside className="w-64 border-r border-white/10 bg-zinc-950 flex flex-col h-full">
@@ -40,6 +51,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <NavLink
             key={item.path}
             to={item.path}
+            end={item.path === '/'}
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
@@ -60,8 +72,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500" />
           <div className="flex flex-col">
-            <span className="text-xs font-medium text-zinc-50">{t('nav.adminUser')}</span>
-            <span className="text-[10px] text-zinc-500">{t('nav.adminEmail')}</span>
+            <span className="text-xs font-medium text-zinc-50">{displayName}</span>
+            {displayEmail && <span className="text-[10px] text-zinc-500">{displayEmail}</span>}
           </div>
         </div>
       </div>
