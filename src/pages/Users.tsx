@@ -160,7 +160,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {!embedded ? (
         <div className="flex items-center justify-between">
           <div>
@@ -189,7 +189,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
         </div>
       )}
 
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle>{t('users.userManagement')}</CardTitle>

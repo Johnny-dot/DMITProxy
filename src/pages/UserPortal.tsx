@@ -315,7 +315,7 @@ export function UserPortalPage() {
         onLogout={handleLogout}
       />
 
-      <main className="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <main className="mx-auto w-full max-w-6xl space-y-6 px-6 py-8 lg:px-8 lg:py-10">
         {/* Hero section */}
         <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-500/10 via-zinc-900 to-zinc-900 p-6 md:p-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
@@ -332,7 +332,7 @@ export function UserPortalPage() {
                     ? '用户中心与上手引导一体化'
                     : 'Onboarding and user workspace in one place'}
               </h1>
-              <p className="text-sm text-zinc-300 max-w-2xl">
+              <p className="max-w-3xl text-sm text-zinc-300">
                 {isAdminView
                   ? isZh
                     ? '同一页面可查看用户侧内容，并额外进入用户管理、在线状态和邀请码管理。'
@@ -415,7 +415,7 @@ export function UserPortalPage() {
         )}
 
         {activeTab === 'management' && isAdminView && (
-          <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 md:p-6">
+          <section className="w-full rounded-2xl border border-white/10 bg-zinc-900/60 p-4 md:p-6">
             <UsersCenterPage />
           </section>
         )}

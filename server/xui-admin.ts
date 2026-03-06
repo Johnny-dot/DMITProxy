@@ -70,10 +70,8 @@ function getCookieHeader(setCookies: string[]): string {
 }
 
 function getXuiCredentials(): { username: string; password: string } | null {
-  const username =
-    process.env.XUI_ADMIN_USERNAME ?? process.env.XUI_USERNAME ?? process.env.ADMIN_USERNAME ?? '';
-  const password =
-    process.env.XUI_ADMIN_PASSWORD ?? process.env.XUI_PASSWORD ?? process.env.ADMIN_PASSWORD ?? '';
+  const username = process.env.XUI_ADMIN_USERNAME ?? '';
+  const password = process.env.XUI_ADMIN_PASSWORD ?? '';
   if (!username || !password) return null;
   return { username, password };
 }

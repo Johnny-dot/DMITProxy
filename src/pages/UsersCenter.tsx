@@ -60,7 +60,7 @@ export function UsersCenterPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{isZh ? '用户中心' : 'User Center'}</h1>
         <p className="text-zinc-400 mt-1">
@@ -85,13 +85,13 @@ export function UsersCenterPage() {
         ))}
       </div>
 
-      <div className={cn(activeTab === 'list' ? 'block' : 'hidden')}>
+      <div className={cn('w-full min-w-0', activeTab === 'list' ? 'block' : 'hidden')}>
         {mountedTabs.list && <UsersPage embedded onOpenAccounts={() => switchTab('accounts')} />}
       </div>
-      <div className={cn(activeTab === 'online' ? 'block' : 'hidden')}>
+      <div className={cn('w-full min-w-0', activeTab === 'online' ? 'block' : 'hidden')}>
         {mountedTabs.online && <OnlineUsersPage embedded />}
       </div>
-      <div className={cn(activeTab === 'accounts' ? 'block' : 'hidden')}>
+      <div className={cn('w-full min-w-0', activeTab === 'accounts' ? 'block' : 'hidden')}>
         {mountedTabs.accounts && <UsersManagementPage embedded />}
       </div>
     </div>

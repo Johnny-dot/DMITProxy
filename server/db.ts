@@ -62,25 +62,28 @@ db.exec(`
   );
 `);
 
-// Seed admin account on first run
-const adminUsername = process.env.ADMIN_USERNAME ?? 'admin';
-const adminPassword = process.env.ADMIN_PASSWORD;
+const cleanupLegacyAdminUsers = db.transaction(() => {
+  const legacyAdmins = db
+    .prepare('SELECT id FROM users WHERE role = ? ORDER BY id')
+    .all('admin') as Array<{ id: number }>;
+  if (legacyAdmins.length === 0) return 0;
 
-if (!adminPassword) {
-  console.warn('[DB] WARNING: ADMIN_PASSWORD not set in .env — admin account not seeded');
-} else {
-  const existing = db.prepare('SELECT id FROM users WHERE role = ?').get('admin');
-  if (!existing) {
-    const salt = randomBytes(16).toString('hex');
-    const hash = scryptSync(adminPassword, salt, 64).toString('hex');
-    db.prepare('INSERT INTO users (username, password_hash, salt, role) VALUES (?, ?, ?, ?)').run(
-      adminUsername,
-      hash,
-      salt,
-      'admin',
-    );
-    console.log(`[DB] Admin account created: ${adminUsername}`);
+  const deleteInviteCodes = db.prepare('DELETE FROM invite_codes WHERE used_by = ?');
+  const deleteAdminUser = db.prepare('DELETE FROM users WHERE id = ? AND role = ?');
+
+  for (const admin of legacyAdmins) {
+    deleteInviteCodes.run(admin.id);
+    deleteAdminUser.run(admin.id, 'admin');
   }
+
+  return legacyAdmins.length;
+});
+
+const removedLegacyAdminCount = cleanupLegacyAdminUsers();
+if (removedLegacyAdminCount > 0) {
+  console.warn(
+    `[DB] Removed ${removedLegacyAdminCount} legacy local admin account(s); admin auth now relies on 3X-UI.`,
+  );
 }
 
 export function hashPassword(password: string) {

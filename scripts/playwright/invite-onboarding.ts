@@ -356,20 +356,14 @@ function isExpectedConsoleObservation(message: CapturedConsoleMessage) {
   const text = message.text.toLowerCase();
   const locationUrl = message.location?.url?.toLowerCase() ?? '';
   return (
-    (text.includes('401') &&
-      (text.includes('/local/auth/me') || locationUrl.includes('/local/auth/me'))) ||
-    (text.includes('404') &&
-      (text.includes('/api/panel/api/server/status') ||
-        locationUrl.includes('/api/panel/api/server/status')))
+    text.includes('401') &&
+    (text.includes('/local/auth/me') || locationUrl.includes('/local/auth/me'))
   );
 }
 
 function isExpectedNetworkObservation(issue: CapturedNetworkIssue) {
   const url = issue.url.toLowerCase();
-  return (
-    (issue.status === 401 && url.includes('/local/auth/me')) ||
-    (issue.status === 404 && url.includes('/api/panel/api/server/status'))
-  );
+  return issue.status === 401 && url.includes('/local/auth/me');
 }
 
 function toCapturedConsoleMessage(message: ConsoleMessage): CapturedConsoleMessage {

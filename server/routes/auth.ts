@@ -66,6 +66,11 @@ function getUserSession(token: string | undefined): UserSessionRow | null {
   return session ?? null;
 }
 
+function hasXuiAdminCookie(rawCookies: Record<string, string> | undefined): boolean {
+  if (!rawCookies) return false;
+  return Object.keys(rawCookies).some((name) => name.toLowerCase() === '3x-ui');
+}
+
 router.post('/register', async (req, res) => {
   const { username, password, inviteCode } = req.body ?? {};
 
@@ -236,6 +241,10 @@ router.get('/me', (req, res) => {
     role: session.role,
     subId: session.sub_id,
   });
+});
+
+router.get('/admin-session-hint', (req, res) => {
+  return res.json({ hasAdminCookie: hasXuiAdminCookie(req.cookies) });
 });
 
 router.get('/portal/context', (req, res) => {

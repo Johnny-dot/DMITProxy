@@ -6,6 +6,7 @@ import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { useI18n } from '@/src/context/I18nContext';
+import { isXuiConfigured } from '@/src/api/client';
 
 export function LoginPage() {
   const { login: adminLogin, isAuthenticated, isChecking, role, refreshAuth } = useAuth();
@@ -16,8 +17,12 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const hasConfiguredXui = isXuiConfigured();
+  const adminLoginUnavailableMessage =
+    language === 'zh-CN'
+      ? '管理员登录依赖 3X-UI 配置；请先在服务器 .env 中填写 3X-UI 参数。'
+      : t('login.adminLoginUnavailable');
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isChecking) return;
     if (!isAuthenticated) return;
@@ -47,6 +52,11 @@ export function LoginPage() {
       userLoginError =
         typeof localData?.error === 'string' ? localData.error : t('userAuth.loginFailed');
 
+      if (!hasConfiguredXui) {
+        setError(userLoginError || t('login.loginFailed'));
+        return;
+      }
+
       await adminLogin(username, password);
       navigate('/', { replace: true });
     } catch (err) {
@@ -67,35 +77,43 @@ export function LoginPage() {
 
   return (
     <div
-      className="relative min-h-screen bg-zinc-950 flex items-center justify-center p-4"
+      className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-5 md:p-8"
       data-testid="login-page"
     >
-      <div className="absolute top-4 right-4 flex items-center gap-2">
+      <div className="absolute top-5 right-5 flex items-center gap-2 md:top-6 md:right-6 xl:top-8 xl:right-8">
         <Button
           variant="outline"
           size="sm"
-          className="h-9 px-2 text-xs"
+          className="h-9 px-3 text-xs md:h-10 md:text-sm"
           onClick={() => setLanguage(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
           data-testid="public-language-toggle"
         >
           {language === 'zh-CN' ? t('common.en') : t('common.zh')}
         </Button>
-        <ThemeToggle testId="public-theme-toggle" />
+        <ThemeToggle testId="public-theme-toggle" className="h-9 w-9 md:h-10 md:w-10" />
       </div>
-      <div className="w-full max-w-sm space-y-8">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-14 h-14 bg-zinc-900 border border-white/10 rounded-2xl flex items-center justify-center">
-            <Dog className="w-8 h-8 text-emerald-500" />
+      <div className="w-full max-w-md space-y-8 rounded-3xl border border-white/10 bg-zinc-950/70 px-6 py-8 shadow-sm backdrop-blur-md lg:max-w-lg lg:space-y-10 lg:px-8 lg:py-10">
+        <div className="flex flex-col items-center gap-4 lg:gap-5">
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-white/10 bg-zinc-900 lg:h-20 lg:w-20">
+            <Dog className="h-9 w-9 text-emerald-500 lg:h-10 lg:w-10" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight">ProxyDog</h1>
-            <p className="text-zinc-500 text-sm mt-1">
+            <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">ProxyDog</h1>
+            <p className="mt-2 text-sm text-zinc-500 lg:text-base">
               {t('login.adminPanel')} / {t('userAuth.portal')}
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {!hasConfiguredXui && (
+            <p
+              className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+              data-testid="login-admin-unavailable"
+            >
+              {adminLoginUnavailableMessage}
+            </p>
+          )}
           <div className="space-y-3">
             <Input
               type="text"
@@ -103,6 +121,7 @@ export function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
+              className="h-11 lg:h-12"
               required
               data-testid="login-username"
             />
@@ -113,14 +132,14 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className="pr-10"
+                className="h-11 pr-10 lg:h-12"
                 required
                 data-testid="login-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -131,7 +150,7 @@ export function LoginPage() {
 
           <Button
             type="submit"
-            className="w-full gap-2"
+            className="h-11 w-full gap-2 lg:h-12"
             disabled={isLoading}
             data-testid="login-submit"
           >
@@ -144,7 +163,7 @@ export function LoginPage() {
           </Button>
         </form>
 
-        <p className="text-center text-xs text-zinc-600">
+        <p className="pt-1 text-center text-sm text-zinc-500">
           {t('userAuth.haveResetLink')}{' '}
           <Link
             to="/reset-password"
@@ -154,7 +173,7 @@ export function LoginPage() {
             {t('userAuth.resetNow')}
           </Link>
         </p>
-        <p className="text-center text-xs text-zinc-600">{t('login.footer')}</p>
+        <p className="text-center text-xs text-zinc-600 lg:text-sm">{t('login.footer')}</p>
       </div>
     </div>
   );

@@ -3,7 +3,9 @@ import {
   login as apiLogin,
   logout as apiLogout,
   getServerStatus,
+  hasXuiAdminSessionHint,
   ApiError,
+  isXuiConfigured,
 } from '@/src/api/client';
 
 interface AuthContextType {
@@ -22,6 +24,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 // Persists across refreshes within the same browser tab session.
 // Prevents re-authentication via a lingering 3X-UI cookie after an explicit logout.
 const LOGGED_OUT_KEY = 'pd:logged_out';
+const HAS_CONFIGURED_XUI = isXuiConfigured();
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -30,13 +33,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [username, setUsername] = useState<string | null>(null);
   const [subId, setSubId] = useState<string | null>(null);
 
+  const clearAuthState = useCallback(() => {
+    setIsAuthenticated(false);
+    setRole(null);
+    setUsername(null);
+    setSubId(null);
+  }, []);
+
   const checkAuth = useCallback(async (): Promise<'admin' | 'user' | null> => {
-    // Try local user session first
+    // Try local user session first.
     try {
       const res = await fetch('/local/auth/me', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        // Successful local session → clear any previous logout flag
         sessionStorage.removeItem(LOGGED_OUT_KEY);
         setRole(data.role);
         setUsername(data.username);
@@ -47,16 +56,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
 
     // If the user explicitly logged out this session, don't re-auth via 3X-UI cookie.
-    // (The 3X-UI cookie may still be present in the browser even after logout.)
     if (sessionStorage.getItem(LOGGED_OUT_KEY) === '1') {
-      setIsAuthenticated(false);
-      setRole(null);
-      setUsername(null);
-      setSubId(null);
+      clearAuthState();
       return null;
     }
 
-    // Fall back to 3X-UI admin session
+    if (!HAS_CONFIGURED_XUI) {
+      clearAuthState();
+      return null;
+    }
+
+    let shouldProbeAdminSession = true;
+    try {
+      shouldProbeAdminSession = await hasXuiAdminSessionHint();
+    } catch {
+      shouldProbeAdminSession = true;
+    }
+
+    if (!shouldProbeAdminSession) {
+      clearAuthState();
+      return null;
+    }
+
+    // Fall back to 3X-UI admin session.
     try {
       await getServerStatus();
       setRole('admin');
@@ -65,15 +87,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       return 'admin';
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        setIsAuthenticated(false);
-        setRole(null);
-        setUsername(null);
-        setSubId(null);
+      if (err instanceof ApiError && (err.status === 401 || err.status === 503)) {
+        clearAuthState();
       }
       return null;
     }
-  }, []);
+  }, [clearAuthState]);
 
   useEffect(() => {
     checkAuth().finally(() => setIsChecking(false));
@@ -81,7 +100,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (u: string, p: string) => {
-      // Clear the logout flag before logging in so checkAuth works normally.
       sessionStorage.removeItem(LOGGED_OUT_KEY);
       await apiLogin(u, p);
       await checkAuth();
@@ -97,15 +115,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await apiLogout();
       }
     } finally {
-      // Mark as explicitly logged out.  checkAuth will return null on the next
-      // refresh instead of re-authenticating via the lingering 3X-UI cookie.
       sessionStorage.setItem(LOGGED_OUT_KEY, '1');
-      setIsAuthenticated(false);
-      setRole(null);
-      setUsername(null);
-      setSubId(null);
+      clearAuthState();
     }
-  }, [role]);
+  }, [clearAuthState, role]);
 
   return (
     <AuthContext.Provider

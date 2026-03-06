@@ -79,7 +79,7 @@ export function OnlineUsersPage({ embedded = false }: OnlineUsersPageProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {!embedded ? (
         <div className="flex items-center justify-between">
           <div>
@@ -103,7 +103,7 @@ export function OnlineUsersPage({ embedded = false }: OnlineUsersPageProps) {
         </Button>
       )}
 
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-emerald-500" />

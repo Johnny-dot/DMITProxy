@@ -6,6 +6,16 @@ interface ApiResponse<T> {
   obj: T;
 }
 
+type ResponseBody =
+  | ApiResponse<unknown>
+  | {
+      error?: string;
+      msg?: string;
+      detail?: string;
+      success?: boolean;
+      obj?: unknown;
+    };
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -13,6 +23,27 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
+}
+
+export function isXuiConfigured() {
+  return Boolean((import.meta.env.VITE_3XUI_SERVER ?? '').trim());
+}
+
+export async function hasXuiAdminSessionHint() {
+  const data = await localFetch<{ hasAdminCookie?: boolean }>('/local/auth/admin-session-hint', {
+    fallbackError: 'Failed to check admin session hint',
+  });
+  return data.hasAdminCookie === true;
+}
+
+function extractErrorMessage(data: ResponseBody | null, fallback: string) {
+  if (data && 'error' in data && typeof data.error === 'string' && data.error.trim()) {
+    return data.error;
+  }
+  if (data && 'msg' in data && typeof data.msg === 'string' && data.msg.trim()) {
+    return data.msg;
+  }
+  return fallback;
 }
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
@@ -26,14 +57,24 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     throw new ApiError(401, 'Unauthorized');
   }
 
-  let data: ApiResponse<T>;
+  const text = await res.text();
+  let data: ResponseBody | null = null;
   try {
-    data = await res.json();
+    data = text ? (JSON.parse(text) as ResponseBody) : null;
   } catch {
     throw new Error(`Invalid response from upstream API (HTTP ${res.status}) for ${path}`);
   }
-  if (!data.success) throw new Error(data.msg || 'Request failed');
-  return data.obj;
+
+  if (!res.ok) {
+    const message = extractErrorMessage(data, `Request failed (HTTP ${res.status})`);
+    throw new ApiError(res.status, message);
+  }
+
+  if (!data || typeof data !== 'object' || !('success' in data) || !('obj' in data)) {
+    throw new Error(`Invalid response from upstream API (HTTP ${res.status}) for ${path}`);
+  }
+  if (data.success !== true) throw new Error(extractErrorMessage(data, 'Request failed'));
+  return data.obj as T;
 }
 
 // Auth
@@ -41,32 +82,32 @@ export async function login(username: string, password: string) {
   const res = await fetch(`${BASE}/login`, {
     method: 'POST',
     credentials: 'include',
-    // 3X-UI accepts both JSON and form-encoded; form-encoded is more universally supported
+    // 3X-UI accepts both JSON and form-encoded; form-encoded is more universally supported.
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ username, password }).toString(),
   });
 
   const text = await res.text();
-  if (!text) {
-    throw new Error(
-      `Login API returned ${res.status}. Check VITE_3XUI_SERVER and VITE_3XUI_BASE_PATH.`,
-    );
-  }
-
-  let data: ApiResponse<null>;
+  let data: ResponseBody | null = null;
   try {
-    data = JSON.parse(text);
+    data = text ? (JSON.parse(text) as ResponseBody) : null;
   } catch {
-    // 3X-UI returned HTML (likely a redirect to login page) → wrong credentials or path
     throw new Error(
-      `Invalid response from server (HTTP ${res.status}). Check VITE_3XUI_BASE_PATH in .env`,
+      `Admin server returned an unexpected response (HTTP ${res.status}). Check VITE_3XUI_BASE_PATH in .env.`,
     );
   }
 
   if (!res.ok) {
-    throw new Error(data.msg || `Login failed (HTTP ${res.status})`);
+    throw new ApiError(res.status, extractErrorMessage(data, `Login failed (HTTP ${res.status})`));
   }
-  if (!data.success) throw new Error(data.msg || 'Login failed — wrong username or password');
+  if (!data || typeof data !== 'object' || !('success' in data)) {
+    throw new Error(
+      `Login API returned ${res.status}. Check VITE_3XUI_SERVER and VITE_3XUI_BASE_PATH.`,
+    );
+  }
+  if (data.success !== true) {
+    throw new Error(extractErrorMessage(data, 'Login failed: wrong username or password'));
+  }
 }
 
 export async function logout() {
@@ -159,10 +200,6 @@ export async function deleteInboundClientByEmail(inboundId: number, email: strin
     },
   );
 }
-
-// ---------------------------------------------------------------------------
-// Local API helper — unified fetch for /local/* endpoints
-// ---------------------------------------------------------------------------
 
 async function localFetch<T>(
   path: string,

@@ -107,8 +107,6 @@ try {
 `$env:SERVER_PORT = '$serverPort'
 `$env:COOKIE_SECURE = 'false'
 `$env:XUI_AUTO_CREATE_ON_REGISTER = 'false'
-`$env:ADMIN_USERNAME = 'admin'
-`$env:ADMIN_PASSWORD = 'changeme123'
 npm run server
 "@
 

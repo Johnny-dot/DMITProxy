@@ -16,6 +16,8 @@ const xuiTarget = getXuiTarget();
 const skipTlsVerification = shouldSkipXuiTlsVerification();
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
+const XUI_NOT_CONFIGURED_ERROR =
+  '3X-UI admin capability is not configured. Set VITE_3XUI_SERVER and VITE_3XUI_BASE_PATH in .env.';
 const configuredResetTtlSeconds = Number.parseInt(process.env.PASSWORD_RESET_TTL_SECONDS ?? '', 10);
 const DEFAULT_RESET_TTL_SECONDS =
   Number.isFinite(configuredResetTtlSeconds) && configuredResetTtlSeconds > 0
@@ -113,9 +115,9 @@ function updateSettings(partial: Partial<AppSettings>): AppSettings {
 
 // Verify admin by checking if requester has a valid 3X-UI session cookie
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!xuiTarget) return res.status(503).json({ error: XUI_NOT_CONFIGURED_ERROR });
   const cookie = req.headers.cookie ?? '';
   if (!cookie) return res.status(401).json({ error: 'Unauthorized' });
-  if (!xuiTarget) return res.status(500).json({ error: 'VITE_3XUI_SERVER is not configured' });
 
   const ok = await new Promise<boolean>((resolve) => {
     const requestFactory = getXuiRequestFactory(xuiTarget.protocol);
@@ -276,10 +278,8 @@ router.delete('/users/:id', requireAdmin, (req, res) => {
 router.get('/system', requireAdmin, (_req, res) => {
   const autoProvisionEnabled =
     (process.env.XUI_AUTO_CREATE_ON_REGISTER ?? 'false').toLowerCase() === 'true';
-  const xuiUsername =
-    process.env.XUI_ADMIN_USERNAME ?? process.env.XUI_USERNAME ?? process.env.ADMIN_USERNAME ?? '';
-  const xuiPassword =
-    process.env.XUI_ADMIN_PASSWORD ?? process.env.XUI_PASSWORD ?? process.env.ADMIN_PASSWORD ?? '';
+  const xuiUsername = process.env.XUI_ADMIN_USERNAME ?? '';
+  const xuiPassword = process.env.XUI_ADMIN_PASSWORD ?? '';
 
   res.json({
     xuiAutoProvisionEnabled: autoProvisionEnabled,
@@ -288,11 +288,7 @@ router.get('/system', requireAdmin, (_req, res) => {
 });
 
 router.get('/profile', requireAdmin, (_req, res) => {
-  const username =
-    process.env.XUI_ADMIN_USERNAME ??
-    process.env.XUI_USERNAME ??
-    process.env.ADMIN_USERNAME ??
-    'admin';
+  const username = process.env.XUI_ADMIN_USERNAME ?? '';
 
   res.json({
     username,

@@ -173,7 +173,7 @@ export function MySubscriptionPage() {
 
   if (!context) {
     return (
-      <div className="p-6 flex items-center justify-center">
+      <div className="flex items-center justify-center p-6 lg:p-8">
         <div className="w-full max-w-md rounded-xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
           <h2 className="text-lg font-semibold">
             {isZh ? '无法加载用户中心' : 'Failed to load workspace'}
@@ -186,7 +186,10 @@ export function MySubscriptionPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-6" data-testid="my-subscription-page">
+    <div
+      className="mx-auto w-full max-w-6xl space-y-6 px-6 py-8 lg:px-8 lg:py-10"
+      data-testid="my-subscription-page"
+    >
       <div className="flex flex-wrap gap-2">
         <TabButton
           icon={<LayoutDashboard className="w-4 h-4" />}

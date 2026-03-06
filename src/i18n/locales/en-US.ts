@@ -59,6 +59,8 @@ export const enUS = {
     signIn: 'Sign in',
     signingIn: 'Signing in...',
     loginFailed: 'Login failed',
+    adminLoginUnavailable:
+      'Admin login is unavailable until 3X-UI is configured in the server .env file.',
     footer: 'ProxyDog Admin - 3X-UI Management Interface',
   },
   dashboard: {

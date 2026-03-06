@@ -17,6 +17,8 @@ import {
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
+const XUI_NOT_CONFIGURED_ERROR =
+  '3X-UI admin capability is not configured. Set VITE_3XUI_SERVER and VITE_3XUI_BASE_PATH in .env.';
 
 function toBoundedPositiveInt(
   rawValue: string | undefined,
@@ -96,13 +98,22 @@ export function createApp() {
   // Cookie parser (manual, no deps)
   app.use((req, _res, next) => {
     const raw = req.headers.cookie ?? '';
-    (req as any).cookies = Object.fromEntries(
-      raw
-        .split(';')
-        .map((s) => s.trim().split('='))
-        .filter((p) => p.length === 2)
-        .map(([k, v]) => [k.trim(), v.trim()]),
-    );
+    const cookies: Record<string, string> = {};
+    for (const segment of raw.split(';')) {
+      const trimmed = segment.trim();
+      if (!trimmed) continue;
+
+      const separatorIndex = trimmed.indexOf('=');
+      if (separatorIndex <= 0) continue;
+
+      const name = trimmed.slice(0, separatorIndex).trim();
+      const value = trimmed.slice(separatorIndex + 1).trim();
+      if (!name) continue;
+
+      cookies[name] = value;
+    }
+
+    (req as any).cookies = cookies;
     next();
   });
 
@@ -300,6 +311,9 @@ export function createApp() {
     });
   } else {
     console.warn('[ProxyDog] VITE_3XUI_SERVER is not set. /api proxy is disabled.');
+    app.use('/api', (_req, res) => {
+      res.status(503).json({ error: XUI_NOT_CONFIGURED_ERROR });
+    });
   }
 
   // Serve React build in production

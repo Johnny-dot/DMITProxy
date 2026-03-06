@@ -190,7 +190,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
   }
 
   return (
-    <div className="space-y-8">
+    <div className="w-full min-w-0 space-y-8">
       <div>
         {!embedded && (
           <>
@@ -219,7 +219,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
         </div>
       </div>
 
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -307,7 +307,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-zinc-400" />
