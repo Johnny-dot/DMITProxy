@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Dog, Eye, EyeOff, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, KeyRound } from 'lucide-react';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
-import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { useI18n } from '@/src/context/I18nContext';
+import { PublicAuthLayout } from '@/src/components/public/PublicAuthLayout';
 
 type ResetStatus = 'checking' | 'ready' | 'invalid' | 'success';
 
 export function UserResetPasswordPage() {
-  const { t, language, setLanguage } = useI18n();
+  const { t, language } = useI18n();
+  const isZh = language === 'zh-CN';
   const [params] = useSearchParams();
   const token = useMemo(() => String(params.get('token') ?? '').trim(), [params]);
   const [status, setStatus] = useState<ResetStatus>('checking');
@@ -96,32 +97,23 @@ export function UserResetPasswordPage() {
   }
 
   return (
-    <div
-      className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-5 md:p-8"
-      data-testid="reset-password-page"
+    <PublicAuthLayout
+      eyebrow={isZh ? '安全恢复' : 'Secure recovery'}
+      title={isZh ? '用更安静、更直接的方式完成密码重置。' : 'Reset access without the noise.'}
+      description={
+        isZh
+          ? '验证通过后，你只需要设置一次新密码，就能重新回到订阅工作区。'
+          : 'Once the token is verified, you can set a new password and return to the subscription workspace.'
+      }
     >
-      <div className="absolute top-5 right-5 flex items-center gap-2 md:top-6 md:right-6 xl:top-8 xl:right-8">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 px-3 text-xs md:h-10 md:text-sm"
-          onClick={() => setLanguage(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
-          data-testid="public-language-toggle"
-        >
-          {language === 'zh-CN' ? t('common.en') : t('common.zh')}
-        </Button>
-        <ThemeToggle testId="public-theme-toggle" className="h-9 w-9 md:h-10 md:w-10" />
-      </div>
-      <div className="w-full max-w-md space-y-8 rounded-3xl border border-white/10 bg-zinc-950/70 px-6 py-8 shadow-sm backdrop-blur-md lg:max-w-lg lg:space-y-10 lg:px-8 lg:py-10">
-        <div className="flex flex-col items-center gap-4 lg:gap-5">
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-white/10 bg-zinc-900 lg:h-20 lg:w-20">
-            <Dog className="h-9 w-9 text-emerald-500 lg:h-10 lg:w-10" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">
+      <div className="space-y-8" data-testid="reset-password-page">
+        <div className="space-y-3">
+          <p className="section-kicker">{t('userAuth.resetTitle')}</p>
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
               {t('userAuth.resetTitle')}
-            </h1>
-            <p className="mt-2 text-sm text-zinc-500 lg:text-base">
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">
               {status === 'ready' && username
                 ? t('userAuth.resetForUser', { username })
                 : t('userAuth.resetDesc')}
@@ -131,26 +123,28 @@ export function UserResetPasswordPage() {
 
         {status === 'checking' && (
           <div className="flex justify-center py-8">
-            <div className="w-6 h-6 border-2 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
           </div>
         )}
 
         {status === 'invalid' && (
           <div className="space-y-5" data-testid="reset-password-invalid">
-            <p className="text-red-400 text-sm text-center">
+            <p className="rounded-[18px] border border-[var(--danger-soft-strong)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-red-500">
               {error || t('userAuth.resetInvalid')}
             </p>
             <Link to="/login" data-testid="reset-password-back-login">
-              <Button className="h-11 w-full lg:h-12">{t('userAuth.backToLogin')}</Button>
+              <Button className="h-12 w-full">{t('userAuth.backToLogin')}</Button>
             </Link>
           </div>
         )}
 
         {status === 'success' && (
           <div className="space-y-5" data-testid="reset-password-success">
-            <p className="text-emerald-400 text-sm text-center">{t('userAuth.resetSuccess')}</p>
+            <p className="rounded-[18px] border border-[var(--success-soft-strong)] bg-[var(--success-soft)] px-4 py-3 text-sm text-emerald-500">
+              {t('userAuth.resetSuccess')}
+            </p>
             <Link to="/login" data-testid="reset-password-back-login">
-              <Button className="h-11 w-full lg:h-12">{t('userAuth.signIn')}</Button>
+              <Button className="h-12 w-full">{t('userAuth.signIn')}</Button>
             </Link>
           </div>
         )}
@@ -158,7 +152,7 @@ export function UserResetPasswordPage() {
         {status === 'ready' && (
           <form onSubmit={handleSubmit} className="space-y-5" data-testid="reset-password-form">
             {expiresAt && (
-              <p className="text-xs text-zinc-500 text-center">
+              <p className="text-xs leading-5 text-zinc-500">
                 {t('userAuth.resetExpiresAt', {
                   date: new Date(expiresAt * 1000).toLocaleString(),
                 })}
@@ -172,7 +166,7 @@ export function UserResetPasswordPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="h-11 pr-10 lg:h-12"
+                  className="h-12 pr-12"
                   required
                 />
                 <button
@@ -180,7 +174,7 @@ export function UserResetPasswordPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               <div className="relative">
@@ -190,7 +184,7 @@ export function UserResetPasswordPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="h-11 pr-10 lg:h-12"
+                  className="h-12 pr-12"
                   required
                 />
                 <button
@@ -199,27 +193,31 @@ export function UserResetPasswordPage() {
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="h-4 w-4" />
                   )}
                 </button>
               </div>
             </div>
 
-            {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+            {error && (
+              <p className="rounded-[18px] border border-[var(--danger-soft-strong)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-red-500">
+                {error}
+              </p>
+            )}
 
-            <Button type="submit" className="h-11 w-full gap-2 lg:h-12" disabled={isSubmitting}>
+            <Button type="submit" className="h-12 w-full gap-2" disabled={isSubmitting}>
               {isSubmitting ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current" />
               ) : (
-                <KeyRound className="w-4 h-4" />
+                <KeyRound className="h-4 w-4" />
               )}
               {isSubmitting ? t('userAuth.resetting') : t('userAuth.resetNow')}
             </Button>
           </form>
         )}
       </div>
-    </div>
+    </PublicAuthLayout>
   );
 }

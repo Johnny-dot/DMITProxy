@@ -21,7 +21,7 @@ import type {
 } from './portal/types';
 import { isPortalTab, toMillis, COPY_RESET_DELAY_MS } from './portal/types';
 
-const READ_NOTIFICATIONS_STORAGE_PREFIX = 'proxydog:user:notification-read:v1';
+const READ_NOTIFICATIONS_STORAGE_PREFIX = 'prism:user:notification-read:v1';
 
 export function UserPortalPage() {
   const navigate = useNavigate();
@@ -293,7 +293,7 @@ export function UserPortalPage() {
   if (!context && !isAdminView) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-50 p-6 flex items-center justify-center">
-        <div className="w-full max-w-md rounded-xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
+        <div className="surface-card w-full max-w-md space-y-4 p-6">
           <h2 className="text-lg font-semibold">
             {isZh ? '无法加载用户中心' : 'Failed to load user workspace'}
           </h2>
@@ -317,7 +317,7 @@ export function UserPortalPage() {
 
       <main className="mx-auto w-full max-w-6xl space-y-6 px-4 sm:px-6 py-6 sm:py-10 lg:px-8 lg:py-12">
         {/* Hero section */}
-        <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-500/10 via-zinc-900 to-zinc-900 p-6 md:p-8">
+        <section className="surface-card p-6 md:p-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div className="space-y-2">
               <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-300/80">
@@ -415,7 +415,7 @@ export function UserPortalPage() {
         )}
 
         {activeTab === 'management' && isAdminView && (
-          <section className="w-full rounded-2xl border border-white/10 bg-zinc-900/60 p-4 md:p-6">
+          <section className="surface-card w-full p-4 md:p-6">
             <UsersCenterPage />
           </section>
         )}

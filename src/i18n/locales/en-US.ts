@@ -42,7 +42,7 @@ export const enUS = {
     notifications: 'Notifications',
     profile: 'Profile',
     adminUser: 'Admin User',
-    adminEmail: 'admin@proxydog.io',
+    adminEmail: 'admin@prism.io',
     notificationsNotReady: 'Notifications panel is not implemented yet',
     profileNotReady: 'Profile page is not implemented yet',
   },
@@ -61,7 +61,7 @@ export const enUS = {
     loginFailed: 'Login failed',
     adminLoginUnavailable:
       'Admin login is unavailable until 3X-UI is configured in the server .env file.',
-    footer: 'ProxyDog Admin - 3X-UI Management Interface',
+    footer: 'Prism Admin - 3X-UI Management Interface',
   },
   dashboard: {
     title: 'Dashboard',

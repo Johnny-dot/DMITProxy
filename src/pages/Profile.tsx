@@ -40,7 +40,7 @@ interface AdminProfile {
   xuiBasePath: string;
 }
 
-const DISPLAY_NAME_KEY = 'proxydog:admin-display-name';
+const DISPLAY_NAME_KEY = 'prism:admin-display-name';
 
 // ---------------------------------------------------------------------------
 // Preferences card — shared by both roles

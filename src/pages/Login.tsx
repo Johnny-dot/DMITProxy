@@ -1,27 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Dog, Eye, EyeOff, LogIn } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuth } from '@/src/context/AuthContext';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
-import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { useI18n } from '@/src/context/I18nContext';
 import { isXuiConfigured } from '@/src/api/client';
+import { PublicAuthLayout } from '@/src/components/public/PublicAuthLayout';
 
 export function LoginPage() {
   const { login: adminLogin, isAuthenticated, isChecking, role, refreshAuth } = useAuth();
   const navigate = useNavigate();
-  const { t, language, setLanguage } = useI18n();
+  const { t, language } = useI18n();
+  const isZh = language === 'zh-CN';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const hasConfiguredXui = isXuiConfigured();
-  const adminLoginUnavailableMessage =
-    language === 'zh-CN'
-      ? '管理员登录依赖 3X-UI 配置；请先在服务器 .env 中填写 3X-UI 参数。'
-      : t('login.adminLoginUnavailable');
+  const adminLoginUnavailableMessage = isZh
+    ? '管理员登录依赖 3X-UI 配置；请先在服务器 .env 中填写 3X-UI 参数。'
+    : t('login.adminLoginUnavailable');
 
   useEffect(() => {
     if (isChecking) return;
@@ -69,38 +69,37 @@ export function LoginPage() {
 
   if (isChecking) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+        <div className="h-7 w-7 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
       </div>
     );
   }
 
   return (
-    <div
-      className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-5 md:p-8"
-      data-testid="login-page"
+    <PublicAuthLayout
+      eyebrow={isZh ? '统一代理工作台' : 'Unified proxy workspace'}
+      title={
+        isZh
+          ? '把代理、订阅与用户管理收敛到真正必要的部分。'
+          : 'Proxy operations, reduced to the essentials.'
+      }
+      description={
+        isZh
+          ? 'Prism 用统一的产品语言连接管理员面板和用户订阅中心，让状态、配置与交付都保持清晰。'
+          : 'Prism keeps the admin panel and user subscription workspace in one restrained product system.'
+      }
     >
-      <div className="absolute top-5 right-5 flex items-center gap-2 md:top-6 md:right-6 xl:top-8 xl:right-8">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 px-3 text-xs md:h-10 md:text-sm"
-          onClick={() => setLanguage(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
-          data-testid="public-language-toggle"
-        >
-          {language === 'zh-CN' ? t('common.en') : t('common.zh')}
-        </Button>
-        <ThemeToggle testId="public-theme-toggle" className="h-9 w-9 md:h-10 md:w-10" />
-      </div>
-      <div className="w-full max-w-md space-y-8 rounded-3xl border border-white/10 bg-zinc-950/70 px-6 py-8 shadow-sm backdrop-blur-md lg:max-w-lg lg:space-y-10 lg:px-8 lg:py-10">
-        <div className="flex flex-col items-center gap-4 lg:gap-5">
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-white/10 bg-zinc-900 lg:h-20 lg:w-20">
-            <Dog className="h-9 w-9 text-emerald-500 lg:h-10 lg:w-10" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">ProxyDog</h1>
-            <p className="mt-2 text-sm text-zinc-500 lg:text-base">
-              {t('login.adminPanel')} / {t('userAuth.portal')}
+      <div className="space-y-8" data-testid="login-page">
+        <div className="space-y-3">
+          <p className="section-kicker">{isZh ? '登录' : 'Sign in'}</p>
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
+              {isZh ? '管理员与用户共用入口' : 'One sign-in for admins and users'}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">
+              {isZh
+                ? '用户会进入个人订阅页，管理员会进入控制台。'
+                : 'Users continue to their subscription workspace, while admins land in the control console.'}
             </p>
           </div>
         </div>
@@ -108,12 +107,13 @@ export function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {!hasConfiguredXui && (
             <p
-              className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+              className="rounded-[20px] border border-[var(--warning-soft-strong)] bg-[var(--warning-soft)] px-4 py-3 text-sm leading-6 text-amber-500"
               data-testid="login-admin-unavailable"
             >
               {adminLoginUnavailableMessage}
             </p>
           )}
+
           <div className="space-y-3">
             <Input
               type="text"
@@ -121,7 +121,7 @@ export function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
-              className="h-11 lg:h-12"
+              className="h-12"
               required
               data-testid="login-username"
             />
@@ -132,7 +132,7 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className="h-11 pr-10 lg:h-12"
+                className="h-12 pr-12"
                 required
                 data-testid="login-password"
               />
@@ -141,30 +141,55 @@ export function LoginPage() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
 
-          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+          {error && (
+            <p className="rounded-[18px] border border-[var(--danger-soft-strong)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-red-500">
+              {error}
+            </p>
+          )}
 
           <Button
             type="submit"
-            className="h-11 w-full gap-2 lg:h-12"
+            className="h-12 w-full gap-2"
             disabled={isLoading}
             data-testid="login-submit"
           >
             {isLoading ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current" />
             ) : (
-              <LogIn className="w-4 h-4" />
+              <LogIn className="h-4 w-4" />
             )}
             {isLoading ? t('login.signingIn') : t('login.signIn')}
           </Button>
         </form>
 
-        <p className="text-center text-xs text-zinc-600">{t('login.footer')}</p>
+        <div className="surface-panel flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-zinc-50">
+              {isZh
+                ? '已有邀请码？直接创建用户账户。'
+                : 'Have an invite code? Create a user account.'}
+            </p>
+            <p className="text-sm leading-6 text-zinc-400">
+              {isZh
+                ? '注册成功后会自动进入个人订阅页。'
+                : 'New users can register with an invite and land directly in their subscription view.'}
+            </p>
+          </div>
+          <Link to="/register" data-testid="login-register-link">
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              {isZh ? '去注册' : 'Register'}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        </div>
+
+        <p className="text-xs leading-5 text-zinc-500">{t('login.footer')}</p>
       </div>
-    </div>
+    </PublicAuthLayout>
   );
 }

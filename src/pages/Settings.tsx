@@ -24,7 +24,7 @@ import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
 
 const DEFAULT_SETTINGS: AdminSettings = {
-  siteName: 'ProxyDog Admin',
+  siteName: 'Prism Admin',
   publicUrl: '',
   supportTelegram: '',
   announcementText: '',
@@ -140,15 +140,16 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('settings.title')}</h1>
-          <p className="text-zinc-400 mt-1">{t('settings.subtitle')}</p>
+      <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
+        <div className="space-y-3">
+          <p className="section-kicker">{t('settings.title')}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('settings.title')}</h1>
+          <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('settings.subtitle')}</p>
         </div>
         <Button variant="outline" size="icon" onClick={load}>
           <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
         </Button>
-      </div>
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2 space-y-6">
@@ -199,7 +200,7 @@ export function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <textarea
-                className="w-full min-h-[150px] rounded-md border border-white/10 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+                className="min-h-[150px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 text-sm text-zinc-50 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
                 placeholder={t('settings.announcementPlaceholder')}
                 value={settings.announcementText}
                 onChange={(e) => updateField('announcementText', e.target.value)}

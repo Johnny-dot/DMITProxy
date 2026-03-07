@@ -225,11 +225,11 @@ async function openPage(page: Page, url: string) {
 
 async function setStableClientState(page: Page, language: 'zh-CN' | 'en-US' = 'zh-CN') {
   await page.addInitScript((selectedLanguage) => {
-    if (!window.localStorage.getItem('proxydog:lang')) {
-      window.localStorage.setItem('proxydog:lang', selectedLanguage);
+    if (!window.localStorage.getItem('prism:lang')) {
+      window.localStorage.setItem('prism:lang', selectedLanguage);
     }
-    if (!window.localStorage.getItem('proxydog-theme')) {
-      window.localStorage.setItem('proxydog-theme', 'dark');
+    if (!window.localStorage.getItem('prism-theme')) {
+      window.localStorage.setItem('prism-theme', 'dark');
     }
   }, language);
 }
@@ -237,7 +237,7 @@ async function setStableClientState(page: Page, language: 'zh-CN' | 'en-US' = 'z
 async function setClientLanguage(page: Page, language: 'zh-CN' | 'en-US') {
   if (!/^https?:/i.test(page.url())) return;
   await page.evaluate((selectedLanguage) => {
-    window.localStorage.setItem('proxydog:lang', selectedLanguage);
+    window.localStorage.setItem('prism:lang', selectedLanguage);
   }, language);
 }
 
@@ -384,7 +384,7 @@ function toCapturedConsoleMessage(message: ConsoleMessage): CapturedConsoleMessa
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const runStamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const dbPath = path.join(options.dataDir, 'proxydog.db');
+  const dbPath = path.join(options.dataDir, 'prism.db');
   const runDir = path.join(options.artifactDir, sanitizeName(runStamp));
   const stepDir = path.join(runDir, 'steps');
   const tracePath = path.join(runDir, 'site-display-audit-trace.zip');

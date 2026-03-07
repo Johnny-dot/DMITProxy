@@ -26,7 +26,7 @@ const DEFAULT_RESET_TTL_SECONDS =
 
 if (xuiTarget?.protocol === 'https:' && skipTlsVerification) {
   console.warn(
-    '[ProxyDog] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, admin upstream TLS verification disabled.',
+    '[Prism] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, admin upstream TLS verification disabled.',
   );
 }
 
@@ -39,7 +39,7 @@ interface AppSettings {
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  siteName: 'ProxyDog Admin',
+  siteName: 'Prism Admin',
   publicUrl: '',
   supportTelegram: '',
   announcementText: '',
@@ -372,7 +372,7 @@ router.post('/maintenance/backup', requireAdmin, (_req, res) => {
 
     db.pragma('wal_checkpoint(TRUNCATE)');
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filePath = path.join(backupDir, `proxydog-${stamp}.db`);
+    const filePath = path.join(backupDir, `prism-${stamp}.db`);
     fs.copyFileSync(dbFilePath, filePath);
 
     res.json({ ok: true, file: filePath });

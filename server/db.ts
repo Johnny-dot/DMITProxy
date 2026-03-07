@@ -8,7 +8,7 @@ const dataDir = path.resolve(configuredDataDir || './data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 export const dataDirectory = dataDir;
-export const dbFilePath = path.join(dataDir, 'proxydog.db');
+export const dbFilePath = path.join(dataDir, 'prism.db');
 export const db = new Database(dbFilePath);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');

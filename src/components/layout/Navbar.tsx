@@ -3,6 +3,7 @@ import { Bell, LogOut, Search, User } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { LanguageToggle } from '../ui/LanguageToggle';
 import { useToast } from '../ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
@@ -10,7 +11,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { NotificationsPanel } from './NotificationsPanel';
 import type { NotificationItem } from '@/src/types/notifications';
 
-const NOTIFICATION_STORAGE_KEY = 'proxydog:admin-notifications:v1';
+const NOTIFICATION_STORAGE_KEY = 'prism:admin-notifications:v1';
 
 interface SystemFlags {
   xuiAutoProvisionEnabled: boolean;
@@ -27,7 +28,7 @@ interface AdminSettings {
 export function Navbar() {
   const { logout } = useAuth();
   const { toast } = useToast();
-  const { t, language, setLanguage } = useI18n();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -234,68 +235,40 @@ export function Navbar() {
   }
 
   return (
-    <div className="flex items-center justify-between w-full gap-4">
-      <div className="flex items-center gap-4 flex-1">
-        <div className="relative w-full max-w-sm hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+    <div className="flex w-full items-center justify-between gap-4">
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        <div className="relative hidden w-full max-w-md sm:block">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
           <Input
             placeholder={t('nav.searchPlaceholder')}
-            className="pl-10 bg-zinc-900/50 border-white/5 h-9"
+            className="h-11 bg-[var(--surface-panel)] pl-11 shadow-none"
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4">
-        <Button
-          variant="outline"
-          size="sm"
-          className="sm:hidden h-9 px-2 text-xs"
-          onClick={() => setLanguage(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
-          data-testid="navbar-language-toggle-mobile"
-        >
-          {language === 'zh-CN' ? t('common.en') : t('common.zh')}
-        </Button>
-        <div className="hidden sm:flex items-center rounded-md border border-white/10 p-0.5">
-          <Button
-            variant={language === 'zh-CN' ? 'secondary' : 'ghost'}
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={() => setLanguage('zh-CN')}
-            data-testid="navbar-language-zh"
-          >
-            {t('common.zh')}
-          </Button>
-          <Button
-            variant={language === 'en-US' ? 'secondary' : 'ghost'}
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={() => setLanguage('en-US')}
-            data-testid="navbar-language-en"
-          >
-            {t('common.en')}
-          </Button>
-        </div>
+      <div className="flex items-center gap-2 md:gap-3">
+        <LanguageToggle compact className="hidden sm:inline-flex" testIdPrefix="navbar-language" />
         <ThemeToggle testId="navbar-theme-toggle" />
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           className="relative"
           onClick={openNotifications}
           title={t('notifications.title')}
         >
-          <Bell className="w-5 h-5 text-zinc-400" />
+          <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-zinc-950" />
+            <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-emerald-500" />
           )}
         </Button>
-        <div className="h-8 w-px bg-white/10 mx-1 md:mx-2" />
+        <div className="hidden h-8 w-px bg-[var(--border-subtle)] sm:block" />
         <Button
           variant={location.pathname === '/profile' ? 'secondary' : 'outline'}
           size="sm"
-          className="gap-2 hidden sm:flex"
+          className="hidden gap-2 sm:flex"
           onClick={() => navigate('/profile')}
         >
-          <User className="w-4 h-4" />
+          <User className="h-4 w-4" />
           {t('nav.profile')}
         </Button>
         <Button
@@ -304,17 +277,17 @@ export function Navbar() {
           className="sm:hidden"
           onClick={() => navigate('/profile')}
         >
-          <User className="w-4 h-4" />
+          <User className="h-4 w-4" />
         </Button>
         <Button
           variant="outline"
           size="sm"
-          className="gap-2 hidden sm:flex"
+          className="hidden gap-2 sm:flex"
           onClick={handleLogout}
           disabled={isLoggingOut}
           data-testid="navbar-signout"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="h-4 w-4" />
           {t('portal.signOut')}
         </Button>
         <Button
@@ -326,9 +299,10 @@ export function Navbar() {
           title={t('portal.signOut')}
           data-testid="navbar-signout-mobile"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="h-4 w-4" />
         </Button>
       </div>
+
       <NotificationsPanel
         open={isNotificationsOpen}
         notifications={notifications}

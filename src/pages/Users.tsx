@@ -177,10 +177,11 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
   return (
     <div className="w-full min-w-0 space-y-6">
       {!embedded ? (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('users.title')}</h1>
-            <p className="text-zinc-400 mt-1">{t('users.subtitle')}</p>
+        <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
+          <div className="space-y-3">
+            <p className="section-kicker">{t('users.title')}</p>
+            <h1 className="text-3xl font-semibold tracking-tight">{t('users.title')}</h1>
+            <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('users.subtitle')}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={load} disabled={isLoading}>
@@ -191,7 +192,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
               {t('users.inviteAccounts')}
             </Button>
           </div>
-        </div>
+        </section>
       ) : (
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={load} disabled={isLoading}>
@@ -379,6 +380,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                   ? t('users.noUsersMatching', { query: searchQuery })
                   : t('users.noClientsFound')
               }
+              illustration={searchQuery ? undefined : 'empty-users.webp'}
               actionLabel={searchQuery ? t('users.clearSearch') : t('users.goToInbounds')}
               onAction={() => (searchQuery ? setSearchQuery('') : navigate('/inbounds'))}
             />
@@ -395,13 +397,10 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
           ];
           return (
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4"
               onClick={() => setSubModal(null)}
             >
-              <div
-                className="bg-zinc-900 border border-white/10 rounded-xl w-full max-w-md shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <div className="surface-card w-full max-w-md" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
                   <div>
                     <p className="font-semibold text-zinc-50">{subModal.username}</p>

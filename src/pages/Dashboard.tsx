@@ -155,38 +155,23 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
-        <p className="text-zinc-400 mt-1">{t('dashboard.subtitle')}</p>
-      </div>
+      <section className="surface-card space-y-3 p-6 md:p-7">
+        <p className="section-kicker">{t('dashboard.title')}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t('dashboard.title')}</h1>
+        <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('dashboard.subtitle')}</p>
+      </section>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card
-            key={stat.key}
-            className={cn(
-              'relative overflow-hidden group transition-all duration-300',
-              stat.color === 'emerald' && 'hover:border-emerald-500/50',
-              stat.color === 'indigo' && 'hover:border-indigo-500/50',
-              stat.color === 'amber' && 'hover:border-amber-500/50',
-              stat.color === 'rose' && 'hover:border-rose-500/50',
-            )}
-          >
-            <div
-              className={cn(
-                'absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none',
-                stat.color === 'emerald' && 'bg-emerald-500',
-                stat.color === 'indigo' && 'bg-indigo-500',
-                stat.color === 'amber' && 'bg-amber-500',
-                stat.color === 'rose' && 'bg-rose-500',
-              )}
-            />
+          <Card key={stat.key}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="flex items-center gap-1 text-sm font-medium text-zinc-400">
                 <span>{stat.title}</span>
                 <InfoTooltip content={t(`dashboard.help.${stat.key}`)} />
               </CardTitle>
-              <stat.icon className="h-4 w-4 text-zinc-500" />
+              <div className="surface-panel flex h-10 w-10 items-center justify-center">
+                <stat.icon className="h-4 w-4 text-zinc-500" />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -197,7 +182,7 @@ export function Dashboard() {
               ) : (
                 <>
                   <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs mt-1 flex items-center gap-1 text-emerald-500">
+                  <p className="mt-2 flex items-center gap-1 text-xs text-zinc-500">
                     <ArrowUpRight className="w-3 h-3" />
                     {stat.trend}
                   </p>
@@ -254,11 +239,13 @@ export function Dashboard() {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#09090b',
-                      border: '1px solid #27272a',
-                      borderRadius: '8px',
+                      backgroundColor: 'var(--surface-card)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '18px',
+                      boxShadow: 'var(--shadow-card)',
                     }}
-                    itemStyle={{ fontSize: '12px' }}
+                    itemStyle={{ fontSize: '12px', color: 'var(--text-secondary)' }}
+                    labelStyle={{ color: 'var(--text-primary)' }}
                     formatter={(value, name) => [
                       `${value} MB`,
                       name === 'downloadMB' ? t('dashboard.download') : t('dashboard.upload'),
@@ -338,7 +325,7 @@ export function Dashboard() {
                         (serverStatus?.cpu ?? 0) < 50
                           ? 'bg-emerald-500'
                           : (serverStatus?.cpu ?? 0) < 80
-                            ? 'bg-yellow-500'
+                            ? 'bg-amber-500'
                             : 'bg-red-500',
                       )}
                       style={{ width: `${serverStatus?.cpu ?? 0}%` }}

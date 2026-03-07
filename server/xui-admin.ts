@@ -150,7 +150,7 @@ async function requestXui(
       if (!insecureTlsWarningShown) {
         insecureTlsWarningShown = true;
         console.warn(
-          '[ProxyDog] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, auto-provision TLS verification disabled.',
+          '[Prism] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, auto-provision TLS verification disabled.',
         );
       }
     }
@@ -263,7 +263,7 @@ function parseInboundClients(settings: string): Array<Record<string, unknown>> {
     const obj = JSON.parse(settings);
     return Array.isArray(obj?.clients) ? obj.clients : [];
   } catch (error) {
-    console.warn('[ProxyDog] parseInboundClients: failed to parse inbound settings:', error);
+    console.warn('[Prism] parseInboundClients: failed to parse inbound settings:', error);
     return [];
   }
 }
@@ -296,7 +296,7 @@ function buildClientPayload(protocol: string, email: string) {
     expiryTime,
     tgId: '',
     subId,
-    comment: 'Auto-created by ProxyDog',
+    comment: 'Auto-created by Prism',
   };
 
   if (lowerProtocol === 'trojan' || lowerProtocol === 'shadowsocks') {
@@ -405,7 +405,7 @@ export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientU
   const creds = getXuiCredentials();
   if (!creds) {
     console.warn(
-      '[ProxyDog] fetchClientStatsBySubId: XUI credentials not configured, stats unavailable',
+      '[Prism] fetchClientStatsBySubId: XUI credentials not configured, stats unavailable',
     );
     return null;
   }

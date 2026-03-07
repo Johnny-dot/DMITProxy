@@ -131,7 +131,7 @@ export function createApp() {
     const skipTlsVerification = shouldSkipXuiTlsVerification();
     if (xuiTarget.protocol === 'https:' && skipTlsVerification) {
       console.warn(
-        '[ProxyDog] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, TLS cert verification disabled.',
+        '[Prism] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, TLS cert verification disabled.',
       );
     }
 
@@ -174,7 +174,7 @@ export function createApp() {
 
         if (PROXY_DEBUG) {
           const hasCookie = Boolean((req.headers.cookie ?? '').trim());
-          console.warn(`[ProxyDog] -> ${method} ${req.url} cookie=${hasCookie ? 'yes' : 'no'}`);
+          console.warn(`[Prism] -> ${method} ${req.url} cookie=${hasCookie ? 'yes' : 'no'}`);
         }
 
         const baseHeaders: Record<string, string | string[]> = {
@@ -235,7 +235,7 @@ export function createApp() {
             if (setCookies.length > 0) receivedSetCookies.push(...setCookies);
             if (PROXY_DEBUG && req.url.startsWith('/login')) {
               console.warn(
-                `[ProxyDog] <- ${method} ${req.url} status=${statusCode} set-cookie=${setCookies.length}`,
+                `[Prism] <- ${method} ${req.url} status=${statusCode} set-cookie=${setCookies.length}`,
               );
             }
 
@@ -255,7 +255,7 @@ export function createApp() {
             if (statusCode === 404 && candidateIndex + 1 < candidatePaths.length) {
               if (PROXY_DEBUG) {
                 console.warn(
-                  `[ProxyDog] 404 on ${targetPath}, retrying with ${candidatePaths[candidateIndex + 1]}`,
+                  `[Prism] 404 on ${targetPath}, retrying with ${candidatePaths[candidateIndex + 1]}`,
                 );
               }
               proxyRes.resume();
@@ -267,7 +267,7 @@ export function createApp() {
             }
 
             if (PROXY_DEBUG && statusCode >= 400) {
-              console.warn(`[ProxyDog] ${method} ${req.url} => ${statusCode} via ${targetPath}`);
+              console.warn(`[Prism] ${method} ${req.url} => ${statusCode} via ${targetPath}`);
             }
             if (
               PROXY_DEBUG &&
@@ -277,10 +277,10 @@ export function createApp() {
             ) {
               if (!contentType.toLowerCase().includes('application/json')) {
                 console.warn(
-                  `[ProxyDog] ${method} ${req.url} => ${statusCode} non-json content-type=${contentType}`,
+                  `[Prism] ${method} ${req.url} => ${statusCode} non-json content-type=${contentType}`,
                 );
               } else {
-                console.info(`[ProxyDog] ${method} ${req.url} => ${statusCode} json`);
+                console.info(`[Prism] ${method} ${req.url} => ${statusCode} json`);
               }
             }
 
@@ -310,7 +310,7 @@ export function createApp() {
       });
     });
   } else {
-    console.warn('[ProxyDog] VITE_3XUI_SERVER is not set. /api proxy is disabled.');
+    console.warn('[Prism] VITE_3XUI_SERVER is not set. /api proxy is disabled.');
     app.use('/api', (_req, res) => {
       res.status(503).json({ error: XUI_NOT_CONFIGURED_ERROR });
     });

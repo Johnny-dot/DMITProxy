@@ -7,5 +7,5 @@ const PORT = parseInt(process.env.SERVER_PORT ?? '3001');
 const app = createApp();
 
 createServer(app).listen(PORT, () => {
-  console.log(`[ProxyDog] Server running on http://localhost:${PORT}`);
+  console.log(`[Prism] Server running on http://localhost:${PORT}`);
 });

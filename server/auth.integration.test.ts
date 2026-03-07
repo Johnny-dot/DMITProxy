@@ -49,7 +49,7 @@ async function createTestContext(options?: {
 
   if (options?.preloadLegacyAdmin) {
     fs.mkdirSync(testDataDir, { recursive: true });
-    const seedDb = new BetterSqlite3(path.join(testDataDir, 'proxydog.db'));
+    const seedDb = new BetterSqlite3(path.join(testDataDir, 'prism.db'));
     seedDb.pragma('journal_mode = WAL');
     seedDb.pragma('foreign_keys = ON');
     seedDb.exec(`
