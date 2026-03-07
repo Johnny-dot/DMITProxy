@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Users,
   Activity,
@@ -36,30 +36,113 @@ import { useToast } from '@/src/components/ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 
+const DASHBOARD_POLL_INTERVAL_MS = 5_000;
+
+function isAbortError(error: unknown): boolean {
+  return (
+    error instanceof DOMException
+      ? error.name === 'AbortError'
+      : typeof error === 'object' &&
+          error !== null &&
+          'name' in error &&
+          error.name === 'AbortError'
+  );
+}
+
 export function Dashboard() {
   const { toast } = useToast();
   const { t, language } = useI18n();
   const [isLoading, setIsLoading] = useState(true);
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
-
-  const load = async (silent = false) => {
-    try {
-      const [status, inboundList] = await Promise.all([getServerStatus(), getInbounds()]);
-      setServerStatus(status);
-      setInbounds(inboundList);
-    } catch {
-      if (!silent) toast(t('dashboard.failedLoad'), 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const pollTimerRef = useRef<number | null>(null);
+  const inFlightRequestRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    load();
-    const interval = setInterval(() => load(true), 5000);
-    return () => clearInterval(interval);
-  }, []);
+    let disposed = false;
+    let hasLoadedOnce = false;
+    let isInFlight = false;
+
+    const clearPollTimer = () => {
+      if (pollTimerRef.current !== null) {
+        window.clearTimeout(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+
+    const clearInFlightRequest = () => {
+      if (inFlightRequestRef.current) {
+        inFlightRequestRef.current.abort();
+        inFlightRequestRef.current = null;
+      }
+    };
+
+    const scheduleNextPoll = () => {
+      clearPollTimer();
+      if (disposed || document.visibilityState !== 'visible') return;
+
+      pollTimerRef.current = window.setTimeout(() => {
+        void load(true);
+      }, DASHBOARD_POLL_INTERVAL_MS);
+    };
+
+    const load = async (silent = false) => {
+      if (disposed || isInFlight) return;
+
+      isInFlight = true;
+      clearPollTimer();
+
+      const controller = new AbortController();
+      inFlightRequestRef.current = controller;
+
+      try {
+        const [status, inboundList] = await Promise.all([
+          getServerStatus({ signal: controller.signal }),
+          getInbounds({ signal: controller.signal }),
+        ]);
+
+        if (disposed || controller.signal.aborted) return;
+
+        setServerStatus(status);
+        setInbounds(inboundList);
+        hasLoadedOnce = true;
+      } catch (error) {
+        if (isAbortError(error)) return;
+        if (!silent) toast(t('dashboard.failedLoad'), 'error');
+      } finally {
+        if (inFlightRequestRef.current === controller) {
+          inFlightRequestRef.current = null;
+        }
+
+        isInFlight = false;
+
+        if (!disposed) {
+          setIsLoading(false);
+          scheduleNextPoll();
+        }
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void load(hasLoadedOnce);
+        return;
+      }
+
+      clearPollTimer();
+      clearInFlightRequest();
+    };
+
+    void load();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      disposed = true;
+      clearPollTimer();
+      clearInFlightRequest();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [t, toast]);
 
   const clients = useMemo(() => flattenInboundClients(inbounds), [inbounds]);
   const activeClients = useMemo(

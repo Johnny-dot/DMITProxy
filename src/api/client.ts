@@ -132,8 +132,8 @@ export interface ServerStatus {
   netTraffic: { sent: number; recv: number };
 }
 
-export function getServerStatus() {
-  return apiFetch<ServerStatus>('/panel/api/server/status');
+export function getServerStatus(options?: RequestInit) {
+  return apiFetch<ServerStatus>('/panel/api/server/status', options);
 }
 
 // Inbounds
@@ -162,8 +162,8 @@ export interface Inbound {
   settings: string;
 }
 
-export function getInbounds() {
-  return apiFetch<Inbound[]>('/panel/api/inbounds/list');
+export function getInbounds(options?: RequestInit) {
+  return apiFetch<Inbound[]>('/panel/api/inbounds/list', options);
 }
 
 export async function toggleInbound(id: number, enable: boolean) {
