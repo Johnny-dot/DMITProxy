@@ -31,6 +31,7 @@ interface XuiClientStat {
 
 interface XuiInbound {
   id: number;
+  remark?: string;
   protocol: string;
   enable: boolean;
   settings: string;
@@ -38,6 +39,8 @@ interface XuiInbound {
 }
 
 export interface XuiClientUsage {
+  inboundId: number;
+  inboundRemark: string;
   protocol: string;
   up: number;
   down: number;
@@ -427,6 +430,8 @@ export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientU
     const email = String(client.email ?? '');
     const stats = inbound.clientStats?.find((s) => s.email === email) ?? null;
     return {
+      inboundId: inbound.id,
+      inboundRemark: String(inbound.remark ?? ''),
       protocol: inbound.protocol,
       up: safeNonNegativeInt(stats?.up),
       down: safeNonNegativeInt(stats?.down),

@@ -1,5 +1,6 @@
 import type { Monitor } from 'lucide-react';
 import type { getClientDownloadLinks } from '@/src/utils/clientDownloads';
+import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 
 export interface UserInfo {
   id: number;
@@ -15,6 +16,9 @@ export interface PortalSettings {
   supportTelegram: string;
   announcementText: string;
   announcementActive: boolean;
+  sharedAppleIdTitle: string;
+  sharedAppleIdContent: string;
+  sharedAppleIdActive: boolean;
 }
 
 export interface PortalNotification {
@@ -48,12 +52,19 @@ export interface ClientCard {
 }
 
 export interface ClientStats {
+  inboundId: number;
+  inboundRemark: string;
   protocol: string;
   up: number;
   down: number;
   total: number; // bytes, 0 = unlimited
   expiryTime: number; // ms, 0 = never expires
   enable: boolean;
+}
+
+export interface PortalStatsResponse {
+  stats: ClientStats | null;
+  nodeQuality: NodeQualityProfile | null;
 }
 
 export const COPY_RESET_DELAY_MS = 2000;

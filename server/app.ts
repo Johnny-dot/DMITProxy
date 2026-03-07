@@ -6,6 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import authRouter from './routes/auth.js';
 import adminRouter from './routes/admin.js';
+import downloadsRouter from './routes/downloads.js';
 import {
   buildXuiPath,
   getXuiPathCandidates,
@@ -118,6 +119,7 @@ export function createApp() {
   });
 
   app.use('/local', express.json({ limit: `${localJsonLimitMb}mb` }));
+  app.use('/local/downloads', downloadsRouter);
   app.use('/local/auth/login', authLimiter);
   app.use('/local/auth/register', authLimiter);
   app.use('/local/auth/password-reset', authLimiter);

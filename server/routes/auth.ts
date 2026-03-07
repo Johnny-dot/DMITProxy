@@ -5,6 +5,7 @@ import {
   fetchClientStatsBySubId,
   XuiAdminError,
 } from '../xui-admin.js';
+import { getNodeQualityProfile } from '../node-quality.js';
 
 const router = Router();
 const SESSION_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -265,7 +266,16 @@ router.get('/portal/context', (req, res) => {
       `
       SELECT key, value, updated_at
       FROM app_settings
-      WHERE key IN ('siteName', 'publicUrl', 'supportTelegram', 'announcementText', 'announcementActive')
+      WHERE key IN (
+        'siteName',
+        'publicUrl',
+        'supportTelegram',
+        'announcementText',
+        'announcementActive',
+        'sharedAppleIdTitle',
+        'sharedAppleIdContent',
+        'sharedAppleIdActive'
+      )
     `,
     )
     .all() as Array<{ key: string; value: string; updated_at: number }>;
@@ -278,6 +288,11 @@ router.get('/portal/context', (req, res) => {
   const announcementActiveRaw = settingsMap.get('announcementActive')?.value ?? '0';
   const announcementActive =
     announcementActiveRaw === '1' || announcementActiveRaw.toLowerCase() === 'true';
+  const sharedAppleIdTitle = settingsMap.get('sharedAppleIdTitle')?.value?.trim() || '';
+  const sharedAppleIdContent = settingsMap.get('sharedAppleIdContent')?.value?.trim() || '';
+  const sharedAppleIdActiveRaw = settingsMap.get('sharedAppleIdActive')?.value ?? '0';
+  const sharedAppleIdActive =
+    sharedAppleIdActiveRaw === '1' || sharedAppleIdActiveRaw.toLowerCase() === 'true';
 
   const now = Date.now();
   const notifications: Array<{
@@ -341,6 +356,9 @@ router.get('/portal/context', (req, res) => {
       supportTelegram,
       announcementText,
       announcementActive,
+      sharedAppleIdTitle,
+      sharedAppleIdContent,
+      sharedAppleIdActive,
     },
     notifications,
   });
@@ -354,12 +372,15 @@ router.get('/portal/stats', async (req, res) => {
   }
 
   if (!session.sub_id) {
-    return res.json({ stats: null });
+    return res.json({ stats: null, nodeQuality: null });
   }
 
   try {
     const stats = await fetchClientStatsBySubId(session.sub_id);
-    return res.json({ stats });
+    return res.json({
+      stats,
+      nodeQuality: stats ? getNodeQualityProfile(stats.inboundId) : null,
+    });
   } catch (error) {
     console.error('[Prism] /portal/stats: fetchClientStatsBySubId failed:', error);
     return res.status(502).json({ error: 'Unable to fetch usage stats from upstream' });

@@ -42,7 +42,8 @@ const STORAGE_KEY = 'prism:last-sub-id';
 
 export function SubscriptionsPage() {
   const { toast } = useToast();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const isZh = language === 'zh-CN';
   const [isLoading, setIsLoading] = useState(true);
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -491,14 +492,44 @@ export function SubscriptionsPage() {
           <Download className="w-5 h-5 text-indigo-500" />
           {t('subscriptions.clientDownloads')}
         </h2>
+        <p className="text-sm text-zinc-400">{t('subscriptions.subtitle')}</p>
+        <p className="text-xs leading-6 text-zinc-500">
+          {isZh
+            ? '“官方源”会打开 GitHub 或应用商店；“镜像下载”走当前站点 VPS 的缓存，适合官方源较慢时使用。'
+            : 'Official opens GitHub or the app store. Mirror serves the cached package from this VPS when official sources are slow.'}
+        </p>
         <div className="grid gap-4 md:grid-cols-4">
           {[
-            { name: 'Windows', icon: Wind, version: 'v2rayN', id: 'v2rayN' as const },
-            { name: 'macOS', icon: Apple, version: 'Clash Verge', id: 'clashVerge' as const },
-            { name: 'Android', icon: Smartphone, version: 'v2rayNG', id: 'v2rayNG' as const },
-            { name: 'iOS', icon: Smartphone, version: 'Shadowrocket', id: 'shadowrocket' as const },
+            {
+              name: 'Windows',
+              icon: Wind,
+              version: 'v2rayN',
+              id: 'v2rayN' as const,
+              platform: 'windows' as const,
+            },
+            {
+              name: 'macOS',
+              icon: Apple,
+              version: 'Clash Verge',
+              id: 'clashVerge' as const,
+              platform: 'macos' as const,
+            },
+            {
+              name: 'Android',
+              icon: Smartphone,
+              version: 'v2rayNG',
+              id: 'v2rayNG' as const,
+              platform: 'android' as const,
+            },
+            {
+              name: 'iOS',
+              icon: Smartphone,
+              version: 'Shadowrocket',
+              id: 'shadowrocket' as const,
+              platform: 'ios' as const,
+            },
           ].map((client) => {
-            const links = getClientDownloadLinks(client.id);
+            const links = getClientDownloadLinks(client.id, client.platform);
             return (
               <Card
                 key={client.name}
@@ -512,20 +543,29 @@ export function SubscriptionsPage() {
                     variant="outline"
                     size="sm"
                     className="w-full gap-2"
-                    onClick={() => openLink(links.github, `${client.name} GitHub`)}
+                    onClick={() => openLink(links.github, `${client.name} Official`)}
                   >
                     <ExternalLink className="w-4 h-4" />
-                    GitHub
+                    {isZh ? '官方源' : 'Official'}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     className="w-full gap-2"
                     disabled={!links.vps}
-                    onClick={() => openLink(links.vps, `${client.name} VPS`)}
+                    title={
+                      links.vps
+                        ? isZh
+                          ? '通过当前站点 VPS 缓存分发'
+                          : 'Serve the cached package from this VPS'
+                        : isZh
+                          ? '当前平台暂不提供镜像下载'
+                          : 'Mirror is not available for this platform'
+                    }
+                    onClick={() => openLink(links.vps, `${client.name} Mirror`)}
                   >
                     <ExternalLink className="w-4 h-4" />
-                    VPS
+                    {isZh ? '镜像下载' : 'Mirror'}
                   </Button>
                 </div>
               </Card>

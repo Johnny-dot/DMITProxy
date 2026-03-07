@@ -20,7 +20,6 @@ import {
   UserPlus,
   Search,
   Copy,
-  RotateCcw,
   UserX,
   Edit2,
   Users as UsersIcon,
@@ -52,10 +51,14 @@ interface UsersPageProps {
   onOpenAccounts?: () => void;
 }
 
+function isOnlineClient(user: XuiClientRow) {
+  return getClientStatus(user) === 'active' && user.up + user.down > 0;
+}
+
 export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,6 +100,8 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
   const users = useMemo(() => {
     return flattenInboundClients(inbounds).sort((a, b) => b.up + b.down - (a.up + a.down));
   }, [inbounds]);
+
+  const activeUsersCount = useMemo(() => users.filter(isOnlineClient).length, [users]);
 
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -171,8 +176,16 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
       onOpenAccounts();
       return;
     }
-    navigate('/portal?section=management&tab=accounts');
+    navigate('/users?tab=accounts');
   };
+
+  const onlineColumnLabel = language === 'zh-CN' ? '在线' : 'Online';
+  const onlineHelpText =
+    language === 'zh-CN'
+      ? '根据账号状态为可用且累计流量大于 0 推断为在线。'
+      : 'Inferred as online when the client is active and cumulative traffic is greater than 0.';
+  const onlineStatusLabel = (online: boolean) =>
+    online ? (language === 'zh-CN' ? '在线' : 'Online') : language === 'zh-CN' ? '离线' : 'Offline';
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -207,9 +220,19 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
 
       <Card className="w-full">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <CardTitle>{t('users.userManagement')}</CardTitle>
-            <div className="relative w-full sm:w-64">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="space-y-3">
+              <CardTitle>{t('users.userManagement')}</CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">
+                  {users.length} {t('users.title')}
+                </Badge>
+                <Badge variant="success">
+                  {activeUsersCount} {onlineColumnLabel}
+                </Badge>
+              </div>
+            </div>
+            <div className="relative w-full sm:w-72 xl:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <Input
                 placeholder={t('users.searchPlaceholder')}
@@ -265,6 +288,12 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                       <InfoTooltip content={t('users.help.expireTime')} />
                     </span>
                   </TableHead>
+                  <TableHead>
+                    <span className="inline-flex items-center gap-1">
+                      <span>{onlineColumnLabel}</span>
+                      <InfoTooltip content={onlineHelpText} />
+                    </span>
+                  </TableHead>
                   <TableHead>{t('users.status')}</TableHead>
                   <TableHead className="text-right">{t('users.actions')}</TableHead>
                 </TableRow>
@@ -273,6 +302,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                 {filteredUsers.map((user) => {
                   const trafficUsed = user.up + user.down;
                   const usagePercent = user.totalGB > 0 ? (trafficUsed / user.totalGB) * 100 : 0;
+                  const online = isOnlineClient(user);
                   const status = getClientStatus(user);
 
                   return (
@@ -316,6 +346,11 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                         {formatExpiry(user.expiryTime)}
                       </TableCell>
                       <TableCell>
+                        <Badge variant={online ? 'success' : 'secondary'}>
+                          {onlineStatusLabel(online)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <Badge
                           variant={
                             status === 'active'
@@ -351,14 +386,6 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => handleAction(t('users.resetTraffic'), user.username)}
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-500 hover:bg-red-500/10"
                             title={t('users.deleteClient')}
                             onClick={() => handleDeleteClient(user)}
                           >
@@ -382,7 +409,13 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
               }
               illustration={searchQuery ? undefined : 'empty-users.webp'}
               actionLabel={searchQuery ? t('users.clearSearch') : t('users.goToInbounds')}
-              onAction={() => (searchQuery ? setSearchQuery('') : navigate('/inbounds'))}
+              onAction={() => {
+                if (searchQuery) {
+                  setSearchQuery('');
+                  return;
+                }
+                navigate('/inbounds');
+              }}
             />
           )}
         </CardContent>

@@ -1,45 +1,179 @@
-import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Copy,
-  Check,
-  Smartphone,
-  Monitor,
   Apple,
-  ExternalLink,
-  Download,
-  Link as LinkIcon,
-  Shield,
-  Terminal,
-  Zap,
-  QrCode,
+  Check,
   ChevronDown,
   ChevronUp,
+  Copy,
+  Download,
+  ExternalLink,
+  Link as LinkIcon,
+  Monitor,
+  QrCode,
+  Shield,
+  Smartphone,
+  Terminal,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
-import { getClientDownloadLinks } from '@/src/utils/clientDownloads';
-import type { ClientCard, PlatformKey, SubscriptionFormat } from './types';
+import { getClientDownloadLinks, type ClientDownloadPlatform } from '@/src/utils/clientDownloads';
+import type { NodeQualityProfile } from '@/src/types/nodeQuality';
+import type {
+  ClientCard,
+  ClientStats,
+  PlatformKey,
+  PortalSettings,
+  SubscriptionFormat,
+} from './types';
 import { COPY_RESET_DELAY_MS } from './types';
+import { NodeQualityCard } from './NodeQualityCard';
 
 interface SubscriptionTabProps {
   subId: string | null;
+  portalSettings: PortalSettings | null;
+  clientStats?: ClientStats;
+  nodeQuality?: NodeQualityProfile | null;
 }
 
-export function SubscriptionTab({ subId }: SubscriptionTabProps) {
+type GuidePlatform = Exclude<PlatformKey, 'all'>;
+
+interface ClientGuideContent {
+  recommendedFormat: SubscriptionFormat;
+  steps: string[];
+  tip: string;
+}
+
+function buildClientGuide(
+  clientId: ClientCard['id'],
+  platform: GuidePlatform,
+  platformLabel: string,
+  isZh: boolean,
+): ClientGuideContent {
+  switch (clientId) {
+    case 'v2rayN':
+      return {
+        recommendedFormat: 'universal',
+        steps: isZh
+          ? [
+              '打开 v2rayN，首次启动如果提示下载核心或初始化，按默认完成即可。',
+              '进入“订阅分组”或“从剪贴板导入批量 URL”，把上面复制的订阅链接导入进去。',
+              '导入后执行“更新订阅”，选择一个节点，再打开系统代理或设置为你常用的模式。',
+            ]
+          : [
+              'Open v2rayN and finish the initial core setup if it prompts on first launch.',
+              'Use Subscription Group or Import batch URLs from clipboard to add the copied subscription link above.',
+              'Run Update subscription, pick a node, then enable the system proxy or your preferred routing mode.',
+            ],
+        tip: isZh
+          ? '如果剪贴板导入失败，就改用“从 URL 导入”再更新一次订阅。'
+          : 'If clipboard import fails, switch to importing from URL and update the subscription again.',
+      };
+    case 'v2rayNG':
+      return {
+        recommendedFormat: 'universal',
+        steps: isZh
+          ? [
+              '打开 v2rayNG，点击右上角加号，或者进入订阅分组设置。',
+              '选择“从剪贴板导入”或“添加订阅”，把上面复制的链接粘贴进去并保存。',
+              '更新订阅后选择一个节点，再点击连接，并允许 Android 的 VPN 权限。',
+            ]
+          : [
+              'Open v2rayNG and tap the plus button or the subscription group settings.',
+              'Choose Import from clipboard or Add subscription, paste the copied link above, then save it.',
+              'Update the subscription, select a node, then tap Connect and allow the Android VPN permission.',
+            ],
+        tip: isZh
+          ? '第一次连接时弹出 VPN 授权是正常现象。'
+          : 'The first connection usually requests VPN permission. That is expected.',
+      };
+    case 'shadowrocket':
+      return {
+        recommendedFormat: 'universal',
+        steps: isZh
+          ? [
+              '打开 Shadowrocket，点击右上角加号，新增一个订阅来源。',
+              '把上面复制的订阅链接粘贴到 URL，备注可以填写站点名或你的用户名。',
+              '保存后下拉刷新订阅，选中节点，再打开顶部连接开关并允许系统 VPN 权限。',
+            ]
+          : [
+              'Open Shadowrocket and tap the plus button to create a new subscription source.',
+              'Paste the copied subscription URL above, add an optional remark, then save it.',
+              'Refresh the subscription, pick a node, and turn on the main connection toggle with VPN permission.',
+            ],
+        tip: isZh
+          ? '如果新节点没有马上出现，先手动刷新一次订阅列表。'
+          : 'If fresh nodes do not appear right away, manually refresh the subscription list once.',
+      };
+    case 'clashVerge':
+      return {
+        recommendedFormat: 'clash',
+        steps: isZh
+          ? [
+              '先把上方订阅格式切到 Clash，再打开 Clash Verge 进入 Profiles 页面。',
+              '选择 New Profile 或 Import from URL，把 Clash 订阅链接粘贴进去并保存。',
+              '更新 Profile 后选择节点组，按需要开启 System Proxy 或 TUN 模式开始使用。',
+            ]
+          : [
+              'Switch the subscription format above to Clash, then open Clash Verge and go to Profiles.',
+              'Use New Profile or Import from URL, paste the Clash subscription link, and save it.',
+              'Update the profile, choose your proxy group, and enable System Proxy or TUN if needed.',
+            ],
+        tip: isZh
+          ? 'Clash Verge 更适合需要规则分流和策略组的场景。'
+          : 'Clash Verge is better when you want rule-based routing and proxy groups.',
+      };
+    case 'hiddify':
+      return {
+        recommendedFormat: 'universal',
+        steps: isZh
+          ? [
+              `打开 ${platformLabel} 上的 Hiddify，进入 New Profile / Add Profile。`,
+              '选择从剪贴板、URL 或二维码导入，把上面复制的订阅链接加进去。',
+              platform === 'android' || platform === 'ios'
+                ? '保存后点击连接，并允许系统 VPN 权限。'
+                : '保存后点击连接，并按提示允许系统代理或网络扩展权限。',
+            ]
+          : [
+              `Open Hiddify on ${platformLabel} and go to New Profile or Add Profile.`,
+              'Import the profile from clipboard, URL, or QR code using the copied subscription link above.',
+              platform === 'android' || platform === 'ios'
+                ? 'Save it, tap Connect, and allow the system VPN permission.'
+                : 'Save it, connect, and allow any system proxy or network extension permissions that appear.',
+            ],
+        tip: isZh
+          ? 'Hiddify 是最省心的通用方案，桌面和移动端都能用同一条订阅。'
+          : 'Hiddify is the easiest all-around option and works well across desktop and mobile.',
+      };
+    default:
+      return {
+        recommendedFormat: 'universal',
+        steps: [],
+        tip: '',
+      };
+  }
+}
+
+export function SubscriptionTab({
+  subId,
+  portalSettings,
+  clientStats,
+  nodeQuality,
+}: SubscriptionTabProps) {
   const { t, language } = useI18n();
   const isZh = language === 'zh-CN';
 
   const [activeFormat, setActiveFormat] = useState<SubscriptionFormat>('universal');
   const [activePlatform, setActivePlatform] = useState<PlatformKey>('all');
+  const [activeGuideClientId, setActiveGuideClientId] = useState<ClientCard['id']>('hiddify');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [hasCopied, setHasCopied] = useState(false);
   const [hasOpenedDownload, setHasOpenedDownload] = useState(false);
   const [hasMarkedConnected, setHasMarkedConnected] = useState(false);
   const [showQr, setShowQr] = useState(false);
 
-  // Auto-detect platform
   useEffect(() => {
     const ua = navigator.userAgent.toLowerCase();
     if (ua.includes('android')) {
@@ -83,7 +217,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
       {
         key: 'clash' as const,
         label: 'Clash',
-        desc: isZh ? '推荐 Clash 系列' : 'Recommended for Clash clients',
+        desc: isZh ? '推荐给 Clash 系列' : 'Recommended for Clash clients',
       },
       {
         key: 'v2ray' as const,
@@ -120,6 +254,14 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
     [isZh],
   );
 
+  const resolveDownloadPlatform = useCallback(
+    (platforms: GuidePlatform[], recommendedFor: ClientDownloadPlatform[]) => {
+      if (activePlatform !== 'all') return activePlatform;
+      return recommendedFor[0] ?? platforms[0] ?? 'windows';
+    },
+    [activePlatform],
+  );
+
   const clients = useMemo<ClientCard[]>(
     () => [
       {
@@ -129,7 +271,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
         icon: Monitor,
         platforms: ['windows'],
         recommendedFor: ['windows'],
-        links: getClientDownloadLinks('v2rayN'),
+        links: getClientDownloadLinks('v2rayN', resolveDownloadPlatform(['windows'], ['windows'])),
         desc: t('portal.recommendedFor', { platform: 'Windows' }),
       },
       {
@@ -139,7 +281,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
         icon: Smartphone,
         platforms: ['android'],
         recommendedFor: ['android'],
-        links: getClientDownloadLinks('v2rayNG'),
+        links: getClientDownloadLinks('v2rayNG', resolveDownloadPlatform(['android'], ['android'])),
         desc: t('portal.recommendedFor', { platform: 'Android' }),
       },
       {
@@ -149,7 +291,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
         icon: Apple,
         platforms: ['ios'],
         recommendedFor: ['ios'],
-        links: getClientDownloadLinks('shadowrocket'),
+        links: getClientDownloadLinks('shadowrocket', resolveDownloadPlatform(['ios'], ['ios'])),
         desc: t('portal.recommendedFor', { platform: 'iPhone/iPad' }),
       },
       {
@@ -159,7 +301,10 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
         icon: Monitor,
         platforms: ['windows', 'macos'],
         recommendedFor: ['macos'],
-        links: getClientDownloadLinks('clashVerge'),
+        links: getClientDownloadLinks(
+          'clashVerge',
+          resolveDownloadPlatform(['windows', 'macos'], ['macos']),
+        ),
         desc: t('portal.advancedRules'),
       },
       {
@@ -169,44 +314,24 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
         icon: Smartphone,
         platforms: ['windows', 'macos', 'android', 'ios'],
         recommendedFor: ['windows', 'android', 'ios'],
-        links: getClientDownloadLinks('hiddify'),
+        links: getClientDownloadLinks(
+          'hiddify',
+          resolveDownloadPlatform(
+            ['windows', 'macos', 'android', 'ios'],
+            ['windows', 'android', 'ios'],
+          ),
+        ),
         desc: t('portal.easyToUse'),
       },
     ],
-    [t],
-  );
-
-  const tutorialMap = useMemo<Record<Exclude<PlatformKey, 'all'>, string[]>>(
-    () => ({
-      windows: [
-        t('subscriptions.tutorial.windows1'),
-        t('subscriptions.tutorial.windows2'),
-        t('subscriptions.tutorial.windows3'),
-      ],
-      macos: [
-        t('subscriptions.tutorial.macos1'),
-        t('subscriptions.tutorial.macos2'),
-        t('subscriptions.tutorial.macos3'),
-      ],
-      ios: [
-        t('subscriptions.tutorial.ios1'),
-        t('subscriptions.tutorial.ios2'),
-        t('subscriptions.tutorial.ios3'),
-      ],
-      android: [
-        t('subscriptions.tutorial.android1'),
-        t('subscriptions.tutorial.android2'),
-        t('subscriptions.tutorial.android3'),
-      ],
-    }),
-    [t],
+    [resolveDownloadPlatform, t],
   );
 
   const troubleshooting = isZh
     ? [
-        '先在客户端执行"更新订阅"再连接。',
-        '切换其它节点重试，优先选择低延迟节点。',
-        '若仍失败，把报错截图发给管理员排查。',
+        '先在客户端执行“更新订阅”后再连接。',
+        '切换其他节点重试，优先选择延迟更低的节点。',
+        '如果仍然失败，把报错截图发给管理员排查。',
       ]
     : [
         'Run "Update subscription" in the client before connecting.',
@@ -214,18 +339,60 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
         'If it still fails, send an error screenshot to your admin.',
       ];
 
-  const guidePlatform: Exclude<PlatformKey, 'all'> =
-    activePlatform === 'all' ? 'windows' : activePlatform;
-  const guideSteps = tutorialMap[guidePlatform];
-  const currentGuideLabel =
-    platformOptions.find((item) => item.key === guidePlatform)?.label ?? 'Windows';
   const visibleClients = useMemo(
     () =>
       activePlatform === 'all'
         ? clients
-        : clients.filter((c) => c.platforms.includes(activePlatform)),
+        : clients.filter((client) => client.platforms.includes(activePlatform)),
     [activePlatform, clients],
   );
+
+  const preferredGuideClientId = useMemo<ClientCard['id']>(
+    () =>
+      visibleClients.find((client) =>
+        client.recommendedFor.includes(activePlatform === 'all' ? 'windows' : activePlatform),
+      )?.id ??
+      visibleClients[0]?.id ??
+      'hiddify',
+    [activePlatform, visibleClients],
+  );
+
+  useEffect(() => {
+    if (!visibleClients.some((client) => client.id === activeGuideClientId)) {
+      setActiveGuideClientId(preferredGuideClientId);
+    }
+  }, [activeGuideClientId, preferredGuideClientId, visibleClients]);
+
+  const activeGuideClient =
+    visibleClients.find((client) => client.id === activeGuideClientId) ??
+    visibleClients[0] ??
+    clients[0];
+
+  const guidePlatform: GuidePlatform =
+    activePlatform !== 'all' && activeGuideClient?.platforms.includes(activePlatform)
+      ? activePlatform
+      : (activeGuideClient?.recommendedFor[0] ?? activeGuideClient?.platforms[0] ?? 'windows');
+
+  const guidePlatformLabel =
+    platformOptions.find((item) => item.key === guidePlatform)?.label ?? 'Windows';
+
+  const guideContent = useMemo<ClientGuideContent>(
+    () =>
+      activeGuideClient
+        ? buildClientGuide(activeGuideClient.id, guidePlatform, guidePlatformLabel, isZh)
+        : { recommendedFormat: 'universal', steps: [], tip: '' },
+    [activeGuideClient, guidePlatform, guidePlatformLabel, isZh],
+  );
+
+  const recommendedFormatLabel =
+    formatOptions.find((item) => item.key === guideContent.recommendedFormat)?.label ?? 'Universal';
+  const sharedAppleIdTitle = portalSettings?.sharedAppleIdTitle.trim() || '';
+  const sharedAppleIdContent = portalSettings?.sharedAppleIdContent.trim() || '';
+  const sharedAppleIdEnabled = portalSettings?.sharedAppleIdActive === true;
+  const showSharedAppleIdCard =
+    sharedAppleIdEnabled &&
+    Boolean(sharedAppleIdContent) &&
+    (activePlatform === 'all' || activePlatform === 'ios');
 
   const setupSteps = [
     {
@@ -233,34 +400,53 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
       title: isZh ? '复制订阅链接' : 'Copy subscription URL',
       done: hasSubscription && hasCopied,
     },
-    { id: 'download', title: isZh ? '下载客户端' : 'Download a client', done: hasOpenedDownload },
-    { id: 'connect', title: isZh ? '导入并连接' : 'Import and connect', done: hasMarkedConnected },
+    {
+      id: 'download',
+      title: isZh ? '下载客户端' : 'Download a client',
+      done: hasOpenedDownload,
+    },
+    {
+      id: 'connect',
+      title: isZh ? '导入并连接' : 'Import and connect',
+      done: hasMarkedConnected,
+    },
   ];
-  const completedCount = setupSteps.filter((s) => s.done).length;
 
   const handleCopy = (text: string, key: string) => {
     if (!text) return;
     navigator.clipboard.writeText(text).then(() => {
       setCopiedKey(key);
       setHasCopied(true);
-      setTimeout(() => setCopiedKey((cur) => (cur === key ? null : cur)), COPY_RESET_DELAY_MS);
+      setTimeout(
+        () => setCopiedKey((current) => (current === key ? null : current)),
+        COPY_RESET_DELAY_MS,
+      );
     });
   };
 
-  const openDownload = (url: string) => {
+  const openDownload = (url: string, clientId?: ClientCard['id']) => {
     if (!url) return;
+    if (clientId) setActiveGuideClientId(clientId);
     setHasOpenedDownload(true);
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <>
-      {/* Step 1: Copy subscription URL + Setup checklist */}
+      {clientStats && (
+        <NodeQualityCard
+          isZh={isZh}
+          inboundRemark={clientStats.inboundRemark}
+          profile={nodeQuality}
+          className="mb-6"
+        />
+      )}
+
       <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]" data-testid="subscription-tab">
         <div className="surface-card space-y-4 p-6">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <LinkIcon className="w-4 h-4 text-emerald-400" />
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <LinkIcon className="h-4 w-4 text-emerald-400" />
               <span>{isZh ? '步骤 1：复制订阅链接' : 'Step 1: Copy subscription URL'}</span>
             </h2>
             <p className="text-sm text-zinc-400">{t('portal.subscriptionDesc')}</p>
@@ -268,7 +454,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
 
           {hasSubscription ? (
             <div className="space-y-4">
-              <div className="grid gap-2 grid-cols-3 md:grid-cols-6">
+              <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
                 {formatOptions.map((format) => (
                   <button
                     key={format.key}
@@ -282,14 +468,14 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
                     )}
                   >
                     <p className="text-sm font-medium">{format.label}</p>
-                    <p className="text-[11px] text-zinc-500 mt-0.5 leading-tight">{format.desc}</p>
+                    <p className="mt-0.5 text-[11px] leading-tight text-zinc-500">{format.desc}</p>
                   </button>
                 ))}
               </div>
 
               <div className="surface-panel space-y-3 p-4">
                 <p
-                  className="font-mono text-xs text-zinc-300 break-all"
+                  className="break-all font-mono text-xs text-zinc-300"
                   data-testid="subscription-active-url"
                 >
                   {activeSubUrl}
@@ -303,9 +489,9 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
                     data-testid="subscription-copy-active"
                   >
                     {copiedKey === `active-${activeFormat}` ? (
-                      <Check className="w-4 h-4 text-emerald-400" />
+                      <Check className="h-4 w-4 text-emerald-400" />
                     ) : (
-                      <Copy className="w-4 h-4" />
+                      <Copy className="h-4 w-4" />
                     )}
                     {copiedKey === `active-${activeFormat}`
                       ? t('portal.copied')
@@ -319,12 +505,12 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
                     className="gap-2"
                     onClick={() => setShowQr((prev) => !prev)}
                   >
-                    <QrCode className="w-4 h-4" />
+                    <QrCode className="h-4 w-4" />
                     {showQr ? (isZh ? '隐藏二维码' : 'Hide QR') : isZh ? '显示二维码' : 'Show QR'}
                     {showQr ? (
-                      <ChevronUp className="w-3 h-3" />
+                      <ChevronUp className="h-3 w-3" />
                     ) : (
-                      <ChevronDown className="w-3 h-3" />
+                      <ChevronDown className="h-3 w-3" />
                     )}
                   </Button>
                 </div>
@@ -336,15 +522,15 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
               className="surface-panel space-y-2 p-6 text-center"
               data-testid="subscription-not-ready"
             >
-              <p className="text-zinc-300 text-sm">{t('portal.notReadyTitle')}</p>
-              <p className="text-zinc-500 text-xs">{t('portal.notReadyDesc')}</p>
+              <p className="text-sm text-zinc-300">{t('portal.notReadyTitle')}</p>
+              <p className="text-xs text-zinc-500">{t('portal.notReadyDesc')}</p>
             </div>
           )}
         </div>
 
         <div className="surface-card space-y-4 p-6">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Shield className="w-4 h-4 text-emerald-400" />
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Shield className="h-4 w-4 text-emerald-400" />
             <span>{isZh ? '上手进度清单' : 'Setup checklist'}</span>
           </h2>
           <div className="space-y-3">
@@ -360,13 +546,13 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
               >
                 <span
                   className={cn(
-                    'w-6 h-6 rounded-full flex items-center justify-center text-xs border',
+                    'flex h-6 w-6 items-center justify-center rounded-full border text-xs',
                     step.done
-                      ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                      : 'bg-zinc-800 border-white/10 text-zinc-400',
+                      ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-300'
+                      : 'border-white/10 bg-zinc-800 text-zinc-400',
                   )}
                 >
-                  {step.done ? <Check className="w-3.5 h-3.5" /> : index + 1}
+                  {step.done ? <Check className="h-3.5 w-3.5" /> : index + 1}
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm text-zinc-100">{step.title}</p>
@@ -394,17 +580,26 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
         </div>
       </section>
 
-      {/* Step 2: Download client */}
       <section className="surface-card space-y-4 p-6" data-testid="subscription-downloads-section">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Download className="w-4 h-4 text-emerald-400" />
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Download className="h-4 w-4 text-emerald-400" />
             <span>{isZh ? '步骤 2：下载客户端' : 'Step 2: Download client'}</span>
           </h2>
           <p className="text-sm text-zinc-400">
             {isZh
               ? '先筛选你的设备，再安装推荐客户端。'
               : 'Pick your device first, then install the recommended client.'}
+          </p>
+          <p className="text-xs leading-6 text-zinc-500">
+            {isZh
+              ? '“官方源”会打开 GitHub 或应用商店；“镜像下载”走当前站点 VPS 的缓存，适合官方源较慢时使用。'
+              : '"Official" opens GitHub or the app store. "Mirror" serves the cached package from this VPS when official sources are slow.'}
+          </p>
+          <p className="text-xs leading-6 text-zinc-500">
+            {isZh
+              ? '下面选中的客户端会直接决定第 3 步显示哪一套操作说明。'
+              : 'The client you select here directly controls which setup guide appears in step 3.'}
           </p>
         </div>
 
@@ -415,7 +610,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
               type="button"
               onClick={() => setActivePlatform(platform.key)}
               className={cn(
-                'px-3 py-1.5 rounded-md text-xs border transition-colors',
+                'rounded-md border px-3 py-1.5 text-xs transition-colors',
                 activePlatform === platform.key
                   ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
                   : 'border-white/10 bg-zinc-950/40 text-zinc-300 hover:bg-zinc-800/60',
@@ -430,23 +625,39 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
           {visibleClients.map((client) => {
             const isRecommended =
               activePlatform !== 'all' && client.recommendedFor.includes(activePlatform);
+            const isActiveGuide = activeGuideClient?.id === client.id;
+
             return (
-              <div key={client.id} className="surface-panel space-y-3 p-4">
+              <div
+                key={client.id}
+                className={cn(
+                  'surface-panel space-y-3 p-4 transition-colors',
+                  isActiveGuide && 'border-emerald-500/40 bg-emerald-500/5',
+                )}
+                onClick={() => setActiveGuideClientId(client.id)}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <client.icon className="w-5 h-5 text-zinc-400 mt-0.5" />
+                    <client.icon className="mt-0.5 h-5 w-5 text-zinc-400" />
                     <div>
-                      <p className="font-medium text-sm">{client.name}</p>
+                      <p className="text-sm font-medium">{client.name}</p>
                       <p className="text-xs text-zinc-500">
                         {client.os} / {client.desc}
                       </p>
                     </div>
                   </div>
-                  {isRecommended && (
-                    <span className="text-[10px] uppercase tracking-wide px-2 py-1 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-                      {isZh ? '推荐' : 'Recommended'}
-                    </span>
-                  )}
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {isRecommended && (
+                      <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] uppercase tracking-wide text-emerald-300">
+                        {isZh ? '推荐' : 'Recommended'}
+                      </span>
+                    )}
+                    {isActiveGuide && (
+                      <span className="rounded border border-white/10 bg-zinc-900/70 px-2 py-1 text-[10px] uppercase tracking-wide text-zinc-300">
+                        {isZh ? '当前教程' : 'Current guide'}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -454,59 +665,174 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
                     variant="outline"
                     size="sm"
                     className="h-8 gap-1.5 text-xs"
-                    onClick={() => openDownload(client.links.github)}
+                    onClick={() => openDownload(client.links.github, client.id)}
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    GitHub
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    {isZh ? '官方源' : 'Official'}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="h-8 gap-1.5 text-xs"
-                    onClick={() => openDownload(client.links.vps)}
+                    onClick={() => openDownload(client.links.vps, client.id)}
                     disabled={!client.links.vps}
+                    title={
+                      client.links.vps
+                        ? isZh
+                          ? '通过当前站点 VPS 缓存分发'
+                          : 'Serve the cached package from this VPS'
+                        : isZh
+                          ? '当前平台暂不提供镜像下载'
+                          : 'Mirror is not available for this platform'
+                    }
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    VPS
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    {isZh ? '镜像下载' : 'Mirror'}
                   </Button>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {showSharedAppleIdCard && (
+          <div className="rounded-[22px] border border-amber-500/20 bg-amber-500/6 p-4 md:p-5">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-300">
+                    {isZh ? 'iPhone / iPad 下载辅助' : 'iPhone / iPad download help'}
+                  </span>
+                  <span className="text-xs text-zinc-500">
+                    {isZh ? '管理员共享内容' : 'Admin-managed content'}
+                  </span>
+                </div>
+                <h3 className="text-sm font-semibold text-zinc-100">
+                  {sharedAppleIdTitle ||
+                    (isZh
+                      ? '共享美区 Apple ID / 下载说明'
+                      : 'Shared US Apple ID / download instructions')}
+                </h3>
+                <p className="max-w-3xl text-xs leading-6 text-zinc-400">
+                  {isZh
+                    ? '适合国区商店无法直接下载 Shadowrocket 等工具时使用。请只在 App Store 内登录，不要开启 iCloud 同步。'
+                    : 'Use this when the local App Store cannot download Shadowrocket or similar tools. Sign in only inside App Store and do not enable iCloud sync.'}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 self-start"
+                onClick={() => handleCopy(sharedAppleIdContent, 'shared-apple-id')}
+              >
+                <Copy className="h-4 w-4" />
+                {copiedKey === 'shared-apple-id'
+                  ? isZh
+                    ? '已复制'
+                    : 'Copied'
+                  : isZh
+                    ? '复制内容'
+                    : 'Copy details'}
+              </Button>
+            </div>
+
+            <div className="mt-4 whitespace-pre-wrap rounded-[18px] border border-white/10 bg-zinc-950/40 px-4 py-3 font-mono text-xs leading-6 text-zinc-300">
+              {sharedAppleIdContent}
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* Step 3: Import and connect + Troubleshooting */}
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="surface-card space-y-4 p-6" data-testid="subscription-guide-section">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-emerald-400" />
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Terminal className="h-4 w-4 text-emerald-400" />
               <span>{isZh ? '步骤 3：导入并连接' : 'Step 3: Import and connect'}</span>
             </h2>
             <p className="text-sm text-zinc-400">
-              {isZh ? `当前教程设备：${currentGuideLabel}` : `Current guide: ${currentGuideLabel}`}
+              {activeGuideClient
+                ? isZh
+                  ? `当前教程：${activeGuideClient.name} · ${guidePlatformLabel}`
+                  : `Current guide: ${activeGuideClient.name} on ${guidePlatformLabel}`
+                : isZh
+                  ? '请先在上方选择客户端'
+                  : 'Choose a client above first'}
             </p>
           </div>
+
+          {visibleClients.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {visibleClients.map((client) => (
+                <button
+                  key={client.id}
+                  type="button"
+                  onClick={() => setActiveGuideClientId(client.id)}
+                  className={cn(
+                    'rounded-full border px-3 py-1.5 text-xs transition-colors',
+                    activeGuideClient?.id === client.id
+                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                      : 'border-white/10 bg-zinc-950/40 text-zinc-300 hover:bg-zinc-800/60',
+                  )}
+                >
+                  {client.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="surface-panel space-y-3 p-4">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+              <span>{isZh ? '推荐订阅格式' : 'Recommended format'}</span>
+              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-emerald-300">
+                {recommendedFormatLabel}
+              </span>
+              {activeFormat !== guideContent.recommendedFormat && (
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-amber-300">
+                  {isZh
+                    ? `当前是 ${formatOptions.find((item) => item.key === activeFormat)?.label ?? activeFormat}`
+                    : `Current: ${formatOptions.find((item) => item.key === activeFormat)?.label ?? activeFormat}`}
+                </span>
+              )}
+            </div>
+
+            {activeFormat !== guideContent.recommendedFormat && (
+              <p className="text-xs leading-6 text-amber-300/90">
+                {isZh
+                  ? `这套教程按 ${recommendedFormatLabel} 格式写的。建议先回到步骤 1 切换订阅格式，再继续导入。`
+                  : `This guide assumes the ${recommendedFormatLabel} format. Switch the link type in step 1 before importing.`}
+              </p>
+            )}
+          </div>
+
           <div className="space-y-3">
-            {guideSteps.map((step, index) => (
-              <div key={step} className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full border border-white/10 bg-zinc-950/60 text-xs flex items-center justify-center text-zinc-300 flex-shrink-0">
+            {guideContent.steps.map((step, index) => (
+              <div
+                key={`${activeGuideClient?.id ?? 'guide'}-${index}`}
+                className="flex items-start gap-3"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-zinc-950/60 text-xs text-zinc-300">
                   {index + 1}
                 </span>
-                <p className="text-sm text-zinc-300 pt-0.5">{step}</p>
+                <p className="pt-0.5 text-sm text-zinc-300">{step}</p>
               </div>
             ))}
           </div>
+
+          {guideContent.tip && (
+            <p className="rounded-lg border border-white/10 bg-zinc-950/40 px-4 py-3 text-xs leading-6 text-zinc-400">
+              {guideContent.tip}
+            </p>
+          )}
         </div>
 
         <div
           className="surface-card space-y-4 p-6"
           data-testid="subscription-troubleshooting-section"
         >
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-400" />
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Zap className="h-4 w-4 text-amber-400" />
             <span>{isZh ? '连接失败排查' : 'Troubleshooting'}</span>
           </h2>
           <div className="space-y-3">
@@ -516,7 +842,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
               </p>
             ))}
           </div>
-          <p className="text-xs text-zinc-500 border-t border-white/10 pt-4">
+          <p className="border-t border-white/10 pt-4 text-xs text-zinc-500">
             {t('portal.needHelp')}
           </p>
         </div>
@@ -525,19 +851,14 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// QR code canvas
-// ---------------------------------------------------------------------------
-
 function QrCodeCanvas({ url }: { url: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
 
   const render = useCallback((canvas: HTMLCanvasElement, targetUrl: string) => {
-    // qrcode exports differently in ESM / CJS; handle both
     import('qrcode')
       .then((mod) => {
-        const QRCode = (mod as any).default ?? mod;
+        const QRCode = (mod as { default?: unknown }).default ?? mod;
         return (
           QRCode.toCanvas as (el: HTMLCanvasElement, text: string, opts: object) => Promise<void>
         )(canvas, targetUrl, {

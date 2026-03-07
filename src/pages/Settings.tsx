@@ -29,15 +29,20 @@ const DEFAULT_SETTINGS: AdminSettings = {
   supportTelegram: '',
   announcementText: '',
   announcementActive: false,
+  sharedAppleIdTitle: '',
+  sharedAppleIdContent: '',
+  sharedAppleIdActive: false,
 };
 
 export function SettingsPage() {
   const { toast } = useToast();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const isZh = language === 'zh-CN';
   const [settings, setSettings] = useState<AdminSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingGeneral, setIsSavingGeneral] = useState(false);
   const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
+  const [isSavingAppleId, setIsSavingAppleId] = useState(false);
   const [lastBackupPath, setLastBackupPath] = useState('');
 
   const load = async () => {
@@ -93,6 +98,29 @@ export function SettingsPage() {
       toast(message, 'error');
     } finally {
       setIsSavingAnnouncement(false);
+    }
+  };
+
+  const saveSharedAppleId = async () => {
+    setIsSavingAppleId(true);
+    try {
+      const updated = await saveAdminSettings({
+        sharedAppleIdTitle: settings.sharedAppleIdTitle,
+        sharedAppleIdContent: settings.sharedAppleIdContent,
+        sharedAppleIdActive: settings.sharedAppleIdActive,
+      });
+      setSettings(updated);
+      toast(isZh ? '共享 Apple ID 内容已更新' : 'Shared Apple ID content updated', 'success');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : isZh
+            ? '保存共享 Apple ID 内容失败'
+            : 'Failed to save shared Apple ID content';
+      toast(message, 'error');
+    } finally {
+      setIsSavingAppleId(false);
     }
   };
 
@@ -228,6 +256,86 @@ export function SettingsPage() {
                 >
                   <Save className="w-4 h-4" />
                   {isSavingAnnouncement ? t('common.saving') : t('settings.updateAnnouncement')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-emerald-500" />
+                <CardTitle>
+                  {isZh ? '共享美区 Apple ID / 下载说明' : 'Shared US Apple ID / download note'}
+                </CardTitle>
+              </div>
+              <CardDescription>
+                {isZh
+                  ? '这块内容会显示在用户订阅页下载区，适合放美区 Apple ID、一次性验证码使用规则，或 iPhone/iPad 下载说明。'
+                  : 'This block is shown in the user download area. Use it for a US Apple ID, one-time code rules, or iPhone/iPad download instructions.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">{isZh ? '显示标题' : 'Display title'}</label>
+                <Input
+                  value={settings.sharedAppleIdTitle}
+                  placeholder={
+                    isZh ? '例如：iPhone / iPad 下载说明' : 'Example: iPhone / iPad download help'
+                  }
+                  onChange={(e) => updateField('sharedAppleIdTitle', e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">
+                  {isZh ? '显示内容' : 'Display content'}
+                </label>
+                <textarea
+                  className="min-h-[170px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 text-sm text-zinc-50 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
+                  placeholder={
+                    isZh
+                      ? '例如：\\nApple ID: example@icloud.com\\n密码: ******\\n说明：只在 App Store 登录，不要开启 iCloud。下载 Shadowrocket 后请立即退出。'
+                      : 'Example:\\nApple ID: example@icloud.com\\nPassword: ******\\nRule: sign in only inside App Store, do not enable iCloud, and sign out right after installing Shadowrocket.'
+                  }
+                  value={settings.sharedAppleIdContent}
+                  onChange={(e) => updateField('sharedAppleIdContent', e.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-zinc-400">{isZh ? '状态：' : 'Status:'}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      updateField('sharedAppleIdActive', !settings.sharedAppleIdActive)
+                    }
+                  >
+                    {settings.sharedAppleIdActive
+                      ? isZh
+                        ? '停用'
+                        : 'Disable'
+                      : isZh
+                        ? '启用'
+                        : 'Enable'}
+                  </Button>
+                  <Badge variant={settings.sharedAppleIdActive ? 'success' : 'secondary'}>
+                    {settings.sharedAppleIdActive
+                      ? isZh
+                        ? '已显示给用户'
+                        : 'Visible to users'
+                      : isZh
+                        ? '未显示'
+                        : 'Hidden'}
+                  </Badge>
+                </div>
+                <Button className="gap-2" onClick={saveSharedAppleId} disabled={isSavingAppleId}>
+                  <Save className="w-4 h-4" />
+                  {isSavingAppleId
+                    ? t('common.saving')
+                    : isZh
+                      ? '更新共享内容'
+                      : 'Update shared content'}
                 </Button>
               </div>
             </CardContent>

@@ -1,3 +1,5 @@
+import type { NodeQualityProfile } from '@/src/types/nodeQuality';
+
 const BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/+$/, '');
 
 interface ApiResponse<T> {
@@ -160,6 +162,11 @@ export interface Inbound {
   settings: string;
 }
 
+export interface SaveNodeQualityResult {
+  profile: NodeQualityProfile;
+  removed: boolean;
+}
+
 export function getInbounds() {
   return apiFetch<Inbound[]>('/panel/api/inbounds/list');
 }
@@ -233,6 +240,9 @@ export interface AdminSettings {
   supportTelegram: string;
   announcementText: string;
   announcementActive: boolean;
+  sharedAppleIdTitle: string;
+  sharedAppleIdContent: string;
+  sharedAppleIdActive: boolean;
 }
 
 export function getAdminSettings(): Promise<AdminSettings> {
@@ -256,6 +266,32 @@ export async function clearPortalSessions(): Promise<number> {
     fallbackError: 'Failed to clear sessions',
   });
   return Number(data.cleared ?? 0);
+}
+
+export async function getNodeQualityProfiles(): Promise<NodeQualityProfile[]> {
+  const data = await localFetch<{ profiles?: NodeQualityProfile[] }>('/local/admin/node-quality', {
+    fallbackError: 'Failed to load node quality profiles',
+  });
+  return Array.isArray(data.profiles) ? data.profiles : [];
+}
+
+export async function saveNodeQualityProfile(
+  inboundId: number,
+  payload: Partial<NodeQualityProfile>,
+): Promise<SaveNodeQualityResult> {
+  const data = await localFetch<{ profile: NodeQualityProfile; removed?: boolean }>(
+    `/local/admin/node-quality/${inboundId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+      fallbackError: 'Failed to save node quality profile',
+    },
+  );
+
+  return {
+    profile: data.profile,
+    removed: data.removed === true,
+  };
 }
 
 export async function backupDatabase(): Promise<string> {

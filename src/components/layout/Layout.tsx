@@ -10,7 +10,7 @@ export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 text-zinc-50">
+    <div className="flex h-screen overflow-hidden bg-zinc-950 text-zinc-50">
       <div className="hidden p-4 pr-0 md:block">
         <Sidebar />
       </div>

@@ -6,6 +6,7 @@ import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
 import { Button } from '@/src/components/ui/Button';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
+import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import { UsersCenterPage } from './UsersCenter';
 import { PortalHeader } from './portal/PortalHeader';
 import { HomeTab } from './portal/HomeTab';
@@ -18,6 +19,7 @@ import type {
   ViewerRole,
   PortalNotification,
   ClientStats,
+  PortalStatsResponse,
 } from './portal/types';
 import { isPortalTab, toMillis, COPY_RESET_DELAY_MS } from './portal/types';
 
@@ -45,6 +47,7 @@ export function UserPortalPage() {
 
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [clientStats, setClientStats] = useState<ClientStats | null | 'loading'>('loading');
+  const [nodeQuality, setNodeQuality] = useState<NodeQualityProfile | null>(null);
 
   // -----------------------------------------------------------------------
   // Derived state
@@ -155,6 +158,7 @@ export function UserPortalPage() {
 
   const loadStats = useCallback(async () => {
     setClientStats('loading');
+    setNodeQuality(null);
     try {
       const res = await fetch('/local/auth/portal/stats', { credentials: 'include' });
       if (!res.ok) {
@@ -166,16 +170,22 @@ export function UserPortalPage() {
         console.error('[portal] loadStats: failed to parse response:', err);
         return null;
       });
-      setClientStats(data?.stats ?? null);
+      const typed = data as PortalStatsResponse | null;
+      setClientStats(typed?.stats ?? null);
+      setNodeQuality(typed?.nodeQuality ?? null);
     } catch (error) {
       console.error('[portal] loadStats: network error:', error);
       setClientStats(null);
+      setNodeQuality(null);
     }
   }, []);
 
   useEffect(() => {
     if (viewerRole === 'user') void loadStats();
-    else setClientStats(null);
+    else {
+      setClientStats(null);
+      setNodeQuality(null);
+    }
   }, [viewerRole, loadStats]);
 
   // Set default section based on role (only when URL has no section yet)
@@ -403,6 +413,7 @@ export function UserPortalPage() {
             hasSubscription={hasSubscription}
             subscriptionUniversalUrl={subscriptionLinks.universal}
             clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
+            nodeQuality={nodeQuality}
             isStatsLoading={clientStats === 'loading'}
             onCopy={handleCopy}
             onSetSection={setSection}
@@ -411,7 +422,12 @@ export function UserPortalPage() {
         )}
 
         {activeTab === 'subscription' && !isAdminView && (
-          <SubscriptionTab subId={context?.user.subId ?? null} />
+          <SubscriptionTab
+            subId={context?.user.subId ?? null}
+            portalSettings={context?.settings ?? null}
+            clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
+            nodeQuality={nodeQuality}
+          />
         )}
 
         {activeTab === 'management' && isAdminView && (

@@ -27,6 +27,16 @@ const TEST_ENV_KEYS = [
 async function createTestContext(options?: {
   authRateLimitMax?: number;
   preloadLegacyAdmin?: boolean;
+  mockClientStats?: {
+    inboundId: number;
+    inboundRemark: string;
+    protocol: string;
+    up: number;
+    down: number;
+    total: number;
+    expiryTime: number;
+    enable: boolean;
+  };
 }): Promise<TestContext> {
   const previousEnv = new Map<string, string | undefined>();
   for (const key of TEST_ENV_KEYS) {
@@ -109,6 +119,18 @@ async function createTestContext(options?: {
     seedDb.close();
   }
 
+  vi.doUnmock('./xui-admin.js');
+  if (options?.mockClientStats) {
+    const mockClientStats = options.mockClientStats;
+    vi.doMock('./xui-admin.js', async () => {
+      const actual = await vi.importActual<typeof import('./xui-admin.js')>('./xui-admin.js');
+      return {
+        ...actual,
+        fetchClientStatsBySubId: vi.fn(async () => mockClientStats),
+      };
+    });
+  }
+
   vi.resetModules();
 
   const dbModule = await import('./db.js');
@@ -132,6 +154,8 @@ async function createTestContext(options?: {
         process.env[key] = value;
       }
     }
+
+    vi.doUnmock('./xui-admin.js');
   };
 
   return {
@@ -281,6 +305,66 @@ describe.sequential('Local Auth Integration', () => {
     expect(adminCookieRes.status).toBe(200);
     expect(adminCookieRes.body).toEqual({ hasAdminCookie: true });
   });
+
+  it('includes shared Apple ID settings in portal context for local users', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const settings = [
+      ['siteName', 'Prism'],
+      ['publicUrl', 'https://portal.example.com'],
+      ['supportTelegram', '@prism_support'],
+      ['announcementText', 'Maintenance window tonight'],
+      ['announcementActive', '1'],
+      ['sharedAppleIdTitle', 'iPhone / iPad download help'],
+      ['sharedAppleIdContent', 'Apple ID: demo@icloud.com\nRule: sign out after install.'],
+      ['sharedAppleIdActive', '1'],
+    ] as const;
+
+    const stmt = context.db.prepare(`
+      INSERT INTO app_settings (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `);
+
+    for (const [key, value] of settings) {
+      stmt.run(key, value, now);
+    }
+
+    const loginRes = await request(context.app).post('/local/auth/login').send({
+      username: 'alice',
+      password: 'secret456',
+    });
+    expect(loginRes.status).toBe(200);
+
+    const rawSetCookie = loginRes.headers['set-cookie'];
+    const setCookies =
+      rawSetCookie === undefined ? [] : Array.isArray(rawSetCookie) ? rawSetCookie : [rawSetCookie];
+    const sessionCookie = setCookies.find((entry) => entry.startsWith('pd_session='));
+    expect(sessionCookie).toBeTruthy();
+
+    const portalRes = await request(context.app)
+      .get('/local/auth/portal/context')
+      .set('Cookie', sessionCookie!.split(';')[0]);
+
+    expect(portalRes.status).toBe(200);
+    expect(portalRes.body.settings).toMatchObject({
+      siteName: 'Prism',
+      publicUrl: 'https://portal.example.com',
+      supportTelegram: '@prism_support',
+      announcementText: 'Maintenance window tonight',
+      announcementActive: true,
+      sharedAppleIdTitle: 'iPhone / iPad download help',
+      sharedAppleIdContent: 'Apple ID: demo@icloud.com\nRule: sign out after install.',
+      sharedAppleIdActive: true,
+    });
+    expect(portalRes.body.notifications).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'admin-announcement',
+          message: 'Maintenance window tonight',
+        }),
+      ]),
+    );
+  });
 });
 
 describe.sequential('Auth Rate Limit Integration', () => {
@@ -349,5 +433,87 @@ describe.sequential('Legacy Local Admin Cleanup', () => {
       .prepare("SELECT COUNT(*) as count FROM invite_codes WHERE code = 'legacy-invite'")
       .get() as { count: number };
     expect(inviteCount.count).toBe(0);
+  });
+});
+
+describe.sequential('Portal Stats Integration', () => {
+  let context: TestContext;
+
+  beforeAll(async () => {
+    context = await createTestContext({
+      mockClientStats: {
+        inboundId: 11,
+        inboundRemark: 'US-West-Reality',
+        protocol: 'vless',
+        up: 1024,
+        down: 2048,
+        total: 0,
+        expiryTime: 0,
+        enable: true,
+      },
+    });
+  });
+
+  afterAll(() => {
+    context.cleanup();
+  });
+
+  it('returns node quality metadata alongside portal stats', async () => {
+    context.db.prepare('INSERT INTO invite_codes (code) VALUES (?)').run('invite-bob');
+
+    const registerRes = await request(context.app).post('/local/auth/register').send({
+      username: 'bob',
+      password: 'secret123',
+      inviteCode: 'invite-bob',
+    });
+    expect(registerRes.status).toBe(200);
+    context.db.prepare('UPDATE users SET sub_id = ? WHERE username = ?').run('mock-sub-id', 'bob');
+
+    context.db
+      .prepare('INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, unixepoch())')
+      .run(
+        'nodeQualityProfiles',
+        JSON.stringify({
+          '11': {
+            summary: 'Residential quality looks stable.',
+            fraudScore: 18,
+            netflixStatus: 'supported',
+            chatgptStatus: 'supported',
+            claudeStatus: 'limited',
+            notes: 'Claude may ask for extra verification on first login.',
+            updatedAt: Date.now(),
+          },
+        }),
+      );
+
+    const loginRes = await request(context.app).post('/local/auth/login').send({
+      username: 'bob',
+      password: 'secret123',
+    });
+    expect(loginRes.status).toBe(200);
+
+    const rawSetCookie = loginRes.headers['set-cookie'];
+    const setCookies =
+      rawSetCookie === undefined ? [] : Array.isArray(rawSetCookie) ? rawSetCookie : [rawSetCookie];
+    const sessionCookie = setCookies.find((entry) => entry.startsWith('pd_session='));
+    expect(sessionCookie).toBeTruthy();
+
+    const statsRes = await request(context.app)
+      .get('/local/auth/portal/stats')
+      .set('Cookie', sessionCookie!.split(';')[0]);
+
+    expect(statsRes.status).toBe(200);
+    expect(statsRes.body.stats).toMatchObject({
+      inboundId: 11,
+      inboundRemark: 'US-West-Reality',
+      protocol: 'vless',
+    });
+    expect(statsRes.body.nodeQuality).toMatchObject({
+      inboundId: 11,
+      fraudScore: 18,
+      netflixStatus: 'supported',
+      chatgptStatus: 'supported',
+      claudeStatus: 'limited',
+    });
   });
 });
