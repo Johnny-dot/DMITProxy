@@ -1,4 +1,12 @@
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
+import type {
+  MarketChartResponse,
+  MarketRefreshResponse,
+  MarketSnapshotResponse,
+} from '@/src/types/market';
+import type { CommunityLink } from '@/src/types/communityLink';
+import type { SharedResource } from '@/src/types/sharedResource';
+import type { UserProfile, UserAvatarStyle } from '@/src/types/userProfile';
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/+$/, '');
 
@@ -235,9 +243,8 @@ export interface AdminSettings {
   supportTelegram: string;
   announcementText: string;
   announcementActive: boolean;
-  sharedAppleIdTitle: string;
-  sharedAppleIdContent: string;
-  sharedAppleIdActive: boolean;
+  sharedResources: SharedResource[];
+  communityLinks: CommunityLink[];
 }
 
 export function getAdminSettings(): Promise<AdminSettings> {
@@ -314,5 +321,46 @@ export async function clearTrafficLogs(): Promise<void> {
   await localFetch<{ ok: boolean }>('/local/admin/maintenance/clear-traffic', {
     method: 'POST',
     fallbackError: 'Failed to clear traffic logs',
+  });
+}
+
+export function getUserProfile(): Promise<UserProfile> {
+  return localFetch<UserProfile>('/local/auth/profile', {
+    fallbackError: 'Failed to load user profile',
+  });
+}
+
+export async function updateUserProfile(payload: {
+  displayName: string;
+  avatarStyle: UserAvatarStyle;
+}): Promise<UserProfile> {
+  const data = await localFetch<{ ok: boolean; profile: UserProfile }>('/local/auth/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    fallbackError: 'Failed to save user profile',
+  });
+  return data.profile;
+}
+
+export function getMarketSnapshot(): Promise<MarketSnapshotResponse> {
+  return localFetch<MarketSnapshotResponse>('/local/auth/portal/market', {
+    fallbackError: 'Failed to load market snapshot',
+  });
+}
+
+export function getMarketChart(assetId: string): Promise<MarketChartResponse> {
+  return localFetch<MarketChartResponse>(
+    `/local/auth/portal/market/${encodeURIComponent(assetId)}`,
+    {
+      fallbackError: 'Failed to load market chart',
+    },
+  );
+}
+
+export function refreshMarketSnapshot(assetId: string): Promise<MarketRefreshResponse> {
+  return localFetch<MarketRefreshResponse>('/local/auth/portal/market/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ assetId }),
+    fallbackError: 'Failed to refresh market data',
   });
 }

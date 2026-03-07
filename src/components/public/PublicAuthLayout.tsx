@@ -35,24 +35,24 @@ export function PublicAuthLayout({ eyebrow, title, description, children }: Publ
   const highlights = [
     {
       icon: PanelsTopLeft,
-      title: isZh ? '统一控制面' : 'Unified control plane',
+      title: isZh ? '常用信息放在一起' : 'Everything in one place',
       description: isZh
-        ? '节点、订阅、用户和通知都放在一套安静的界面里。'
-        : 'Nodes, subscriptions, users, and notices stay in one quiet workspace.',
+        ? '登录、订阅、群入口和常用说明都集中在同一个地方。'
+        : 'Sign-in, links, community notes, and the usual instructions stay together.',
     },
     {
       icon: ShieldCheck,
-      title: isZh ? '低噪音运营体验' : 'Low-noise operations',
+      title: isZh ? '简单直接' : 'Simple and clear',
       description: isZh
-        ? '更少装饰，更清楚的状态与操作优先级。'
-        : 'Less decoration, clearer states, and calmer operational decisions.',
+        ? '少一点术语，多一点清楚的状态和下一步。'
+        : 'Less jargon, clearer status, and a more obvious next step.',
     },
     {
       icon: Waypoints,
-      title: isZh ? '管理员与用户共用语言' : 'Shared language across roles',
+      title: isZh ? '给朋友看的界面' : 'A friendlier tone',
       description: isZh
-        ? '从登录到订阅交付，前后台都使用同一套产品节奏。'
-        : 'From sign-in to subscription delivery, admin and user flows feel consistent.',
+        ? '从登录到日常使用，都尽量用自然、不打扰的表达。'
+        : 'From sign-in to daily use, the language stays natural and low-pressure.',
     },
   ];
 

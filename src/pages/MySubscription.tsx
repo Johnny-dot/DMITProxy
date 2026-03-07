@@ -6,7 +6,9 @@ import { refreshCurrentNodeQuality } from '@/src/api/client';
 import { useI18n } from '@/src/context/I18nContext';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
+import { CommunityTab } from './portal/CommunityTab';
 import { HomeTab } from './portal/HomeTab';
+import { MarketTab } from './portal/MarketTab';
 import { SubscriptionTab } from './portal/SubscriptionTab';
 import type {
   ClientStats,
@@ -15,10 +17,20 @@ import type {
   PortalTab,
 } from './portal/types';
 
-type UserTab = 'home' | 'subscription';
+type UserTab = 'home' | 'market' | 'subscription' | 'clients' | 'community' | 'help';
 
 function toUserTab(value: string | null): UserTab {
-  return value === 'subscription' ? 'subscription' : 'home';
+  if (
+    value === 'market' ||
+    value === 'subscription' ||
+    value === 'clients' ||
+    value === 'community' ||
+    value === 'help'
+  ) {
+    return value;
+  }
+
+  return 'home';
 }
 
 export function MySubscriptionPage() {
@@ -39,10 +51,18 @@ export function MySubscriptionPage() {
 
   const setSection = useCallback(
     (tab: PortalTab) => {
-      const nextTab = tab === 'subscription' ? 'subscription' : 'home';
+      const nextTab =
+        tab === 'market' ||
+        tab === 'subscription' ||
+        tab === 'clients' ||
+        tab === 'community' ||
+        tab === 'help'
+          ? tab
+          : 'home';
+
       setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
+        (previous) => {
+          const next = new URLSearchParams(previous);
           next.set('section', nextTab);
           return next;
         },
@@ -64,21 +84,23 @@ export function MySubscriptionPage() {
     setIsLoading(true);
     setLoadError('');
     try {
-      const res = await fetch('/local/auth/portal/context', { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json().catch(() => null);
+      const response = await fetch('/local/auth/portal/context', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json().catch(() => null);
         if (!data) throw new Error('Failed to parse response');
         setContext(data as PortalContextResponse);
         return;
       }
-      if (res.status === 401) {
+
+      if (response.status === 401) {
         navigate('/login', { replace: true });
         return;
       }
-      const data = await res.json().catch(() => null);
+
+      const data = await response.json().catch(() => null);
       throw new Error(data?.error ?? 'Failed to load portal context');
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Unknown error');
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
@@ -91,13 +113,15 @@ export function MySubscriptionPage() {
   const loadStats = useCallback(async () => {
     setClientStats('loading');
     setNodeQuality(null);
+
     try {
-      const res = await fetch('/local/auth/portal/stats', { credentials: 'include' });
-      if (!res.ok) {
+      const response = await fetch('/local/auth/portal/stats', { credentials: 'include' });
+      if (!response.ok) {
         setClientStats(null);
         return;
       }
-      const data = (await res.json().catch(() => null)) as PortalStatsResponse | null;
+
+      const data = (await response.json().catch(() => null)) as PortalStatsResponse | null;
       setClientStats(data?.stats ?? null);
       setNodeQuality(data?.nodeQuality ?? null);
     } catch {
@@ -129,29 +153,65 @@ export function MySubscriptionPage() {
     }
   }, [isZh, toast]);
 
-  const sectionMeta = useMemo(
-    () =>
-      activeTab === 'home'
-        ? {
-            kicker: isZh ? '账户概览' : 'Account overview',
-            title: isZh
-              ? '先看状态，再决定下一步。'
-              : 'Check status first, then take the next step.',
-            description: isZh
-              ? '这里保留账户摘要、订阅状态和使用情况。通知改由顶部铃铛统一承接，不再占用侧边常驻位置。'
-              : 'Keep account summary, subscription status, and usage here. Notifications now live behind the top bell instead of a permanent side dock.',
-          }
-        : {
-            kicker: isZh ? '订阅与客户端' : 'Subscription & clients',
-            title: isZh
-              ? '复制订阅、下载客户端、导入连接放在同一条路径里。'
-              : 'Copy the link, download a client, and connect in one flow.',
-            description: isZh
-              ? '把订阅链接、客户端下载和导入步骤集中在这里，减少来回切换。'
-              : 'Subscription links, client downloads, and setup steps now stay in one continuous view.',
-          },
-    [activeTab, isZh],
-  );
+  const sectionMeta = useMemo(() => {
+    if (activeTab === 'home') {
+      return {
+        kicker: isZh ? '账户概览' : 'Account overview',
+        title: isZh ? '先看一眼今天的状态。' : 'Start with a quick status check.',
+        description: isZh
+          ? '这里放账户、流量、到期时间和当前线路情况，通知仍然在顶部铃铛里。'
+          : 'Keep account info, traffic, expiry, and current node status here. Notifications still live behind the top bell.',
+      };
+    }
+
+    if (activeTab === 'market') {
+      return {
+        kicker: isZh ? '资讯' : 'Markets',
+        title: isZh ? '看看今天外面的市场快照。' : 'Take a quick look at the market snapshot.',
+        description: isZh
+          ? '这里只做轻量参考：先看卡片，点开单个项目再看迷你走势图。'
+          : 'This stays lightweight: start with cards, then open any item for a mini chart.',
+      };
+    }
+
+    if (activeTab === 'subscription') {
+      return {
+        kicker: isZh ? '订阅' : 'Subscription',
+        title: isZh ? '先把链接拿到手。' : 'Start by getting the right link.',
+        description: isZh
+          ? '这个分区只用来复制订阅链接、切换格式和查看二维码，不再混入下载和排查。'
+          : 'This section is only for link formats, copying, and QR codes. Downloads and troubleshooting stay elsewhere.',
+      };
+    }
+
+    if (activeTab === 'clients') {
+      return {
+        kicker: isZh ? '客户端' : 'Clients',
+        title: isZh ? '再选一个顺手的客户端。' : 'Then pick a client that fits you.',
+        description: isZh
+          ? '按设备筛选，下载后跟着教程导入就行。'
+          : 'Filter by device, download the app, and follow the guide.',
+      };
+    }
+
+    if (activeTab === 'community') {
+      return {
+        kicker: isZh ? '社区' : 'Community',
+        title: isZh ? '群入口和加入说明都在这里。' : 'Group links and join notes live here.',
+        description: isZh
+          ? '如果有 Telegram、WhatsApp、Discord 或微信群说明，会集中放在这里。'
+          : 'Telegram, WhatsApp, Discord, or other shared group notes appear here when available.',
+      };
+    }
+
+    return {
+      kicker: isZh ? '帮助' : 'Help',
+      title: isZh ? '遇到问题时来这里看看。' : 'Start here if something feels off.',
+      description: isZh
+        ? '共享账号、家庭组邀请、Apple ID 下载协助和常见排错都放在这里。'
+        : 'Shared accounts, family invites, Apple ID download help, and common troubleshooting all stay here.',
+    };
+  }, [activeTab, isZh]);
 
   if (isLoading) {
     return (
@@ -166,7 +226,7 @@ export function MySubscriptionPage() {
       <div className="flex items-center justify-center px-4 py-8 lg:px-8">
         <div className="surface-card w-full max-w-md space-y-4 p-6">
           <h2 className="text-lg font-semibold text-zinc-50">
-            {isZh ? '无法加载用户中心' : 'Failed to load workspace'}
+            {isZh ? '页面加载失败' : 'Failed to load this page'}
           </h2>
           <p className="text-sm leading-6 text-zinc-400">{loadError}</p>
           <Button onClick={() => void loadContext()}>{isZh ? '重试' : 'Retry'}</Button>
@@ -194,20 +254,26 @@ export function MySubscriptionPage() {
           hasSubscription={hasSubscription}
           subscriptionUniversalUrl={subscriptionLinks.universal}
           clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
+          nodeQuality={nodeQuality}
           isStatsLoading={clientStats === 'loading'}
+          onRefreshNodeQuality={handleRefreshNodeQuality}
+          isRefreshingNodeQuality={isRefreshingNodeQuality}
           onCopy={handleCopy}
           onSetSection={setSection}
           onNavigate={navigate}
           showMessagesCard={false}
         />
+      ) : activeTab === 'market' ? (
+        <MarketTab />
+      ) : activeTab === 'community' ? (
+        <CommunityTab communityLinks={context.settings.communityLinks} isZh={isZh} />
       ) : (
         <SubscriptionTab
+          section={activeTab}
           subId={context.user.subId ?? null}
           portalSettings={context.settings}
           clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
-          nodeQuality={nodeQuality}
-          onRefreshNodeQuality={handleRefreshNodeQuality}
-          isRefreshingNodeQuality={isRefreshingNodeQuality}
+          onSetSection={setSection}
         />
       )}
     </div>

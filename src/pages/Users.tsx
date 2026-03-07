@@ -184,6 +184,14 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
     language === 'zh-CN'
       ? '根据账号状态为可用且累计流量大于 0 推断为在线。'
       : 'Inferred as online when the client is active and cumulative traffic is greater than 0.';
+  const statusHelpText =
+    language === 'zh-CN'
+      ? '这里表示这条订阅本身是否可用，例如启用中、已停用或已过期；和“在线”不是一回事。'
+      : 'This shows whether the subscription itself is usable, such as active, disabled, or expired. It is different from Online.';
+  const actionsHelpText =
+    language === 'zh-CN'
+      ? '这里可以打开订阅链接、编辑客户端信息，或删除这条客户端记录。'
+      : 'Open links, edit the client entry, or delete this client record from here.';
   const onlineStatusLabel = (online: boolean) =>
     online ? (language === 'zh-CN' ? '在线' : 'Online') : language === 'zh-CN' ? '离线' : 'Offline';
 
@@ -294,8 +302,18 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                       <InfoTooltip content={onlineHelpText} />
                     </span>
                   </TableHead>
-                  <TableHead>{t('users.status')}</TableHead>
-                  <TableHead className="text-right">{t('users.actions')}</TableHead>
+                  <TableHead>
+                    <span className="inline-flex items-center gap-1">
+                      <span>{t('users.status')}</span>
+                      <InfoTooltip content={statusHelpText} />
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <span className="inline-flex items-center justify-end gap-1">
+                      <span>{t('users.actions')}</span>
+                      <InfoTooltip content={actionsHelpText} />
+                    </span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

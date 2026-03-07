@@ -9,6 +9,13 @@ export interface NodeQualityProfile {
   netflixStatus: UnlockStatus;
   chatgptStatus: UnlockStatus;
   claudeStatus: UnlockStatus;
+  tiktokStatus: UnlockStatus;
+  instagramStatus: UnlockStatus;
+  spotifyStatus: UnlockStatus;
+  youtubeStatus: UnlockStatus;
+  disneyplusStatus: UnlockStatus;
+  primevideoStatus: UnlockStatus;
+  xStatus: UnlockStatus;
   notes: string;
   updatedAt: number | null;
 }
@@ -47,6 +54,13 @@ function buildStoredNodeQualityProfile(value: unknown): StoredNodeQualityProfile
     netflixStatus: normalizeUnlockStatus(input.netflixStatus),
     chatgptStatus: normalizeUnlockStatus(input.chatgptStatus),
     claudeStatus: normalizeUnlockStatus(input.claudeStatus),
+    tiktokStatus: normalizeUnlockStatus(input.tiktokStatus),
+    instagramStatus: normalizeUnlockStatus(input.instagramStatus),
+    spotifyStatus: normalizeUnlockStatus(input.spotifyStatus),
+    youtubeStatus: normalizeUnlockStatus(input.youtubeStatus),
+    disneyplusStatus: normalizeUnlockStatus(input.disneyplusStatus),
+    primevideoStatus: normalizeUnlockStatus(input.primevideoStatus),
+    xStatus: normalizeUnlockStatus(input.xStatus),
     notes: normalizeText(input.notes),
     updatedAt: Number.isFinite(updatedAtRaw) && updatedAtRaw > 0 ? Math.trunc(updatedAtRaw) : null,
   };
@@ -92,6 +106,13 @@ export function buildDefaultNodeQualityProfile(inboundId: number): NodeQualityPr
     netflixStatus: 'unknown',
     chatgptStatus: 'unknown',
     claudeStatus: 'unknown',
+    tiktokStatus: 'unknown',
+    instagramStatus: 'unknown',
+    spotifyStatus: 'unknown',
+    youtubeStatus: 'unknown',
+    disneyplusStatus: 'unknown',
+    primevideoStatus: 'unknown',
+    xStatus: 'unknown',
     notes: '',
     updatedAt: null,
   };
@@ -115,7 +136,14 @@ export function hasMeaningfulNodeQualityProfile(profile: NodeQualityProfile): bo
     profile.fraudScore !== null ||
     profile.netflixStatus !== 'unknown' ||
     profile.chatgptStatus !== 'unknown' ||
-    profile.claudeStatus !== 'unknown',
+    profile.claudeStatus !== 'unknown' ||
+    profile.tiktokStatus !== 'unknown' ||
+    profile.instagramStatus !== 'unknown' ||
+    profile.spotifyStatus !== 'unknown' ||
+    profile.youtubeStatus !== 'unknown' ||
+    profile.disneyplusStatus !== 'unknown' ||
+    profile.primevideoStatus !== 'unknown' ||
+    profile.xStatus !== 'unknown',
   );
 }
 
@@ -139,6 +167,13 @@ export function saveNodeQualityProfile(profile: NodeQualityProfile): NodeQuality
     netflixStatus: normalizeUnlockStatus(profile.netflixStatus),
     chatgptStatus: normalizeUnlockStatus(profile.chatgptStatus),
     claudeStatus: normalizeUnlockStatus(profile.claudeStatus),
+    tiktokStatus: normalizeUnlockStatus(profile.tiktokStatus),
+    instagramStatus: normalizeUnlockStatus(profile.instagramStatus),
+    spotifyStatus: normalizeUnlockStatus(profile.spotifyStatus),
+    youtubeStatus: normalizeUnlockStatus(profile.youtubeStatus),
+    disneyplusStatus: normalizeUnlockStatus(profile.disneyplusStatus),
+    primevideoStatus: normalizeUnlockStatus(profile.primevideoStatus),
+    xStatus: normalizeUnlockStatus(profile.xStatus),
     notes: normalizeText(profile.notes),
     updatedAt: profile.updatedAt ?? Date.now(),
   };

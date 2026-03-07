@@ -32,6 +32,13 @@ interface ServiceProbeResult {
   detail: string;
 }
 
+interface GenericServiceProbeConfig {
+  serviceName: string;
+  url: string;
+  successDetail: string;
+  blockedDetail: string;
+}
+
 const PROBE_TIMEOUT_MS = Math.max(
   3000,
   Math.min(20000, Number.parseInt(process.env.NODE_QUALITY_PROBE_TIMEOUT_MS ?? '8000', 10) || 8000),
@@ -134,8 +141,40 @@ function isRegionBlocked(body: string): boolean {
     text.includes('not available in your country') ||
     text.includes('unsupported country') ||
     text.includes('country is not supported') ||
-    text.includes('service is not available in your region')
+    text.includes('service is not available in your region') ||
+    text.includes('not available in your region') ||
+    text.includes('unavailable in your region') ||
+    text.includes("isn't available in your region")
   );
+}
+
+async function probeGenericService({
+  serviceName,
+  url,
+  successDetail,
+  blockedDetail,
+}: GenericServiceProbeConfig): Promise<ServiceProbeResult> {
+  const probe = await fetchTextProbe(url, BROWSER_LIKE_HEADERS);
+  if (!probe.ok) {
+    return { status: 'unknown', detail: `${serviceName} probe failed.` };
+  }
+
+  if (isRegionBlocked(probe.body) || probe.status === 451) {
+    return { status: 'blocked', detail: blockedDetail };
+  }
+
+  if (probe.status >= 200 && probe.status < 400) {
+    return { status: 'supported', detail: successDetail.replace('{status}', String(probe.status)) };
+  }
+
+  if (probe.status === 403 || probe.status === 429 || isChallengePage(probe.body)) {
+    return {
+      status: 'limited',
+      detail: `${serviceName} is reachable, but anti-bot or verification checks are present.`,
+    };
+  }
+
+  return { status: 'limited', detail: `${serviceName} returned HTTP ${probe.status}.` };
 }
 
 async function probeChatgpt(): Promise<ServiceProbeResult> {
@@ -223,6 +262,69 @@ async function probeNetflix(): Promise<ServiceProbeResult> {
   };
 }
 
+async function probeTiktok(): Promise<ServiceProbeResult> {
+  return probeGenericService({
+    serviceName: 'TikTok',
+    url: 'https://www.tiktok.com/',
+    successDetail: 'HTTP {status} from tiktok.com.',
+    blockedDetail: 'TikTok responded with a region restriction page.',
+  });
+}
+
+async function probeInstagram(): Promise<ServiceProbeResult> {
+  return probeGenericService({
+    serviceName: 'Instagram',
+    url: 'https://www.instagram.com/accounts/login/',
+    successDetail: 'HTTP {status} from instagram.com/accounts/login/.',
+    blockedDetail: 'Instagram responded with a region restriction page.',
+  });
+}
+
+async function probeSpotify(): Promise<ServiceProbeResult> {
+  return probeGenericService({
+    serviceName: 'Spotify',
+    url: 'https://open.spotify.com/',
+    successDetail: 'HTTP {status} from open.spotify.com.',
+    blockedDetail: 'Spotify responded with a region restriction page.',
+  });
+}
+
+async function probeYoutube(): Promise<ServiceProbeResult> {
+  return probeGenericService({
+    serviceName: 'YouTube',
+    url: 'https://www.youtube.com/',
+    successDetail: 'HTTP {status} from youtube.com.',
+    blockedDetail: 'YouTube responded with a region restriction page.',
+  });
+}
+
+async function probeDisneyPlus(): Promise<ServiceProbeResult> {
+  return probeGenericService({
+    serviceName: 'Disney+',
+    url: 'https://www.disneyplus.com/',
+    successDetail: 'HTTP {status} from disneyplus.com.',
+    blockedDetail: 'Disney+ responded with a region restriction page.',
+  });
+}
+
+async function probePrimeVideo(): Promise<ServiceProbeResult> {
+  return probeGenericService({
+    serviceName: 'Prime Video',
+    url: 'https://www.primevideo.com/',
+    successDetail: 'HTTP {status} from primevideo.com.',
+    blockedDetail: 'Prime Video responded with a region restriction page.',
+  });
+}
+
+async function probeX(): Promise<ServiceProbeResult> {
+  return probeGenericService({
+    serviceName: 'X',
+    url: 'https://x.com/i/flow/login',
+    successDetail: 'HTTP {status} from x.com/i/flow/login.',
+    blockedDetail: 'X responded with a region restriction page.',
+  });
+}
+
 function buildSummary(meta: IpApiResponse | null, fraudScore: number | null): string {
   if (!meta) {
     return 'Automated probe completed, but egress IP metadata is unavailable.';
@@ -239,6 +341,13 @@ function buildNotes(
   chatgpt: ServiceProbeResult,
   claude: ServiceProbeResult,
   netflix: ServiceProbeResult,
+  tiktok: ServiceProbeResult,
+  instagram: ServiceProbeResult,
+  spotify: ServiceProbeResult,
+  youtube: ServiceProbeResult,
+  disneyplus: ServiceProbeResult,
+  primevideo: ServiceProbeResult,
+  x: ServiceProbeResult,
 ): string {
   const lines = [
     'Automated reachability probe from the server egress.',
@@ -254,6 +363,13 @@ function buildNotes(
     `Netflix: ${netflix.detail}`,
     `ChatGPT: ${chatgpt.detail}`,
     `Claude: ${claude.detail}`,
+    `TikTok: ${tiktok.detail}`,
+    `Instagram: ${instagram.detail}`,
+    `Spotify: ${spotify.detail}`,
+    `YouTube: ${youtube.detail}`,
+    `Disney+: ${disneyplus.detail}`,
+    `Prime Video: ${primevideo.detail}`,
+    `X: ${x.detail}`,
   ];
   return lines.join('\n');
 }
@@ -261,11 +377,30 @@ function buildNotes(
 export async function probeAndStoreNodeQualityProfile(
   inboundId: number,
 ): Promise<NodeQualityProfile> {
-  const [meta, chatgpt, claude, netflix] = await Promise.all([
+  const [
+    meta,
+    chatgpt,
+    claude,
+    netflix,
+    tiktok,
+    instagram,
+    spotify,
+    youtube,
+    disneyplus,
+    primevideo,
+    x,
+  ] = await Promise.all([
     fetchIpMeta(),
     probeChatgpt(),
     probeClaude(),
     probeNetflix(),
+    probeTiktok(),
+    probeInstagram(),
+    probeSpotify(),
+    probeYoutube(),
+    probeDisneyPlus(),
+    probePrimeVideo(),
+    probeX(),
   ]);
 
   const fraudScore = estimateFraudScore(meta);
@@ -276,7 +411,26 @@ export async function probeAndStoreNodeQualityProfile(
     netflixStatus: netflix.status,
     chatgptStatus: chatgpt.status,
     claudeStatus: claude.status,
-    notes: buildNotes(meta, chatgpt, claude, netflix),
+    tiktokStatus: tiktok.status,
+    instagramStatus: instagram.status,
+    spotifyStatus: spotify.status,
+    youtubeStatus: youtube.status,
+    disneyplusStatus: disneyplus.status,
+    primevideoStatus: primevideo.status,
+    xStatus: x.status,
+    notes: buildNotes(
+      meta,
+      chatgpt,
+      claude,
+      netflix,
+      tiktok,
+      instagram,
+      spotify,
+      youtube,
+      disneyplus,
+      primevideo,
+      x,
+    ),
     updatedAt: Date.now(),
   });
 }

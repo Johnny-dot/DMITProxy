@@ -305,7 +305,7 @@ export function UserPortalPage() {
       <div className="min-h-screen bg-zinc-950 text-zinc-50 p-6 flex items-center justify-center">
         <div className="surface-card w-full max-w-md space-y-4 p-6">
           <h2 className="text-lg font-semibold">
-            {isZh ? '无法加载用户中心' : 'Failed to load user workspace'}
+            {isZh ? '页面加载失败' : 'Failed to load this page'}
           </h2>
           <p className="text-sm text-zinc-400">{loadError || 'Unknown error'}</p>
           <Button onClick={() => void loadContext()}>{isZh ? '重试' : 'Retry'}</Button>
@@ -331,7 +331,7 @@ export function UserPortalPage() {
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div className="space-y-2">
               <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-300/80">
-                {isAdminView ? 'UNIFIED WORKSPACE' : 'USER WORKSPACE'}
+                {isAdminView ? 'ADMIN VIEW' : 'YOUR PAGE'}
               </p>
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
                 {isAdminView
@@ -339,8 +339,8 @@ export function UserPortalPage() {
                     ? '统一用户中心（管理员扩展）'
                     : 'Unified user center with admin extensions'
                   : isZh
-                    ? '用户中心与上手引导一体化'
-                    : 'Onboarding and user workspace in one place'}
+                    ? '把常用内容都放在一起'
+                    : 'Keep the usual things in one place'}
               </h1>
               <p className="max-w-3xl text-sm text-zinc-300">
                 {isAdminView
@@ -348,8 +348,8 @@ export function UserPortalPage() {
                     ? '同一页面可查看用户侧内容，并额外进入用户管理、在线状态和邀请码管理。'
                     : 'Use one page for user-facing content, plus admin-only user management and invite operations.'
                   : isZh
-                    ? '流程完成后仍可继续使用：查看订阅、更新客户端、接收管理员公告。'
-                    : 'After onboarding, users can keep using this workspace for subscription, client updates, and admin notices.'}
+                    ? '看订阅、更新客户端、阅读说明都放在这里，不用来回找页面。'
+                    : 'Links, client updates, and notes stay here so you do not have to jump around.'}
               </p>
             </div>
 

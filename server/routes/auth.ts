@@ -7,6 +7,21 @@ import {
 } from '../xui-admin.js';
 import { getNodeQualityProfile } from '../node-quality.js';
 import { probeAndStoreNodeQualityProfile } from '../node-quality-probe.js';
+import { buildLegacyAppleSharedResource, parseStoredSharedResources } from '../shared-resources.js';
+import { parseStoredCommunityLinks } from '../community-links.js';
+import {
+  normalizeUserAvatarStyle,
+  resolveUserDisplayName,
+  sanitizeUserDisplayName,
+} from '../user-profile.js';
+import {
+  getDefaultMarketAssetId,
+  getMarketChart,
+  getMarketSnapshot,
+  isMarketAssetId,
+  MarketDataError,
+  refreshMarketData,
+} from '../market-data.js';
 
 const router = Router();
 const SESSION_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -36,6 +51,8 @@ interface UserSessionRow {
   role: string;
   sub_id: string | null;
   created_at: number;
+  display_name: string;
+  avatar_style: string;
 }
 
 const findActiveResetTokenStmt = db.prepare(`
@@ -56,7 +73,7 @@ function getUserSession(token: string | undefined): UserSessionRow | null {
   const session = db
     .prepare(
       `
-      SELECT s.user_id, u.username, u.role, u.sub_id, u.created_at
+      SELECT s.user_id, u.username, u.role, u.sub_id, u.created_at, u.display_name, u.avatar_style
       FROM sessions s
       JOIN users u ON u.id = s.user_id
       WHERE (s.token = ? OR s.token = ?) AND s.expires_at > unixepoch()
@@ -71,6 +88,18 @@ function getUserSession(token: string | undefined): UserSessionRow | null {
 function hasXuiAdminCookie(rawCookies: Record<string, string> | undefined): boolean {
   if (!rawCookies) return false;
   return Object.keys(rawCookies).some((name) => name.toLowerCase() === '3x-ui');
+}
+
+function serializeUserSession(session: UserSessionRow) {
+  return {
+    id: session.user_id,
+    username: session.username,
+    displayName: resolveUserDisplayName(session.display_name, session.username),
+    avatarStyle: normalizeUserAvatarStyle(session.avatar_style),
+    role: session.role,
+    subId: session.sub_id,
+    createdAt: session.created_at,
+  };
 }
 
 router.post('/register', async (req, res) => {
@@ -237,11 +266,63 @@ router.get('/me', (req, res) => {
     return res.status(401).json({ error: 'Session expired' });
   }
 
+  return res.json(serializeUserSession(session));
+});
+
+router.get('/profile', (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+  const session = getUserSession(token);
+  if (!session) {
+    res.clearCookie(SESSION_COOKIE_NAME, SESSION_COOKIE_CLEAR_OPTIONS);
+    return res.status(401).json({ error: 'Session expired' });
+  }
+
+  if (session.role !== 'user') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   return res.json({
-    id: session.user_id,
     username: session.username,
-    role: session.role,
-    subId: session.sub_id,
+    displayName: sanitizeUserDisplayName(session.display_name),
+    resolvedDisplayName: resolveUserDisplayName(session.display_name, session.username),
+    avatarStyle: normalizeUserAvatarStyle(session.avatar_style),
+  });
+});
+
+router.patch('/profile', (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+  const session = getUserSession(token);
+  if (!session) {
+    res.clearCookie(SESSION_COOKIE_NAME, SESSION_COOKIE_CLEAR_OPTIONS);
+    return res.status(401).json({ error: 'Session expired' });
+  }
+
+  if (session.role !== 'user') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const displayName = sanitizeUserDisplayName(req.body?.displayName);
+  const avatarStyle = normalizeUserAvatarStyle(req.body?.avatarStyle);
+
+  db.prepare('UPDATE users SET display_name = ?, avatar_style = ? WHERE id = ? AND role = ?').run(
+    displayName,
+    avatarStyle,
+    session.user_id,
+    'user',
+  );
+
+  return res.json({
+    ok: true,
+    profile: {
+      username: session.username,
+      displayName,
+      resolvedDisplayName: resolveUserDisplayName(displayName, session.username),
+      avatarStyle,
+    },
   });
 });
 
@@ -273,6 +354,8 @@ router.get('/portal/context', (req, res) => {
         'supportTelegram',
         'announcementText',
         'announcementActive',
+        'sharedResources',
+        'communityLinks',
         'sharedAppleIdTitle',
         'sharedAppleIdContent',
         'sharedAppleIdActive'
@@ -289,11 +372,19 @@ router.get('/portal/context', (req, res) => {
   const announcementActiveRaw = settingsMap.get('announcementActive')?.value ?? '0';
   const announcementActive =
     announcementActiveRaw === '1' || announcementActiveRaw.toLowerCase() === 'true';
-  const sharedAppleIdTitle = settingsMap.get('sharedAppleIdTitle')?.value?.trim() || '';
-  const sharedAppleIdContent = settingsMap.get('sharedAppleIdContent')?.value?.trim() || '';
-  const sharedAppleIdActiveRaw = settingsMap.get('sharedAppleIdActive')?.value ?? '0';
-  const sharedAppleIdActive =
-    sharedAppleIdActiveRaw === '1' || sharedAppleIdActiveRaw.toLowerCase() === 'true';
+  const sharedResourcesRow = settingsMap.get('sharedResources')?.value;
+  const sharedResources =
+    sharedResourcesRow !== undefined
+      ? parseStoredSharedResources(sharedResourcesRow)
+      : buildLegacyAppleSharedResource(
+          settingsMap.get('sharedAppleIdTitle')?.value?.trim() || '',
+          settingsMap.get('sharedAppleIdContent')?.value?.trim() || '',
+          (() => {
+            const raw = settingsMap.get('sharedAppleIdActive')?.value ?? '0';
+            return raw === '1' || raw.toLowerCase() === 'true';
+          })(),
+        );
+  const communityLinks = parseStoredCommunityLinks(settingsMap.get('communityLinks')?.value);
 
   const now = Date.now();
   const notifications: Array<{
@@ -318,7 +409,7 @@ router.get('/portal/context', (req, res) => {
       level: 'warning',
       title: 'Subscription pending',
       message:
-        'Your account exists, but subscription is not assigned yet. Please contact your admin.',
+        'Your account exists, but subscription is not assigned yet. Please check Help for support details.',
       createdAt: now,
     });
   }
@@ -345,11 +436,7 @@ router.get('/portal/context', (req, res) => {
 
   return res.json({
     user: {
-      id: session.user_id,
-      username: session.username,
-      role: session.role,
-      subId: session.sub_id,
-      createdAt: session.created_at,
+      ...serializeUserSession(session),
     },
     settings: {
       siteName,
@@ -357,12 +444,85 @@ router.get('/portal/context', (req, res) => {
       supportTelegram,
       announcementText,
       announcementActive,
-      sharedAppleIdTitle,
-      sharedAppleIdContent,
-      sharedAppleIdActive,
+      sharedResources,
+      communityLinks,
     },
     notifications,
   });
+});
+
+router.get('/portal/market', async (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  const session = getUserSession(token);
+  if (!session || session.role !== 'user') {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const snapshot = await getMarketSnapshot();
+    return res.json({
+      snapshot,
+      defaultAssetId: getDefaultMarketAssetId(),
+    });
+  } catch (error) {
+    if (error instanceof MarketDataError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    const detail = error instanceof Error ? error.message : 'Unknown error';
+    return res.status(502).json({ error: `Failed to load market snapshot: ${detail}` });
+  }
+});
+
+router.get('/portal/market/:assetId', async (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  const session = getUserSession(token);
+  if (!session || session.role !== 'user') {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const assetId = String(req.params.assetId ?? '').trim();
+  if (!isMarketAssetId(assetId)) {
+    return res.status(404).json({ error: 'Unknown market asset' });
+  }
+
+  try {
+    const detail = await getMarketChart(assetId);
+    return res.json({ detail });
+  } catch (error) {
+    if (error instanceof MarketDataError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    const detail = error instanceof Error ? error.message : 'Unknown error';
+    return res.status(502).json({ error: `Failed to load market chart: ${detail}` });
+  }
+});
+
+router.post('/portal/market/refresh', async (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  const session = getUserSession(token);
+  if (!session || session.role !== 'user') {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const rawAssetId = req.body?.assetId;
+  const assetId =
+    typeof rawAssetId === 'string' && rawAssetId.trim()
+      ? rawAssetId.trim()
+      : getDefaultMarketAssetId();
+  if (!isMarketAssetId(assetId)) {
+    return res.status(400).json({ error: 'Unknown market asset' });
+  }
+
+  try {
+    const payload = await refreshMarketData(assetId);
+    return res.json({ ok: true, ...payload });
+  } catch (error) {
+    if (error instanceof MarketDataError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    const detail = error instanceof Error ? error.message : 'Unknown error';
+    return res.status(502).json({ error: `Failed to refresh market data: ${detail}` });
+  }
 });
 
 router.get('/portal/stats', async (req, res) => {

@@ -62,6 +62,21 @@ db.exec(`
   );
 `);
 
+function ensureUserProfileColumns() {
+  const columns = db.prepare(`PRAGMA table_info(users)`).all() as Array<{ name: string }>;
+  const columnNames = new Set(columns.map((column) => column.name));
+
+  if (!columnNames.has('display_name')) {
+    db.exec(`ALTER TABLE users ADD COLUMN display_name TEXT NOT NULL DEFAULT ''`);
+  }
+
+  if (!columnNames.has('avatar_style')) {
+    db.exec(`ALTER TABLE users ADD COLUMN avatar_style TEXT NOT NULL DEFAULT 'emerald'`);
+  }
+}
+
+ensureUserProfileColumns();
+
 const cleanupLegacyAdminUsers = db.transaction(() => {
   const legacyAdmins = db
     .prepare('SELECT id FROM users WHERE role = ? ORDER BY id')

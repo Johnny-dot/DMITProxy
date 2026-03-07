@@ -35,21 +35,21 @@ export function localizePortalNotification(
     return {
       ...item,
       title: '订阅等待分配',
-      message: '账户已创建，但订阅尚未分配，请联系管理员处理。',
+      message: '账号已经建好，当前订阅还在准备中。如果卡住了，可以通过联系渠道问一声。',
     };
   }
 
   if (item.id === 'admin-announcement') {
     return {
       ...item,
-      title: '管理员公告',
+      title: '最新说明',
     };
   }
 
   if (item.id === 'support-contact') {
     return {
       ...item,
-      title: '支持联系方式',
+      title: '联系渠道',
       message: `需要帮助时请联系：${supportTelegram || item.message}`,
     };
   }
@@ -83,7 +83,7 @@ export function NotificationsTab({
             <p className="section-kicker">{isZh ? '通知中心' : 'Notification center'}</p>
             <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-zinc-50">
               <Bell className="h-4 w-4 text-emerald-500" />
-              <span>{isZh ? '系统通知与管理员消息' : 'System updates and admin messages'}</span>
+              <span>{isZh ? '通知和近况' : 'Updates and notes'}</span>
             </h2>
           </div>
         ) : (
@@ -93,8 +93,8 @@ export function NotificationsTab({
             </p>
             <p className="text-sm leading-6 text-zinc-400">
               {isZh
-                ? '这里集中显示订阅状态、管理员公告和支持联系方式。'
-                : 'Subscription updates, announcements, and support details all stay here.'}
+                ? '这里放最近的订阅提醒、说明和联系信息。'
+                : 'Recent subscription updates, notes, and contact info stay here.'}
             </p>
           </div>
         )}

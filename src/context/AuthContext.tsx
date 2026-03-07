@@ -7,12 +7,15 @@ import {
   ApiError,
   isXuiConfigured,
 } from '@/src/api/client';
+import type { UserAvatarStyle } from '@/src/types/userProfile';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isChecking: boolean;
   role: 'admin' | 'user' | null;
   username: string | null;
+  displayName: string | null;
+  avatarStyle: UserAvatarStyle | null;
   subId: string | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -31,12 +34,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isChecking, setIsChecking] = useState(true);
   const [role, setRole] = useState<'admin' | 'user' | null>(null);
   const [username, setUsername] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [avatarStyle, setAvatarStyle] = useState<UserAvatarStyle | null>(null);
   const [subId, setSubId] = useState<string | null>(null);
 
   const clearAuthState = useCallback(() => {
     setIsAuthenticated(false);
     setRole(null);
     setUsername(null);
+    setDisplayName(null);
+    setAvatarStyle(null);
     setSubId(null);
   }, []);
 
@@ -49,6 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sessionStorage.removeItem(LOGGED_OUT_KEY);
         setRole(data.role);
         setUsername(data.username);
+        setDisplayName(data.displayName ?? data.username ?? null);
+        setAvatarStyle(data.avatarStyle ?? null);
         setSubId(data.subId ?? null);
         setIsAuthenticated(true);
         return data.role as 'admin' | 'user';
@@ -83,6 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await getServerStatus();
       setRole('admin');
       setUsername(null);
+      setDisplayName(null);
+      setAvatarStyle(null);
       setSubId(null);
       setIsAuthenticated(true);
       return 'admin';
@@ -127,6 +138,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isChecking,
         role,
         username,
+        displayName,
+        avatarStyle,
         subId,
         login,
         logout,

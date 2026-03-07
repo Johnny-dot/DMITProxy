@@ -44,6 +44,13 @@ async function createTestContext(options?: {
     netflixStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
     chatgptStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
     claudeStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
+    tiktokStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
+    instagramStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
+    spotifyStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
+    youtubeStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
+    disneyplusStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
+    primevideoStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
+    xStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
     notes: string;
     updatedAt: number | null;
   };
@@ -235,6 +242,8 @@ describe.sequential('Local Auth Integration', () => {
     const meRes = await request(context.app).get('/local/auth/me').set('Cookie', cookieHeader);
     expect(meRes.status).toBe(200);
     expect(meRes.body.username).toBe('alice');
+    expect(meRes.body.displayName).toBe('alice');
+    expect(meRes.body.avatarStyle).toBe('emerald');
 
     const logoutRes = await request(context.app)
       .post('/local/auth/logout')
@@ -304,6 +313,64 @@ describe.sequential('Local Auth Integration', () => {
     expect(newPasswordLogin.status).toBe(200);
   });
 
+  it('loads and updates the local user profile', async () => {
+    const loginRes = await request(context.app).post('/local/auth/login').send({
+      username: 'alice',
+      password: 'secret456',
+    });
+    expect(loginRes.status).toBe(200);
+
+    const rawSetCookie = loginRes.headers['set-cookie'];
+    const setCookies =
+      rawSetCookie === undefined ? [] : Array.isArray(rawSetCookie) ? rawSetCookie : [rawSetCookie];
+    const sessionCookie = setCookies.find((entry) => entry.startsWith('pd_session='));
+    expect(sessionCookie).toBeTruthy();
+
+    const cookieHeader = sessionCookie!.split(';')[0];
+
+    const profileRes = await request(context.app)
+      .get('/local/auth/profile')
+      .set('Cookie', cookieHeader);
+    expect(profileRes.status).toBe(200);
+    expect(profileRes.body).toMatchObject({
+      username: 'alice',
+      displayName: '',
+      resolvedDisplayName: 'alice',
+      avatarStyle: 'emerald',
+    });
+
+    const updateRes = await request(context.app)
+      .patch('/local/auth/profile')
+      .set('Cookie', cookieHeader)
+      .send({
+        displayName: 'Alice Prism',
+        avatarStyle: 'violet',
+      });
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.profile).toMatchObject({
+      username: 'alice',
+      displayName: 'Alice Prism',
+      resolvedDisplayName: 'Alice Prism',
+      avatarStyle: 'violet',
+    });
+
+    const storedUser = context.db
+      .prepare('SELECT display_name, avatar_style FROM users WHERE username = ?')
+      .get('alice') as { display_name: string; avatar_style: string } | undefined;
+    expect(storedUser).toEqual({
+      display_name: 'Alice Prism',
+      avatar_style: 'violet',
+    });
+
+    const meRes = await request(context.app).get('/local/auth/me').set('Cookie', cookieHeader);
+    expect(meRes.status).toBe(200);
+    expect(meRes.body).toMatchObject({
+      username: 'alice',
+      displayName: 'Alice Prism',
+      avatarStyle: 'violet',
+    });
+  });
+
   it('returns JSON 503 for /api routes when 3X-UI is not configured', async () => {
     const loginRes = await request(context.app)
       .post('/api/login')
@@ -329,7 +396,7 @@ describe.sequential('Local Auth Integration', () => {
     expect(adminCookieRes.body).toEqual({ hasAdminCookie: true });
   });
 
-  it('includes shared Apple ID settings in portal context for local users', async () => {
+  it('includes shared resources in portal context for local users', async () => {
     const now = Math.floor(Date.now() / 1000);
     const settings = [
       ['siteName', 'Prism'],
@@ -337,9 +404,45 @@ describe.sequential('Local Auth Integration', () => {
       ['supportTelegram', '@prism_support'],
       ['announcementText', 'Maintenance window tonight'],
       ['announcementActive', '1'],
-      ['sharedAppleIdTitle', 'iPhone / iPad download help'],
-      ['sharedAppleIdContent', 'Apple ID: demo@icloud.com\nRule: sign out after install.'],
-      ['sharedAppleIdActive', '1'],
+      [
+        'sharedResources',
+        JSON.stringify([
+          {
+            id: 'apple-help',
+            title: 'iPhone / iPad download help',
+            kind: 'apple-id',
+            access: 'credentials',
+            summary: 'Sign in only inside App Store.',
+            content: 'Apple ID: demo@icloud.com\nRule: sign out after install.',
+            active: true,
+          },
+          {
+            id: 'chatgpt-team',
+            title: 'ChatGPT shared account',
+            kind: 'chatgpt-account',
+            access: 'credentials',
+            summary: 'Use only for GPT access.',
+            content: 'Account: demo@example.com\nPassword: ******',
+            active: true,
+          },
+        ]),
+      ],
+      [
+        'communityLinks',
+        JSON.stringify([
+          {
+            id: 'telegram-main',
+            title: 'Main Telegram group',
+            platform: 'telegram',
+            url: 'https://t.me/prism_group',
+            summary: 'General chat for members.',
+            rules: 'Be respectful and keep it on topic.',
+            notes: 'Introduce yourself after joining.',
+            qrContent: '',
+            active: true,
+          },
+        ]),
+      ],
     ] as const;
 
     const stmt = context.db.prepare(`
@@ -351,6 +454,10 @@ describe.sequential('Local Auth Integration', () => {
     for (const [key, value] of settings) {
       stmt.run(key, value, now);
     }
+
+    context.db
+      .prepare('UPDATE users SET display_name = ?, avatar_style = ? WHERE username = ?')
+      .run('Alice Prism', 'violet', 'alice');
 
     const loginRes = await request(context.app).post('/local/auth/login').send({
       username: 'alice',
@@ -375,15 +482,83 @@ describe.sequential('Local Auth Integration', () => {
       supportTelegram: '@prism_support',
       announcementText: 'Maintenance window tonight',
       announcementActive: true,
-      sharedAppleIdTitle: 'iPhone / iPad download help',
-      sharedAppleIdContent: 'Apple ID: demo@icloud.com\nRule: sign out after install.',
-      sharedAppleIdActive: true,
+      sharedResources: [
+        expect.objectContaining({
+          id: 'apple-help',
+          title: 'iPhone / iPad download help',
+          kind: 'apple-id',
+          access: 'credentials',
+        }),
+        expect.objectContaining({
+          id: 'chatgpt-team',
+          title: 'ChatGPT shared account',
+          kind: 'chatgpt-account',
+          access: 'credentials',
+        }),
+      ],
+      communityLinks: [
+        expect.objectContaining({
+          id: 'telegram-main',
+          title: 'Main Telegram group',
+          platform: 'telegram',
+          url: 'https://t.me/prism_group',
+          active: true,
+        }),
+      ],
+    });
+    expect(portalRes.body.user).toMatchObject({
+      username: 'alice',
+      displayName: 'Alice Prism',
+      avatarStyle: 'violet',
     });
     expect(portalRes.body.notifications).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: 'admin-announcement',
           message: 'Maintenance window tonight',
+        }),
+      ]),
+    );
+  });
+
+  it('maps legacy shared Apple ID settings into shared resources when no new list is stored', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const stmt = context.db.prepare(`
+      INSERT INTO app_settings (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `);
+
+    stmt.run('sharedAppleIdTitle', 'Legacy Apple help', now);
+    stmt.run('sharedAppleIdContent', 'Apple ID: legacy@example.com', now);
+    stmt.run('sharedAppleIdActive', '1', now);
+    context.db.prepare("DELETE FROM app_settings WHERE key = 'sharedResources'").run();
+
+    const loginRes = await request(context.app).post('/local/auth/login').send({
+      username: 'alice',
+      password: 'secret456',
+    });
+    expect(loginRes.status).toBe(200);
+
+    const rawSetCookie = loginRes.headers['set-cookie'];
+    const setCookies =
+      rawSetCookie === undefined ? [] : Array.isArray(rawSetCookie) ? rawSetCookie : [rawSetCookie];
+    const sessionCookie = setCookies.find((entry) => entry.startsWith('pd_session='));
+    expect(sessionCookie).toBeTruthy();
+
+    const portalRes = await request(context.app)
+      .get('/local/auth/portal/context')
+      .set('Cookie', sessionCookie!.split(';')[0]);
+
+    expect(portalRes.status).toBe(200);
+    expect(portalRes.body.settings.sharedResources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'apple-id',
+          access: 'credentials',
+          title: 'Legacy Apple help',
+          content: 'Apple ID: legacy@example.com',
+          active: true,
         }),
       ]),
     );
@@ -503,6 +678,13 @@ describe.sequential('Portal Stats Integration', () => {
             netflixStatus: 'supported',
             chatgptStatus: 'supported',
             claudeStatus: 'limited',
+            tiktokStatus: 'supported',
+            instagramStatus: 'supported',
+            spotifyStatus: 'supported',
+            youtubeStatus: 'supported',
+            disneyplusStatus: 'limited',
+            primevideoStatus: 'supported',
+            xStatus: 'limited',
             notes: 'Claude may ask for extra verification on first login.',
             updatedAt: Date.now(),
           },
@@ -537,6 +719,13 @@ describe.sequential('Portal Stats Integration', () => {
       netflixStatus: 'supported',
       chatgptStatus: 'supported',
       claudeStatus: 'limited',
+      tiktokStatus: 'supported',
+      instagramStatus: 'supported',
+      spotifyStatus: 'supported',
+      youtubeStatus: 'supported',
+      disneyplusStatus: 'limited',
+      primevideoStatus: 'supported',
+      xStatus: 'limited',
     });
   });
 
@@ -559,6 +748,13 @@ describe.sequential('Portal Stats Integration', () => {
         netflixStatus: 'supported',
         chatgptStatus: 'limited',
         claudeStatus: 'supported',
+        tiktokStatus: 'supported',
+        instagramStatus: 'supported',
+        spotifyStatus: 'limited',
+        youtubeStatus: 'supported',
+        disneyplusStatus: 'supported',
+        primevideoStatus: 'limited',
+        xStatus: 'supported',
         notes: 'Automated reachability probe from the server egress.',
         updatedAt: Date.now(),
       },
@@ -606,6 +802,13 @@ describe.sequential('Portal Stats Integration', () => {
         netflixStatus: 'supported',
         chatgptStatus: 'limited',
         claudeStatus: 'supported',
+        tiktokStatus: 'supported',
+        instagramStatus: 'supported',
+        spotifyStatus: 'limited',
+        youtubeStatus: 'supported',
+        disneyplusStatus: 'supported',
+        primevideoStatus: 'limited',
+        xStatus: 'supported',
       });
     } finally {
       refreshContext.cleanup();

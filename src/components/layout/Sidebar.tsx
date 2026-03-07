@@ -2,31 +2,53 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
+  CircleHelp,
+  Download,
   LayoutDashboard,
   Link as LinkIcon,
   Server,
   Settings,
   ShieldCheck,
+  TrendingUp,
   Users,
 } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
+import { getAvatarInitials, getAvatarToneClasses } from '@/src/utils/userProfile';
 
-type UserSection = 'home' | 'subscription';
+type UserSection = 'home' | 'market' | 'subscription' | 'clients' | 'community' | 'help';
 
 function getActiveUserSection(search: string): UserSection {
   const params = new URLSearchParams(search);
-  return params.get('section') === 'subscription' ? 'subscription' : 'home';
+  const section = params.get('section');
+
+  if (
+    section === 'market' ||
+    section === 'subscription' ||
+    section === 'clients' ||
+    section === 'community' ||
+    section === 'help'
+  ) {
+    return section;
+  }
+
+  return 'home';
 }
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
   const { t, language } = useI18n();
-  const { role, username } = useAuth();
-  const userCenterLabel = language === 'zh-CN' ? '用户中心' : 'User Center';
-  const overviewLabel = language === 'zh-CN' ? '概览' : 'Overview';
-  const subscriptionLabel = language === 'zh-CN' ? '订阅与客户端' : 'Subscription & Clients';
+  const { role, username, displayName, avatarStyle } = useAuth();
+  const isZh = language === 'zh-CN';
+
+  const userCenterLabel = isZh ? '用户中心' : 'User Center';
+  const overviewLabel = isZh ? '概览' : 'Overview';
+  const marketLabel = isZh ? '资讯' : 'Markets';
+  const subscriptionLabel = isZh ? '订阅' : 'Subscription';
+  const clientsLabel = isZh ? '客户端' : 'Clients';
+  const communityLabel = isZh ? '社区' : 'Community';
+  const helpLabel = isZh ? '帮助' : 'Help';
   const activeUserSection = getActiveUserSection(location.search);
 
   const adminMenuItems = [
@@ -47,22 +69,59 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       testId: 'sidebar-user-overview',
     },
     {
+      icon: TrendingUp,
+      label: marketLabel,
+      to: '/my-subscription?section=market',
+      active: location.pathname === '/my-subscription' && activeUserSection === 'market',
+      testId: 'sidebar-user-market',
+    },
+    {
       icon: LinkIcon,
       label: subscriptionLabel,
       to: '/my-subscription?section=subscription',
       active: location.pathname === '/my-subscription' && activeUserSection === 'subscription',
       testId: 'sidebar-user-subscription',
     },
+    {
+      icon: Download,
+      label: clientsLabel,
+      to: '/my-subscription?section=clients',
+      active: location.pathname === '/my-subscription' && activeUserSection === 'clients',
+      testId: 'sidebar-user-clients',
+    },
+    {
+      icon: Users,
+      label: communityLabel,
+      to: '/my-subscription?section=community',
+      active: location.pathname === '/my-subscription' && activeUserSection === 'community',
+      testId: 'sidebar-user-community',
+    },
+    {
+      icon: CircleHelp,
+      label: helpLabel,
+      to: '/my-subscription?section=help',
+      active: location.pathname === '/my-subscription' && activeUserSection === 'help',
+      testId: 'sidebar-user-help',
+    },
   ];
 
-  const displayName = username ?? t('nav.adminUser');
-  const displayEmail = role === 'user' ? '' : t('nav.adminEmail');
-  const initials = (displayName || 'P').slice(0, 1).toUpperCase();
+  const resolvedDisplayName = displayName ?? username ?? 'Prism';
+  const initials = getAvatarInitials(resolvedDisplayName);
+  const secondaryLabel =
+    role === 'user' && username && username !== resolvedDisplayName ? username : '';
   const subtitle =
     role === 'user'
-      ? activeUserSection === 'subscription'
-        ? subscriptionLabel
-        : overviewLabel
+      ? activeUserSection === 'market'
+        ? marketLabel
+        : activeUserSection === 'subscription'
+          ? subscriptionLabel
+          : activeUserSection === 'clients'
+            ? clientsLabel
+            : activeUserSection === 'community'
+              ? communityLabel
+              : activeUserSection === 'help'
+                ? helpLabel
+                : overviewLabel
       : t('nav.dashboard');
 
   return (
@@ -128,7 +187,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             )
           }
         >
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent-soft)] text-sm font-semibold text-emerald-500">
+          <div
+            className={cn(
+              'flex h-11 w-11 items-center justify-center rounded-full border text-sm font-semibold',
+              role === 'user'
+                ? getAvatarToneClasses(avatarStyle)
+                : 'border-[var(--border-subtle)] bg-[var(--accent-soft)] text-emerald-500',
+            )}
+          >
             {initials}
           </div>
           <div className="min-w-0">
@@ -136,10 +202,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               className="block truncate text-sm font-medium text-zinc-50"
               data-testid="sidebar-user-display-name"
             >
-              {displayName}
+              {resolvedDisplayName}
             </span>
-            {displayEmail && (
-              <span className="block truncate text-xs text-zinc-500">{displayEmail}</span>
+            {secondaryLabel && (
+              <span className="block truncate text-xs text-zinc-500">@{secondaryLabel}</span>
             )}
           </div>
         </NavLink>

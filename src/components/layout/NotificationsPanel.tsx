@@ -16,6 +16,7 @@ import { Button } from '@/src/components/ui/Button';
 import { Badge } from '@/src/components/ui/Badge';
 import { cn } from '@/src/utils/cn';
 import type { NotificationItem } from '@/src/types/notifications';
+import { getAvatarInitials, getAvatarToneClasses } from '@/src/utils/userProfile';
 
 interface NotificationsPanelProps {
   open: boolean;
@@ -30,6 +31,8 @@ interface NotificationsPanelProps {
   onClearAll: () => void;
   onMarkRead: (id: string) => void;
   onOpenAction: (item: NotificationItem) => void;
+  viewerName?: string | null;
+  viewerAvatarStyle?: string | null;
 }
 
 function LevelIcon({ level }: { level: NotificationItem['level'] }) {
@@ -52,6 +55,8 @@ export function NotificationsPanel({
   onClearAll,
   onMarkRead,
   onOpenAction,
+  viewerName,
+  viewerAvatarStyle,
 }: NotificationsPanelProps) {
   return (
     <AnimatePresence>
@@ -91,6 +96,19 @@ export function NotificationsPanel({
                 <p className="mt-3 text-xs leading-5 text-zinc-500">
                   {t('notifications.subtitle')}
                 </p>
+                {viewerName && (
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-2">
+                    <span
+                      className={cn(
+                        'flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold',
+                        getAvatarToneClasses(viewerAvatarStyle),
+                      )}
+                    >
+                      {getAvatarInitials(viewerName)}
+                    </span>
+                    <span className="text-sm font-medium text-zinc-50">{viewerName}</span>
+                  </div>
+                )}
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <Button
                     size="sm"

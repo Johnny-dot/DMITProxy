@@ -1,10 +1,15 @@
 import type { Monitor } from 'lucide-react';
 import type { getClientDownloadLinks } from '@/src/utils/clientDownloads';
+import type { CommunityLink } from '@/src/types/communityLink';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
+import type { SharedResource } from '@/src/types/sharedResource';
+import type { UserAvatarStyle } from '@/src/types/userProfile';
 
 export interface UserInfo {
   id: number;
   username: string;
+  displayName: string;
+  avatarStyle: UserAvatarStyle;
   role: string;
   subId: string | null;
   createdAt: number;
@@ -16,9 +21,8 @@ export interface PortalSettings {
   supportTelegram: string;
   announcementText: string;
   announcementActive: boolean;
-  sharedAppleIdTitle: string;
-  sharedAppleIdContent: string;
-  sharedAppleIdActive: boolean;
+  sharedResources: SharedResource[];
+  communityLinks: CommunityLink[];
 }
 
 export interface PortalNotification {
@@ -37,7 +41,15 @@ export interface PortalContextResponse {
 
 export type SubscriptionFormat = 'universal' | 'clash' | 'v2ray' | 'singbox' | 'surge' | 'quanx';
 export type PlatformKey = 'all' | 'windows' | 'macos' | 'android' | 'ios';
-export type PortalTab = 'home' | 'subscription' | 'notifications' | 'management';
+export type PortalTab =
+  | 'home'
+  | 'market'
+  | 'subscription'
+  | 'clients'
+  | 'community'
+  | 'help'
+  | 'notifications'
+  | 'management';
 export type ViewerRole = 'user' | 'admin';
 
 export interface ClientCard {
@@ -57,8 +69,8 @@ export interface ClientStats {
   protocol: string;
   up: number;
   down: number;
-  total: number; // bytes, 0 = unlimited
-  expiryTime: number; // ms, 0 = never expires
+  total: number;
+  expiryTime: number;
   enable: boolean;
 }
 
@@ -76,7 +88,11 @@ export function toMillis(value: number): number {
 export function isPortalTab(value: string | null): value is PortalTab {
   return (
     value === 'home' ||
+    value === 'market' ||
     value === 'subscription' ||
+    value === 'clients' ||
+    value === 'community' ||
+    value === 'help' ||
     value === 'notifications' ||
     value === 'management'
   );

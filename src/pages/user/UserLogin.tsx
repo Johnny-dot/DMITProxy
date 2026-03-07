@@ -47,16 +47,12 @@ export function UserLoginPage() {
 
   return (
     <PublicAuthLayout
-      eyebrow={isZh ? '用户入口' : 'User sign-in'}
-      title={
-        isZh
-          ? '保持简洁的订阅入口，不让登录页制造额外负担。'
-          : 'A quieter way back into your subscription workspace.'
-      }
+      eyebrow={isZh ? '个人入口' : 'Personal sign-in'}
+      title={isZh ? '回到自己的页面就好，不用多想。' : 'A simple way back to your own page.'}
       description={
         isZh
-          ? '用户名和密码通过后，直接进入个人订阅页即可，不需要多余的营销干扰。'
-          : 'Enter your username and password, then continue directly to the personal subscription view.'
+          ? '输完用户名和密码，就会回到你常用的订阅和帮助页面。'
+          : 'Enter your username and password, then go straight back to your usual links and help.'
       }
     >
       <div className="space-y-8">
@@ -66,7 +62,11 @@ export function UserLoginPage() {
             <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
               {t('userAuth.signIn')}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">{t('userAuth.portal')}</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">
+              {isZh
+                ? '登录后可以查看订阅、下载客户端和加入社区。'
+                : 'Sign in to view your links, clients, and community notes.'}
+            </p>
           </div>
         </div>
 
@@ -122,8 +122,8 @@ export function UserLoginPage() {
             <p className="text-sm font-semibold text-zinc-50">{t('userAuth.noAccount')}</p>
             <p className="text-sm leading-6 text-zinc-400">
               {isZh
-                ? '如果你已经拿到邀请码，可以直接注册后进入订阅工作区。'
-                : 'If you already have an invite, register first and continue into the subscription workspace.'}
+                ? '如果你已经拿到邀请码，可以先注册，再回来登录。'
+                : 'If you already have an invite, register first and then come back here.'}
             </p>
           </div>
           <Link to="/register">

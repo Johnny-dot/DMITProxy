@@ -12,6 +12,17 @@ import {
 } from '../xui.js';
 import { type NodeQualityProfile, getNodeQualityProfiles } from '../node-quality.js';
 import { probeAndStoreNodeQualityProfile } from '../node-quality-probe.js';
+import {
+  type SharedResource,
+  buildLegacyAppleSharedResource,
+  parseStoredSharedResources,
+  sanitizeSharedResourcesInput,
+} from '../shared-resources.js';
+import {
+  type CommunityLink,
+  parseStoredCommunityLinks,
+  sanitizeCommunityLinksInput,
+} from '../community-links.js';
 
 const router = Router();
 const xuiTarget = getXuiTarget();
@@ -38,9 +49,8 @@ interface AppSettings {
   supportTelegram: string;
   announcementText: string;
   announcementActive: boolean;
-  sharedAppleIdTitle: string;
-  sharedAppleIdContent: string;
-  sharedAppleIdActive: boolean;
+  sharedResources: SharedResource[];
+  communityLinks: CommunityLink[];
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -49,12 +59,19 @@ const DEFAULT_SETTINGS: AppSettings = {
   supportTelegram: '',
   announcementText: '',
   announcementActive: false,
-  sharedAppleIdTitle: '',
-  sharedAppleIdContent: '',
-  sharedAppleIdActive: false,
+  sharedResources: [],
+  communityLinks: [],
 };
 
-const SETTINGS_KEYS = Object.keys(DEFAULT_SETTINGS) as Array<keyof AppSettings>;
+const SETTINGS_KEYS: Array<keyof AppSettings> = [
+  'siteName',
+  'publicUrl',
+  'supportTelegram',
+  'announcementText',
+  'announcementActive',
+  'sharedResources',
+  'communityLinks',
+];
 
 function parseBoolean(value: string): boolean {
   return value === '1' || value.toLowerCase() === 'true';
@@ -72,8 +89,12 @@ function sanitizeSettingsInput(input: unknown): Partial<AppSettings> {
       normalized.announcementActive = Boolean(payload.announcementActive);
       continue;
     }
-    if (key === 'sharedAppleIdActive') {
-      normalized.sharedAppleIdActive = Boolean(payload.sharedAppleIdActive);
+    if (key === 'sharedResources') {
+      normalized.sharedResources = sanitizeSharedResourcesInput(payload.sharedResources);
+      continue;
+    }
+    if (key === 'communityLinks') {
+      normalized.communityLinks = sanitizeCommunityLinksInput(payload.communityLinks);
       continue;
     }
     const raw = payload[key];
@@ -89,17 +110,38 @@ function getSettings(): AppSettings {
     value: string;
   }>;
   const result: AppSettings = { ...DEFAULT_SETTINGS };
+  const legacySharedAppleIdTitle =
+    rows.find((row) => row.key === 'sharedAppleIdTitle')?.value ?? '';
+  const legacySharedAppleIdContent =
+    rows.find((row) => row.key === 'sharedAppleIdContent')?.value ?? '';
+  const legacySharedAppleIdActiveRaw =
+    rows.find((row) => row.key === 'sharedAppleIdActive')?.value ?? '0';
+  const hasStoredSharedResources = rows.some((row) => row.key === 'sharedResources');
 
   for (const row of rows) {
     if (!SETTINGS_KEYS.includes(row.key as keyof AppSettings)) continue;
     if (row.key === 'announcementActive') {
       result.announcementActive = parseBoolean(row.value);
-    } else if (row.key === 'sharedAppleIdActive') {
-      result.sharedAppleIdActive = parseBoolean(row.value);
+    } else if (row.key === 'sharedResources') {
+      result.sharedResources = parseStoredSharedResources(row.value);
+    } else if (row.key === 'communityLinks') {
+      result.communityLinks = parseStoredCommunityLinks(row.value);
     } else {
-      result[row.key as Exclude<keyof AppSettings, 'announcementActive' | 'sharedAppleIdActive'>] =
-        row.value;
+      result[
+        row.key as Exclude<
+          keyof AppSettings,
+          'announcementActive' | 'sharedResources' | 'communityLinks'
+        >
+      ] = row.value as never;
     }
+  }
+
+  if (!hasStoredSharedResources) {
+    result.sharedResources = buildLegacyAppleSharedResource(
+      legacySharedAppleIdTitle,
+      legacySharedAppleIdContent,
+      parseBoolean(legacySharedAppleIdActiveRaw),
+    );
   }
 
   return result;
@@ -120,11 +162,13 @@ function updateSettings(partial: Partial<AppSettings>): AppSettings {
   const tx = db.transaction(() => {
     for (const [key, value] of entries) {
       const stored =
-        key === 'announcementActive' || key === 'sharedAppleIdActive'
+        key === 'announcementActive'
           ? value
             ? '1'
             : '0'
-          : String(value);
+          : key === 'sharedResources' || key === 'communityLinks'
+            ? JSON.stringify(value)
+            : String(value);
       stmt.run(key, stored);
     }
   });

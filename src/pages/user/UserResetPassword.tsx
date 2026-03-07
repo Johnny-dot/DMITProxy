@@ -98,12 +98,12 @@ export function UserResetPasswordPage() {
 
   return (
     <PublicAuthLayout
-      eyebrow={isZh ? '安全恢复' : 'Secure recovery'}
-      title={isZh ? '用更安静、更直接的方式完成密码重置。' : 'Reset access without the noise.'}
+      eyebrow={isZh ? '找回访问' : 'Reset access'}
+      title={isZh ? '重新设一个密码，然后继续用就好。' : 'Set a new password and keep going.'}
       description={
         isZh
-          ? '验证通过后，你只需要设置一次新密码，就能重新回到订阅工作区。'
-          : 'Once the token is verified, you can set a new password and return to the subscription workspace.'
+          ? '只要链接还有效，改完密码后就能重新登录。'
+          : 'If the link is still valid, you can reset your password and sign in again.'
       }
     >
       <div className="space-y-8" data-testid="reset-password-page">

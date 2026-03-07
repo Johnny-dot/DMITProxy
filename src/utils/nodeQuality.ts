@@ -1,6 +1,73 @@
-import type { NodeQualityProfile, UnlockStatus } from '@/src/types/nodeQuality';
+import type { NodeQualityProfile, UnlockServiceId, UnlockStatus } from '@/src/types/nodeQuality';
 
 export const UNLOCK_STATUS_VALUES: UnlockStatus[] = ['supported', 'limited', 'blocked', 'unknown'];
+export const NODE_QUALITY_SERVICE_LABELS: Record<UnlockServiceId, string> = {
+  netflix: 'Netflix',
+  chatgpt: 'ChatGPT',
+  claude: 'Claude',
+  tiktok: 'TikTok',
+  instagram: 'Instagram',
+  spotify: 'Spotify',
+  youtube: 'YouTube',
+  disneyplus: 'Disney+',
+  primevideo: 'Prime Video',
+  x: 'X',
+};
+
+export function getNodeQualityServiceItems(profile: NodeQualityProfile | null | undefined) {
+  return [
+    {
+      id: 'netflix' as const,
+      label: NODE_QUALITY_SERVICE_LABELS.netflix,
+      status: profile?.netflixStatus ?? 'unknown',
+    },
+    {
+      id: 'chatgpt' as const,
+      label: NODE_QUALITY_SERVICE_LABELS.chatgpt,
+      status: profile?.chatgptStatus ?? 'unknown',
+    },
+    {
+      id: 'claude' as const,
+      label: NODE_QUALITY_SERVICE_LABELS.claude,
+      status: profile?.claudeStatus ?? 'unknown',
+    },
+    {
+      id: 'tiktok' as const,
+      label: NODE_QUALITY_SERVICE_LABELS.tiktok,
+      status: profile?.tiktokStatus ?? 'unknown',
+    },
+    {
+      id: 'instagram' as const,
+      label: NODE_QUALITY_SERVICE_LABELS.instagram,
+      status: profile?.instagramStatus ?? 'unknown',
+    },
+    {
+      id: 'spotify' as const,
+      label: NODE_QUALITY_SERVICE_LABELS.spotify,
+      status: profile?.spotifyStatus ?? 'unknown',
+    },
+    {
+      id: 'youtube' as const,
+      label: NODE_QUALITY_SERVICE_LABELS.youtube,
+      status: profile?.youtubeStatus ?? 'unknown',
+    },
+    {
+      id: 'disneyplus' as const,
+      label: NODE_QUALITY_SERVICE_LABELS.disneyplus,
+      status: profile?.disneyplusStatus ?? 'unknown',
+    },
+    {
+      id: 'primevideo' as const,
+      label: NODE_QUALITY_SERVICE_LABELS.primevideo,
+      status: profile?.primevideoStatus ?? 'unknown',
+    },
+    {
+      id: 'x' as const,
+      label: NODE_QUALITY_SERVICE_LABELS.x,
+      status: profile?.xStatus ?? 'unknown',
+    },
+  ];
+}
 
 export function getUnlockStatusMeta(status: UnlockStatus, isZh: boolean) {
   switch (status) {
@@ -73,6 +140,13 @@ export function hasMeaningfulNodeQuality(profile: NodeQualityProfile | null | un
     profile.fraudScore !== null ||
     profile.netflixStatus !== 'unknown' ||
     profile.chatgptStatus !== 'unknown' ||
-    profile.claudeStatus !== 'unknown',
+    profile.claudeStatus !== 'unknown' ||
+    profile.tiktokStatus !== 'unknown' ||
+    profile.instagramStatus !== 'unknown' ||
+    profile.spotifyStatus !== 'unknown' ||
+    profile.youtubeStatus !== 'unknown' ||
+    profile.disneyplusStatus !== 'unknown' ||
+    profile.primevideoStatus !== 'unknown' ||
+    profile.xStatus !== 'unknown',
   );
 }

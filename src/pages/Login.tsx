@@ -20,7 +20,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const hasConfiguredXui = isXuiConfigured();
   const adminLoginUnavailableMessage = isZh
-    ? '管理员登录依赖 3X-UI 配置；请先在服务器 .env 中填写 3X-UI 参数。'
+    ? '面板登录还没配置好，请先在服务器 .env 里补上 3X-UI 参数。'
     : t('login.adminLoginUnavailable');
 
   useEffect(() => {
@@ -77,16 +77,16 @@ export function LoginPage() {
 
   return (
     <PublicAuthLayout
-      eyebrow={isZh ? '统一代理工作台' : 'Unified proxy workspace'}
+      eyebrow={isZh ? '共用入口' : 'Shared sign-in'}
       title={
         isZh
-          ? '把代理、订阅与用户管理收敛到真正必要的部分。'
-          : 'Proxy operations, reduced to the essentials.'
+          ? '把登录、订阅和说明放在一个轻松一点的入口里。'
+          : 'A calmer shared entry for the people using this together.'
       }
       description={
         isZh
-          ? 'Prism 用统一的产品语言连接管理员面板和用户订阅中心，让状态、配置与交付都保持清晰。'
-          : 'Prism keeps the admin panel and user subscription workspace in one restrained product system.'
+          ? '登录后会直接去到你当前能用的页面，不需要记太多路径。'
+          : 'Sign in once and go straight to the page that makes sense for you.'
       }
     >
       <div className="space-y-8" data-testid="login-page">
@@ -94,12 +94,14 @@ export function LoginPage() {
           <p className="section-kicker">{isZh ? '登录' : 'Sign in'}</p>
           <div>
             <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-              {isZh ? '管理员与用户共用入口' : 'One sign-in for admins and users'}
+              {isZh
+                ? '登录后直接进入你现在要用的页面'
+                : 'Sign in once and go straight to the page you need'}
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-400">
               {isZh
-                ? '用户会进入个人订阅页，管理员会进入控制台。'
-                : 'Users continue to their subscription workspace, while admins land in the control console.'}
+                ? '系统会自动带你进入对应页面，不用自己再判断该去哪里。'
+                : 'The app routes you automatically, so you do not have to think about where to go next.'}
             </p>
           </div>
         </div>
@@ -171,13 +173,13 @@ export function LoginPage() {
           <div className="space-y-1">
             <p className="text-sm font-semibold text-zinc-50">
               {isZh
-                ? '已有邀请码？直接创建用户账户。'
-                : 'Have an invite code? Create a user account.'}
+                ? '已经拿到邀请码？可以直接创建自己的账号。'
+                : 'Have an invite code? Create your own account.'}
             </p>
             <p className="text-sm leading-6 text-zinc-400">
               {isZh
-                ? '注册成功后会自动进入个人订阅页。'
-                : 'New users can register with an invite and land directly in their subscription view.'}
+                ? '注册完成后，就能直接看到自己的订阅、客户端和帮助说明。'
+                : 'Once registration is done, you will land on your own links, clients, and help pages.'}
             </p>
           </div>
           <Link to="/register" data-testid="login-register-link">

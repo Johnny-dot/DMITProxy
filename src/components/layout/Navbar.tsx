@@ -31,7 +31,7 @@ function getNotificationStorageKey(role: 'admin' | 'user' | null, username: stri
 }
 
 export function Navbar() {
-  const { logout, role, username } = useAuth();
+  const { logout, role, username, displayName, avatarStyle } = useAuth();
   const { toast } = useToast();
   const { t, language } = useI18n();
   const navigate = useNavigate();
@@ -46,6 +46,7 @@ export function Navbar() {
     () => getNotificationStorageKey(role, username),
     [role, username],
   );
+  const resolvedDisplayName = displayName ?? username ?? '';
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read).length,
@@ -393,6 +394,8 @@ export function Navbar() {
         onClearAll={clearNotifications}
         onMarkRead={markNotificationRead}
         onOpenAction={openNotificationAction}
+        viewerName={role === 'user' ? resolvedDisplayName : null}
+        viewerAvatarStyle={role === 'user' ? avatarStyle : null}
       />
     </div>
   );

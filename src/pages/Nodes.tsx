@@ -6,6 +6,7 @@ import { Button } from '@/src/components/ui/Button';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { Globe, Plus, RefreshCw, ShieldCheck, Users, Zap } from 'lucide-react';
+import { UnlockServiceIcon } from '@/src/components/icons/UnlockServiceIcon';
 import {
   getInbounds,
   getNodeQualityProfiles,
@@ -17,7 +18,11 @@ import { useToast } from '@/src/components/ui/Toast';
 import { formatTraffic } from '@/src/utils/xuiClients';
 import { useI18n } from '@/src/context/I18nContext';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
-import { getFraudRiskMeta, getUnlockStatusMeta } from '@/src/utils/nodeQuality';
+import {
+  getFraudRiskMeta,
+  getNodeQualityServiceItems,
+  getUnlockStatusMeta,
+} from '@/src/utils/nodeQuality';
 import { NodeQualityCard } from './portal/NodeQualityCard';
 
 export function NodesPage() {
@@ -142,11 +147,7 @@ export function NodesPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {nodeCards.map((node) => {
               const fraudMeta = getFraudRiskMeta(node.profile?.fraudScore ?? null, isZh);
-              const unlockItems = [
-                { label: 'Netflix', status: node.profile?.netflixStatus ?? 'unknown' },
-                { label: 'ChatGPT', status: node.profile?.chatgptStatus ?? 'unknown' },
-                { label: 'Claude', status: node.profile?.claudeStatus ?? 'unknown' },
-              ];
+              const unlockItems = getNodeQualityServiceItems(node.profile);
 
               return (
                 <Card key={node.id} className="group transition-all hover:border-white/20">
@@ -234,8 +235,16 @@ export function NodesPage() {
                         {unlockItems.map((item) => {
                           const meta = getUnlockStatusMeta(item.status, isZh);
                           return (
-                            <Badge key={item.label} className={cn('border', meta.className)}>
-                              {item.label}: {meta.label}
+                            <Badge key={item.id} className={cn('border', meta.className)}>
+                              <span className="inline-flex items-center gap-1.5">
+                                <UnlockServiceIcon
+                                  service={item.id}
+                                  className="h-5 w-5 rounded-lg border-0"
+                                />
+                                <span>
+                                  {item.label}: {meta.label}
+                                </span>
+                              </span>
                             </Badge>
                           );
                         })}
