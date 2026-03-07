@@ -51,8 +51,8 @@ export function PublicAuthLayout({ eyebrow, title, description, children }: Publ
       icon: Waypoints,
       title: isZh ? '给朋友看的界面' : 'A friendlier tone',
       description: isZh
-        ? '从登录到日常使用，都尽量用自然、不打扰的表达。'
-        : 'From sign-in to daily use, the language stays natural and low-pressure.',
+        ? '界面像发消息，不像填表。'
+        : 'Feels like a message, not a form.',
     },
   ];
 

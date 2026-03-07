@@ -80,30 +80,21 @@ export function LoginPage() {
       eyebrow={isZh ? '共用入口' : 'Shared sign-in'}
       title={
         isZh
-          ? '把登录、订阅和说明放在一个轻松一点的入口里。'
-          : 'A calmer shared entry for the people using this together.'
+          ? '登录、订阅、使用说明，都在这里。'
+          : 'Sign-in, links, and help — all in one place.'
       }
       description={
         isZh
-          ? '登录后会直接去到你当前能用的页面，不需要记太多路径。'
-          : 'Sign in once and go straight to the page that makes sense for you.'
+          ? '登录后自动跳转，不用记路径。'
+          : 'Sign in and go straight to your page.'
       }
     >
       <div className="space-y-8" data-testid="login-page">
         <div className="space-y-3">
           <p className="section-kicker">{isZh ? '登录' : 'Sign in'}</p>
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-              {isZh
-                ? '登录后直接进入你现在要用的页面'
-                : 'Sign in once and go straight to the page you need'}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
-              {isZh
-                ? '系统会自动带你进入对应页面，不用自己再判断该去哪里。'
-                : 'The app routes you automatically, so you do not have to think about where to go next.'}
-            </p>
-          </div>
+          <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
+            {isZh ? '欢迎回来' : 'Welcome back'}
+          </h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -172,14 +163,12 @@ export function LoginPage() {
         <div className="surface-panel flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <p className="text-sm font-semibold text-zinc-50">
-              {isZh
-                ? '已经拿到邀请码？可以直接创建自己的账号。'
-                : 'Have an invite code? Create your own account.'}
+              {isZh ? '有邀请码？' : 'Have an invite code?'}
             </p>
             <p className="text-sm leading-6 text-zinc-400">
               {isZh
-                ? '注册完成后，就能直接看到自己的订阅、客户端和帮助说明。'
-                : 'Once registration is done, you will land on your own links, clients, and help pages.'}
+                ? '注册后直接进入你的订阅页面。'
+                : 'Register and land on your own subscription page.'}
             </p>
           </div>
           <Link to="/register" data-testid="login-register-link">
