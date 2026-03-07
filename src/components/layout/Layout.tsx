@@ -12,7 +12,7 @@ export function Layout() {
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-zinc-50 selection:text-zinc-950 overflow-hidden">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block shrink-0">
+      <div className="hidden md:flex h-full shrink-0">
         <Sidebar />
       </div>
 

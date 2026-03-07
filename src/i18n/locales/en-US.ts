@@ -158,6 +158,7 @@ export const enUS = {
     subCopied: 'Subscription link copied',
     actionNotExposed: '{action} is not exposed by current 3X-UI API for {username}',
     copySubLink: 'Copy subscription link',
+    viewSubLinks: 'View subscription links',
     editClient: 'Edit client',
     resetTraffic: 'Reset traffic',
     disableClient: 'Disable client',

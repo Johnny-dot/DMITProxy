@@ -88,12 +88,15 @@ export function InboundsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('inbounds.title')}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('inbounds.title')}</h1>
           <p className="text-zinc-400 mt-1">{t('inbounds.subtitle')}</p>
         </div>
-        <Button className="gap-2" onClick={() => toast(t('inbounds.addInboundSoon'), 'info')}>
+        <Button
+          className="gap-2 self-start sm:self-auto"
+          onClick={() => toast(t('inbounds.addInboundSoon'), 'info')}
+        >
           <Plus className="w-4 h-4" />
           {t('inbounds.addInbound')}
         </Button>

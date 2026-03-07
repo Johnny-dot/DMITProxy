@@ -163,17 +163,7 @@ export function LoginPage() {
           </Button>
         </form>
 
-        <p className="pt-1 text-center text-sm text-zinc-500">
-          {t('userAuth.haveResetLink')}{' '}
-          <Link
-            to="/reset-password"
-            className="text-zinc-300 hover:text-zinc-100 transition-colors"
-            data-testid="login-reset-link"
-          >
-            {t('userAuth.resetNow')}
-          </Link>
-        </p>
-        <p className="text-center text-xs text-zinc-600 lg:text-sm">{t('login.footer')}</p>
+        <p className="text-center text-xs text-zinc-600">{t('login.footer')}</p>
       </div>
     </div>
   );

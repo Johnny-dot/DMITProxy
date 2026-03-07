@@ -26,7 +26,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     { icon: ShieldCheck, label: t('nav.inbounds'), path: '/inbounds' },
     { icon: Users, label: userCenterLabel, path: '/users' },
     { icon: BarChart3, label: t('nav.traffic'), path: '/traffic' },
-    { icon: LinkIcon, label: t('nav.subscriptions'), path: '/subscriptions' },
     { icon: Settings, label: t('nav.settings'), path: '/settings' },
   ];
 
@@ -46,7 +45,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <span className="font-bold text-xl tracking-tight text-zinc-50">ProxyDog</span>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 mt-4">
+      <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto min-h-0">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
