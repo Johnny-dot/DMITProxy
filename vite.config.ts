@@ -5,7 +5,7 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
 // Walk up directory tree to find the folder containing .env.
-// This allows worktrees (which don't have their own .env) to
+// This allows worktrees (which do not have their own .env) to
 // inherit the .env from the main repository root.
 function findEnvDir(start: string): string {
   let dir = start;
@@ -22,19 +22,16 @@ export default defineConfig(({ mode }) => {
   const envDir = findEnvDir(__dirname);
   const env = loadEnv(mode, envDir, '');
   const localBackend = `http://localhost:${env.SERVER_PORT || '3001'}`;
+
   return {
     plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
+      // Allow disabling HMR when editing through remote or constrained environments.
       hmr: process.env.DISABLE_HMR !== 'true',
       proxy: {
         '/api': {
@@ -46,6 +43,9 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
       },
+    },
+    test: {
+      exclude: ['**/node_modules/**', '**/dist/**', '**/.tmp/**', '**/.claude/**', '**/.codex/**'],
     },
   };
 });

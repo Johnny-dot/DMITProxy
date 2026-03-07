@@ -1,5 +1,6 @@
 {
-  "name": "react-example",
+  "name": "dmitproxy",
+  "description": "3X-UI admin dashboard and invite-based user portal.",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -25,7 +26,6 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "better-sqlite3": "^12.4.1",
