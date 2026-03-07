@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/src/components/ui/Button';
+import { useToast } from '@/src/components/ui/Toast';
+import { refreshCurrentNodeQuality } from '@/src/api/client';
 import { useI18n } from '@/src/context/I18nContext';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
@@ -23,6 +25,7 @@ export function MySubscriptionPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { language } = useI18n();
+  const { toast } = useToast();
   const isZh = language === 'zh-CN';
 
   const [context, setContext] = useState<PortalContextResponse | null>(null);
@@ -30,6 +33,7 @@ export function MySubscriptionPage() {
   const [loadError, setLoadError] = useState('');
   const [clientStats, setClientStats] = useState<ClientStats | null | 'loading'>('loading');
   const [nodeQuality, setNodeQuality] = useState<NodeQualityProfile | null>(null);
+  const [isRefreshingNodeQuality, setIsRefreshingNodeQuality] = useState(false);
 
   const activeTab = useMemo<UserTab>(() => toUserTab(searchParams.get('section')), [searchParams]);
 
@@ -111,6 +115,20 @@ export function MySubscriptionPage() {
     void navigator.clipboard.writeText(text);
   }, []);
 
+  const handleRefreshNodeQuality = useCallback(async () => {
+    setIsRefreshingNodeQuality(true);
+    try {
+      const data = await refreshCurrentNodeQuality();
+      setClientStats(data.stats ?? null);
+      setNodeQuality(data.nodeQuality ?? null);
+      toast(isZh ? '节点质量已刷新' : 'Node quality refreshed', 'success');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Failed to refresh node quality', 'error');
+    } finally {
+      setIsRefreshingNodeQuality(false);
+    }
+  }, [isZh, toast]);
+
   const sectionMeta = useMemo(
     () =>
       activeTab === 'home'
@@ -176,7 +194,6 @@ export function MySubscriptionPage() {
           hasSubscription={hasSubscription}
           subscriptionUniversalUrl={subscriptionLinks.universal}
           clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
-          nodeQuality={nodeQuality}
           isStatsLoading={clientStats === 'loading'}
           onCopy={handleCopy}
           onSetSection={setSection}
@@ -189,6 +206,8 @@ export function MySubscriptionPage() {
           portalSettings={context.settings}
           clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
           nodeQuality={nodeQuality}
+          onRefreshNodeQuality={handleRefreshNodeQuality}
+          isRefreshingNodeQuality={isRefreshingNodeQuality}
         />
       )}
     </div>

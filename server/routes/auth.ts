@@ -6,6 +6,7 @@ import {
   XuiAdminError,
 } from '../xui-admin.js';
 import { getNodeQualityProfile } from '../node-quality.js';
+import { probeAndStoreNodeQualityProfile } from '../node-quality-probe.js';
 
 const router = Router();
 const SESSION_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -384,6 +385,31 @@ router.get('/portal/stats', async (req, res) => {
   } catch (error) {
     console.error('[Prism] /portal/stats: fetchClientStatsBySubId failed:', error);
     return res.status(502).json({ error: 'Unable to fetch usage stats from upstream' });
+  }
+});
+
+router.post('/portal/node-quality/refresh', async (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  const session = getUserSession(token);
+  if (!session || session.role !== 'user') {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  if (!session.sub_id) {
+    return res.status(400).json({ error: 'No subscription assigned yet' });
+  }
+
+  try {
+    const stats = await fetchClientStatsBySubId(session.sub_id);
+    if (!stats) {
+      return res.status(404).json({ error: 'Unable to resolve current node stats' });
+    }
+
+    const nodeQuality = await probeAndStoreNodeQualityProfile(stats.inboundId);
+    return res.json({ ok: true, stats, nodeQuality });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'Unknown error';
+    return res.status(502).json({ error: `Node quality probe failed: ${detail}` });
   }
 });
 

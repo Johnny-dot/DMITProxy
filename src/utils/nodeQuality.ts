@@ -30,9 +30,11 @@ export function getUnlockStatusMeta(status: UnlockStatus, isZh: boolean) {
 export function getFraudRiskMeta(fraudScore: number | null, isZh: boolean) {
   if (fraudScore === null) {
     return {
-      label: isZh ? '待补充' : 'Pending',
+      label: isZh ? '未测试' : 'Not tested',
       className: 'text-zinc-400',
-      description: isZh ? '管理员尚未填写欺诈值。' : 'Awaiting admin input.',
+      description: isZh
+        ? '点击刷新后会自动获取最新检测结果。'
+        : 'Run a refresh to fetch the latest probe result.',
     };
   }
 
@@ -40,22 +42,26 @@ export function getFraudRiskMeta(fraudScore: number | null, isZh: boolean) {
     return {
       label: isZh ? '低风险' : 'Low risk',
       className: 'text-emerald-400',
-      description: isZh ? '数值越低，越接近干净住宅环境。' : 'Lower is generally cleaner.',
+      description: isZh ? '数值越低，通常越接近干净出口。' : 'Lower is generally cleaner.',
     };
   }
 
   if (fraudScore <= 60) {
     return {
-      label: isZh ? '中等风险' : 'Medium risk',
+      label: isZh ? '中风险' : 'Medium risk',
       className: 'text-amber-300',
-      description: isZh ? '部分服务可能需要二次验证。' : 'Some services may require extra checks.',
+      description: isZh
+        ? '部分服务可能会要求额外验证。'
+        : 'Some services may require extra verification.',
     };
   }
 
   return {
     label: isZh ? '高风险' : 'High risk',
     className: 'text-rose-300',
-    description: isZh ? '更容易被风控命中。' : 'More likely to trigger abuse checks.',
+    description: isZh
+      ? '更容易触发风控或校验。'
+      : 'More likely to trigger abuse or verification checks.',
   };
 }
 

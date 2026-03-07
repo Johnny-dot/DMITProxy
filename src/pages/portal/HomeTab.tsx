@@ -4,10 +4,8 @@ import { Button } from '@/src/components/ui/Button';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { cn } from '@/src/utils/cn';
 import { formatTraffic } from '@/src/utils/xuiClients';
-import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import type { ClientStats, PortalSettings, PortalTab, UserInfo } from './types';
 import { toMillis } from './types';
-import { NodeQualityCard } from './NodeQualityCard';
 
 interface HomeTabProps {
   isAdminView: boolean;
@@ -16,7 +14,6 @@ interface HomeTabProps {
   hasSubscription: boolean;
   subscriptionUniversalUrl: string;
   clientStats?: ClientStats;
-  nodeQuality?: NodeQualityProfile | null;
   isStatsLoading?: boolean;
   onCopy: (text: string, key: string) => void;
   onSetSection: (tab: PortalTab) => void;
@@ -31,7 +28,6 @@ export function HomeTab({
   hasSubscription,
   subscriptionUniversalUrl,
   clientStats,
-  nodeQuality,
   isStatsLoading,
   onCopy,
   onSetSection,
@@ -140,14 +136,6 @@ export function HomeTab({
 
       {hasSubscription && (
         <TrafficStatsCard isZh={isZh} stats={clientStats} isLoading={isStatsLoading} />
-      )}
-
-      {hasSubscription && clientStats && (
-        <NodeQualityCard
-          isZh={isZh}
-          inboundRemark={clientStats.inboundRemark}
-          profile={nodeQuality}
-        />
       )}
     </div>
   );

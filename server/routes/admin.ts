@@ -10,11 +10,8 @@ import {
   resolveXuiRedirectPath,
   shouldSkipXuiTlsVerification,
 } from '../xui.js';
-import {
-  type NodeQualityProfile,
-  getNodeQualityProfiles,
-  upsertNodeQualityProfile,
-} from '../node-quality.js';
+import { type NodeQualityProfile, getNodeQualityProfiles } from '../node-quality.js';
+import { probeAndStoreNodeQualityProfile } from '../node-quality-probe.js';
 
 const router = Router();
 const xuiTarget = getXuiTarget();
@@ -61,20 +58,6 @@ const SETTINGS_KEYS = Object.keys(DEFAULT_SETTINGS) as Array<keyof AppSettings>;
 
 function parseBoolean(value: string): boolean {
   return value === '1' || value.toLowerCase() === 'true';
-}
-
-function sanitizeNodeQualityInput(input: unknown): Partial<NodeQualityProfile> {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
-
-  const payload = input as Record<string, unknown>;
-  const normalized: Partial<NodeQualityProfile> = {};
-  if ('summary' in payload) normalized.summary = payload.summary as string;
-  if ('fraudScore' in payload) normalized.fraudScore = payload.fraudScore as number | null;
-  if ('netflixStatus' in payload) normalized.netflixStatus = payload.netflixStatus as never;
-  if ('chatgptStatus' in payload) normalized.chatgptStatus = payload.chatgptStatus as never;
-  if ('claudeStatus' in payload) normalized.claudeStatus = payload.claudeStatus as never;
-  if ('notes' in payload) normalized.notes = payload.notes as string;
-  return normalized;
 }
 
 function sanitizeSettingsInput(input: unknown): Partial<AppSettings> {
@@ -399,14 +382,19 @@ router.get('/node-quality', requireAdmin, (_req, res) => {
   res.json({ profiles: getNodeQualityProfiles() });
 });
 
-router.put('/node-quality/:inboundId', requireAdmin, (req, res) => {
+router.post('/node-quality/:inboundId/refresh', requireAdmin, async (req, res) => {
   const inboundId = Number.parseInt(req.params.inboundId, 10);
   if (!Number.isFinite(inboundId) || inboundId <= 0) {
     return res.status(400).json({ error: 'Invalid inbound id' });
   }
 
-  const result = upsertNodeQualityProfile(inboundId, sanitizeNodeQualityInput(req.body));
-  return res.json({ ok: true, profile: result.profile, removed: result.removed });
+  try {
+    const profile = await probeAndStoreNodeQualityProfile(inboundId);
+    return res.json({ ok: true, profile });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'Unknown error';
+    return res.status(502).json({ error: `Node quality probe failed: ${detail}` });
+  }
 });
 
 // POST /local/admin/security/clear-sessions - clear all user portal sessions

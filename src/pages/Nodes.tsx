@@ -1,78 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/src/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
 import { Badge } from '@/src/components/ui/Badge';
 import { Button } from '@/src/components/ui/Button';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
-import { Input } from '@/src/components/ui/Input';
-import { Globe, Zap, Plus, ShieldCheck, Users, RefreshCw, Save } from 'lucide-react';
+import { Globe, Plus, RefreshCw, ShieldCheck, Users, Zap } from 'lucide-react';
 import {
   getInbounds,
   getNodeQualityProfiles,
-  saveNodeQualityProfile,
+  refreshNodeQualityProfile,
   Inbound,
 } from '@/src/api/client';
 import { cn } from '@/src/utils/cn';
 import { useToast } from '@/src/components/ui/Toast';
 import { formatTraffic } from '@/src/utils/xuiClients';
 import { useI18n } from '@/src/context/I18nContext';
-import type { NodeQualityProfile, UnlockStatus } from '@/src/types/nodeQuality';
-import {
-  getFraudRiskMeta,
-  getUnlockStatusMeta,
-  hasMeaningfulNodeQuality,
-  UNLOCK_STATUS_VALUES,
-} from '@/src/utils/nodeQuality';
-
-interface NodeQualityDraft {
-  summary: string;
-  fraudScore: string;
-  netflixStatus: UnlockStatus;
-  chatgptStatus: UnlockStatus;
-  claudeStatus: UnlockStatus;
-  notes: string;
-}
-
-const EMPTY_DRAFT: NodeQualityDraft = {
-  summary: '',
-  fraudScore: '',
-  netflixStatus: 'unknown',
-  chatgptStatus: 'unknown',
-  claudeStatus: 'unknown',
-  notes: '',
-};
-
-function buildDraft(profile?: NodeQualityProfile | null): NodeQualityDraft {
-  return {
-    summary: profile?.summary ?? '',
-    fraudScore:
-      profile?.fraudScore === null || profile?.fraudScore === undefined
-        ? ''
-        : String(profile.fraudScore),
-    netflixStatus: profile?.netflixStatus ?? 'unknown',
-    chatgptStatus: profile?.chatgptStatus ?? 'unknown',
-    claudeStatus: profile?.claudeStatus ?? 'unknown',
-    notes: profile?.notes ?? '',
-  };
-}
-
-function draftToPayload(draft: NodeQualityDraft): Partial<NodeQualityProfile> {
-  return {
-    summary: draft.summary,
-    fraudScore: draft.fraudScore.trim() ? Number(draft.fraudScore) : null,
-    netflixStatus: draft.netflixStatus,
-    chatgptStatus: draft.chatgptStatus,
-    claudeStatus: draft.claudeStatus,
-    notes: draft.notes,
-  };
-}
+import type { NodeQualityProfile } from '@/src/types/nodeQuality';
+import { getFraudRiskMeta, getUnlockStatusMeta } from '@/src/utils/nodeQuality';
+import { NodeQualityCard } from './portal/NodeQualityCard';
 
 export function NodesPage() {
   const navigate = useNavigate();
@@ -80,11 +26,10 @@ export function NodesPage() {
   const { t, language } = useI18n();
   const isZh = language === 'zh-CN';
   const [isLoading, setIsLoading] = useState(true);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isRefreshingNodeId, setIsRefreshingNodeId] = useState<number | null>(null);
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
   const [profiles, setProfiles] = useState<Record<number, NodeQualityProfile>>({});
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
-  const [draft, setDraft] = useState<NodeQualityDraft>(EMPTY_DRAFT);
 
   const load = async () => {
     setIsLoading(true);
@@ -117,7 +62,6 @@ export function NodesPage() {
       const trafficUsed = inbound.up + inbound.down;
       const usagePercent =
         inbound.total > 0 ? Math.min((trafficUsed / inbound.total) * 100, 100) : 0;
-      const profile = profiles[inbound.id] ?? null;
       return {
         id: inbound.id,
         name: inbound.remark || `Inbound-${inbound.id}`,
@@ -128,61 +72,32 @@ export function NodesPage() {
         trafficLimit: inbound.total,
         usagePercent,
         clientCount: inbound.clientStats?.length ?? 0,
-        profile,
+        profile: profiles[inbound.id] ?? null,
       };
     });
   }, [inbounds, profiles]);
 
   const selectedNode = nodeCards.find((node) => node.id === selectedNodeId) ?? nodeCards[0] ?? null;
 
-  useEffect(() => {
-    if (!selectedNode) {
-      setDraft(EMPTY_DRAFT);
-      return;
-    }
-    setDraft(buildDraft(selectedNode.profile));
-  }, [selectedNode?.id, selectedNode?.profile]);
-
-  const handleDraftChange = <K extends keyof NodeQualityDraft>(
-    key: K,
-    value: NodeQualityDraft[K],
-  ) => {
-    setDraft((current) => ({ ...current, [key]: value }));
-  };
-
-  const handleSaveProfile = async (clear = false) => {
-    if (!selectedNode) return;
-
-    setIsSavingProfile(true);
+  const handleRefresh = async (inboundId: number) => {
+    setIsRefreshingNodeId(inboundId);
     try {
-      const payload = clear ? draftToPayload(EMPTY_DRAFT) : draftToPayload(draft);
-      const result = await saveNodeQualityProfile(selectedNode.id, payload);
-      setProfiles((current) => {
-        const next = { ...current };
-        if (result.removed) {
-          delete next[selectedNode.id];
-        } else {
-          next[selectedNode.id] = result.profile;
-        }
-        return next;
-      });
-      setDraft(buildDraft(result.removed ? null : result.profile));
-      toast(
-        clear
-          ? isZh
-            ? '该节点的质量资料已清空'
-            : 'Node quality profile cleared'
-          : isZh
-            ? '节点质量资料已保存'
-            : 'Node quality profile saved',
-        'success',
-      );
+      const profile = await refreshNodeQualityProfile(inboundId);
+      setProfiles((current) => ({ ...current, [inboundId]: profile }));
+      toast(isZh ? '节点检测已刷新' : 'Node quality refreshed', 'success');
     } catch (error) {
       toast(error instanceof Error ? error.message : t('nodes.failedLoad'), 'error');
     } finally {
-      setIsSavingProfile(false);
+      setIsRefreshingNodeId(null);
     }
   };
+
+  const formatCheckedAt = (value: number | null | undefined) =>
+    value
+      ? new Date(value).toLocaleString(isZh ? 'zh-CN' : 'en-US', { hour12: false })
+      : isZh
+        ? '尚未检测'
+        : 'Not checked yet';
 
   return (
     <div className="space-y-6">
@@ -190,7 +105,11 @@ export function NodesPage() {
         <div className="space-y-3">
           <p className="section-kicker">{t('nodes.title')}</p>
           <h1 className="text-3xl font-semibold tracking-tight">{t('nodes.title')}</h1>
-          <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('nodes.subtitle')}</p>
+          <p className="max-w-3xl text-sm leading-7 text-zinc-400">
+            {isZh
+              ? '节点质量改为自动探测。这里展示最近一次缓存结果，并支持按节点手动刷新。'
+              : 'Node quality now comes from automated probes. This page shows the latest cached result and lets you refresh per node.'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={load} disabled={isLoading}>
@@ -230,12 +149,12 @@ export function NodesPage() {
               ];
 
               return (
-                <Card key={node.id} className="group hover:border-white/20 transition-all">
+                <Card key={node.id} className="group transition-all hover:border-white/20">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
-                          'w-10 h-10 rounded-lg flex items-center justify-center',
+                          'flex h-10 w-10 items-center justify-center rounded-lg',
                           node.status === 'online' ? 'bg-emerald-500/10' : 'bg-red-500/10',
                         )}
                       >
@@ -275,7 +194,7 @@ export function NodesPage() {
                           </div>
                           <span className="font-medium">{formatTraffic(node.trafficUsed)}</span>
                         </div>
-                        <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
                           <div
                             className={cn(
                               'h-full rounded-full transition-all',
@@ -299,7 +218,7 @@ export function NodesPage() {
                     <div className="surface-panel space-y-3 p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                          {isZh ? '质量资料' : 'Quality profile'}
+                          {isZh ? '自动探测结果' : 'Auto probe'}
                         </p>
                         <span className={cn('text-xs font-medium', fraudMeta.className)}>
                           {fraudMeta.label}
@@ -308,8 +227,8 @@ export function NodesPage() {
                       <p className="text-sm leading-6 text-zinc-300">
                         {node.profile?.summary ||
                           (isZh
-                            ? '管理员尚未填写该节点的欺诈值和解锁说明。'
-                            : 'No fraud score or unlock summary has been added yet.')}
+                            ? '还没有探测结果。点击刷新后会自动写入最新状态。'
+                            : 'No probe result yet. Refresh to write the latest status.')}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {unlockItems.map((item) => {
@@ -321,6 +240,10 @@ export function NodesPage() {
                           );
                         })}
                       </div>
+                      <p className="text-xs text-zinc-500">
+                        {isZh ? '最近检测：' : 'Last checked: '}
+                        {formatCheckedAt(node.profile?.updatedAt)}
+                      </p>
                     </div>
 
                     <div className="flex gap-2">
@@ -330,15 +253,22 @@ export function NodesPage() {
                         className="flex-1"
                         onClick={() => setSelectedNodeId(node.id)}
                       >
-                        {isZh ? '编辑质量' : 'Edit quality'}
+                        {isZh ? '查看详情' : 'View details'}
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1"
-                        onClick={() => navigate('/inbounds')}
+                        className="flex-1 gap-2"
+                        onClick={() => void handleRefresh(node.id)}
+                        disabled={isRefreshingNodeId === node.id}
                       >
-                        {t('nodes.edit')}
+                        <RefreshCw
+                          className={cn(
+                            'h-4 w-4',
+                            isRefreshingNodeId === node.id && 'animate-spin',
+                          )}
+                        />
+                        {isZh ? '刷新检测' : 'Refresh'}
                       </Button>
                     </div>
                   </CardContent>
@@ -363,117 +293,13 @@ export function NodesPage() {
           </div>
 
           {selectedNode && (
-            <Card>
-              <CardHeader>
-                <div className="space-y-2">
-                  <CardTitle>
-                    {isZh ? '维护节点质量资料' : 'Maintain node quality profile'} ·{' '}
-                    {selectedNode.name}
-                  </CardTitle>
-                  <CardDescription>
-                    {isZh
-                      ? '这部分是管理员手工维护的资料，不是自动探测结果。建议填写欺诈值、流媒体和 AI 服务解锁情况。'
-                      : 'This profile is maintained manually by admins, not auto-probed. Use it for fraud score and unlock checks.'}
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">{isZh ? '概览说明' : 'Summary'}</label>
-                    <Input
-                      value={draft.summary}
-                      onChange={(event) => handleDraftChange('summary', event.target.value)}
-                      placeholder={
-                        isZh
-                          ? '例如：美区住宅质量较稳，适合日常使用'
-                          : 'Example: Stable US residential quality for daily use'
-                      }
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">{isZh ? '欺诈值' : 'Fraud score'}</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={draft.fraudScore}
-                      onChange={(event) => handleDraftChange('fraudScore', event.target.value)}
-                      placeholder="0 - 100"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  {[
-                    ['netflixStatus', 'Netflix'],
-                    ['chatgptStatus', 'ChatGPT'],
-                    ['claudeStatus', 'Claude'],
-                  ].map(([field, label]) => (
-                    <div key={field} className="surface-panel space-y-3 p-4">
-                      <p className="text-sm font-medium text-zinc-50">{label}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {UNLOCK_STATUS_VALUES.map((status) => {
-                          const meta = getUnlockStatusMeta(status, isZh);
-                          const fieldName = field as keyof Pick<
-                            NodeQualityDraft,
-                            'netflixStatus' | 'chatgptStatus' | 'claudeStatus'
-                          >;
-                          return (
-                            <Button
-                              key={status}
-                              variant={draft[fieldName] === status ? 'secondary' : 'outline'}
-                              size="sm"
-                              onClick={() => handleDraftChange(fieldName, status)}
-                            >
-                              {meta.label}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">{isZh ? '补充说明' : 'Notes'}</label>
-                  <textarea
-                    className="min-h-[140px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 text-sm text-zinc-50 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
-                    value={draft.notes}
-                    onChange={(event) => handleDraftChange('notes', event.target.value)}
-                    placeholder={
-                      isZh
-                        ? '例如：Netflix 美区稳定，ChatGPT 与 Claude 正常，偶尔会触发短信验证。'
-                        : 'Example: Netflix US works well, ChatGPT and Claude are available, occasional SMS verification.'
-                    }
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    className="gap-2"
-                    onClick={() => void handleSaveProfile()}
-                    disabled={isSavingProfile}
-                  >
-                    <Save className="w-4 h-4" />
-                    {isSavingProfile
-                      ? isZh
-                        ? '保存中...'
-                        : 'Saving...'
-                      : isZh
-                        ? '保存资料'
-                        : 'Save profile'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => void handleSaveProfile(true)}
-                    disabled={isSavingProfile}
-                  >
-                    {isZh ? '清空资料' : 'Clear profile'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <NodeQualityCard
+              isZh={isZh}
+              inboundRemark={selectedNode.name}
+              profile={selectedNode.profile}
+              onRefresh={() => void handleRefresh(selectedNode.id)}
+              isRefreshing={isRefreshingNodeId === selectedNode.id}
+            />
           )}
         </>
       )}

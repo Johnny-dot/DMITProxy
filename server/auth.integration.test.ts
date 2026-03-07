@@ -37,6 +37,16 @@ async function createTestContext(options?: {
     expiryTime: number;
     enable: boolean;
   };
+  mockNodeQualityProfile?: {
+    inboundId: number;
+    summary: string;
+    fraudScore: number | null;
+    netflixStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
+    chatgptStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
+    claudeStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
+    notes: string;
+    updatedAt: number | null;
+  };
 }): Promise<TestContext> {
   const previousEnv = new Map<string, string | undefined>();
   for (const key of TEST_ENV_KEYS) {
@@ -120,6 +130,7 @@ async function createTestContext(options?: {
   }
 
   vi.doUnmock('./xui-admin.js');
+  vi.doUnmock('./node-quality-probe.js');
   if (options?.mockClientStats) {
     const mockClientStats = options.mockClientStats;
     vi.doMock('./xui-admin.js', async () => {
@@ -127,6 +138,17 @@ async function createTestContext(options?: {
       return {
         ...actual,
         fetchClientStatsBySubId: vi.fn(async () => mockClientStats),
+      };
+    });
+  }
+  if (options?.mockNodeQualityProfile) {
+    const mockNodeQualityProfile = options.mockNodeQualityProfile;
+    vi.doMock('./node-quality-probe.js', async () => {
+      const actual =
+        await vi.importActual<typeof import('./node-quality-probe.js')>('./node-quality-probe.js');
+      return {
+        ...actual,
+        probeAndStoreNodeQualityProfile: vi.fn(async () => mockNodeQualityProfile),
       };
     });
   }
@@ -156,6 +178,7 @@ async function createTestContext(options?: {
     }
 
     vi.doUnmock('./xui-admin.js');
+    vi.doUnmock('./node-quality-probe.js');
   };
 
   return {
@@ -515,5 +538,77 @@ describe.sequential('Portal Stats Integration', () => {
       chatgptStatus: 'supported',
       claudeStatus: 'limited',
     });
+  });
+
+  it('refreshes node quality via the user portal route', async () => {
+    const refreshContext = await createTestContext({
+      mockClientStats: {
+        inboundId: 22,
+        inboundRemark: 'US-East-Reality',
+        protocol: 'vless',
+        up: 4096,
+        down: 8192,
+        total: 0,
+        expiryTime: 0,
+        enable: true,
+      },
+      mockNodeQualityProfile: {
+        inboundId: 22,
+        summary: 'US / New York / 64.1.1.1 · Risk 16',
+        fraudScore: 16,
+        netflixStatus: 'supported',
+        chatgptStatus: 'limited',
+        claudeStatus: 'supported',
+        notes: 'Automated reachability probe from the server egress.',
+        updatedAt: Date.now(),
+      },
+    });
+
+    try {
+      refreshContext.db.prepare('INSERT INTO invite_codes (code) VALUES (?)').run('invite-carol');
+      await request(refreshContext.app).post('/local/auth/register').send({
+        username: 'carol',
+        password: 'secret123',
+        inviteCode: 'invite-carol',
+      });
+      refreshContext.db
+        .prepare('UPDATE users SET sub_id = ? WHERE username = ?')
+        .run('refresh-sub-id', 'carol');
+
+      const loginRes = await request(refreshContext.app).post('/local/auth/login').send({
+        username: 'carol',
+        password: 'secret123',
+      });
+      expect(loginRes.status).toBe(200);
+
+      const rawSetCookie = loginRes.headers['set-cookie'];
+      const setCookies =
+        rawSetCookie === undefined
+          ? []
+          : Array.isArray(rawSetCookie)
+            ? rawSetCookie
+            : [rawSetCookie];
+      const sessionCookie = setCookies.find((entry) => entry.startsWith('pd_session='));
+      expect(sessionCookie).toBeTruthy();
+
+      const refreshRes = await request(refreshContext.app)
+        .post('/local/auth/portal/node-quality/refresh')
+        .set('Cookie', sessionCookie!.split(';')[0]);
+
+      expect(refreshRes.status).toBe(200);
+      expect(refreshRes.body.stats).toMatchObject({
+        inboundId: 22,
+        inboundRemark: 'US-East-Reality',
+      });
+      expect(refreshRes.body.nodeQuality).toMatchObject({
+        inboundId: 22,
+        fraudScore: 16,
+        netflixStatus: 'supported',
+        chatgptStatus: 'limited',
+        claudeStatus: 'supported',
+      });
+    } finally {
+      refreshContext.cleanup();
+    }
   });
 });

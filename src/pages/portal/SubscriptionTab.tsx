@@ -36,6 +36,8 @@ interface SubscriptionTabProps {
   portalSettings: PortalSettings | null;
   clientStats?: ClientStats;
   nodeQuality?: NodeQualityProfile | null;
+  onRefreshNodeQuality?: () => void;
+  isRefreshingNodeQuality?: boolean;
 }
 
 type GuidePlatform = Exclude<PlatformKey, 'all'>;
@@ -161,6 +163,8 @@ export function SubscriptionTab({
   portalSettings,
   clientStats,
   nodeQuality,
+  onRefreshNodeQuality,
+  isRefreshingNodeQuality,
 }: SubscriptionTabProps) {
   const { t, language } = useI18n();
   const isZh = language === 'zh-CN';
@@ -439,6 +443,8 @@ export function SubscriptionTab({
           inboundRemark={clientStats.inboundRemark}
           profile={nodeQuality}
           className="mb-6"
+          onRefresh={onRefreshNodeQuality}
+          isRefreshing={isRefreshingNodeQuality}
         />
       )}
 

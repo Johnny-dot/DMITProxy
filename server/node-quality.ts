@@ -108,7 +108,7 @@ export function toNodeQualityProfile(
   };
 }
 
-export function isMeaningfulNodeQualityProfile(profile: NodeQualityProfile): boolean {
+export function hasMeaningfulNodeQualityProfile(profile: NodeQualityProfile): boolean {
   return Boolean(
     profile.summary ||
     profile.notes ||
@@ -131,45 +131,17 @@ export function getNodeQualityProfile(inboundId: number): NodeQualityProfile {
   return toNodeQualityProfile(inboundId, stored[String(inboundId)]);
 }
 
-export function upsertNodeQualityProfile(
-  inboundId: number,
-  input: Partial<NodeQualityProfile>,
-): { profile: NodeQualityProfile; removed: boolean } {
-  const current = getNodeQualityProfile(inboundId);
-  const next: NodeQualityProfile = {
-    inboundId,
-    summary: 'summary' in input ? normalizeText(input.summary) : current.summary,
-    fraudScore: 'fraudScore' in input ? normalizeFraudScore(input.fraudScore) : current.fraudScore,
-    netflixStatus:
-      'netflixStatus' in input ? normalizeUnlockStatus(input.netflixStatus) : current.netflixStatus,
-    chatgptStatus:
-      'chatgptStatus' in input ? normalizeUnlockStatus(input.chatgptStatus) : current.chatgptStatus,
-    claudeStatus:
-      'claudeStatus' in input ? normalizeUnlockStatus(input.claudeStatus) : current.claudeStatus,
-    notes: 'notes' in input ? normalizeText(input.notes) : current.notes,
-    updatedAt: Date.now(),
-  };
-
+export function saveNodeQualityProfile(profile: NodeQualityProfile): NodeQualityProfile {
   const stored = readStoredProfiles();
-  if (!isMeaningfulNodeQualityProfile(next)) {
-    delete stored[String(inboundId)];
-    writeStoredProfiles(stored);
-    return {
-      profile: buildDefaultNodeQualityProfile(inboundId),
-      removed: true,
-    };
-  }
-
-  stored[String(inboundId)] = {
-    summary: next.summary,
-    fraudScore: next.fraudScore,
-    netflixStatus: next.netflixStatus,
-    chatgptStatus: next.chatgptStatus,
-    claudeStatus: next.claudeStatus,
-    notes: next.notes,
-    updatedAt: next.updatedAt,
+  stored[String(profile.inboundId)] = {
+    summary: normalizeText(profile.summary),
+    fraudScore: normalizeFraudScore(profile.fraudScore),
+    netflixStatus: normalizeUnlockStatus(profile.netflixStatus),
+    chatgptStatus: normalizeUnlockStatus(profile.chatgptStatus),
+    claudeStatus: normalizeUnlockStatus(profile.claudeStatus),
+    notes: normalizeText(profile.notes),
+    updatedAt: profile.updatedAt ?? Date.now(),
   };
   writeStoredProfiles(stored);
-
-  return { profile: next, removed: false };
+  return getNodeQualityProfile(profile.inboundId);
 }

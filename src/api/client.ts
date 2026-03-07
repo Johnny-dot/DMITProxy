@@ -162,11 +162,6 @@ export interface Inbound {
   settings: string;
 }
 
-export interface SaveNodeQualityResult {
-  profile: NodeQualityProfile;
-  removed: boolean;
-}
-
 export function getInbounds() {
   return apiFetch<Inbound[]>('/panel/api/inbounds/list');
 }
@@ -275,23 +270,36 @@ export async function getNodeQualityProfiles(): Promise<NodeQualityProfile[]> {
   return Array.isArray(data.profiles) ? data.profiles : [];
 }
 
-export async function saveNodeQualityProfile(
-  inboundId: number,
-  payload: Partial<NodeQualityProfile>,
-): Promise<SaveNodeQualityResult> {
-  const data = await localFetch<{ profile: NodeQualityProfile; removed?: boolean }>(
-    `/local/admin/node-quality/${inboundId}`,
+export async function refreshNodeQualityProfile(inboundId: number): Promise<NodeQualityProfile> {
+  const data = await localFetch<{ profile: NodeQualityProfile }>(
+    `/local/admin/node-quality/${inboundId}/refresh`,
     {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-      fallbackError: 'Failed to save node quality profile',
+      method: 'POST',
+      fallbackError: 'Failed to refresh node quality profile',
     },
   );
+  return data.profile;
+}
 
-  return {
-    profile: data.profile,
-    removed: data.removed === true,
-  };
+export interface RefreshCurrentNodeQualityResult {
+  stats: {
+    inboundId: number;
+    inboundRemark: string;
+    protocol: string;
+    up: number;
+    down: number;
+    total: number;
+    expiryTime: number;
+    enable: boolean;
+  } | null;
+  nodeQuality: NodeQualityProfile | null;
+}
+
+export async function refreshCurrentNodeQuality(): Promise<RefreshCurrentNodeQualityResult> {
+  return localFetch<RefreshCurrentNodeQualityResult>('/local/auth/portal/node-quality/refresh', {
+    method: 'POST',
+    fallbackError: 'Failed to refresh current node quality',
+  });
 }
 
 export async function backupDatabase(): Promise<string> {

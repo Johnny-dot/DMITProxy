@@ -413,7 +413,6 @@ export function UserPortalPage() {
             hasSubscription={hasSubscription}
             subscriptionUniversalUrl={subscriptionLinks.universal}
             clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
-            nodeQuality={nodeQuality}
             isStatsLoading={clientStats === 'loading'}
             onCopy={handleCopy}
             onSetSection={setSection}
