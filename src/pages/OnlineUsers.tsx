@@ -197,6 +197,7 @@ export function OnlineUsersPage({ embedded = false }: OnlineUsersPageProps) {
               icon={UsersIcon}
               title={t('online.noActiveClients')}
               description={t('online.noActivity')}
+              illustration="empty-traffic.webp"
               actionLabel={t('online.refreshList')}
               onAction={() => load(true)}
             />

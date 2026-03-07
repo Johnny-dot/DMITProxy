@@ -257,7 +257,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
     <>
       {/* Step 1: Copy subscription URL + Setup checklist */}
       <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]" data-testid="subscription-tab">
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
+        <div className="surface-card space-y-4 p-6">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <LinkIcon className="w-4 h-4 text-emerald-400" />
@@ -287,7 +287,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
                 ))}
               </div>
 
-              <div className="rounded-xl border border-white/10 bg-zinc-950/60 p-4 space-y-3">
+              <div className="surface-panel space-y-3 p-4">
                 <p
                   className="font-mono text-xs text-zinc-300 break-all"
                   data-testid="subscription-active-url"
@@ -333,7 +333,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
             </div>
           ) : (
             <div
-              className="rounded-xl border border-white/10 bg-zinc-950/50 p-6 text-center space-y-2"
+              className="surface-panel space-y-2 p-6 text-center"
               data-testid="subscription-not-ready"
             >
               <p className="text-zinc-300 text-sm">{t('portal.notReadyTitle')}</p>
@@ -342,7 +342,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
           )}
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
+        <div className="surface-card space-y-4 p-6">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Shield className="w-4 h-4 text-emerald-400" />
             <span>{isZh ? '上手进度清单' : 'Setup checklist'}</span>
@@ -395,10 +395,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
       </section>
 
       {/* Step 2: Download client */}
-      <section
-        className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
-        data-testid="subscription-downloads-section"
-      >
+      <section className="surface-card space-y-4 p-6" data-testid="subscription-downloads-section">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Download className="w-4 h-4 text-emerald-400" />
@@ -434,10 +431,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
             const isRecommended =
               activePlatform !== 'all' && client.recommendedFor.includes(activePlatform);
             return (
-              <div
-                key={client.id}
-                className="rounded-xl border border-white/10 bg-zinc-950/40 p-4 space-y-3"
-              >
+              <div key={client.id} className="surface-panel space-y-3 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
                     <client.icon className="w-5 h-5 text-zinc-400 mt-0.5" />
@@ -485,10 +479,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
 
       {/* Step 3: Import and connect + Troubleshooting */}
       <section className="grid gap-6 lg:grid-cols-2">
-        <div
-          className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
-          data-testid="subscription-guide-section"
-        >
+        <div className="surface-card space-y-4 p-6" data-testid="subscription-guide-section">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Terminal className="w-4 h-4 text-emerald-400" />
@@ -511,7 +502,7 @@ export function SubscriptionTab({ subId }: SubscriptionTabProps) {
         </div>
 
         <div
-          className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 space-y-4"
+          className="surface-card space-y-4 p-6"
           data-testid="subscription-troubleshooting-section"
         >
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -569,7 +560,7 @@ function QrCodeCanvas({ url }: { url: string }) {
 
   return (
     <div className="flex justify-start pt-2">
-      <div className="rounded-lg overflow-hidden border border-white/10 p-1 bg-zinc-950">
+      <div className="surface-panel overflow-hidden p-1">
         <canvas ref={canvasRef} className="block" />
       </div>
     </div>

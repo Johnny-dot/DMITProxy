@@ -38,7 +38,7 @@ import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import { getClientDownloadLinks } from '@/src/utils/clientDownloads';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 
-const STORAGE_KEY = 'proxydog:last-sub-id';
+const STORAGE_KEY = 'prism:last-sub-id';
 
 export function SubscriptionsPage() {
   const { toast } = useToast();
@@ -221,13 +221,14 @@ export function SubscriptionsPage() {
 
   return (
     <div className="space-y-10 pb-20">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('subscriptions.title')}</h1>
-          <p className="text-zinc-400 mt-1">{t('subscriptions.subtitle')}</p>
+      <section className="surface-card flex flex-col gap-4 p-6 md:flex-row md:items-end md:justify-between md:p-7">
+        <div className="space-y-3">
+          <p className="section-kicker">{t('subscriptions.title')}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('subscriptions.title')}</h1>
+          <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('subscriptions.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-3 py-1 gap-1">
+          <Badge variant="outline" className="gap-1 px-3 py-1">
             <Shield className="w-3.5 h-3.5" />
             {t('subscriptions.synced')}
           </Badge>
@@ -235,7 +236,7 @@ export function SubscriptionsPage() {
             <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
           </Button>
         </div>
-      </div>
+      </section>
 
       <Card>
         <CardHeader>
@@ -605,7 +606,7 @@ export function SubscriptionsPage() {
 
       {qrOpen && (
         <div
-          className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[var(--overlay)] p-4"
           onClick={() => setQrOpen(false)}
           role="button"
           tabIndex={0}

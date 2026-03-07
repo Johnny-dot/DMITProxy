@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LayoutDashboard, ListChecks, Bell } from 'lucide-react';
+import { Bell, LayoutDashboard, ListChecks } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
@@ -8,10 +8,10 @@ import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import { HomeTab } from './portal/HomeTab';
 import { SubscriptionTab } from './portal/SubscriptionTab';
 import { NotificationsTab } from './portal/NotificationsTab';
-import type { PortalContextResponse, PortalTab, ClientStats } from './portal/types';
-import { isPortalTab, toMillis, COPY_RESET_DELAY_MS } from './portal/types';
+import type { ClientStats, PortalContextResponse, PortalTab } from './portal/types';
+import { COPY_RESET_DELAY_MS, toMillis } from './portal/types';
 
-const READ_NOTIFICATIONS_STORAGE_PREFIX = 'proxydog:user:notification-read:v1';
+const READ_NOTIFICATIONS_STORAGE_PREFIX = 'prism:user:notification-read:v1';
 
 type UserTab = 'home' | 'subscription' | 'notifications';
 
@@ -32,7 +32,7 @@ export function MySubscriptionPage() {
   const [activeTab, setActiveTab] = useState<UserTab>(() => toUserTab(searchParams.get('section')));
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [clientStats, setClientStats] = useState<ClientStats | null | 'loading'>('loading');
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [, setCopiedKey] = useState<string | null>(null);
 
   const setSection = useCallback(
     (tab: PortalTab) => {
@@ -113,13 +113,11 @@ export function MySubscriptionPage() {
     if (context) void loadStats();
   }, [context, loadStats]);
 
-  // Sync URL → activeTab
   useEffect(() => {
     const tab = toUserTab(searchParams.get('section'));
     if (tab !== activeTab) setActiveTab(tab);
   }, [activeTab, searchParams]);
 
-  // localStorage for read notifications
   const notificationStorageKey = useMemo(
     () => (context ? `${READ_NOTIFICATIONS_STORAGE_PREFIX}:${context.user.username}` : ''),
     [context],
@@ -165,20 +163,20 @@ export function MySubscriptionPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-6 h-6 border-2 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
+      <div className="flex items-center justify-center py-24">
+        <div className="h-7 w-7 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
       </div>
     );
   }
 
   if (!context) {
     return (
-      <div className="flex items-center justify-center p-6 lg:p-8">
-        <div className="w-full max-w-md rounded-xl border border-white/10 bg-zinc-900/60 p-6 space-y-4">
-          <h2 className="text-lg font-semibold">
+      <div className="flex items-center justify-center px-4 py-8 lg:px-8">
+        <div className="surface-card w-full max-w-md space-y-4 p-6">
+          <h2 className="text-lg font-semibold text-zinc-50">
             {isZh ? '无法加载用户中心' : 'Failed to load workspace'}
           </h2>
-          <p className="text-sm text-zinc-400">{loadError}</p>
+          <p className="text-sm leading-6 text-zinc-400">{loadError}</p>
           <Button onClick={() => void loadContext()}>{isZh ? '重试' : 'Retry'}</Button>
         </div>
       </div>
@@ -187,33 +185,57 @@ export function MySubscriptionPage() {
 
   return (
     <div
-      className="mx-auto w-full max-w-6xl space-y-6 px-6 py-8 lg:px-8 lg:py-10"
+      className="mx-auto w-full max-w-6xl space-y-8 px-4 py-2 sm:px-6 lg:px-8"
       data-testid="my-subscription-page"
     >
-      <div className="flex flex-wrap gap-2">
+      <section className="surface-card space-y-4 p-6 md:p-7">
+        <p className="section-kicker">{isZh ? '订阅工作区' : 'Subscription workspace'}</p>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-3">
+            <h1 className="text-3xl font-semibold tracking-tight text-zinc-50">
+              {isZh
+                ? '把订阅、客户端与通知放在同一个安静视图里。'
+                : 'Keep subscription, clients, and notices in one calm view.'}
+            </h1>
+            <p className="max-w-3xl text-sm leading-7 text-zinc-400">
+              {isZh
+                ? '这里保留你最常用的操作：查看状态、复制订阅、下载客户端，以及阅读管理员更新。'
+                : 'The essential actions stay here: check status, copy the subscription, download a client, and read admin updates.'}
+            </p>
+          </div>
+          <div className="surface-panel px-4 py-3">
+            <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+              {isZh ? '当前用户' : 'Current user'}
+            </p>
+            <p className="mt-2 text-sm font-medium text-zinc-50">{context.user.username}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="flex flex-wrap gap-2">
         <TabButton
-          icon={<LayoutDashboard className="w-4 h-4" />}
+          icon={<LayoutDashboard className="h-4 w-4" />}
           label={isZh ? '概览' : 'Overview'}
           active={activeTab === 'home'}
           onClick={() => setSection('home')}
           testId="my-subscription-tab-home"
         />
         <TabButton
-          icon={<ListChecks className="w-4 h-4" />}
+          icon={<ListChecks className="h-4 w-4" />}
           label={isZh ? '订阅与客户端' : 'Subscription & Clients'}
           active={activeTab === 'subscription'}
           onClick={() => setSection('subscription')}
           testId="my-subscription-tab-subscription"
         />
         <TabButton
-          icon={<Bell className="w-4 h-4" />}
+          icon={<Bell className="h-4 w-4" />}
           label={isZh ? '通知' : 'Notifications'}
           active={activeTab === 'notifications'}
           onClick={() => setSection('notifications')}
           badge={unreadCount > 0 ? unreadCount : undefined}
           testId="my-subscription-tab-notifications"
         />
-      </div>
+      </section>
 
       {activeTab === 'home' && (
         <HomeTab
@@ -267,16 +289,16 @@ function TabButton({
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        'px-3 py-2 rounded-lg text-sm border transition-colors inline-flex items-center gap-2',
+        'inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors',
         active
-          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-          : 'border-white/10 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800/60',
+          ? 'border-transparent bg-[var(--accent)] text-[var(--accent-contrast)]'
+          : 'border-[color:var(--border-subtle)] bg-[var(--surface-card)] text-zinc-400 hover:bg-[var(--surface-panel)] hover:text-zinc-50',
       )}
     >
       {icon}
       {label}
       {badge !== undefined && (
-        <span className="min-w-5 h-5 px-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 text-[10px] flex items-center justify-center">
+        <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--danger-soft)] px-1 text-[10px] font-semibold text-red-500">
           {badge}
         </span>
       )}

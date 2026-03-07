@@ -1,44 +1,48 @@
-import * as React from "react"
-import { cn } from "@/src/utils/cn"
+import * as React from 'react';
+import { cn } from '@/src/utils/cn';
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
-  size?: 'default' | 'sm' | 'lg' | 'icon'
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'default', size = 'default', ...props }, ref) => {
     const variants = {
-      default: "bg-zinc-50 text-zinc-900 hover:bg-zinc-50/90",
-      destructive: "bg-red-500 text-zinc-50 hover:bg-red-500/90",
-      outline: "border border-white/10 bg-transparent hover:bg-white/5 text-zinc-50",
-      secondary: "bg-zinc-800 text-zinc-50 hover:bg-zinc-800/80",
-      ghost: "hover:bg-white/5 text-zinc-50",
-      link: "text-zinc-50 underline-offset-4 hover:underline",
-    }
-    
+      default:
+        'border-transparent bg-[var(--accent)] text-[var(--accent-contrast)] shadow-sm hover:bg-[var(--accent-strong)]',
+      destructive:
+        'border-transparent bg-[var(--danger-soft)] text-[var(--danger)] hover:bg-[var(--danger-soft-strong)]',
+      outline:
+        'border-[color:var(--border-subtle)] bg-[var(--surface-card)] text-[var(--text-primary)] hover:border-[color:var(--border-strong)] hover:bg-[var(--surface-panel)]',
+      secondary:
+        'border-transparent bg-[var(--surface-strong)] text-[var(--text-primary)] hover:bg-[var(--surface-contrast)]',
+      ghost:
+        'border-transparent bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-panel)] hover:text-[var(--text-primary)]',
+      link: 'border-transparent bg-transparent px-0 text-[var(--accent)] hover:text-[var(--accent-strong)] hover:underline',
+    };
+
     const sizes = {
-      default: "h-10 px-4 py-2",
-      sm: "h-9 rounded-md px-3",
-      lg: "h-11 rounded-md px-8",
-      icon: "h-10 w-10",
-    }
+      default: 'h-11 px-4 py-2',
+      sm: 'h-9 px-3.5 text-[13px]',
+      lg: 'h-12 px-6 text-base',
+      icon: 'h-11 w-11',
+    };
 
     return (
       <button
         className={cn(
-          "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-zinc-950 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+          'inline-flex items-center justify-center rounded-full border text-sm font-medium tracking-[-0.01em] ring-offset-zinc-950 transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-45',
           variants[variant],
           sizes[size],
-          className
+          className,
         )}
         ref={ref}
         {...props}
       />
-    )
-  }
-)
-Button.displayName = "Button"
+    );
+  },
+);
+Button.displayName = 'Button';
 
-export { Button }
+export { Button };

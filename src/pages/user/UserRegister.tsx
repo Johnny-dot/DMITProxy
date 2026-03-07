@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Dog, Eye, EyeOff, UserPlus } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
-import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
+import { PublicAuthLayout } from '@/src/components/public/PublicAuthLayout';
 
 export function UserRegisterPage() {
   const navigate = useNavigate();
   const { refreshAuth } = useAuth();
-  const { t, language, setLanguage } = useI18n();
+  const { t, language } = useI18n();
+  const isZh = language === 'zh-CN';
   const [params] = useSearchParams();
   const [inviteCode, setInviteCode] = useState(params.get('invite') ?? '');
   const [username, setUsername] = useState('');
@@ -32,7 +33,7 @@ export function UserRegisterPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t('userAuth.registerFailed'));
-      // Auto-login after register
+
       const loginRes = await fetch('/local/auth/login', {
         method: 'POST',
         credentials: 'include',
@@ -53,32 +54,27 @@ export function UserRegisterPage() {
   }
 
   return (
-    <div
-      className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-5 md:p-8"
-      data-testid="register-page"
+    <PublicAuthLayout
+      eyebrow={isZh ? '邀请码注册' : 'Invite-based registration'}
+      title={
+        isZh
+          ? '创建用户账户，然后直接进入订阅工作区。'
+          : 'Create an account and enter the subscription workspace.'
+      }
+      description={
+        isZh
+          ? '当你已经拿到邀请码时，注册流程应该足够直接，不需要额外的学习成本。'
+          : 'Registration stays deliberately simple: invite code, credentials, and immediate access.'
+      }
     >
-      <div className="absolute top-5 right-5 flex items-center gap-2 md:top-6 md:right-6 xl:top-8 xl:right-8">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 px-3 text-xs md:h-10 md:text-sm"
-          onClick={() => setLanguage(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
-          data-testid="public-language-toggle"
-        >
-          {language === 'zh-CN' ? t('common.en') : t('common.zh')}
-        </Button>
-        <ThemeToggle testId="public-theme-toggle" className="h-9 w-9 md:h-10 md:w-10" />
-      </div>
-      <div className="w-full max-w-md space-y-8 rounded-3xl border border-white/10 bg-zinc-950/70 px-6 py-8 shadow-sm backdrop-blur-md lg:max-w-lg lg:space-y-10 lg:px-8 lg:py-10">
-        <div className="flex flex-col items-center gap-4 lg:gap-5">
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-white/10 bg-zinc-900 lg:h-20 lg:w-20">
-            <Dog className="h-9 w-9 text-emerald-500 lg:h-10 lg:w-10" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">
+      <div className="space-y-8" data-testid="register-page">
+        <div className="space-y-3">
+          <p className="section-kicker">{t('userAuth.createAccount')}</p>
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
               {t('userAuth.createAccount')}
-            </h1>
-            <p className="mt-2 text-sm text-zinc-500 lg:text-base">{t('userAuth.createDesc')}</p>
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">{t('userAuth.createDesc')}</p>
           </div>
         </div>
 
@@ -90,7 +86,7 @@ export function UserRegisterPage() {
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value)}
               required
-              className="h-11 font-mono lg:h-12"
+              className="h-12 font-mono"
               data-testid="register-invite"
             />
             <Input
@@ -99,7 +95,7 @@ export function UserRegisterPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
-              className="h-11 lg:h-12"
+              className="h-12"
               required
               data-testid="register-username"
             />
@@ -110,7 +106,7 @@ export function UserRegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
-                className="h-11 pr-10 lg:h-12"
+                className="h-12 pr-12"
                 required
                 data-testid="register-password"
               />
@@ -119,39 +115,49 @@ export function UserRegisterPage() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
 
-          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+          {error && (
+            <p className="rounded-[18px] border border-[var(--danger-soft-strong)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-red-500">
+              {error}
+            </p>
+          )}
 
           <Button
             type="submit"
-            className="h-11 w-full gap-2 lg:h-12"
+            className="h-12 w-full gap-2"
             disabled={isLoading}
             data-testid="register-submit"
           >
             {isLoading ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current" />
             ) : (
-              <UserPlus className="w-4 h-4" />
+              <UserPlus className="h-4 w-4" />
             )}
             {isLoading ? t('userAuth.creating') : t('userAuth.create')}
           </Button>
         </form>
 
-        <p className="pt-1 text-center text-sm text-zinc-500 lg:text-base">
-          {t('userAuth.alreadyHave')}{' '}
-          <Link
-            to="/login"
-            className="text-emerald-500 hover:text-emerald-400 transition-colors"
-            data-testid="register-login-link"
-          >
-            {t('userAuth.signIn')}
+        <div className="surface-panel flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-zinc-50">{t('userAuth.alreadyHave')}</p>
+            <p className="text-sm leading-6 text-zinc-400">
+              {isZh
+                ? '如果你已经创建过账户，直接返回登录页即可。'
+                : 'If the account already exists, go back to the shared sign-in entry.'}
+            </p>
+          </div>
+          <Link to="/login" data-testid="register-login-link">
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              {t('userAuth.signIn')}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
           </Link>
-        </p>
+        </div>
       </div>
-    </div>
+    </PublicAuthLayout>
   );
 }

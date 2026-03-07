@@ -10,7 +10,7 @@ interface I18nContextType {
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-const I18N_STORAGE_KEY = 'proxydog:lang';
+const I18N_STORAGE_KEY = 'prism:lang';
 
 const dictionaries: Record<Language, Record<string, unknown>> = {
   'zh-CN': zhCN,

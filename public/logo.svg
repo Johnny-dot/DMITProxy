@@ -1,0 +1,11 @@
+<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <polygon
+    points="18,4 33,30 3,30"
+    stroke="#10b981"
+    stroke-width="2"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <line x1="18" y1="4" x2="18" y2="30" stroke="#10b981" stroke-width="1.2" stroke-opacity="0.35"/>
+  <line x1="18" y1="30" x2="26" y2="17" stroke="#6366f1" stroke-width="1.2" stroke-opacity="0.5"/>
+</svg>

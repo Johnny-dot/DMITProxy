@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Ca
 import { Badge } from '@/src/components/ui/Badge';
 import { Button } from '@/src/components/ui/Button';
 import { Skeleton } from '@/src/components/ui/Skeleton';
+import { EmptyState } from '@/src/components/ui/EmptyState';
 import { Globe, Zap, Plus, ShieldCheck, Users, RefreshCw } from 'lucide-react';
 import { getInbounds, Inbound } from '@/src/api/client';
 import { cn } from '@/src/utils/cn';
@@ -55,10 +56,11 @@ export function NodesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('nodes.title')}</h1>
-          <p className="text-zinc-400 mt-1">{t('nodes.subtitle')}</p>
+      <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
+        <div className="space-y-3">
+          <p className="section-kicker">{t('nodes.title')}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('nodes.title')}</h1>
+          <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('nodes.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={load} disabled={isLoading}>
@@ -69,7 +71,7 @@ export function NodesPage() {
             {t('nodes.manageInbounds')}
           </Button>
         </div>
-      </div>
+      </section>
 
       {isLoading ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -182,12 +184,18 @@ export function NodesPage() {
             </Card>
           ))}
           {nodeCards.length === 0 && (
-            <Card className="md:col-span-2 lg:col-span-3">
-              <CardContent className="py-12 flex items-center justify-center text-zinc-500 gap-2">
-                <ShieldCheck className="w-4 h-4" />
-                {t('nodes.noNodesFound')}
-              </CardContent>
-            </Card>
+            <div className="md:col-span-2 lg:col-span-3">
+              <Card>
+                <CardContent className="p-0">
+                  <EmptyState
+                    icon={ShieldCheck}
+                    title={t('nodes.noNodesFound')}
+                    description=""
+                    illustration="empty-nodes.webp"
+                  />
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
       )}

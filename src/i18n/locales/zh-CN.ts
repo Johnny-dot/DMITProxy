@@ -42,7 +42,7 @@ export const zhCN = {
     settings: '设置',
     profile: '个人资料',
     adminUser: '管理员',
-    adminEmail: 'admin@proxydog.io',
+    adminEmail: 'admin@prism.io',
     notificationsNotReady: '通知面板暂未实现',
     profileNotReady: '个人资料页面暂未实现',
   },
@@ -59,7 +59,7 @@ export const zhCN = {
     signIn: '登录',
     signingIn: '登录中...',
     loginFailed: '登录失败',
-    footer: 'ProxyDog 管理台 - 3X-UI 管理界面',
+    footer: 'Prism 管理台 - 3X-UI 管理界面',
   },
   dashboard: {
     title: '仪表盘',

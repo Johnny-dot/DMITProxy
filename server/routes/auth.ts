@@ -271,7 +271,7 @@ router.get('/portal/context', (req, res) => {
     .all() as Array<{ key: string; value: string; updated_at: number }>;
 
   const settingsMap = new Map(settingsRows.map((row) => [row.key, row]));
-  const siteName = settingsMap.get('siteName')?.value?.trim() || 'ProxyDog';
+  const siteName = settingsMap.get('siteName')?.value?.trim() || 'Prism';
   const publicUrl = settingsMap.get('publicUrl')?.value?.trim() || '';
   const supportTelegram = settingsMap.get('supportTelegram')?.value?.trim() || '';
   const announcementText = settingsMap.get('announcementText')?.value?.trim() || '';
@@ -361,7 +361,7 @@ router.get('/portal/stats', async (req, res) => {
     const stats = await fetchClientStatsBySubId(session.sub_id);
     return res.json({ stats });
   } catch (error) {
-    console.error('[ProxyDog] /portal/stats: fetchClientStatsBySubId failed:', error);
+    console.error('[Prism] /portal/stats: fetchClientStatsBySubId failed:', error);
     return res.status(502).json({ error: 'Unable to fetch usage stats from upstream' });
   }
 });

@@ -1,14 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Server,
-  Users,
   BarChart3,
+  LayoutDashboard,
   Link as LinkIcon,
+  Server,
   Settings,
-  Dog,
   ShieldCheck,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
@@ -32,20 +31,25 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const userMenuItems = [{ icon: LinkIcon, label: mySubscriptionLabel, path: '/my-subscription' }];
 
   const menuItems = role === 'user' ? userMenuItems : adminMenuItems;
-
-  const displayName = username ?? (language === 'zh-CN' ? t('nav.adminUser') : t('nav.adminUser'));
+  const displayName = username ?? t('nav.adminUser');
   const displayEmail = role === 'user' ? '' : t('nav.adminEmail');
+  const initials = (displayName || 'P').slice(0, 1).toUpperCase();
 
   return (
-    <aside className="w-64 border-r border-white/10 bg-zinc-950 flex flex-col h-full">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 bg-zinc-50 rounded-lg flex items-center justify-center">
-          <Dog className="w-5 h-5 text-zinc-950" />
+    <aside className="surface-card flex h-[calc(100vh-2rem)] w-72 flex-col p-4">
+      <div className="surface-panel flex items-center gap-3 px-4 py-4">
+        <div className="surface-inline flex h-12 w-12 items-center justify-center">
+          <img src="/logo.svg" alt="Prism" className="h-7 w-7" />
         </div>
-        <span className="font-bold text-xl tracking-tight text-zinc-50">ProxyDog</span>
+        <div className="min-w-0">
+          <p className="text-base font-semibold text-zinc-50">Prism</p>
+          <p className="text-xs text-zinc-500">
+            {role === 'user' ? mySubscriptionLabel : t('nav.dashboard')}
+          </p>
+        </div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto min-h-0">
+      <nav className="mt-5 flex-1 space-y-2 overflow-y-auto">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
@@ -57,39 +61,43 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             }
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-[20px] px-4 py-3 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-zinc-800 text-zinc-50'
-                  : 'text-zinc-400 hover:text-zinc-50 hover:bg-white/5',
+                  ? 'bg-[var(--surface-strong)] text-zinc-50'
+                  : 'text-zinc-400 hover:bg-[var(--surface-panel)] hover:text-zinc-50',
               )
             }
           >
-            <item.icon className="w-4 h-4" />
+            <item.icon className="h-4 w-4" />
             {item.label}
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-white/10">
+      <div className="soft-divider mt-5 border-t pt-5">
         <NavLink
           to="/profile"
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-3 px-3 py-2 rounded-md transition-colors',
-              isActive ? 'bg-zinc-800' : 'hover:bg-white/5',
+              'surface-panel flex items-center gap-3 px-4 py-4 transition-colors',
+              isActive && 'border-[color:var(--border-strong)]',
             )
           }
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex-shrink-0" />
-          <div className="flex flex-col">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent-soft)] text-sm font-semibold text-emerald-500">
+            {initials}
+          </div>
+          <div className="min-w-0">
             <span
-              className="text-xs font-medium text-zinc-50"
+              className="block truncate text-sm font-medium text-zinc-50"
               data-testid="sidebar-user-display-name"
             >
               {displayName}
             </span>
-            {displayEmail && <span className="text-[10px] text-zinc-500">{displayEmail}</span>}
+            {displayEmail && (
+              <span className="block truncate text-xs text-zinc-500">{displayEmail}</span>
+            )}
           </div>
         </NavLink>
       </div>

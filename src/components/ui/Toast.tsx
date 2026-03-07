@@ -40,23 +40,26 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           {toasts.map((t) => (
             <motion.div
               key={t.id}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+              exit={{ opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.18 } }}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg shadow-2xl border min-w-[300px] backdrop-blur-md",
-                t.type === 'success' && "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
-                t.type === 'error' && "bg-red-500/10 border-red-500/20 text-red-500",
-                t.type === 'info' && "bg-zinc-900/90 border-white/10 text-zinc-50"
+                'flex min-w-[300px] items-center gap-3 rounded-[22px] border px-4 py-3 shadow-[var(--shadow-card)]',
+                t.type === 'success' &&
+                  'border-transparent bg-[var(--success-soft)] text-[var(--success)]',
+                t.type === 'error' &&
+                  'border-transparent bg-[var(--danger-soft)] text-[var(--danger)]',
+                t.type === 'info' &&
+                  'border-[color:var(--border-subtle)] bg-[var(--surface-card)] text-[var(--text-primary)]',
               )}
             >
               {t.type === 'success' && <CheckCircle2 className="w-5 h-5" />}
               {t.type === 'error' && <AlertCircle className="w-5 h-5" />}
               {t.type === 'info' && <Info className="w-5 h-5" />}
               <span className="flex-1 text-sm font-medium">{t.message}</span>
-              <button 
+              <button
                 onClick={() => removeToast(t.id)}
-                className="p-1 hover:bg-white/5 rounded-md transition-colors"
+                className="rounded-full p-1 transition-colors hover:bg-[var(--surface-panel)]"
               >
                 <X className="w-4 h-4 opacity-50 hover:opacity-100" />
               </button>

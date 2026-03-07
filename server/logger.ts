@@ -7,7 +7,7 @@ const LOG_MAX_MB = Number.parseInt(process.env.LOG_MAX_MB ?? '20', 10);
 const maxBytes =
   Number.isFinite(LOG_MAX_MB) && LOG_MAX_MB > 0 ? LOG_MAX_MB * 1024 * 1024 : 20 * 1024 * 1024;
 
-const defaultLogPath = path.resolve('./data/logs/proxydog-server.log');
+const defaultLogPath = path.resolve('./data/logs/prism-server.log');
 const configuredLogPath = (process.env.LOG_FILE ?? '').trim();
 const logFilePath = configuredLogPath ? path.resolve(configuredLogPath) : defaultLogPath;
 const logDir = path.dirname(logFilePath);
@@ -31,7 +31,7 @@ function rotateIfNeeded() {
     fs.renameSync(logFilePath, rotatedPath);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    stderrWrite(`[ProxyDog][LOGGER] rotate failed: ${message}\n`);
+    stderrWrite(`[Prism][LOGGER] rotate failed: ${message}\n`);
   }
 }
 
@@ -44,12 +44,12 @@ function writeLog(level: string, args: unknown[]) {
     fs.appendFileSync(logFilePath, line, 'utf8');
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    stderrWrite(`[ProxyDog][LOGGER] write failed: ${message}\n`);
+    stderrWrite(`[Prism][LOGGER] write failed: ${message}\n`);
   }
 }
 
 function patchConsole() {
-  const globalKey = '__proxydog_console_patched__';
+  const globalKey = '__prism_console_patched__';
   const g = globalThis as Record<string, unknown>;
   if (g[globalKey]) return;
   g[globalKey] = true;
@@ -88,13 +88,13 @@ ensureLogDir();
 patchConsole();
 
 if (LOG_TO_FILE) {
-  console.info(`[ProxyDog][LOGGER] writing logs to ${logFilePath}`);
+  console.info(`[Prism][LOGGER] writing logs to ${logFilePath}`);
 }
 
 process.on('uncaughtException', (error) => {
-  console.error('[ProxyDog] Uncaught exception:', error);
+  console.error('[Prism] Uncaught exception:', error);
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error('[ProxyDog] Unhandled rejection:', reason);
+  console.error('[Prism] Unhandled rejection:', reason);
 });
