@@ -95,6 +95,18 @@ function ensureConfiguredServiceAccount() {
 
 // Module-level session cache for stats fetches (TTL: 10 minutes)
 let cachedStatsCookie: { cookie: string; expiresAt: number } | null = null;
+const DEFAULT_STATS_CACHE_TTL_MS = 5_000;
+const MIN_STATS_CACHE_TTL_MS = 1_000;
+const MAX_STATS_CACHE_TTL_MS = 60_000;
+
+interface StatsSnapshot {
+  bySubId: Map<string, XuiClientUsage>;
+  fetchedAt: number;
+  expiresAt: number;
+}
+
+let cachedStatsSnapshot: StatsSnapshot | null = null;
+let pendingStatsSnapshotPromise: Promise<StatsSnapshot> | null = null;
 
 async function getStatsCookieHeader(username: string, password: string): Promise<string> {
   const now = Date.now();
@@ -109,6 +121,108 @@ async function getStatsCookieHeader(username: string, password: string): Promise
 function safeNonNegativeInt(value: unknown, fallback = 0): number {
   const n = Number(value);
   return Number.isFinite(n) && n >= 0 ? Math.trunc(n) : fallback;
+}
+
+function normalizeLookupKey(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+function getStatsCacheTtlMs(): number {
+  const configured = Number.parseInt(process.env.XUI_STATS_CACHE_TTL_MS ?? '', 10);
+  if (!Number.isFinite(configured) || configured < MIN_STATS_CACHE_TTL_MS) {
+    return DEFAULT_STATS_CACHE_TTL_MS;
+  }
+  return Math.min(configured, MAX_STATS_CACHE_TTL_MS);
+}
+
+function toClientUsage(
+  inbound: XuiInbound,
+  client: Record<string, unknown>,
+  stats: XuiClientStat | null,
+): XuiClientUsage {
+  return {
+    inboundId: inbound.id,
+    inboundRemark: String(inbound.remark ?? ''),
+    protocol: inbound.protocol,
+    up: safeNonNegativeInt(stats?.up),
+    down: safeNonNegativeInt(stats?.down),
+    total: safeNonNegativeInt(stats?.total),
+    expiryTime: safeNonNegativeInt(stats?.expiryTime ?? client.expiryTime),
+    enable: stats?.enable === true,
+  };
+}
+
+function invalidateStatsSnapshotCache() {
+  cachedStatsSnapshot = null;
+}
+
+export function buildClientUsageIndex(inbounds: XuiInbound[]): Map<string, XuiClientUsage> {
+  const bySubId = new Map<string, XuiClientUsage>();
+
+  for (const inbound of inbounds) {
+    const clients = parseInboundClients(inbound.settings);
+    const statsByEmail = new Map<string, XuiClientStat>();
+    for (const stat of inbound.clientStats ?? []) {
+      const email = normalizeLookupKey(stat.email);
+      if (email) statsByEmail.set(email, stat);
+    }
+
+    for (const client of clients) {
+      const subId = normalizeLookupKey(client.subId);
+      if (!subId || bySubId.has(subId)) continue;
+
+      const email = normalizeLookupKey(client.email);
+      const stats = email ? (statsByEmail.get(email) ?? null) : null;
+      bySubId.set(subId, toClientUsage(inbound, client, stats));
+    }
+  }
+
+  return bySubId;
+}
+
+async function getStatsSnapshot(
+  cookieHeader: string,
+  forceRefresh = false,
+): Promise<{ snapshot: StatsSnapshot; fromCache: boolean }> {
+  const now = Date.now();
+  if (!forceRefresh && cachedStatsSnapshot && cachedStatsSnapshot.expiresAt > now) {
+    return { snapshot: cachedStatsSnapshot, fromCache: true };
+  }
+
+  if (pendingStatsSnapshotPromise) {
+    return { snapshot: await pendingStatsSnapshotPromise, fromCache: false };
+  }
+
+  const fetchPromise = (async () => {
+    const listResp = await requestXuiJson<XuiInbound[]>(
+      '/panel/api/inbounds/list',
+      'GET',
+      null,
+      cookieHeader,
+    );
+    if (!listResp.success || !Array.isArray(listResp.obj)) {
+      throw new XuiAdminError(listResp.msg || 'Failed to fetch inbounds from 3X-UI');
+    }
+
+    const fetchedAt = Date.now();
+    const snapshot: StatsSnapshot = {
+      bySubId: buildClientUsageIndex(listResp.obj),
+      fetchedAt,
+      expiresAt: fetchedAt + getStatsCacheTtlMs(),
+    };
+    cachedStatsSnapshot = snapshot;
+    return snapshot;
+  })();
+
+  pendingStatsSnapshotPromise = fetchPromise;
+
+  try {
+    return { snapshot: await fetchPromise, fromCache: false };
+  } finally {
+    if (pendingStatsSnapshotPromise === fetchPromise) {
+      pendingStatsSnapshotPromise = null;
+    }
+  }
 }
 
 async function requestXui(
@@ -401,10 +515,14 @@ export async function autoProvisionClientForRegisteredUser(
     throw new XuiAdminError(addResp.msg || 'Failed to add client in 3X-UI');
   }
 
+  invalidateStatsSnapshotCache();
   return String(client.subId ?? '');
 }
 
 export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientUsage | null> {
+  const normalizedSubId = normalizeLookupKey(subId);
+  if (!normalizedSubId) return null;
+
   const creds = getXuiCredentials();
   if (!creds) {
     console.warn(
@@ -414,32 +532,13 @@ export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientU
   }
 
   const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
-  const listResp = await requestXuiJson<XuiInbound[]>(
-    '/panel/api/inbounds/list',
-    'GET',
-    null,
-    cookieHeader,
-  );
-  if (!listResp.success || !Array.isArray(listResp.obj)) return null;
 
-  for (const inbound of listResp.obj) {
-    const clients = parseInboundClients(inbound.settings);
-    const client = clients.find((c) => String(c.subId ?? '') === subId);
-    if (!client) continue;
-
-    const email = String(client.email ?? '');
-    const stats = inbound.clientStats?.find((s) => s.email === email) ?? null;
-    return {
-      inboundId: inbound.id,
-      inboundRemark: String(inbound.remark ?? ''),
-      protocol: inbound.protocol,
-      up: safeNonNegativeInt(stats?.up),
-      down: safeNonNegativeInt(stats?.down),
-      total: safeNonNegativeInt(stats?.total),
-      expiryTime: safeNonNegativeInt(stats?.expiryTime ?? client.expiryTime),
-      enable: stats?.enable === true,
-    };
+  const initial = await getStatsSnapshot(cookieHeader);
+  const cachedUsage = initial.snapshot.bySubId.get(normalizedSubId) ?? null;
+  if (cachedUsage || !initial.fromCache) {
+    return cachedUsage;
   }
 
-  return null;
+  const refreshed = await getStatsSnapshot(cookieHeader, true);
+  return refreshed.snapshot.bySubId.get(normalizedSubId) ?? null;
 }
