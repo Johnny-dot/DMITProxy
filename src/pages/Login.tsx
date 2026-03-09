@@ -20,7 +20,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const hasConfiguredXui = isXuiConfigured();
   const adminLoginUnavailableMessage = isZh
-    ? '面板登录还没配置好，请先在服务器 .env 里补上 3X-UI 参数。'
+    ? '面板登录尚未配置完成，请先在服务器 .env 中补齐 3X-UI 参数。'
     : t('login.adminLoginUnavailable');
 
   useEffect(() => {
@@ -77,16 +77,12 @@ export function LoginPage() {
 
   return (
     <PublicAuthLayout
-      eyebrow={isZh ? '共用入口' : 'Shared sign-in'}
-      title={
-        isZh
-          ? '登录、订阅、使用说明，都在这里。'
-          : 'Sign-in, links, and help — all in one place.'
-      }
+      eyebrow={isZh ? '账号登录' : 'Account sign-in'}
+      title={isZh ? '登录后，继续使用你的服务。' : 'Sign in and continue using your service.'}
       description={
         isZh
-          ? '登录后自动跳转，不用记路径。'
-          : 'Sign in and go straight to your page.'
+          ? '登录后可以查看订阅、使用教程和社区信息。'
+          : 'After sign-in, you can open your subscription, setup guide, and community links.'
       }
     >
       <div className="space-y-8" data-testid="login-page">
@@ -167,8 +163,8 @@ export function LoginPage() {
             </p>
             <p className="text-sm leading-6 text-zinc-400">
               {isZh
-                ? '注册后直接进入你的订阅页面。'
-                : 'Register and land on your own subscription page.'}
+                ? '先注册，再直接进入你的订阅页。'
+                : 'Register first, then go straight to your subscription page.'}
             </p>
           </div>
           <Link to="/register" data-testid="login-register-link">

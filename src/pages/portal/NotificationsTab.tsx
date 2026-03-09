@@ -83,18 +83,20 @@ export function NotificationsTab({
             <p className="section-kicker">{isZh ? '通知中心' : 'Notification center'}</p>
             <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-zinc-50">
               <Bell className="h-4 w-4 text-emerald-500" />
-              <span>{isZh ? '通知和近况' : 'Updates and notes'}</span>
+              <span>
+                {isZh ? '订阅提醒与服务通知' : 'Subscription updates and service notices'}
+              </span>
             </h2>
           </div>
         ) : (
           <div className="space-y-1">
             <p className="text-sm font-medium text-zinc-50">
-              {isZh ? '保持通知可见，但按需展开。' : 'Keep notices visible, expand them on demand.'}
+              {isZh ? '有新消息时，会显示在这里。' : 'New updates appear here.'}
             </p>
             <p className="text-sm leading-6 text-zinc-400">
               {isZh
-                ? '这里放最近的订阅提醒、说明和联系信息。'
-                : 'Recent subscription updates, notes, and contact info stay here.'}
+                ? '订阅状态、服务说明和联系信息会按时间显示。'
+                : 'Subscription status, service notes, and contact info are shown in time order.'}
             </p>
           </div>
         )}

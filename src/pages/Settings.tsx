@@ -200,10 +200,7 @@ export function SettingsPage() {
         sharedResources: settings.sharedResources,
       });
       setSettings(updated);
-      toast(
-        isZh ? '共享资源与家庭组邀请已更新' : 'Shared resources and family invites updated',
-        'success',
-      );
+      toast(isZh ? '共享资源已更新' : 'Shared resources updated', 'success');
     } catch (error) {
       const message =
         error instanceof Error
@@ -380,13 +377,13 @@ export function SettingsPage() {
               <div className="flex items-center gap-2">
                 <Globe className="w-5 h-5 text-emerald-500" />
                 <CardTitle>
-                  {isZh ? '共享资源与家庭组邀请' : 'Shared resources and family invites'}
+                  {isZh ? '共享资源与邀请信息' : 'Shared resources and invite details'}
                 </CardTitle>
               </div>
               <CardDescription>
                 {isZh
-                  ? '这里可以维护多条共享内容，例如美区 Apple ID、ChatGPT 会员账号、1Password / Spotify / Google One 家庭组邀请链接等。'
-                  : 'Manage multiple shared entries here, such as a US Apple ID, a ChatGPT account, or family invite links for 1Password, Spotify, or Google One.'}
+                  ? '在这里维护对用户可见的共享账号、家庭组邀请、Apple ID 下载协助等补充资源。'
+                  : 'Manage the extra shared resources users can see here, such as shared accounts, family invites, or Apple ID download help.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -399,15 +396,15 @@ export function SettingsPage() {
                   onClick={addSharedResource}
                 >
                   <Plus className="w-4 h-4" />
-                  {isZh ? '新增共享资源' : 'Add shared resource'}
+                  {isZh ? '新增共享条目' : 'Add shared item'}
                 </Button>
               </div>
 
               {settings.sharedResources.length === 0 ? (
                 <div className="rounded-[22px] border border-dashed border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-4 py-5 text-sm leading-6 text-zinc-400">
                   {isZh
-                    ? '当前还没有共享资源。你可以新增 Apple ID、ChatGPT 账号、家庭组邀请链接或其他数字资产说明。'
-                    : 'No shared resources yet. Add an Apple ID, a ChatGPT account, a family invite link, or other digital access notes.'}
+                    ? '当前还没有共享资源。你可以新增共享账号、家庭组邀请链接或其他补充说明。'
+                    : 'No shared resources yet. Add a shared account, a family invite link, or any other extra access notes.'}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -419,7 +416,7 @@ export function SettingsPage() {
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="space-y-1">
                           <p className="text-sm font-semibold text-zinc-100">
-                            {isZh ? `资源 ${index + 1}` : `Resource ${index + 1}`}
+                            {isZh ? `共享条目 ${index + 1}` : `Shared item ${index + 1}`}
                           </p>
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge variant={resource.active ? 'success' : 'secondary'}>
@@ -576,8 +573,8 @@ export function SettingsPage() {
               </div>
               <CardDescription>
                 {isZh
-                  ? '为朋友们维护单独的社区入口，例如 Telegram、WhatsApp、Discord、微信群说明或自定义链接。'
-                  : 'Maintain dedicated community entries for friends, such as Telegram, WhatsApp, Discord, WeChat notes, or custom links.'}
+                  ? '在这里维护 Telegram、WhatsApp、Discord、微信群说明等对用户可见的社区入口。'
+                  : 'Maintain the community entries users can see here, such as Telegram, WhatsApp, Discord, or WeChat notes.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">

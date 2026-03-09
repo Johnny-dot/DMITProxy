@@ -76,8 +76,8 @@ export function UsersCenterPage() {
         <h1 className="text-3xl font-bold tracking-tight">{isZh ? '用户中心' : 'User Center'}</h1>
         <p className="text-zinc-400 mt-1">
           {isZh
-            ? '在一个页面中统一管理用户、在线状态与账号邀请码。'
-            : 'Manage users, online activity, and account invites in one workspace.'}
+            ? '在一个页面里统一管理用户、在线状态和邀请码。'
+            : 'Manage users, online activity, and invite accounts in one workspace.'}
         </p>
       </div>
 

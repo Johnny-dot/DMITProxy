@@ -38,20 +38,32 @@ import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 
 const DASHBOARD_POLL_INTERVAL_MS = 5_000;
 
+function formatBytes(bytes: number) {
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
+  return `${mb.toFixed(1)} MB`;
+}
+
+function formatSpeed(bytesPerSec: number) {
+  const kbps = bytesPerSec / 1024;
+  if (kbps >= 1024) return `${(kbps / 1024).toFixed(1)} MB/s`;
+  return `${kbps.toFixed(1)} KB/s`;
+}
+
+function usagePercent(used: number, total: number) {
+  if (!total || total <= 0) return 0;
+  return Math.min((used / total) * 100, 100);
+}
+
 function isAbortError(error: unknown): boolean {
-  return (
-    error instanceof DOMException
-      ? error.name === 'AbortError'
-      : typeof error === 'object' &&
-          error !== null &&
-          'name' in error &&
-          error.name === 'AbortError'
-  );
+  return error instanceof DOMException
+    ? error.name === 'AbortError'
+    : typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError';
 }
 
 export function Dashboard() {
   const { toast } = useToast();
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(true);
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
@@ -205,35 +217,13 @@ export function Dashboard() {
     },
   ] as const;
 
-  const formatBytes = (bytes: number) => {
-    const mb = bytes / (1024 * 1024);
-    if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
-    return `${mb.toFixed(1)} MB`;
-  };
-
   const formatUptime = (seconds: number) => {
     const d = Math.floor(seconds / 86400);
     const h = Math.floor((seconds % 86400) / 3600);
     const m = Math.floor((seconds % 3600) / 60);
-    if (language === 'zh-CN') {
-      if (d > 0) return `${d}天 ${h}小时 ${m}分钟`;
-      if (h > 0) return `${h}小时 ${m}分钟`;
-      return `${m}分钟`;
-    }
-    if (d > 0) return `${d}d ${h}h ${m}m`;
-    if (h > 0) return `${h}h ${m}m`;
-    return `${m}m`;
-  };
-
-  const formatSpeed = (bytesPerSec: number) => {
-    const kbps = bytesPerSec / 1024;
-    if (kbps >= 1024) return `${(kbps / 1024).toFixed(1)} MB/s`;
-    return `${kbps.toFixed(1)} KB/s`;
-  };
-
-  const usagePercent = (used: number, total: number) => {
-    if (!total || total <= 0) return 0;
-    return Math.min((used / total) * 100, 100);
+    if (d > 0) return t('dashboard.uptimeDHM', { d, h, m });
+    if (h > 0) return t('dashboard.uptimeHM', { h, m });
+    return t('dashboard.uptimeM', { m });
   };
 
   return (

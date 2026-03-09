@@ -48,11 +48,11 @@ export function UserLoginPage() {
   return (
     <PublicAuthLayout
       eyebrow={isZh ? '个人入口' : 'Personal sign-in'}
-      title={isZh ? '回到自己的页面就好，不用多想。' : 'A simple way back to your own page.'}
+      title={isZh ? '回到你的页面，继续就好。' : 'A simple way back to your own page.'}
       description={
         isZh
-          ? '输完用户名和密码，就会回到你常用的订阅和帮助页面。'
-          : 'Enter your username and password, then go straight back to your usual links and help.'
+          ? '登录后会直接回到常用的订阅、下载和帮助页面。'
+          : 'Sign in and go straight back to your usual links, downloads, and help.'
       }
     >
       <div className="space-y-8">
@@ -64,8 +64,8 @@ export function UserLoginPage() {
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-400">
               {isZh
-                ? '登录后可以查看订阅、下载客户端和加入社区。'
-                : 'Sign in to view your links, clients, and community notes.'}
+                ? '登录后可以查看订阅、下载客户端和社区入口。'
+                : 'Sign in to access your subscription, downloads, and community links.'}
             </p>
           </div>
         </div>
@@ -122,7 +122,7 @@ export function UserLoginPage() {
             <p className="text-sm font-semibold text-zinc-50">{t('userAuth.noAccount')}</p>
             <p className="text-sm leading-6 text-zinc-400">
               {isZh
-                ? '如果你已经拿到邀请码，可以先注册，再回来登录。'
+                ? '如果已经拿到邀请码，先注册，再回来登录。'
                 : 'If you already have an invite, register first and then come back here.'}
             </p>
           </div>

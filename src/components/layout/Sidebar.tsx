@@ -2,8 +2,6 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
-  CircleHelp,
-  Download,
   LayoutDashboard,
   Link as LinkIcon,
   Server,
@@ -16,25 +14,7 @@ import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
 import { getAvatarInitials, getAvatarToneClasses } from '@/src/utils/userProfile';
-
-type UserSection = 'home' | 'market' | 'subscription' | 'clients' | 'community' | 'help';
-
-function getActiveUserSection(search: string): UserSection {
-  const params = new URLSearchParams(search);
-  const section = params.get('section');
-
-  if (
-    section === 'market' ||
-    section === 'subscription' ||
-    section === 'clients' ||
-    section === 'community' ||
-    section === 'help'
-  ) {
-    return section;
-  }
-
-  return 'home';
-}
+import { resolveUserPortalSection } from '@/src/pages/portal/types';
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
@@ -44,12 +24,12 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   const userCenterLabel = isZh ? '用户中心' : 'User Center';
   const overviewLabel = isZh ? '概览' : 'Overview';
-  const marketLabel = isZh ? '资讯' : 'Markets';
-  const subscriptionLabel = isZh ? '订阅' : 'Subscription';
-  const clientsLabel = isZh ? '客户端' : 'Clients';
+  const marketLabel = isZh ? '市场' : 'Markets';
+  const setupLabel = isZh ? '使用订阅' : 'Set up';
   const communityLabel = isZh ? '社区' : 'Community';
-  const helpLabel = isZh ? '帮助' : 'Help';
-  const activeUserSection = getActiveUserSection(location.search);
+  const activeUserSection = resolveUserPortalSection(
+    new URLSearchParams(location.search).get('section'),
+  ).tab;
 
   const adminMenuItems = [
     { icon: LayoutDashboard, label: t('nav.dashboard'), path: '/' },
@@ -77,17 +57,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     },
     {
       icon: LinkIcon,
-      label: subscriptionLabel,
-      to: '/my-subscription?section=subscription',
-      active: location.pathname === '/my-subscription' && activeUserSection === 'subscription',
-      testId: 'sidebar-user-subscription',
-    },
-    {
-      icon: Download,
-      label: clientsLabel,
-      to: '/my-subscription?section=clients',
-      active: location.pathname === '/my-subscription' && activeUserSection === 'clients',
-      testId: 'sidebar-user-clients',
+      label: setupLabel,
+      to: '/my-subscription?section=setup',
+      active: location.pathname === '/my-subscription' && activeUserSection === 'setup',
+      testId: 'sidebar-user-setup',
     },
     {
       icon: Users,
@@ -95,13 +68,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       to: '/my-subscription?section=community',
       active: location.pathname === '/my-subscription' && activeUserSection === 'community',
       testId: 'sidebar-user-community',
-    },
-    {
-      icon: CircleHelp,
-      label: helpLabel,
-      to: '/my-subscription?section=help',
-      active: location.pathname === '/my-subscription' && activeUserSection === 'help',
-      testId: 'sidebar-user-help',
     },
   ];
 
@@ -113,15 +79,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     role === 'user'
       ? activeUserSection === 'market'
         ? marketLabel
-        : activeUserSection === 'subscription'
-          ? subscriptionLabel
-          : activeUserSection === 'clients'
-            ? clientsLabel
-            : activeUserSection === 'community'
-              ? communityLabel
-              : activeUserSection === 'help'
-                ? helpLabel
-                : overviewLabel
+        : activeUserSection === 'setup'
+          ? setupLabel
+          : activeUserSection === 'community'
+            ? communityLabel
+            : overviewLabel
       : t('nav.dashboard');
 
   return (

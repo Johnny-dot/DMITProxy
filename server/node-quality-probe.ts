@@ -1,6 +1,9 @@
 import {
   saveNodeQualityProfile,
   type NodeQualityProfile,
+  type NodeQualityEgressMeta,
+  type NodeQualityProbeCode,
+  type NodeQualityServiceDetail,
   type UnlockStatus,
 } from './node-quality.js';
 
@@ -30,6 +33,7 @@ interface ProbeHttpResult {
 interface ServiceProbeResult {
   status: UnlockStatus;
   detail: string;
+  probe: NodeQualityServiceDetail;
 }
 
 interface GenericServiceProbeConfig {
@@ -57,6 +61,20 @@ function clampScore(value: number): number {
 
 function normalizeProbeText(value: string): string {
   return value.replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function buildServiceProbe(
+  code: NodeQualityProbeCode,
+  target: string,
+  httpStatus: number | null = null,
+  location = '',
+): NodeQualityServiceDetail {
+  return {
+    code,
+    httpStatus,
+    location,
+    target,
+  };
 }
 
 async function fetchWithTimeout(url: string, headers?: HeadersInit): Promise<Response> {
@@ -156,25 +174,42 @@ async function probeGenericService({
 }: GenericServiceProbeConfig): Promise<ServiceProbeResult> {
   const probe = await fetchTextProbe(url, BROWSER_LIKE_HEADERS);
   if (!probe.ok) {
-    return { status: 'unknown', detail: `${serviceName} probe failed.` };
+    return {
+      status: 'unknown',
+      detail: `${serviceName} probe failed.`,
+      probe: buildServiceProbe('probe_failed', url),
+    };
   }
 
   if (isRegionBlocked(probe.body) || probe.status === 451) {
-    return { status: 'blocked', detail: blockedDetail };
+    return {
+      status: 'blocked',
+      detail: blockedDetail,
+      probe: buildServiceProbe('region_block', url, probe.status, probe.location),
+    };
   }
 
   if (probe.status >= 200 && probe.status < 400) {
-    return { status: 'supported', detail: successDetail.replace('{status}', String(probe.status)) };
+    return {
+      status: 'supported',
+      detail: successDetail.replace('{status}', String(probe.status)),
+      probe: buildServiceProbe('http_ok', url, probe.status, probe.location),
+    };
   }
 
   if (probe.status === 403 || probe.status === 429 || isChallengePage(probe.body)) {
     return {
       status: 'limited',
       detail: `${serviceName} is reachable, but anti-bot or verification checks are present.`,
+      probe: buildServiceProbe('challenge', url, probe.status, probe.location),
     };
   }
 
-  return { status: 'limited', detail: `${serviceName} returned HTTP ${probe.status}.` };
+  return {
+    status: 'limited',
+    detail: `${serviceName} returned HTTP ${probe.status}.`,
+    probe: buildServiceProbe('http_status', url, probe.status, probe.location),
+  };
 }
 
 async function probeChatgpt(): Promise<ServiceProbeResult> {
@@ -183,26 +218,51 @@ async function probeChatgpt(): Promise<ServiceProbeResult> {
     accept: 'text/plain,*/*',
   });
   if (!trace.ok || trace.status < 200 || trace.status >= 400) {
-    return { status: 'unknown', detail: 'OpenAI edge trace is unreachable.' };
+    return {
+      status: 'unknown',
+      detail: 'OpenAI edge trace is unreachable.',
+      probe: buildServiceProbe(
+        'trace_unreachable',
+        'https://chat.openai.com/cdn-cgi/trace',
+        trace.status || null,
+      ),
+    };
   }
 
   const home = await fetchTextProbe('https://chatgpt.com/', BROWSER_LIKE_HEADERS);
   if (!home.ok) {
-    return { status: 'unknown', detail: 'ChatGPT homepage probe failed.' };
+    return {
+      status: 'unknown',
+      detail: 'ChatGPT homepage probe failed.',
+      probe: buildServiceProbe('probe_failed', 'https://chatgpt.com/'),
+    };
   }
   if (home.status >= 200 && home.status < 400) {
-    return { status: 'supported', detail: `HTTP ${home.status} from chatgpt.com.` };
+    return {
+      status: 'supported',
+      detail: `HTTP ${home.status} from chatgpt.com.`,
+      probe: buildServiceProbe('http_ok', 'https://chatgpt.com/', home.status, home.location),
+    };
   }
   if (isRegionBlocked(home.body)) {
-    return { status: 'blocked', detail: 'ChatGPT responded with a region restriction page.' };
+    return {
+      status: 'blocked',
+      detail: 'ChatGPT responded with a region restriction page.',
+      probe: buildServiceProbe('region_block', 'https://chatgpt.com/', home.status, home.location),
+    };
   }
   if (home.status === 403 || home.status === 429 || isChallengePage(home.body)) {
     return {
       status: 'limited',
       detail: 'ChatGPT is reachable, but anti-bot or challenge checks are present.',
+      probe: buildServiceProbe('challenge', 'https://chatgpt.com/', home.status, home.location),
     };
   }
-  return { status: 'limited', detail: `ChatGPT returned HTTP ${home.status}.` };
+  return {
+    status: 'limited',
+    detail: `ChatGPT returned HTTP ${home.status}.`,
+    probe: buildServiceProbe('http_status', 'https://chatgpt.com/', home.status, home.location),
+  };
 }
 
 async function probeClaude(): Promise<ServiceProbeResult> {
@@ -211,26 +271,66 @@ async function probeClaude(): Promise<ServiceProbeResult> {
     accept: 'image/*,*/*',
   });
   if (!favicon.ok || favicon.status < 200 || favicon.status >= 400) {
-    return { status: 'unknown', detail: 'Claude static assets are unreachable.' };
+    return {
+      status: 'unknown',
+      detail: 'Claude static assets are unreachable.',
+      probe: buildServiceProbe(
+        'static_unreachable',
+        'https://claude.ai/favicon.ico',
+        favicon.status || null,
+      ),
+    };
   }
 
   const login = await fetchTextProbe('https://claude.ai/login', BROWSER_LIKE_HEADERS);
   if (!login.ok) {
-    return { status: 'unknown', detail: 'Claude login probe failed.' };
+    return {
+      status: 'unknown',
+      detail: 'Claude login probe failed.',
+      probe: buildServiceProbe('probe_failed', 'https://claude.ai/login'),
+    };
   }
   if (login.status >= 200 && login.status < 400) {
-    return { status: 'supported', detail: `HTTP ${login.status} from claude.ai/login.` };
+    return {
+      status: 'supported',
+      detail: `HTTP ${login.status} from claude.ai/login.`,
+      probe: buildServiceProbe('http_ok', 'https://claude.ai/login', login.status, login.location),
+    };
   }
   if (isRegionBlocked(login.body)) {
-    return { status: 'blocked', detail: 'Claude responded with a region restriction page.' };
+    return {
+      status: 'blocked',
+      detail: 'Claude responded with a region restriction page.',
+      probe: buildServiceProbe(
+        'region_block',
+        'https://claude.ai/login',
+        login.status,
+        login.location,
+      ),
+    };
   }
   if (login.status === 403 || login.status === 429 || isChallengePage(login.body)) {
     return {
       status: 'limited',
       detail: 'Claude is reachable, but anti-bot or verification checks are present.',
+      probe: buildServiceProbe(
+        'challenge',
+        'https://claude.ai/login',
+        login.status,
+        login.location,
+      ),
     };
   }
-  return { status: 'limited', detail: `Claude returned HTTP ${login.status}.` };
+  return {
+    status: 'limited',
+    detail: `Claude returned HTTP ${login.status}.`,
+    probe: buildServiceProbe(
+      'http_status',
+      'https://claude.ai/login',
+      login.status,
+      login.location,
+    ),
+  };
 }
 
 async function probeNetflix(): Promise<ServiceProbeResult> {
@@ -239,26 +339,60 @@ async function probeNetflix(): Promise<ServiceProbeResult> {
     BROWSER_LIKE_HEADERS,
   );
   if (!probe.ok) {
-    return { status: 'unknown', detail: 'Netflix title probe failed.' };
+    return {
+      status: 'unknown',
+      detail: 'Netflix title probe failed.',
+      probe: buildServiceProbe('probe_failed', 'https://www.netflix.com/title/81215567'),
+    };
   }
 
   const location = probe.location.toLowerCase();
   if (probe.status >= 200 && probe.status < 300) {
-    return { status: 'supported', detail: `HTTP ${probe.status} from the Netflix title page.` };
+    return {
+      status: 'supported',
+      detail: `HTTP ${probe.status} from the Netflix title page.`,
+      probe: buildServiceProbe(
+        'http_ok',
+        'https://www.netflix.com/title/81215567',
+        probe.status,
+        probe.location,
+      ),
+    };
   }
   if (location.includes('/unsupportedbrowser')) {
     return {
       status: 'limited',
       detail:
         'Netflix is reachable, but the probe hit an unsupported-browser fallback instead of a normal title response.',
+      probe: buildServiceProbe(
+        'unsupported_browser',
+        'https://www.netflix.com/title/81215567',
+        probe.status,
+        probe.location,
+      ),
     };
   }
   if (isRegionBlocked(probe.body)) {
-    return { status: 'blocked', detail: 'Netflix responded with a regional restriction page.' };
+    return {
+      status: 'blocked',
+      detail: 'Netflix responded with a regional restriction page.',
+      probe: buildServiceProbe(
+        'region_block',
+        'https://www.netflix.com/title/81215567',
+        probe.status,
+        probe.location,
+      ),
+    };
   }
   return {
     status: 'limited',
     detail: `Netflix returned HTTP ${probe.status}${probe.location ? ` (${probe.location})` : ''}.`,
+    probe: buildServiceProbe(
+      'http_status',
+      'https://www.netflix.com/title/81215567',
+      probe.status,
+      probe.location,
+    ),
   };
 }
 
@@ -334,6 +468,22 @@ function buildSummary(meta: IpApiResponse | null, fraudScore: number | null): st
   const ip = meta.query ? ` · ${meta.query}` : '';
   const fraud = fraudScore === null ? '' : ` · Risk ${fraudScore}`;
   return `${location || 'Unknown region'}${ip}${fraud}`;
+}
+
+function buildEgress(meta: IpApiResponse | null): NodeQualityEgressMeta | null {
+  if (!meta) return null;
+  return {
+    ip: meta.query ?? '',
+    country: meta.country ?? '',
+    countryCode: meta.countryCode ?? '',
+    regionName: meta.regionName ?? '',
+    city: meta.city ?? '',
+    isp: meta.isp ?? '',
+    asn: meta.as ?? '',
+    proxy: typeof meta.proxy === 'boolean' ? meta.proxy : null,
+    hosting: typeof meta.hosting === 'boolean' ? meta.hosting : null,
+    mobile: typeof meta.mobile === 'boolean' ? meta.mobile : null,
+  };
 }
 
 function buildNotes(
@@ -431,6 +581,19 @@ export async function probeAndStoreNodeQualityProfile(
       primevideo,
       x,
     ),
+    egress: buildEgress(meta),
+    serviceDetails: {
+      netflix: netflix.probe,
+      chatgpt: chatgpt.probe,
+      claude: claude.probe,
+      tiktok: tiktok.probe,
+      instagram: instagram.probe,
+      spotify: spotify.probe,
+      youtube: youtube.probe,
+      disneyplus: disneyplus.probe,
+      primevideo: primevideo.probe,
+      x: x.probe,
+    },
     updatedAt: Date.now(),
   });
 }

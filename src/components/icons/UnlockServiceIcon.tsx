@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/src/utils/cn';
 import type { UnlockServiceId } from '@/src/types/nodeQuality';
 
@@ -7,12 +7,25 @@ interface UnlockServiceIconProps {
   className?: string;
 }
 
+const OFFICIAL_FAVICONS: Record<UnlockServiceId, string> = {
+  netflix: 'https://www.netflix.com/favicon.ico',
+  chatgpt: 'https://chatgpt.com/favicon.ico',
+  claude: 'https://claude.ai/favicon.ico',
+  tiktok: 'https://www.tiktok.com/favicon.ico',
+  instagram: 'https://www.instagram.com/favicon.ico',
+  spotify: 'https://open.spotify.com/favicon.ico',
+  youtube: 'https://www.youtube.com/favicon.ico',
+  disneyplus: 'https://www.disneyplus.com/favicon.ico',
+  primevideo: 'https://www.primevideo.com/favicon.ico',
+  x: 'https://x.com/favicon.ico',
+};
+
 function Wrapper({
   className,
   children,
   style,
 }: {
-  className: string;
+  className?: string;
   children: React.ReactNode;
   style?: React.CSSProperties;
 }) {
@@ -20,7 +33,7 @@ function Wrapper({
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10',
+        'inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10',
         className,
       )}
       style={style}
@@ -30,7 +43,7 @@ function Wrapper({
   );
 }
 
-export function UnlockServiceIcon({ service, className }: UnlockServiceIconProps) {
+function FallbackIcon({ service, className }: UnlockServiceIconProps) {
   if (service === 'netflix') {
     return (
       <Wrapper className={cn('bg-[#e50914]/15 text-[#e50914]', className)}>
@@ -105,7 +118,7 @@ export function UnlockServiceIcon({ service, className }: UnlockServiceIconProps
   if (service === 'instagram') {
     return (
       <Wrapper
-        className={className ?? ''}
+        className={className}
         style={{
           background:
             'radial-gradient(circle at 30% 110%, #fdf497 0%, #fdf497 8%, #fd5949 40%, #d6249f 68%, #285AEB 100%)',
@@ -217,4 +230,27 @@ export function UnlockServiceIcon({ service, className }: UnlockServiceIconProps
       </svg>
     </Wrapper>
   );
+}
+
+export function UnlockServiceIcon({ service, className }: UnlockServiceIconProps) {
+  const [useFallback, setUseFallback] = useState(false);
+  const src = OFFICIAL_FAVICONS[service];
+
+  if (!useFallback && src) {
+    return (
+      <Wrapper className={cn('bg-white/95', className)}>
+        <img
+          key={service}
+          src={src}
+          alt=""
+          className="h-5 w-5 rounded-[5px] object-contain"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setUseFallback(true)}
+        />
+      </Wrapper>
+    );
+  }
+
+  return <FallbackIcon service={service} className={className} />;
 }

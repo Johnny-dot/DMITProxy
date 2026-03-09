@@ -68,8 +68,8 @@ export function HomeTab({
             </h2>
             <p className="max-w-2xl text-sm leading-6 text-zinc-400">
               {isZh
-                ? '管理员在这里可以快速切到用户管理、订阅交付和公告配置，同时保持与用户侧一致的产品语言。'
-                : 'Admins can move between user management, subscription delivery, and announcements without leaving the same product rhythm.'}
+                ? '管理员可以在同一套界面里快速切到用户管理、订阅交付和公告配置。'
+                : 'Admins can move between user management, subscription delivery, and announcements in one place.'}
             </p>
           </div>
 
@@ -178,8 +178,8 @@ function OverviewCard({
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
   const createdAtHelpText = isZh
-    ? '这是你在这里创建账号的时间。'
-    : 'This is when your account was created here.';
+    ? '这是你的账号创建时间。'
+    : 'This is when your account was created.';
 
   return (
     <section
@@ -189,14 +189,12 @@ function OverviewCard({
       <div className="space-y-3">
         <p className="section-kicker">{isZh ? '账户概览' : 'Account overview'}</p>
         <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-          {isZh
-            ? '账号、流量和线路情况都在这里。'
-            : 'Keep your account, traffic, and node status in one view.'}
+          {isZh ? '你的账号和线路状态。' : 'Your account and route status.'}
         </h2>
         <p className="max-w-2xl text-sm leading-6 text-zinc-400">
           {isZh
-            ? '先看看现在是否一切正常，再决定去复制订阅、装客户端，还是打开帮助。'
-            : 'Check how things look first, then decide whether you want links, clients, or help.'}
+            ? '先看看订阅是否可用、流量还有多少，再继续复制链接或下载客户端。'
+            : 'Check whether your subscription is ready and how much traffic is left before copying links or downloading a client.'}
         </p>
       </div>
 
@@ -228,11 +226,11 @@ function OverviewCard({
       >
         {hasSubscription
           ? isZh
-            ? '订阅已经准备好了，可以复制后导入客户端。'
-            : 'Your subscription is ready. Copy it whenever you need it.'
+            ? '订阅已经可用，可以直接复制并导入客户端。'
+            : 'Your subscription is ready. You can copy it and import it now.'
           : isZh
-            ? '订阅还在准备中；如果卡住了，可以先去帮助页看看。'
-            : 'Your subscription is still being prepared. Open Help if you want to check what to do next.'}
+            ? '订阅还在准备中，你可以先看看适合自己的客户端和导入步骤。'
+            : 'Your subscription is still being prepared. You can still check the recommended client and import steps first.'}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -240,18 +238,18 @@ function OverviewCard({
           variant="secondary"
           size="sm"
           onClick={() => {
-            onSetSection('subscription');
+            onSetSection('setup');
             onCopy(subscriptionUniversalUrl, 'home-universal');
           }}
           disabled={!hasSubscription}
         >
           {isZh ? '复制订阅' : 'Copy link'}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => onSetSection('clients')}>
-          {isZh ? '看看客户端' : 'See clients'}
+        <Button variant="outline" size="sm" onClick={() => onSetSection('setup')}>
+          {isZh ? '打开使用订阅' : 'Open setup'}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => onSetSection('help')}>
-          {isZh ? '打开帮助' : 'Open help'}
+        <Button variant="outline" size="sm" onClick={() => onSetSection('community')}>
+          {isZh ? '打开社区' : 'Open community'}
         </Button>
       </div>
     </section>
@@ -271,16 +269,18 @@ function TrafficStatsCard({
   const usagePercent =
     stats && stats.total > 0 ? Math.min((trafficUsed / stats.total) * 100, 100) : 0;
   const trafficHelpText = isZh
-    ? '这里显示已用流量和总量；如果总量是不限，说明这条订阅没有设置流量上限。'
-    : 'This shows traffic used versus total allowance. Unlimited means no total traffic cap is set.';
-  const uploadHelpText = isZh ? '累计上传流量。' : 'Cumulative uploaded traffic.';
-  const downloadHelpText = isZh ? '累计下载流量。' : 'Cumulative downloaded traffic.';
+    ? '这里可以看已用流量和总量；如果显示不限，说明当前没有总流量上限。'
+    : 'This compares your used traffic with the total. If it says Unlimited, there is no traffic cap right now.';
+  const uploadHelpText = isZh ? '这是你已经上传的流量。' : 'This is the traffic you have uploaded.';
+  const downloadHelpText = isZh
+    ? '这是你已经下载的流量。'
+    : 'This is the traffic you have downloaded.';
   const expiresHelpText = isZh
-    ? '这条订阅的到期时间；显示 Never 代表没有设置到期时间。'
-    : 'When this subscription expires. Never means no expiry time is set.';
+    ? '这是当前订阅的到期时间；如果显示 Never，说明暂时没有到期限制。'
+    : 'This is when the current subscription expires. Never means there is no expiry limit right now.';
   const protocolHelpText = isZh
-    ? '当前这条订阅使用的协议类型。'
-    : 'Protocol used by the current subscription.';
+    ? '这是当前订阅使用的协议类型。'
+    : 'This is the protocol used by the current subscription.';
 
   const formatExpiry = (ms: number) => {
     if (ms === 0) return isZh ? '永不过期' : 'Never';
@@ -429,7 +429,7 @@ function AdminMessagesCard({
       <div className="space-y-2">
         <p className="section-kicker">{isZh ? '最新说明' : 'Latest notes'}</p>
         <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
-          {isZh ? '公告和联系渠道' : 'Announcements and contact'}
+          {isZh ? '公告与联系渠道' : 'Announcements and support'}
         </h2>
       </div>
 

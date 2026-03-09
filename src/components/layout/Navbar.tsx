@@ -101,7 +101,7 @@ export function Navbar() {
           read: false,
           actionPath:
             item.id === 'subscription-ready' || item.id === 'subscription-pending'
-              ? '/my-subscription?section=subscription'
+              ? '/my-subscription?section=setup'
               : '/my-subscription?section=home',
           actionLabel: t('notifications.open'),
         };

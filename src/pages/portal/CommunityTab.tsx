@@ -49,15 +49,13 @@ export function CommunityTab({ communityLinks, isZh }: CommunityTabProps) {
         <div className="space-y-2">
           <p className="section-kicker">{isZh ? '社区入口' : 'Community'}</p>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
-            {isZh
-              ? '这里会显示群入口和加入方式。'
-              : 'Group links and join details will appear here.'}
+            {isZh ? '暂时还没有可加入的社区。' : 'No community link is available yet.'}
           </h2>
         </div>
         <div className="surface-panel p-4 text-sm leading-6 text-zinc-400">
           {isZh
-            ? '现在还没有可加入的群入口。等链接整理好后，这里会自动出现。'
-            : 'There is no community link here yet. Once links are ready, they will show up here.'}
+            ? '有新的群组入口后，会显示在这里。'
+            : 'New community links will appear here once they are available.'}
         </div>
       </section>
     );
@@ -68,12 +66,12 @@ export function CommunityTab({ communityLinks, isZh }: CommunityTabProps) {
       <div className="surface-card space-y-3 p-6 md:p-7">
         <p className="section-kicker">{isZh ? '社区入口' : 'Community'}</p>
         <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-          {isZh ? '把群入口和加入说明放在一起。' : 'Keep group links and join notes together.'}
+          {isZh ? '找到适合你的社区入口。' : 'Find the right community link for you.'}
         </h2>
         <p className="max-w-3xl text-sm leading-7 text-zinc-400">
           {isZh
-            ? 'Telegram、WhatsApp、Discord、微信群说明，或者其他你们常用的入口都可以放这里。'
-            : 'Telegram, WhatsApp, Discord, WeChat notes, or any other shared entry can live here.'}
+            ? '群链接、二维码和加入说明都会放在这里，按需要打开即可。'
+            : 'Links, QR codes, and join notes are collected here so you can open the one you need.'}
         </p>
       </div>
 
@@ -107,7 +105,7 @@ export function CommunityTab({ communityLinks, isZh }: CommunityTabProps) {
                       onClick={() => openLink(entry.url)}
                     >
                       <ExternalLink className="h-4 w-4" />
-                      {isZh ? '打开链接' : 'Open link'}
+                      {isZh ? '打开入口' : 'Open link'}
                     </Button>
                   )}
                   {entry.url.trim() && (
@@ -155,7 +153,7 @@ export function CommunityTab({ communityLinks, isZh }: CommunityTabProps) {
                 </div>
               )}
 
-              {isQrOpen && qrValue && <CommunityQr value={qrValue} />}
+              {isQrOpen && qrValue && <CommunityQr value={qrValue} isZh={isZh} />}
 
               <div
                 className={cn(
@@ -193,7 +191,7 @@ export function CommunityTab({ communityLinks, isZh }: CommunityTabProps) {
   );
 }
 
-function CommunityQr({ value }: { value: string }) {
+function CommunityQr({ value, isZh }: { value: string; isZh: boolean }) {
   const [error, setError] = React.useState<string | null>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
@@ -212,8 +210,8 @@ function CommunityQr({ value }: { value: string }) {
         });
       })
       .then(() => setError(null))
-      .catch(() => setError('Failed to generate QR code'));
-  }, [value]);
+      .catch(() => setError(isZh ? '二维码生成失败' : 'Failed to generate QR code'));
+  }, [isZh, value]);
 
   if (error) {
     return <p className="text-xs text-red-400">{error}</p>;

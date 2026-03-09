@@ -280,10 +280,10 @@ async function verifyHome(
   await waitForVisible(page.getByTestId('my-subscription-page'), timeoutMs);
   await waitForVisible(page.getByTestId('subscription-home-account-status'), timeoutMs);
   await waitForVisible(page.getByTestId('subscription-home-status'), timeoutMs);
-  await waitForVisible(page.getByTestId('subscription-home-admin-messages'), timeoutMs);
   await waitForVisible(page.getByTestId('navbar-theme-toggle'), timeoutMs);
   if (viewport === 'desktop') {
-    await waitForVisible(page.getByTestId('sidebar-user-my-subscription'), timeoutMs);
+    await waitForVisible(page.getByTestId('sidebar-user-overview'), timeoutMs);
+    await waitForVisible(page.getByTestId('sidebar-user-setup'), timeoutMs);
     await waitForVisible(page.getByTestId('sidebar-user-display-name'), timeoutMs);
     await waitForVisible(page.getByTestId('navbar-signout'), timeoutMs);
   } else {
@@ -297,11 +297,11 @@ async function verifyHome(
   );
 }
 
-async function verifySubscriptionPending(page: Page, timeoutMs: number) {
-  await page.getByTestId('my-subscription-tab-subscription').click();
-  await waitForIdle(page);
-  await waitForVisible(page.getByTestId('subscription-tab'), timeoutMs);
-  await waitForVisible(page.getByTestId('subscription-not-ready'), timeoutMs);
+async function verifySubscriptionPending(page: Page, baseUrl: string, timeoutMs: number) {
+  await openPage(page, `${baseUrl}/my-subscription?section=subscription`);
+  await waitForVisible(page.getByTestId('portal-setup-tab'), timeoutMs);
+  await waitForVisible(page.getByTestId('portal-setup-clients'), timeoutMs);
+  await waitForVisible(page.getByTestId('portal-setup-not-ready'), timeoutMs);
 }
 
 async function verifySubscriptionReady(
@@ -309,25 +309,53 @@ async function verifySubscriptionReady(
   baseUrl: string,
   subId: string,
   timeoutMs: number,
+  section: 'setup' | 'subscription' | 'clients' | 'help' = 'setup',
 ) {
-  await openPage(page, `${baseUrl}/my-subscription?section=subscription`);
-  await waitForVisible(page.getByTestId('subscription-tab'), timeoutMs);
+  await openPage(page, `${baseUrl}/my-subscription?section=${section}`);
+  await waitForVisible(page.getByTestId('portal-setup-tab'), timeoutMs);
+  await waitForVisible(page.getByTestId('portal-setup-clients'), timeoutMs);
+  await waitForVisible(page.getByTestId('portal-setup-link'), timeoutMs);
+  await waitForVisible(page.getByTestId('portal-setup-guide'), timeoutMs);
+  await waitForVisible(page.getByTestId('portal-setup-support'), timeoutMs);
   await waitForVisible(page.getByTestId('subscription-active-url'), timeoutMs);
-  await waitForVisible(page.getByTestId('subscription-downloads-section'), timeoutMs);
-  await waitForVisible(page.getByTestId('subscription-guide-section'), timeoutMs);
-  await waitForVisible(page.getByTestId('subscription-troubleshooting-section'), timeoutMs);
   await expectTextContains(page.getByTestId('subscription-active-url'), subId, timeoutMs);
 }
 
-async function verifyNotifications(page: Page, timeoutMs: number) {
-  await page.getByTestId('my-subscription-tab-notifications').click();
-  await waitForIdle(page);
-  await waitForVisible(page.getByTestId('subscription-notifications'), timeoutMs);
-  const count = await page.getByTestId('subscription-notification-item').count();
-  if (count < 1) {
-    throw new Error('Expected at least one notification item to render');
+async function verifyMarket(page: Page, baseUrl: string, timeoutMs: number) {
+  await openPage(page, `${baseUrl}/my-subscription?section=market`);
+  await waitForVisible(page.getByTestId('portal-market-tab'), timeoutMs);
+}
+
+async function verifyCommunity(page: Page, baseUrl: string, timeoutMs: number) {
+  await openPage(page, `${baseUrl}/my-subscription?section=community`);
+  await waitForVisible(page.getByTestId('portal-community-tab'), timeoutMs);
+}
+
+async function expectPanelState(
+  page: Page,
+  testId: string,
+  expectedState: 'open' | 'closed',
+  timeoutMs: number,
+) {
+  const locator = page.getByTestId(testId);
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const current = await locator.getAttribute('data-state');
+    if (current === expectedState) return;
+    await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  return count;
+
+  const actual = await locator.getAttribute('data-state');
+  throw new Error(`Expected ${testId} to be ${expectedState}, got ${actual ?? 'null'}`);
+}
+
+async function verifyHelpAlias(page: Page, baseUrl: string, timeoutMs: number) {
+  await openPage(page, `${baseUrl}/my-subscription?section=help`);
+  await waitForVisible(page.getByTestId('portal-setup-support'), timeoutMs);
+  await expectPanelState(page, 'portal-setup-support-resources', 'open', timeoutMs);
+  await expectPanelState(page, 'portal-setup-support-contact', 'open', timeoutMs);
+  await expectPanelState(page, 'portal-setup-support-troubleshooting', 'open', timeoutMs);
 }
 
 async function logout(page: Page, timeoutMs: number, viewport: ViewportName = 'desktop') {
@@ -579,25 +607,35 @@ async function main() {
     );
 
     await runCheck(
-      'Subscription pending state renders correctly',
+      'Legacy subscription URL maps to setup pending state',
       'desktop',
       'zh-CN',
       `${options.baseUrl}/my-subscription?section=subscription`,
-      'subscription-pending',
+      'setup-pending',
       async () => {
-        await verifySubscriptionPending(page, options.timeoutMs);
+        await verifySubscriptionPending(page, options.baseUrl, options.timeoutMs);
       },
     );
 
     await runCheck(
-      'Notifications page renders correctly',
+      'Market page renders correctly',
       'desktop',
       'zh-CN',
-      `${options.baseUrl}/my-subscription?section=notifications`,
-      'notifications-zh',
+      `${options.baseUrl}/my-subscription?section=market`,
+      'market-zh',
       async () => {
-        const count = await verifyNotifications(page, options.timeoutMs);
-        return `${count} notification item(s) visible`;
+        await verifyMarket(page, options.baseUrl, options.timeoutMs);
+      },
+    );
+
+    await runCheck(
+      'Community page renders correctly',
+      'desktop',
+      'zh-CN',
+      `${options.baseUrl}/my-subscription?section=community`,
+      'community-zh',
+      async () => {
+        await verifyCommunity(page, options.baseUrl, options.timeoutMs);
       },
     );
 
@@ -605,13 +643,41 @@ async function main() {
     assignSubId(db, scenario.username, scenario.subId);
 
     await runCheck(
-      'Assigned subscription renders active content correctly',
+      'Assigned setup page renders active content correctly',
       'desktop',
       'zh-CN',
-      `${options.baseUrl}/my-subscription?section=subscription`,
-      'subscription-ready',
+      `${options.baseUrl}/my-subscription?section=setup`,
+      'setup-ready',
       async () => {
         await verifySubscriptionReady(page, options.baseUrl, scenario.subId, options.timeoutMs);
+      },
+    );
+
+    await runCheck(
+      'Legacy clients URL focuses the setup download flow',
+      'desktop',
+      'zh-CN',
+      `${options.baseUrl}/my-subscription?section=clients`,
+      'setup-clients-alias',
+      async () => {
+        await verifySubscriptionReady(
+          page,
+          options.baseUrl,
+          scenario.subId,
+          options.timeoutMs,
+          'clients',
+        );
+      },
+    );
+
+    await runCheck(
+      'Legacy help URL opens support panels',
+      'desktop',
+      'zh-CN',
+      `${options.baseUrl}/my-subscription?section=help`,
+      'setup-help-alias',
+      async () => {
+        await verifyHelpAlias(page, options.baseUrl, options.timeoutMs);
       },
     );
 
@@ -652,11 +718,11 @@ async function main() {
     );
 
     await runCheck(
-      'English subscription spot-check renders correctly',
+      'English setup spot-check renders correctly',
       'desktop',
       'en-US',
-      `${options.baseUrl}/my-subscription?section=subscription`,
-      'subscription-en',
+      `${options.baseUrl}/my-subscription?section=setup`,
+      'setup-en',
       async () => {
         await verifySubscriptionReady(page, options.baseUrl, scenario.subId, options.timeoutMs);
       },
@@ -740,25 +806,24 @@ async function main() {
     );
 
     await runCheck(
-      'Mobile subscription page renders correctly',
+      'Mobile setup page renders correctly',
       'mobile',
       'zh-CN',
-      `${options.baseUrl}/my-subscription?section=subscription`,
-      'subscription-mobile',
+      `${options.baseUrl}/my-subscription?section=setup`,
+      'setup-mobile',
       async () => {
         await verifySubscriptionReady(page, options.baseUrl, scenario.subId, options.timeoutMs);
       },
     );
 
     await runCheck(
-      'Mobile notifications page renders correctly',
+      'Mobile community page renders correctly',
       'mobile',
       'zh-CN',
-      `${options.baseUrl}/my-subscription?section=notifications`,
-      'notifications-mobile',
+      `${options.baseUrl}/my-subscription?section=community`,
+      'community-mobile',
       async () => {
-        const count = await verifyNotifications(page, options.timeoutMs);
-        return `${count} notification item(s) visible`;
+        await verifyCommunity(page, options.baseUrl, options.timeoutMs);
       },
     );
 

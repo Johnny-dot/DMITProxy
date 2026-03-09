@@ -112,8 +112,8 @@ export function NodesPage() {
           <h1 className="text-3xl font-semibold tracking-tight">{t('nodes.title')}</h1>
           <p className="max-w-3xl text-sm leading-7 text-zinc-400">
             {isZh
-              ? '节点质量改为自动探测。这里展示最近一次缓存结果，并支持按节点手动刷新。'
-              : 'Node quality now comes from automated probes. This page shows the latest cached result and lets you refresh per node.'}
+              ? '节点质量现在通过自动探测生成。这里展示最近一次缓存结果，并支持按节点手动刷新。'
+              : 'Node quality now comes from automated probes. This page shows the latest cached result and lets you refresh each node manually.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ export function NodesPage() {
                       <p className="text-sm leading-6 text-zinc-300">
                         {node.profile?.summary ||
                           (isZh
-                            ? '还没有探测结果。点击刷新后会自动写入最新状态。'
+                            ? '暂无探测结果。点击刷新后会写入最新状态。'
                             : 'No probe result yet. Refresh to write the latest status.')}
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -277,7 +277,7 @@ export function NodesPage() {
                             isRefreshingNodeId === node.id && 'animate-spin',
                           )}
                         />
-                        {isZh ? '刷新检测' : 'Refresh'}
+                        {isZh ? '重新探测' : 'Refresh'}
                       </Button>
                     </div>
                   </CardContent>

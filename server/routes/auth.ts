@@ -22,6 +22,7 @@ import {
   MarketDataError,
   refreshMarketData,
 } from '../market-data.js';
+import { getNewsFeed, refreshNewsFeed, NewsFeedError } from '../news-data.js';
 
 const router = Router();
 const SESSION_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -522,6 +523,44 @@ router.post('/portal/market/refresh', async (req, res) => {
     }
     const detail = error instanceof Error ? error.message : 'Unknown error';
     return res.status(502).json({ error: `Failed to refresh market data: ${detail}` });
+  }
+});
+
+router.get('/portal/news', async (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  const session = getUserSession(token);
+  if (!session || session.role !== 'user') {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const feed = await getNewsFeed();
+    return res.json({ feed });
+  } catch (error) {
+    if (error instanceof NewsFeedError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    const detail = error instanceof Error ? error.message : 'Unknown error';
+    return res.status(502).json({ error: `Failed to load news feed: ${detail}` });
+  }
+});
+
+router.post('/portal/news/refresh', async (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  const session = getUserSession(token);
+  if (!session || session.role !== 'user') {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const payload = await refreshNewsFeed();
+    return res.json({ ok: true, ...payload });
+  } catch (error) {
+    if (error instanceof NewsFeedError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    const detail = error instanceof Error ? error.message : 'Unknown error';
+    return res.status(502).json({ error: `Failed to refresh news feed: ${detail}` });
   }
 });
 

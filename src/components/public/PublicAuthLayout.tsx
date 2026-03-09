@@ -35,24 +35,24 @@ export function PublicAuthLayout({ eyebrow, title, description, children }: Publ
   const highlights = [
     {
       icon: PanelsTopLeft,
-      title: isZh ? '常用信息放在一起' : 'Everything in one place',
+      title: isZh ? '常用操作，一眼找到' : 'Common tasks, easy to find',
       description: isZh
-        ? '登录、订阅、群入口和常用说明都集中在同一个地方。'
-        : 'Sign-in, links, community notes, and the usual instructions stay together.',
+        ? '登录后常用的入口都会放在顺手的位置。'
+        : 'The links you use most stay close at hand after sign-in.',
     },
     {
       icon: ShieldCheck,
-      title: isZh ? '简单直接' : 'Simple and clear',
+      title: isZh ? '状态清楚，少走弯路' : 'Clear status, fewer detours',
       description: isZh
-        ? '少一点术语，多一点清楚的状态和下一步。'
-        : 'Less jargon, clearer status, and a more obvious next step.',
+        ? '什么时候可用、下一步做什么，一眼就能明白。'
+        : 'You can see what is ready and what to do next at a glance.',
     },
     {
       icon: Waypoints,
-      title: isZh ? '给朋友看的界面' : 'A friendlier tone',
+      title: isZh ? '第一次来，也能跟着走' : 'Easy even on the first visit',
       description: isZh
-        ? '界面像发消息，不像填表。'
-        : 'Feels like a message, not a form.',
+        ? '按提示一步步操作，不用先理解太多术语。'
+        : 'Follow the prompts step by step without learning too much jargon first.',
     },
   ];
 

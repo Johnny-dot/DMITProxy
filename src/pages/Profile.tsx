@@ -189,8 +189,8 @@ function UserProfileView() {
           </div>
           <CardDescription>
             {isZh
-              ? '在这里调整你的显示名称和头像样式。'
-              : 'Adjust your display name and avatar style here.'}
+              ? '在这里调整你的显示名称、头像样式和个人偏好。'
+              : 'Adjust your display name, avatar style, and personal preferences here.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -217,7 +217,7 @@ function UserProfileView() {
           <div className="grid gap-2">
             <label className="text-sm font-medium">{isZh ? '显示名称' : 'Display name'}</label>
             <div className="flex items-center gap-1 text-xs text-zinc-500">
-              <span>{isZh ? '鏄剧ず鍚嶇О璇存槑' : 'Display name note'}</span>
+              <span>{isZh ? '显示名称说明' : 'Display name note'}</span>
               <InfoTooltip content={displayNameHelpText} />
             </div>
             <Input
@@ -238,7 +238,7 @@ function UserProfileView() {
             <div>
               <p className="text-sm font-medium">{isZh ? '头像样式' : 'Avatar style'}</p>
               <div className="mt-1 flex items-center gap-1 text-xs text-zinc-500">
-                <span>{isZh ? '澶村儚璇存槑' : 'Avatar note'}</span>
+                <span>{isZh ? '头像说明' : 'Avatar note'}</span>
                 <InfoTooltip content={avatarStyleHelpText} />
               </div>
               <p className="mt-1 text-xs text-zinc-500">
@@ -289,7 +289,7 @@ function UserProfileView() {
                 {isZh ? '登录账号' : 'Username'}
               </p>
               <div className="mt-1 flex items-center gap-1 text-[11px] text-zinc-500">
-                <span>{isZh ? '鐧诲綍璐﹀彿璇存槑' : 'Username note'}</span>
+                <span>{isZh ? '登录账号说明' : 'Username note'}</span>
                 <InfoTooltip content={usernameHelpText} />
               </div>
               <p className="mt-1 break-all font-mono text-sm">{username ?? '-'}</p>
@@ -303,8 +303,8 @@ function UserProfileView() {
                   ? '保存中...'
                   : 'Saving...'
                 : isZh
-                  ? '保存资料'
-                  : 'Save profile'}
+                  ? '保存更改'
+                  : 'Save changes'}
             </Button>
             <Button
               variant="outline"
@@ -547,8 +547,8 @@ export function ProfilePage() {
             {isAdmin
               ? t('profile.subtitle')
               : isZh
-                ? '查看并更新你的显示名称、头像样式和偏好设置'
-                : 'View and update your display name, avatar style, and preferences'}
+                ? '在这里管理你的显示名称、头像样式和偏好设置'
+                : 'Manage your display name, avatar style, and preferences here'}
           </p>
         </div>
         {isAdmin && (

@@ -99,11 +99,11 @@ export function UserResetPasswordPage() {
   return (
     <PublicAuthLayout
       eyebrow={isZh ? '找回访问' : 'Reset access'}
-      title={isZh ? '重新设一个密码，然后继续用就好。' : 'Set a new password and keep going.'}
+      title={isZh ? '改好密码，继续登录。' : 'Reset your password and sign back in.'}
       description={
         isZh
-          ? '只要链接还有效，改完密码后就能重新登录。'
-          : 'If the link is still valid, you can reset your password and sign in again.'
+          ? '只要链接还有效，几步就能恢复访问。'
+          : 'If the link is still valid, you can restore access in a few steps.'
       }
     >
       <div className="space-y-8" data-testid="reset-password-page">

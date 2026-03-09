@@ -11,6 +11,39 @@ export type UnlockServiceId =
   | 'primevideo'
   | 'x';
 
+export type NodeQualityProbeCode =
+  | 'http_ok'
+  | 'challenge'
+  | 'region_block'
+  | 'unsupported_browser'
+  | 'probe_failed'
+  | 'trace_unreachable'
+  | 'static_unreachable'
+  | 'http_status'
+  | 'unknown';
+
+export interface NodeQualityServiceDetail {
+  code: NodeQualityProbeCode;
+  httpStatus: number | null;
+  location: string;
+  target: string;
+}
+
+export interface NodeQualityEgressMeta {
+  ip: string;
+  country: string;
+  countryCode: string;
+  regionName: string;
+  city: string;
+  isp: string;
+  asn: string;
+  proxy: boolean | null;
+  hosting: boolean | null;
+  mobile: boolean | null;
+}
+
+export type NodeQualityServiceDetails = Partial<Record<UnlockServiceId, NodeQualityServiceDetail>>;
+
 export interface NodeQualityProfile {
   inboundId: number;
   summary: string;
@@ -26,5 +59,7 @@ export interface NodeQualityProfile {
   primevideoStatus: UnlockStatus;
   xStatus: UnlockStatus;
   notes: string;
+  egress: NodeQualityEgressMeta | null;
+  serviceDetails: NodeQualityServiceDetails;
   updatedAt: number | null;
 }

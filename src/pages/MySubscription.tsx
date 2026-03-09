@@ -1,37 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { refreshCurrentNodeQuality } from '@/src/api/client';
+import { CommunityTab } from '@/src/pages/portal/CommunityTab';
+import { HomeTab } from '@/src/pages/portal/HomeTab';
+import { MarketTab } from '@/src/pages/portal/MarketTab';
+import { SubscriptionTab } from '@/src/pages/portal/SubscriptionTab';
 import { Button } from '@/src/components/ui/Button';
 import { useToast } from '@/src/components/ui/Toast';
-import { refreshCurrentNodeQuality } from '@/src/api/client';
 import { useI18n } from '@/src/context/I18nContext';
-import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
-import { CommunityTab } from './portal/CommunityTab';
-import { HomeTab } from './portal/HomeTab';
-import { MarketTab } from './portal/MarketTab';
-import { SubscriptionTab } from './portal/SubscriptionTab';
+import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import type {
   ClientStats,
   PortalContextResponse,
   PortalStatsResponse,
   PortalTab,
 } from './portal/types';
-
-type UserTab = 'home' | 'market' | 'subscription' | 'clients' | 'community' | 'help';
-
-function toUserTab(value: string | null): UserTab {
-  if (
-    value === 'market' ||
-    value === 'subscription' ||
-    value === 'clients' ||
-    value === 'community' ||
-    value === 'help'
-  ) {
-    return value;
-  }
-
-  return 'home';
-}
+import { getUserPortalSectionParam, resolveUserPortalSection } from './portal/types';
 
 export function MySubscriptionPage() {
   const navigate = useNavigate();
@@ -47,23 +32,20 @@ export function MySubscriptionPage() {
   const [nodeQuality, setNodeQuality] = useState<NodeQualityProfile | null>(null);
   const [isRefreshingNodeQuality, setIsRefreshingNodeQuality] = useState(false);
 
-  const activeTab = useMemo<UserTab>(() => toUserTab(searchParams.get('section')), [searchParams]);
+  const sectionState = useMemo(
+    () => resolveUserPortalSection(searchParams.get('section')),
+    [searchParams],
+  );
+  const activeTab = sectionState.tab;
+  const setupFocus = sectionState.setupFocus;
 
   const setSection = useCallback(
     (tab: PortalTab) => {
-      const nextTab =
-        tab === 'market' ||
-        tab === 'subscription' ||
-        tab === 'clients' ||
-        tab === 'community' ||
-        tab === 'help'
-          ? tab
-          : 'home';
-
+      const nextSection = getUserPortalSectionParam(tab);
       setSearchParams(
         (previous) => {
           const next = new URLSearchParams(previous);
-          next.set('section', nextTab);
+          next.set('section', nextSection);
           return next;
         },
         { replace: true },
@@ -83,11 +65,13 @@ export function MySubscriptionPage() {
   const loadContext = useCallback(async () => {
     setIsLoading(true);
     setLoadError('');
+
     try {
       const response = await fetch('/local/auth/portal/context', { credentials: 'include' });
       if (response.ok) {
         const data = await response.json().catch(() => null);
-        if (!data) throw new Error('Failed to parse response');
+        if (!data)
+          throw new Error(isZh ? '无法解析用户中心响应。' : 'Failed to parse portal response.');
         setContext(data as PortalContextResponse);
         return;
       }
@@ -98,13 +82,15 @@ export function MySubscriptionPage() {
       }
 
       const data = await response.json().catch(() => null);
-      throw new Error(data?.error ?? 'Failed to load portal context');
+      throw new Error(data?.error ?? (isZh ? '无法加载用户中心。' : 'Failed to load the portal.'));
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Unknown error');
+      setLoadError(
+        error instanceof Error ? error.message : isZh ? '发生未知错误。' : 'Unknown error.',
+      );
     } finally {
       setIsLoading(false);
     }
-  }, [navigate]);
+  }, [isZh, navigate]);
 
   useEffect(() => {
     void loadContext();
@@ -131,7 +117,9 @@ export function MySubscriptionPage() {
   }, []);
 
   useEffect(() => {
-    if (context) void loadStats();
+    if (context) {
+      void loadStats();
+    }
   }, [context, loadStats]);
 
   const handleCopy = useCallback((text: string) => {
@@ -145,9 +133,16 @@ export function MySubscriptionPage() {
       const data = await refreshCurrentNodeQuality();
       setClientStats(data.stats ?? null);
       setNodeQuality(data.nodeQuality ?? null);
-      toast(isZh ? '节点质量已刷新' : 'Node quality refreshed', 'success');
+      toast(isZh ? '节点检测结果已刷新。' : 'Node quality refreshed.', 'success');
     } catch (error) {
-      toast(error instanceof Error ? error.message : 'Failed to refresh node quality', 'error');
+      toast(
+        error instanceof Error
+          ? error.message
+          : isZh
+            ? '刷新节点检测结果失败。'
+            : 'Failed to refresh node quality.',
+        'error',
+      );
     } finally {
       setIsRefreshingNodeQuality(false);
     }
@@ -157,59 +152,39 @@ export function MySubscriptionPage() {
     if (activeTab === 'home') {
       return {
         kicker: isZh ? '账户概览' : 'Account overview',
-        title: isZh ? '先看一眼今天的状态。' : 'Start with a quick status check.',
+        title: isZh ? '先确认你的账号状态。' : 'Check your account status first.',
         description: isZh
-          ? '这里放账户、流量、到期时间和当前线路情况，通知仍然在顶部铃铛里。'
-          : 'Keep account info, traffic, expiry, and current node status here. Notifications still live behind the top bell.',
+          ? '订阅是否可用、流量还剩多少、当前线路如何，都能先在这里看到。'
+          : 'See whether your subscription is ready, how much traffic is left, and how your current route is performing.',
       };
     }
 
     if (activeTab === 'market') {
       return {
-        kicker: isZh ? '资讯' : 'Markets',
-        title: isZh ? '看看今天外面的市场快照。' : 'Take a quick look at the market snapshot.',
+        kicker: isZh ? '市场' : 'Markets',
+        title: isZh ? '看看今天的重要行情。' : 'Catch today’s key market moves.',
         description: isZh
-          ? '这里只做轻量参考：先看卡片，点开单个项目再看迷你走势图。'
-          : 'This stays lightweight: start with cards, then open any item for a mini chart.',
+          ? '重点标的、价格变化和相关新闻放在一起，方便快速浏览。'
+          : 'Key assets, price changes, and related headlines are grouped together for a quick scan.',
       };
     }
 
-    if (activeTab === 'subscription') {
+    if (activeTab === 'setup') {
       return {
-        kicker: isZh ? '订阅' : 'Subscription',
-        title: isZh ? '先把链接拿到手。' : 'Start by getting the right link.',
+        kicker: isZh ? '使用订阅' : 'Set up',
+        title: isZh ? '选好设备，跟着步骤接入。' : 'Pick your device and follow the setup.',
         description: isZh
-          ? '这个分区只用来复制订阅链接、切换格式和查看二维码，不再混入下载和排查。'
-          : 'This section is only for link formats, copying, and QR codes. Downloads and troubleshooting stay elsewhere.',
-      };
-    }
-
-    if (activeTab === 'clients') {
-      return {
-        kicker: isZh ? '客户端' : 'Clients',
-        title: isZh ? '再选一个顺手的客户端。' : 'Then pick a client that fits you.',
-        description: isZh
-          ? '按设备筛选，下载后跟着教程导入就行。'
-          : 'Filter by device, download the app, and follow the guide.',
-      };
-    }
-
-    if (activeTab === 'community') {
-      return {
-        kicker: isZh ? '社区' : 'Community',
-        title: isZh ? '群入口和加入说明都在这里。' : 'Group links and join notes live here.',
-        description: isZh
-          ? '如果有 Telegram、WhatsApp、Discord 或微信群说明，会集中放在这里。'
-          : 'Telegram, WhatsApp, Discord, or other shared group notes appear here when available.',
+          ? '页面会带你完成客户端下载、链接复制和导入连接。'
+          : 'This page walks you through the client download, link copy, and import steps.',
       };
     }
 
     return {
-      kicker: isZh ? '帮助' : 'Help',
-      title: isZh ? '遇到问题时来这里看看。' : 'Start here if something feels off.',
+      kicker: isZh ? '社区' : 'Community',
+      title: isZh ? '找到你的群组和加入方式。' : 'Find your group links and join details.',
       description: isZh
-        ? '共享账号、家庭组邀请、Apple ID 下载协助和常见排错都放在这里。'
-        : 'Shared accounts, family invites, Apple ID download help, and common troubleshooting all stay here.',
+        ? '常用社区链接、二维码和加入说明都会放在这里。'
+        : 'Common community links, QR codes, and join notes are collected here.',
     };
   }, [activeTab, isZh]);
 
@@ -240,11 +215,15 @@ export function MySubscriptionPage() {
       className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-2 sm:px-6 lg:px-8"
       data-testid="my-subscription-page"
     >
-      <section className="surface-card space-y-3 p-6 md:p-7">
-        <p className="section-kicker">{sectionMeta.kicker}</p>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">{sectionMeta.title}</h1>
-        <p className="max-w-3xl text-sm leading-7 text-zinc-400">{sectionMeta.description}</p>
-      </section>
+      {activeTab === 'market' ? null : (
+        <section className="surface-card space-y-3 p-6 md:p-7">
+          <p className="section-kicker">{sectionMeta.kicker}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
+            {sectionMeta.title}
+          </h1>
+          <p className="max-w-3xl text-sm leading-7 text-zinc-400">{sectionMeta.description}</p>
+        </section>
+      )}
 
       {activeTab === 'home' ? (
         <HomeTab
@@ -269,10 +248,9 @@ export function MySubscriptionPage() {
         <CommunityTab communityLinks={context.settings.communityLinks} isZh={isZh} />
       ) : (
         <SubscriptionTab
-          section={activeTab}
+          initialFocus={setupFocus}
           subId={context.user.subId ?? null}
           portalSettings={context.settings}
-          clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
           onSetSection={setSection}
         />
       )}

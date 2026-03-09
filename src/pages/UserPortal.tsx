@@ -206,7 +206,7 @@ export function UserPortalPage() {
   // Guard invalid tab for role
   useEffect(() => {
     let corrected: PortalTab | null = null;
-    if (viewerRole === 'admin' && activeTab === 'subscription') corrected = 'management';
+    if (viewerRole === 'admin' && activeTab === 'setup') corrected = 'management';
     else if (viewerRole === 'user' && activeTab === 'management') corrected = 'home';
     if (!corrected) return;
     setSearchParams(
@@ -382,9 +382,9 @@ export function UserPortalPage() {
           {!isAdminView && (
             <TabButton
               icon={<ListChecks className="w-4 h-4" />}
-              label={isZh ? '订阅与客户端' : 'Subscription & Clients'}
-              active={activeTab === 'subscription'}
-              onClick={() => setSection('subscription')}
+              label={isZh ? '使用订阅' : 'Set up'}
+              active={activeTab === 'setup'}
+              onClick={() => setSection('setup')}
             />
           )}
           <TabButton
@@ -420,12 +420,12 @@ export function UserPortalPage() {
           />
         )}
 
-        {activeTab === 'subscription' && !isAdminView && (
+        {activeTab === 'setup' && !isAdminView && (
           <SubscriptionTab
+            initialFocus="overview"
             subId={context?.user.subId ?? null}
             portalSettings={context?.settings ?? null}
-            clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
-            nodeQuality={nodeQuality}
+            onSetSection={setSection}
           />
         )}
 

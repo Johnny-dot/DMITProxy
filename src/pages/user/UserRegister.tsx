@@ -56,15 +56,11 @@ export function UserRegisterPage() {
   return (
     <PublicAuthLayout
       eyebrow={isZh ? '邀请码注册' : 'Invite registration'}
-      title={
-        isZh
-          ? '拿着邀请码，几步就能建好自己的账号。'
-          : 'A few steps are enough to create your own account.'
-      }
+      title={isZh ? '先完成注册，再开始使用。' : 'Create your account and get started.'}
       description={
         isZh
-          ? '填好邀请码、用户名和密码后，就能直接进入自己的页面。'
-          : 'Enter your invite code, username, and password, then head straight to your own page.'
+          ? '准备好邀请码、用户名和密码，注册后会直接进入你的页面。'
+          : 'Use your invite code, username, and password, then continue straight to your page.'
       }
     >
       <div className="space-y-8" data-testid="register-page">
@@ -146,7 +142,7 @@ export function UserRegisterPage() {
             <p className="text-sm font-semibold text-zinc-50">{t('userAuth.alreadyHave')}</p>
             <p className="text-sm leading-6 text-zinc-400">
               {isZh
-                ? '如果之前已经注册过，直接回到登录页就行。'
+                ? '如果之前已经注册过，直接回到登录页即可。'
                 : 'If you already registered before, just head back to sign-in.'}
             </p>
           </div>

@@ -8,7 +8,12 @@ import { cn } from '@/src/utils/cn';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import {
   getFraudRiskMeta,
+  getNodeQualityOverviewLines,
+  getNodeQualityServiceHint,
   getNodeQualityServiceItems,
+  getNodeQualityServiceNote,
+  getNodeQualityServiceTooltip,
+  getNodeQualitySummary,
   getUnlockStatusMeta,
   hasMeaningfulNodeQuality,
 } from '@/src/utils/nodeQuality';
@@ -40,18 +45,24 @@ export function NodeQualityCard({
   const fraudMeta = getFraudRiskMeta(profile?.fraudScore ?? null, isZh);
   const unlockItems = getNodeQualityServiceItems(profile);
   const hasDetails = hasMeaningfulNodeQuality(profile);
+  const summary = getNodeQualitySummary(profile, isZh);
+  const overviewLines = getNodeQualityOverviewLines(profile, isZh);
+  const serviceNoteLines = unlockItems
+    .filter((item) => item.detail)
+    .map((item) => getNodeQualityServiceNote(item.id, item.status, item.detail, isZh));
+  const hasStructuredNotes = overviewLines.length > 0 || serviceNoteLines.length > 0;
   const riskHelpText = isZh
-    ? '这是根据当前出口 IP 的风控信号做的参考值，通常越低越稳，但不是官方评分。'
-    : 'A reference value based on current egress-IP risk signals. Lower is usually better, but it is not an official score.';
+    ? '这是当前线路的参考风险值。通常越低越稳，但它不是任何平台的官方评分。'
+    : 'This is a reference risk score for the current route. Lower usually means steadier, but it is not an official platform score.';
   const checkedAtHelpText = isZh
-    ? '最近一次自动检测完成的时间。'
-    : 'When the latest automatic check finished.';
-  const unlockHelpText = isZh
-    ? '表示这条线路访问该服务时的大致可用情况，仅供参考。'
-    : 'Estimated availability of this service from the current node. For reference only.';
+    ? '这是最近一次检测完成的时间。'
+    : 'This is when the latest check finished.';
   const notesHelpText = isZh
-    ? '补充记录这次检测里比较值得注意的结果。'
-    : 'Extra notes recorded during the latest check.';
+    ? '这里会说明当前线路的信息，以及各服务现在大致是可用、受限还是待确认。'
+    : 'This section explains the current route and whether each service looks available, limited, or still inconclusive.';
+  const legacyNotesHelpText = isZh
+    ? '这是较早的检测结果。重新检测一次后，会显示更新说明。'
+    : 'This is an older cached result. Refresh once to get the newer explanation.';
 
   return (
     <section className={cn('surface-card space-y-5 p-6 md:p-7', className)}>
@@ -67,8 +78,8 @@ export function NodeQualityCard({
                 ? `当前节点：${inboundRemark}`
                 : `Current node: ${inboundRemark}`
               : isZh
-                ? '当前节点信息会显示在这里。'
-                : 'Current node details appear here.'}
+                ? '当前线路名称会显示在这里。'
+                : 'The current route name appears here.'}
           </p>
         </div>
 
@@ -109,25 +120,31 @@ export function NodeQualityCard({
               </p>
             </div>
             <span className="text-xs text-zinc-500">
-              {isZh ? '自动检测结果' : 'Auto-checked from the server'}
+              {isZh ? '来自服务器自动检测' : 'Automatic server-side check'}
             </span>
           </div>
 
-          {profile?.summary ? (
-            <div className="surface-panel p-4 text-sm leading-6 text-zinc-300">
-              {profile.summary}
-            </div>
+          {summary ? (
+            <div className="surface-panel p-4 text-sm leading-6 text-zinc-300">{summary}</div>
           ) : (
             <div className="surface-panel p-4 text-sm leading-6 text-zinc-500">
               {isZh
-                ? '还没有检测结果。点一下右上角“重新检测”就会刷新。'
-                : 'No result yet. Use Refresh to run a fresh check.'}
+                ? '还没有检测结果，点右上角“重新检测”再试一次。'
+                : 'There is no result yet. Use Refresh to run a new check.'}
             </div>
           )}
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
             {unlockItems.map((item) => {
               const meta = getUnlockStatusMeta(item.status, isZh);
+              const tooltipText = getNodeQualityServiceTooltip(
+                item.id,
+                item.status,
+                item.detail,
+                isZh,
+              );
+              const hintText = getNodeQualityServiceHint(item.id, item.status, item.detail, isZh);
+
               return (
                 <div
                   key={item.id}
@@ -138,9 +155,10 @@ export function NodeQualityCard({
                     <div className="min-w-0">
                       <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
                         <span>{item.label}</span>
-                        <InfoTooltip content={unlockHelpText} />
+                        <InfoTooltip content={tooltipText} />
                       </p>
                       <p className="mt-2 text-sm font-medium text-zinc-50">{meta.label}</p>
+                      <p className="mt-1 text-xs leading-5 text-zinc-500">{hintText}</p>
                     </div>
                   </div>
                   <Badge className={cn('shrink-0 border', meta.className)}>{meta.label}</Badge>
@@ -151,17 +169,43 @@ export function NodeQualityCard({
         </div>
       </div>
 
-      {profile?.notes ? (
-        <div className="surface-panel space-y-2 p-4">
+      {hasStructuredNotes ? (
+        <div className="surface-panel space-y-4 p-4">
           <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
             <span>{isZh ? '检测备注' : 'Check notes'}</span>
             <InfoTooltip content={notesHelpText} />
           </p>
+
+          {overviewLines.length > 0 && (
+            <div className="grid gap-2 md:grid-cols-2">
+              {overviewLines.map((line) => (
+                <p key={line} className="text-sm leading-6 text-zinc-300">
+                  {line}
+                </p>
+              ))}
+            </div>
+          )}
+
+          <div className="grid gap-2 md:grid-cols-2">
+            {serviceNoteLines.map((line) => (
+              <p key={line} className="text-sm leading-6 text-zinc-300">
+                {line}
+              </p>
+            ))}
+          </div>
+        </div>
+      ) : profile?.notes ? (
+        <div className="surface-panel space-y-2 p-4">
+          <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+            <span>{isZh ? '检测备注' : 'Check notes'}</span>
+            <InfoTooltip content={legacyNotesHelpText} />
+          </p>
+          <p className="text-xs leading-5 text-zinc-500">{legacyNotesHelpText}</p>
           <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">{profile.notes}</p>
         </div>
       ) : !hasDetails ? (
         <p className="text-sm leading-6 text-zinc-500">
-          {isZh ? '现在还没有可展示的检测结果。' : 'There are no check results to show yet.'}
+          {isZh ? '现在还没有可以展示的检测结果。' : 'There are no check results to show yet.'}
         </p>
       ) : null}
     </section>

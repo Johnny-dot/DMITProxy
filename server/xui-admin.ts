@@ -20,7 +20,7 @@ interface XuiEnvelope<T> {
   obj: T;
 }
 
-interface XuiClientStat {
+export interface XuiClientStat {
   email: string;
   up: number;
   down: number;
@@ -29,7 +29,7 @@ interface XuiClientStat {
   enable: boolean;
 }
 
-interface XuiInbound {
+export interface XuiInbound {
   id: number;
   remark?: string;
   protocol: string;
@@ -63,12 +63,12 @@ export class XuiAdminError extends Error {
   }
 }
 
-function normalizeSetCookie(setCookie: string[] | string | undefined): string[] {
+export function normalizeSetCookie(setCookie: string[] | string | undefined): string[] {
   if (!setCookie) return [];
   return Array.isArray(setCookie) ? setCookie : [setCookie];
 }
 
-function getCookieHeader(setCookies: string[]): string {
+export function getCookieHeader(setCookies: string[]): string {
   return setCookies.map((cookie) => cookie.split(';')[0]).join('; ');
 }
 
@@ -118,7 +118,7 @@ async function getStatsCookieHeader(username: string, password: string): Promise
   return cookie;
 }
 
-function safeNonNegativeInt(value: unknown, fallback = 0): number {
+export function safeNonNegativeInt(value: unknown, fallback = 0): number {
   const n = Number(value);
   return Number.isFinite(n) && n >= 0 ? Math.trunc(n) : fallback;
 }
@@ -135,7 +135,7 @@ function getStatsCacheTtlMs(): number {
   return Math.min(configured, MAX_STATS_CACHE_TTL_MS);
 }
 
-function toClientUsage(
+export function toClientUsage(
   inbound: XuiInbound,
   client: Record<string, unknown>,
   stats: XuiClientStat | null,
@@ -375,7 +375,7 @@ async function requestXuiJson<T>(
   return parsed;
 }
 
-function parseInboundClients(settings: string): Array<Record<string, unknown>> {
+export function parseInboundClients(settings: string): Array<Record<string, unknown>> {
   try {
     const obj = JSON.parse(settings);
     return Array.isArray(obj?.clients) ? obj.clients : [];
@@ -385,7 +385,7 @@ function parseInboundClients(settings: string): Array<Record<string, unknown>> {
   }
 }
 
-function pickInboundForAutoProvision(inbounds: XuiInbound[]): XuiInbound | null {
+export function pickInboundForAutoProvision(inbounds: XuiInbound[]): XuiInbound | null {
   if (inbounds.length === 0) return null;
 
   const configuredId = parseInt(process.env.XUI_AUTO_INBOUND_ID ?? '', 10);
@@ -397,7 +397,7 @@ function pickInboundForAutoProvision(inbounds: XuiInbound[]): XuiInbound | null 
   return inbounds.find((inbound) => inbound.enable) ?? inbounds[0];
 }
 
-function buildClientPayload(protocol: string, email: string) {
+export function buildClientPayload(protocol: string, email: string) {
   const lowerProtocol = protocol.toLowerCase();
   const subId = randomBytes(8).toString('hex');
   const limitIp = parseInt(process.env.XUI_AUTO_CLIENT_LIMIT_IP ?? '0', 10) || 0;
@@ -431,7 +431,7 @@ function buildClientPayload(protocol: string, email: string) {
   };
 }
 
-function createUniqueEmail(username: string, existingEmails: Set<string>): string {
+export function createUniqueEmail(username: string, existingEmails: Set<string>): string {
   if (!existingEmails.has(username)) return username;
   for (let i = 1; i <= 9999; i++) {
     const candidate = `${username}_${i}`;

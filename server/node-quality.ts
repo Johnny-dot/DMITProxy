@@ -1,6 +1,49 @@
 import { db } from './db.js';
 
 export type UnlockStatus = 'unknown' | 'supported' | 'limited' | 'blocked';
+export type NodeQualityProbeCode =
+  | 'http_ok'
+  | 'challenge'
+  | 'region_block'
+  | 'unsupported_browser'
+  | 'probe_failed'
+  | 'trace_unreachable'
+  | 'static_unreachable'
+  | 'http_status'
+  | 'unknown';
+
+export interface NodeQualityServiceDetail {
+  code: NodeQualityProbeCode;
+  httpStatus: number | null;
+  location: string;
+  target: string;
+}
+
+export interface NodeQualityEgressMeta {
+  ip: string;
+  country: string;
+  countryCode: string;
+  regionName: string;
+  city: string;
+  isp: string;
+  asn: string;
+  proxy: boolean | null;
+  hosting: boolean | null;
+  mobile: boolean | null;
+}
+
+export type UnlockServiceId =
+  | 'netflix'
+  | 'chatgpt'
+  | 'claude'
+  | 'tiktok'
+  | 'instagram'
+  | 'spotify'
+  | 'youtube'
+  | 'disneyplus'
+  | 'primevideo'
+  | 'x';
+export type NodeQualityServiceDetails = Partial<Record<UnlockServiceId, NodeQualityServiceDetail>>;
 
 export interface NodeQualityProfile {
   inboundId: number;
@@ -17,6 +60,8 @@ export interface NodeQualityProfile {
   primevideoStatus: UnlockStatus;
   xStatus: UnlockStatus;
   notes: string;
+  egress: NodeQualityEgressMeta | null;
+  serviceDetails: NodeQualityServiceDetails;
   updatedAt: number | null;
 }
 
@@ -45,6 +90,94 @@ function normalizeText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeNullableBoolean(value: unknown): boolean | null {
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
+function normalizeProbeCode(value: unknown): NodeQualityProbeCode {
+  if (typeof value !== 'string') return 'unknown';
+  const normalized = value as NodeQualityProbeCode;
+  return [
+    'http_ok',
+    'challenge',
+    'region_block',
+    'unsupported_browser',
+    'probe_failed',
+    'trace_unreachable',
+    'static_unreachable',
+    'http_status',
+    'unknown',
+  ].includes(normalized)
+    ? normalized
+    : 'unknown';
+}
+
+function normalizeServiceDetail(value: unknown): NodeQualityServiceDetail | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const input = value as Record<string, unknown>;
+  const httpStatus = Number(input.httpStatus);
+  return {
+    code: normalizeProbeCode(input.code),
+    httpStatus: Number.isFinite(httpStatus) && httpStatus > 0 ? Math.trunc(httpStatus) : null,
+    location: normalizeText(input.location),
+    target: normalizeText(input.target),
+  };
+}
+
+function normalizeServiceDetails(value: unknown): NodeQualityServiceDetails {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const input = value as Record<string, unknown>;
+  const serviceDetails: NodeQualityServiceDetails = {};
+
+  for (const serviceId of [
+    'netflix',
+    'chatgpt',
+    'claude',
+    'tiktok',
+    'instagram',
+    'spotify',
+    'youtube',
+    'disneyplus',
+    'primevideo',
+    'x',
+  ] as const) {
+    const detail = normalizeServiceDetail(input[serviceId]);
+    if (detail) serviceDetails[serviceId] = detail;
+  }
+
+  return serviceDetails;
+}
+
+function normalizeEgressMeta(value: unknown): NodeQualityEgressMeta | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const input = value as Record<string, unknown>;
+  const ip = normalizeText(input.ip);
+  const country = normalizeText(input.country);
+  const countryCode = normalizeText(input.countryCode);
+  const regionName = normalizeText(input.regionName);
+  const city = normalizeText(input.city);
+  const isp = normalizeText(input.isp);
+  const asn = normalizeText(input.asn);
+
+  if (!ip && !country && !regionName && !city && !isp && !asn) {
+    return null;
+  }
+
+  return {
+    ip,
+    country,
+    countryCode,
+    regionName,
+    city,
+    isp,
+    asn,
+    proxy: normalizeNullableBoolean(input.proxy),
+    hosting: normalizeNullableBoolean(input.hosting),
+    mobile: normalizeNullableBoolean(input.mobile),
+  };
+}
+
 function buildStoredNodeQualityProfile(value: unknown): StoredNodeQualityProfile {
   const input = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
   const updatedAtRaw = Number(input.updatedAt);
@@ -62,6 +195,8 @@ function buildStoredNodeQualityProfile(value: unknown): StoredNodeQualityProfile
     primevideoStatus: normalizeUnlockStatus(input.primevideoStatus),
     xStatus: normalizeUnlockStatus(input.xStatus),
     notes: normalizeText(input.notes),
+    egress: normalizeEgressMeta(input.egress),
+    serviceDetails: normalizeServiceDetails(input.serviceDetails),
     updatedAt: Number.isFinite(updatedAtRaw) && updatedAtRaw > 0 ? Math.trunc(updatedAtRaw) : null,
   };
 }
@@ -114,6 +249,8 @@ export function buildDefaultNodeQualityProfile(inboundId: number): NodeQualityPr
     primevideoStatus: 'unknown',
     xStatus: 'unknown',
     notes: '',
+    egress: null,
+    serviceDetails: {},
     updatedAt: null,
   };
 }
@@ -175,6 +312,8 @@ export function saveNodeQualityProfile(profile: NodeQualityProfile): NodeQuality
     primevideoStatus: normalizeUnlockStatus(profile.primevideoStatus),
     xStatus: normalizeUnlockStatus(profile.xStatus),
     notes: normalizeText(profile.notes),
+    egress: normalizeEgressMeta(profile.egress),
+    serviceDetails: normalizeServiceDetails(profile.serviceDetails),
     updatedAt: profile.updatedAt ?? Date.now(),
   };
   writeStoredProfiles(stored);

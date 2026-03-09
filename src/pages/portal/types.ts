@@ -41,15 +41,9 @@ export interface PortalContextResponse {
 
 export type SubscriptionFormat = 'universal' | 'clash' | 'v2ray' | 'singbox' | 'surge' | 'quanx';
 export type PlatformKey = 'all' | 'windows' | 'macos' | 'android' | 'ios';
-export type PortalTab =
-  | 'home'
-  | 'market'
-  | 'subscription'
-  | 'clients'
-  | 'community'
-  | 'help'
-  | 'notifications'
-  | 'management';
+export type PortalTab = 'home' | 'market' | 'setup' | 'community' | 'notifications' | 'management';
+export type UserPortalTab = 'home' | 'market' | 'setup' | 'community';
+export type SetupFocus = 'overview' | 'downloads' | 'support';
 export type ViewerRole = 'user' | 'admin';
 
 export interface ClientCard {
@@ -85,14 +79,32 @@ export function toMillis(value: number): number {
   return value > 1_000_000_000_000 ? value : value * 1000;
 }
 
+export function getUserPortalSectionParam(tab: PortalTab): UserPortalTab {
+  if (tab === 'market' || tab === 'setup' || tab === 'community') return tab;
+  return 'home';
+}
+
+export function resolveUserPortalSection(value: string | null): {
+  tab: UserPortalTab;
+  setupFocus: SetupFocus;
+} {
+  if (value === 'market') return { tab: 'market', setupFocus: 'overview' };
+  if (value === 'community') return { tab: 'community', setupFocus: 'overview' };
+  if (value === 'clients') return { tab: 'setup', setupFocus: 'downloads' };
+  if (value === 'help') return { tab: 'setup', setupFocus: 'support' };
+  if (value === 'setup' || value === 'subscription') {
+    return { tab: 'setup', setupFocus: 'overview' };
+  }
+
+  return { tab: 'home', setupFocus: 'overview' };
+}
+
 export function isPortalTab(value: string | null): value is PortalTab {
   return (
     value === 'home' ||
     value === 'market' ||
-    value === 'subscription' ||
-    value === 'clients' ||
+    value === 'setup' ||
     value === 'community' ||
-    value === 'help' ||
     value === 'notifications' ||
     value === 'management'
   );
