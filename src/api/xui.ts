@@ -5,11 +5,27 @@ export function isXuiConfigured() {
   return Boolean((import.meta.env.VITE_3XUI_SERVER ?? '').trim());
 }
 
+export interface AuthSessionHint {
+  hasAdminCookie: boolean;
+  hasUserSessionCookie: boolean;
+}
+
+export async function getAuthSessionHint(): Promise<AuthSessionHint> {
+  const data = await localFetch<{ hasAdminCookie?: boolean; hasUserSessionCookie?: boolean }>(
+    '/local/auth/admin-session-hint',
+    {
+      fallbackError: 'Failed to check auth session hint',
+    },
+  );
+  return {
+    hasAdminCookie: data.hasAdminCookie === true,
+    hasUserSessionCookie: data.hasUserSessionCookie === true,
+  };
+}
+
 export async function hasXuiAdminSessionHint() {
-  const data = await localFetch<{ hasAdminCookie?: boolean }>('/local/auth/admin-session-hint', {
-    fallbackError: 'Failed to check admin session hint',
-  });
-  return data.hasAdminCookie === true;
+  const data = await getAuthSessionHint();
+  return data.hasAdminCookie;
 }
 
 export async function login(username: string, password: string) {

@@ -106,7 +106,8 @@ export function HomeTab({
           isZh={isZh}
           latestAnnouncement={latestAnnouncement}
           supportContact={supportContact}
-          onViewAll={() => onSetSection('notifications')}
+          actionLabel={isZh ? '查看全部通知' : 'View all notifications'}
+          onAction={() => onSetSection('notifications')}
         />
       </section>
     );
@@ -129,7 +130,6 @@ export function HomeTab({
             isZh={isZh}
             latestAnnouncement={latestAnnouncement}
             supportContact={supportContact}
-            onViewAll={() => onSetSection('notifications')}
           />
         </section>
       ) : (
@@ -412,12 +412,14 @@ function AdminMessagesCard({
   isZh,
   latestAnnouncement,
   supportContact,
-  onViewAll,
+  actionLabel,
+  onAction,
 }: {
   isZh: boolean;
   latestAnnouncement: string;
   supportContact: string;
-  onViewAll: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
 }) {
   const hasContent = Boolean(latestAnnouncement || supportContact);
 
@@ -454,9 +456,11 @@ function AdminMessagesCard({
         </p>
       )}
 
-      <Button variant="outline" size="sm" onClick={onViewAll}>
-        {isZh ? '查看全部通知' : 'View all notifications'}
-      </Button>
+      {actionLabel && onAction ? (
+        <Button variant="outline" size="sm" onClick={onAction}>
+          {actionLabel}
+        </Button>
+      ) : null}
     </div>
   );
 }

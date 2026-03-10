@@ -9,7 +9,7 @@ import { isXuiConfigured } from '@/src/api/client';
 import { PublicAuthLayout } from '@/src/components/public/PublicAuthLayout';
 
 export function LoginPage() {
-  const { login: adminLogin, isAuthenticated, isChecking, role, refreshAuth } = useAuth();
+  const { login: adminLogin, isAuthenticated, isChecking, refreshAuth } = useAuth();
   const navigate = useNavigate();
   const { t, language } = useI18n();
   const isZh = language === 'zh-CN';
@@ -24,10 +24,19 @@ export function LoginPage() {
     : t('login.adminLoginUnavailable');
 
   useEffect(() => {
-    if (isChecking) return;
-    if (!isAuthenticated) return;
-    navigate(role === 'user' ? '/my-subscription' : '/', { replace: true });
-  }, [isAuthenticated, isChecking, navigate, role]);
+    if (isChecking || !isAuthenticated) return;
+
+    let cancelled = false;
+    void (async () => {
+      const nextRole = await refreshAuth();
+      if (cancelled || !nextRole) return;
+      navigate(nextRole === 'user' ? '/my-subscription' : '/', { replace: true });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isChecking, navigate, refreshAuth]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

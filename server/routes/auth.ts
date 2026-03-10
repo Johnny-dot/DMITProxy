@@ -86,9 +86,18 @@ function getUserSession(token: string | undefined): UserSessionRow | null {
   return session ?? null;
 }
 
-function hasXuiAdminCookie(rawCookies: Record<string, string> | undefined): boolean {
+function hasCookie(rawCookies: Record<string, string> | undefined, cookieName: string): boolean {
   if (!rawCookies) return false;
-  return Object.keys(rawCookies).some((name) => name.toLowerCase() === '3x-ui');
+  const normalizedCookieName = cookieName.toLowerCase();
+  return Object.keys(rawCookies).some((name) => name.toLowerCase() === normalizedCookieName);
+}
+
+function hasXuiAdminCookie(rawCookies: Record<string, string> | undefined): boolean {
+  return hasCookie(rawCookies, '3x-ui');
+}
+
+function hasUserSessionCookie(rawCookies: Record<string, string> | undefined): boolean {
+  return hasCookie(rawCookies, SESSION_COOKIE_NAME);
 }
 
 function serializeUserSession(session: UserSessionRow) {
@@ -328,7 +337,10 @@ router.patch('/profile', (req, res) => {
 });
 
 router.get('/admin-session-hint', (req, res) => {
-  return res.json({ hasAdminCookie: hasXuiAdminCookie(req.cookies) });
+  return res.json({
+    hasAdminCookie: hasXuiAdminCookie(req.cookies),
+    hasUserSessionCookie: hasUserSessionCookie(req.cookies),
+  });
 });
 
 router.get('/portal/context', (req, res) => {

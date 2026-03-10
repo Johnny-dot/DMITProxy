@@ -86,7 +86,7 @@ export async function localFetch<T>(
 
   if (!res.ok) {
     const msg = typeof data.error === 'string' ? data.error : (fallbackError ?? 'Request failed');
-    throw new Error(msg);
+    throw new ApiError(res.status, msg);
   }
   return data as T;
 }

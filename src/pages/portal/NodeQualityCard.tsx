@@ -52,14 +52,14 @@ export function NodeQualityCard({
     .map((item) => getNodeQualityServiceNote(item.id, item.status, item.detail, isZh));
   const hasStructuredNotes = overviewLines.length > 0 || serviceNoteLines.length > 0;
   const riskHelpText = isZh
-    ? '这是当前线路的参考风险值。通常越低越稳，但它不是任何平台的官方评分。'
-    : 'This is a reference risk score for the current route. Lower usually means steadier, but it is not an official platform score.';
+    ? '这是服务器出口的参考风险值。通常越低越稳，但它不是任何平台的官方评分。'
+    : 'This is a reference risk score for the server egress. Lower usually means steadier, but it is not an official platform score.';
   const checkedAtHelpText = isZh
-    ? '这是最近一次检测完成的时间。'
-    : 'This is when the latest check finished.';
+    ? '这是最近一次服务器出口检测完成的时间。'
+    : 'This is when the latest server egress check finished.';
   const notesHelpText = isZh
-    ? '这里会说明当前线路的信息，以及各服务现在大致是可用、受限还是待确认。'
-    : 'This section explains the current route and whether each service looks available, limited, or still inconclusive.';
+    ? '这里会说明服务器出口的信息，以及各服务现在大致是可用、受限还是待确认。'
+    : 'This section explains the server egress and whether each service looks available, limited, or still inconclusive.';
   const legacyNotesHelpText = isZh
     ? '这是较早的检测结果。重新检测一次后，会显示更新说明。'
     : 'This is an older cached result. Refresh once to get the newer explanation.';
@@ -68,18 +68,18 @@ export function NodeQualityCard({
     <section className={cn('surface-card space-y-5 p-6 md:p-7', className)}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <p className="section-kicker">{isZh ? '节点情况' : 'Node check'}</p>
+          <p className="section-kicker">{isZh ? '服务器出口检测' : 'Server egress check'}</p>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
-            {isZh ? '这条线路最近的风控和解锁情况' : 'How this node is doing right now'}
+            {isZh ? '服务器出口最近的风控和可达性情况' : 'How the server egress is doing right now'}
           </h2>
           <p className="text-sm leading-6 text-zinc-400">
             {inboundRemark
               ? isZh
-                ? `当前节点：${inboundRemark}`
-                : `Current node: ${inboundRemark}`
+                ? `关联入站：${inboundRemark}`
+                : `Linked inbound: ${inboundRemark}`
               : isZh
-                ? '当前线路名称会显示在这里。'
-                : 'The current route name appears here.'}
+                ? '关联的入站备注会显示在这里。'
+                : 'The linked inbound remark appears here.'}
           </p>
         </div>
 
@@ -120,7 +120,7 @@ export function NodeQualityCard({
               </p>
             </div>
             <span className="text-xs text-zinc-500">
-              {isZh ? '来自服务器自动检测' : 'Automatic server-side check'}
+              {isZh ? '来自服务器出口自动检测' : 'Automatic server-egress check'}
             </span>
           </div>
 

@@ -31,7 +31,7 @@ function getNotificationStorageKey(role: 'admin' | 'user' | null, username: stri
 }
 
 export function Navbar() {
-  const { logout, role, username, displayName, avatarStyle } = useAuth();
+  const { logout, role, username, displayName, avatarStyle, refreshAuth } = useAuth();
   const { toast } = useToast();
   const { t, language } = useI18n();
   const navigate = useNavigate();
@@ -109,6 +109,18 @@ export function Navbar() {
     [isZh, t],
   );
 
+  const syncAuthAfterUnauthorized = useCallback(async () => {
+    setNotifications([]);
+    const nextRole = await refreshAuth();
+    if (nextRole === 'admin') {
+      navigate('/', { replace: true });
+    } else if (nextRole === 'user') {
+      navigate('/my-subscription', { replace: true });
+    } else {
+      navigate('/login', { replace: true });
+    }
+  }, [navigate, refreshAuth]);
+
   const refreshNotifications = useCallback(async () => {
     if (!role) {
       setNotifications([]);
@@ -120,6 +132,10 @@ export function Navbar() {
     try {
       if (role === 'user') {
         const res = await fetch('/local/auth/portal/context', { credentials: 'include' });
+        if (res.status === 401) {
+          await syncAuthAfterUnauthorized();
+          return;
+        }
         if (!res.ok) {
           throw new Error('Failed to load portal notifications');
         }
@@ -145,6 +161,16 @@ export function Navbar() {
         fetch('/local/admin/settings', { credentials: 'include' }),
         fetch('/api/panel/api/server/status', { credentials: 'include' }),
       ]);
+
+      const settledResponses = [systemRes, settingsRes, statusRes]
+        .filter(
+          (result): result is PromiseFulfilledResult<Response> => result.status === 'fulfilled',
+        )
+        .map((result) => result.value);
+      if (settledResponses.some((response) => response.status === 401)) {
+        await syncAuthAfterUnauthorized();
+        return;
+      }
 
       const generated: Array<Omit<NotificationItem, 'read'>> = [];
 
@@ -266,7 +292,7 @@ export function Navbar() {
     } finally {
       setIsRefreshingNotifications(false);
     }
-  }, [mapUserNotifications, role, t, toast]);
+  }, [mapUserNotifications, role, syncAuthAfterUnauthorized, t, toast]);
 
   useEffect(() => {
     if (!role) return;

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { ToastProvider } from './components/ui/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { resolveProtectedRedirect } from './utils/routeAccess';
 
 const Layout = lazy(() =>
   import('./components/layout/Layout').then((m) => ({ default: m.Layout })),
@@ -44,8 +45,6 @@ function RouteLoading() {
   );
 }
 
-const ADMIN_ONLY_PATHS = ['/inbounds', '/users', '/nodes', '/traffic', '/subscriptions'];
-
 function ProtectedRoutes() {
   const { isAuthenticated, isChecking, role } = useAuth();
   const location = useLocation();
@@ -54,16 +53,9 @@ function ProtectedRoutes() {
     return <RouteLoading />;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Redirect regular users away from admin-only routes
-  if (role === 'user') {
-    const isAdminPath = ADMIN_ONLY_PATHS.some((p) => location.pathname.startsWith(p));
-    if (isAdminPath || location.pathname === '/') {
-      return <Navigate to="/my-subscription" replace />;
-    }
+  const redirectTo = resolveProtectedRedirect(isAuthenticated, role, location.pathname);
+  if (redirectTo) {
+    return <Navigate to={redirectTo} replace />;
   }
 
   return <Layout />;

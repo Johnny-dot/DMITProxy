@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { dataDirectory } from './db.js';
 
-export type NewsTopicId = 'markets' | 'macro' | 'technology' | 'crypto';
+export type NewsTopicId = 'markets' | 'macro' | 'technology' | 'aiTalks' | 'crypto';
 
 interface NewsTopicDefinition {
   id: NewsTopicId;
@@ -12,6 +12,7 @@ interface NewsTopicDefinition {
   descriptionEn: string;
   descriptionZh: string;
   query: string;
+  scoreItem?: (item: NewsHeadline) => number;
 }
 
 export interface NewsHeadline {
@@ -75,6 +76,26 @@ const REQUEST_HEADERS = {
   'User-Agent': 'Prism',
 };
 
+const AI_TALKS_PRIMARY_KEYWORDS =
+  /\b(podcast|interview|conversation|fireside|transcript|chat|q&a)\b/i;
+const AI_TALKS_BONUS_KEYWORDS =
+  /full interview|podcast transcript|light cone|dwarkesh|lex fridman|hard fork|summit/i;
+const AI_TALKS_PEOPLE_KEYWORDS =
+  /sam altman|dario amodei|anthropic|demis hassabis|deepmind|mustafa suleyman|openai|boris cherny|claude code|sundar pichai|jensen huang/i;
+const AI_TALKS_NOISE_KEYWORDS = /\b(opinion|editorial|review)\b/i;
+
+function scoreAiTalkItem(item: NewsHeadline) {
+  const haystack = `${item.title} ${item.source}`;
+  let score = 0;
+
+  if (AI_TALKS_PRIMARY_KEYWORDS.test(haystack)) score += 20;
+  if (AI_TALKS_BONUS_KEYWORDS.test(haystack)) score += 12;
+  if (AI_TALKS_PEOPLE_KEYWORDS.test(haystack)) score += 8;
+  if (AI_TALKS_NOISE_KEYWORDS.test(haystack)) score -= 30;
+
+  return score;
+}
+
 const NEWS_TOPICS: NewsTopicDefinition[] = [
   {
     id: 'markets',
@@ -98,7 +119,18 @@ const NEWS_TOPICS: NewsTopicDefinition[] = [
     labelZh: '科技',
     descriptionEn: 'AI, semis, and large-cap tech movers that affect sentiment.',
     descriptionZh: 'AI、半导体和影响情绪的大型科技股。',
-    query: 'AI stocks OR semiconductors OR big tech when:1d',
+    query: 'AI OR semiconductors OR Nvidia OR big tech when:1d',
+  },
+  {
+    id: 'aiTalks',
+    labelEn: 'AI talks',
+    labelZh: 'AI 访谈',
+    descriptionEn:
+      'Podcast episodes, interviews, and long-form conversations with AI company leaders.',
+    descriptionZh: 'AI 公司核心人物的播客、访谈和长对话内容。',
+    query:
+      '("Sam Altman" OR "Dario Amodei" OR "Demis Hassabis" OR "Sundar Pichai" OR "Mustafa Suleyman" OR "Boris Cherny" OR "Jensen Huang") (podcast OR interview OR conversation) AI when:30d',
+    scoreItem: scoreAiTalkItem,
   },
   {
     id: 'crypto',
@@ -219,7 +251,20 @@ function parseItems(xml: string, topic: NewsTopicDefinition): NewsHeadline[] {
         publishedAt,
       } satisfies NewsHeadline;
     })
-    .filter((item): item is NewsHeadline => item !== null)
+    .filter((item): item is NewsHeadline => item !== null);
+}
+
+function prioritizeItems(topic: NewsTopicDefinition, items: NewsHeadline[]) {
+  if (!topic.scoreItem) {
+    return items.slice(0, NEWS_ITEM_LIMIT);
+  }
+
+  return [...items]
+    .sort((left, right) => {
+      const scoreDelta = topic.scoreItem!(right) - topic.scoreItem!(left);
+      if (scoreDelta !== 0) return scoreDelta;
+      return (right.publishedAt ?? 0) - (left.publishedAt ?? 0);
+    })
     .slice(0, NEWS_ITEM_LIMIT);
 }
 
@@ -233,7 +278,7 @@ async function fetchTopicFeed(topic: NewsTopicDefinition): Promise<NewsTopicFeed
     throw new NewsFeedError(`News provider returned HTTP ${response.status}.`, response.status);
   }
 
-  const items = parseItems(xml, topic);
+  const items = prioritizeItems(topic, parseItems(xml, topic));
   if (items.length === 0) {
     throw new NewsFeedError('News feed returned no headlines.', 502);
   }
@@ -249,45 +294,79 @@ async function fetchTopicFeed(topic: NewsTopicDefinition): Promise<NewsTopicFeed
   };
 }
 
-async function fetchFeedPayload(): Promise<NewsFeedPayload> {
-  const topics = await Promise.all(
+function resolveTopicFallback(
+  previousFeed: NewsFeedPayload | null,
+  topicId: NewsTopicId,
+): NewsTopicFeed | null {
+  const cachedTopic = previousFeed?.topics.find((topic) => topic.id === topicId);
+  if (!cachedTopic || cachedTopic.items.length === 0) return null;
+
+  return {
+    ...cachedTopic,
+    status: 'ok',
+    error: undefined,
+  };
+}
+
+async function fetchFeedPayload(
+  previousFeed: NewsFeedPayload | null = null,
+): Promise<NewsFeedPayload> {
+  const topicResults = await Promise.all(
     NEWS_TOPICS.map(async (topic) => {
       try {
-        return await fetchTopicFeed(topic);
-      } catch (error) {
         return {
-          id: topic.id,
-          labelEn: topic.labelEn,
-          labelZh: topic.labelZh,
-          descriptionEn: topic.descriptionEn,
-          descriptionZh: topic.descriptionZh,
-          status: 'error',
-          error: error instanceof Error ? error.message : 'Failed to load feed',
-          items: [],
-        } satisfies NewsTopicFeed;
+          topic: await fetchTopicFeed(topic),
+          usedFallback: false,
+        };
+      } catch (error) {
+        const fallback = resolveTopicFallback(previousFeed, topic.id);
+        if (fallback) {
+          return {
+            topic: fallback,
+            usedFallback: true,
+          };
+        }
+
+        return {
+          topic: {
+            id: topic.id,
+            labelEn: topic.labelEn,
+            labelZh: topic.labelZh,
+            descriptionEn: topic.descriptionEn,
+            descriptionZh: topic.descriptionZh,
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Failed to load feed',
+            items: [],
+          } satisfies NewsTopicFeed,
+          usedFallback: false,
+        };
       }
     }),
   );
+  const topics = topicResults.map((result) => result.topic);
 
   return {
     provider: NEWS_PROVIDER,
     attributionUrl: GOOGLE_NEWS_ATTRIBUTION_URL,
-    cachedAt: Date.now(),
+    cachedAt: topicResults.some((result) => !result.usedFallback && result.topic.status === 'ok')
+      ? Date.now()
+      : (previousFeed?.cachedAt ?? Date.now()),
     ttlMinutes: NEWS_CACHE_TTL_MINUTES,
     topics,
   };
 }
 
 export async function getNewsFeed(forceRefresh = false): Promise<NewsFeedPayload> {
+  const cached = readCacheFile<NewsFeedPayload>(newsCachePath);
+
   if (!forceRefresh) {
-    const cached = readCacheFile<NewsFeedPayload>(newsCachePath);
     if (cached && typeof cached.cachedAt === 'number' && isFresh(cached.cachedAt)) {
       return cached;
     }
     if (inflightFeed) return inflightFeed;
   }
 
-  const request = fetchFeedPayload()
+  const request = fetchFeedPayload(cached)
     .then((payload) => {
       writeCacheFile(newsCachePath, payload);
       return payload;

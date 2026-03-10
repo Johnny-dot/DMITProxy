@@ -3,7 +3,7 @@ import {
   login as apiLogin,
   logout as apiLogout,
   getServerStatus,
-  hasXuiAdminSessionHint,
+  getAuthSessionHint,
   ApiError,
   isXuiConfigured,
 } from '@/src/api/client';
@@ -48,26 +48,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkAuth = useCallback(async (): Promise<'admin' | 'user' | null> => {
-    // Try local user session first.
-    try {
-      const res = await fetch('/local/auth/me', { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        sessionStorage.removeItem(LOGGED_OUT_KEY);
-        setRole(data.role);
-        setUsername(data.username);
-        setDisplayName(data.displayName ?? data.username ?? null);
-        setAvatarStyle(data.avatarStyle ?? null);
-        setSubId(data.subId ?? null);
-        setIsAuthenticated(true);
-        return data.role as 'admin' | 'user';
-      }
-    } catch {}
-
     // If the user explicitly logged out this session, don't re-auth via 3X-UI cookie.
     if (sessionStorage.getItem(LOGGED_OUT_KEY) === '1') {
       clearAuthState();
       return null;
+    }
+
+    let sessionHint: { hasAdminCookie: boolean; hasUserSessionCookie: boolean } | null = null;
+    try {
+      sessionHint = await getAuthSessionHint();
+    } catch {
+      sessionHint = null;
+    }
+
+    // Try local user session first, but skip the request when there's no session cookie at all.
+    if (sessionHint?.hasUserSessionCookie ?? true) {
+      try {
+        const res = await fetch('/local/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          sessionStorage.removeItem(LOGGED_OUT_KEY);
+          setRole(data.role);
+          setUsername(data.username);
+          setDisplayName(data.displayName ?? data.username ?? null);
+          setAvatarStyle(data.avatarStyle ?? null);
+          setSubId(data.subId ?? null);
+          setIsAuthenticated(true);
+          return data.role as 'admin' | 'user';
+        }
+      } catch {}
     }
 
     if (!HAS_CONFIGURED_XUI) {
@@ -75,12 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
-    let shouldProbeAdminSession = true;
-    try {
-      shouldProbeAdminSession = await hasXuiAdminSessionHint();
-    } catch {
-      shouldProbeAdminSession = true;
-    }
+    const shouldProbeAdminSession = sessionHint?.hasAdminCookie ?? true;
 
     if (!shouldProbeAdminSession) {
       clearAuthState();

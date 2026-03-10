@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
   LayoutDashboard,
+  LifeBuoy,
   Link as LinkIcon,
   Server,
   Settings,
@@ -26,6 +27,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const overviewLabel = isZh ? '概览' : 'Overview';
   const marketLabel = isZh ? '市场' : 'Markets';
   const setupLabel = isZh ? '使用订阅' : 'Set up';
+  const helpLabel = isZh ? '帮助' : 'Help';
   const communityLabel = isZh ? '社区' : 'Community';
   const activeUserSection = resolveUserPortalSection(
     new URLSearchParams(location.search).get('section'),
@@ -63,6 +65,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       testId: 'sidebar-user-setup',
     },
     {
+      icon: LifeBuoy,
+      label: helpLabel,
+      to: '/my-subscription?section=help',
+      active: location.pathname === '/my-subscription' && activeUserSection === 'help',
+      testId: 'sidebar-user-help',
+    },
+    {
       icon: Users,
       label: communityLabel,
       to: '/my-subscription?section=community',
@@ -81,9 +90,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         ? marketLabel
         : activeUserSection === 'setup'
           ? setupLabel
-          : activeUserSection === 'community'
-            ? communityLabel
-            : overviewLabel
+          : activeUserSection === 'help'
+            ? helpLabel
+            : activeUserSection === 'community'
+              ? communityLabel
+              : overviewLabel
       : t('nav.dashboard');
 
   return (

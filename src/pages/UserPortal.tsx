@@ -424,7 +424,6 @@ export function UserPortalPage() {
           <SubscriptionTab
             initialFocus="overview"
             subId={context?.user.subId ?? null}
-            portalSettings={context?.settings ?? null}
             onSetSection={setSection}
           />
         )}

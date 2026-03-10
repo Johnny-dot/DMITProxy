@@ -1,14 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { refreshCurrentNodeQuality } from '@/src/api/client';
+import { ApiError, refreshCurrentNodeQuality } from '@/src/api/client';
 import { CommunityTab } from '@/src/pages/portal/CommunityTab';
+import { HelpTab } from '@/src/pages/portal/HelpTab';
 import { HomeTab } from '@/src/pages/portal/HomeTab';
 import { MarketTab } from '@/src/pages/portal/MarketTab';
 import { SubscriptionTab } from '@/src/pages/portal/SubscriptionTab';
 import { Button } from '@/src/components/ui/Button';
 import { useToast } from '@/src/components/ui/Toast';
+import { useAuth } from '@/src/context/AuthContext';
 import { useI18n } from '@/src/context/I18nContext';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
+import { cn } from '@/src/utils/cn';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import type {
   ClientStats,
@@ -23,6 +26,7 @@ export function MySubscriptionPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { language } = useI18n();
   const { toast } = useToast();
+  const { refreshAuth } = useAuth();
   const isZh = language === 'zh-CN';
 
   const [context, setContext] = useState<PortalContextResponse | null>(null);
@@ -62,6 +66,15 @@ export function MySubscriptionPage() {
   );
   const hasSubscription = Boolean(subscriptionLinks.universal);
 
+  const handleUnauthorized = useCallback(async () => {
+    const nextRole = await refreshAuth();
+    if (nextRole === 'admin') {
+      navigate('/', { replace: true });
+    } else if (!nextRole) {
+      navigate('/login', { replace: true });
+    }
+  }, [navigate, refreshAuth]);
+
   const loadContext = useCallback(async () => {
     setIsLoading(true);
     setLoadError('');
@@ -77,7 +90,7 @@ export function MySubscriptionPage() {
       }
 
       if (response.status === 401) {
-        navigate('/login', { replace: true });
+        await handleUnauthorized();
         return;
       }
 
@@ -90,7 +103,7 @@ export function MySubscriptionPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isZh, navigate]);
+  }, [handleUnauthorized, isZh]);
 
   useEffect(() => {
     void loadContext();
@@ -102,6 +115,10 @@ export function MySubscriptionPage() {
 
     try {
       const response = await fetch('/local/auth/portal/stats', { credentials: 'include' });
+      if (response.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
       if (!response.ok) {
         setClientStats(null);
         return;
@@ -114,7 +131,7 @@ export function MySubscriptionPage() {
       setClientStats(null);
       setNodeQuality(null);
     }
-  }, []);
+  }, [handleUnauthorized]);
 
   useEffect(() => {
     if (context) {
@@ -135,6 +152,10 @@ export function MySubscriptionPage() {
       setNodeQuality(data.nodeQuality ?? null);
       toast(isZh ? '节点检测结果已刷新。' : 'Node quality refreshed.', 'success');
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
       toast(
         error instanceof Error
           ? error.message
@@ -146,7 +167,7 @@ export function MySubscriptionPage() {
     } finally {
       setIsRefreshingNodeQuality(false);
     }
-  }, [isZh, toast]);
+  }, [handleUnauthorized, isZh, toast]);
 
   const sectionMeta = useMemo(() => {
     if (activeTab === 'home') {
@@ -176,6 +197,18 @@ export function MySubscriptionPage() {
         description: isZh
           ? '页面会带你完成客户端下载、链接复制和导入连接。'
           : 'This page walks you through the client download, link copy, and import steps.',
+      };
+    }
+
+    if (activeTab === 'help') {
+      return {
+        kicker: isZh ? '帮助中心' : 'Help center',
+        title: isZh
+          ? '把支持、共享资源和排障都集中到这里。'
+          : 'Keep support, shared resources, and fixes in one place.',
+        description: isZh
+          ? '共享账号、联系渠道、公告和排障建议单独收进这一页，需要时直接来这里查，不再挤在设置流程底部。'
+          : 'Shared accounts, support contacts, announcements, and troubleshooting now live on their own page instead of being buried at the bottom of setup.',
       };
     }
 
@@ -212,10 +245,12 @@ export function MySubscriptionPage() {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-2 sm:px-6 lg:px-8"
+      className={cn(
+        'mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-2 sm:px-6 lg:px-8 2xl:max-w-[1720px]',
+      )}
       data-testid="my-subscription-page"
     >
-      {activeTab === 'market' ? null : (
+      {activeTab === 'market' || activeTab === 'home' ? null : (
         <section className="surface-card space-y-3 p-6 md:p-7">
           <p className="section-kicker">{sectionMeta.kicker}</p>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
@@ -240,17 +275,26 @@ export function MySubscriptionPage() {
           onCopy={handleCopy}
           onSetSection={setSection}
           onNavigate={navigate}
-          showMessagesCard={false}
+          showMessagesCard
         />
       ) : activeTab === 'market' ? (
         <MarketTab />
       ) : activeTab === 'community' ? (
-        <CommunityTab communityLinks={context.settings.communityLinks} isZh={isZh} />
+        <CommunityTab
+          communityLinks={context.settings.communityLinks}
+          isZh={isZh}
+          announcementText={
+            context.settings.announcementActive ? context.settings.announcementText : ''
+          }
+          supportContact={context.settings.supportTelegram}
+          onSetSection={setSection}
+        />
+      ) : activeTab === 'help' ? (
+        <HelpTab portalSettings={context.settings} isZh={isZh} onSetSection={setSection} />
       ) : (
         <SubscriptionTab
           initialFocus={setupFocus}
           subId={context.user.subId ?? null}
-          portalSettings={context.settings}
           onSetSection={setSection}
         />
       )}

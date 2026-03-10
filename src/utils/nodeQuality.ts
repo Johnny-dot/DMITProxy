@@ -263,7 +263,7 @@ export function getNodeQualityServiceHint(
     case 'challenge':
       return isZh ? '可以访问，但可能需要验证' : 'Reachable, but verification may be required';
     case 'region_block':
-      return isZh ? '当前线路可能受地区限制' : 'Likely region-restricted on this route';
+      return isZh ? '服务器出口可能受地区限制' : 'Likely region-restricted on this server egress';
     case 'unsupported_browser':
       return isZh ? '能打开，但结果还不够确定' : 'Reachable, but the result is still inconclusive';
     case 'probe_failed':
@@ -305,8 +305,8 @@ export function getNodeQualityServiceTooltip(
         : `${serviceLabel} is reachable, but it may ask for challenges, anti-bot checks, or manual verification.`;
     case 'region_block':
       return isZh
-        ? `${serviceLabel} 看起来受地区限制，当前线路可能不在支持区域内。`
-        : `${serviceLabel} appears region-restricted, which usually means the current route is outside the supported region.`;
+        ? `${serviceLabel} 看起来受地区限制，服务器出口可能不在支持区域内。`
+        : `${serviceLabel} appears region-restricted, which usually means the server egress is outside the supported region.`;
     case 'unsupported_browser':
       return isZh
         ? `${serviceLabel} 能打开，但这次结果还不足以确认完整可用。`
@@ -357,8 +357,8 @@ export function getNodeQualityServiceNote(
         : `${serviceLabel}: Reachable, but it may require a challenge or extra verification.`;
     case 'region_block':
       return isZh
-        ? `${serviceLabel}：看起来受地区限制，当前线路可能不在支持区域内。`
-        : `${serviceLabel}: It appears region-restricted on the current route.`;
+        ? `${serviceLabel}：看起来受地区限制，服务器出口可能不在支持区域内。`
+        : `${serviceLabel}: It appears region-restricted on the server egress.`;
     case 'unsupported_browser':
       return isZh
         ? `${serviceLabel}：能打开，但这次结果还不够确定。`

@@ -384,16 +384,31 @@ describe.sequential('Local Auth Integration', () => {
     expect(statusRes.body.error).toContain('3X-UI admin capability is not configured');
   });
 
-  it('returns an admin session hint without probing upstream', async () => {
+  it('returns auth session hints without probing upstream', async () => {
     const anonymousRes = await request(context.app).get('/local/auth/admin-session-hint');
     expect(anonymousRes.status).toBe(200);
-    expect(anonymousRes.body).toEqual({ hasAdminCookie: false });
+    expect(anonymousRes.body).toEqual({
+      hasAdminCookie: false,
+      hasUserSessionCookie: false,
+    });
 
     const adminCookieRes = await request(context.app)
       .get('/local/auth/admin-session-hint')
       .set('Cookie', '3x-ui=test=session==');
     expect(adminCookieRes.status).toBe(200);
-    expect(adminCookieRes.body).toEqual({ hasAdminCookie: true });
+    expect(adminCookieRes.body).toEqual({
+      hasAdminCookie: true,
+      hasUserSessionCookie: false,
+    });
+
+    const userCookieRes = await request(context.app)
+      .get('/local/auth/admin-session-hint')
+      .set('Cookie', 'pd_session=test-session');
+    expect(userCookieRes.status).toBe(200);
+    expect(userCookieRes.body).toEqual({
+      hasAdminCookie: false,
+      hasUserSessionCookie: true,
+    });
   });
 
   it('includes shared resources in portal context for local users', async () => {

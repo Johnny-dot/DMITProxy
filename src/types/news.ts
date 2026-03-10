@@ -1,4 +1,4 @@
-export type NewsTopicId = 'markets' | 'macro' | 'technology' | 'crypto';
+export type NewsTopicId = 'markets' | 'macro' | 'technology' | 'aiTalks' | 'crypto';
 
 export interface NewsHeadline {
   id: string;

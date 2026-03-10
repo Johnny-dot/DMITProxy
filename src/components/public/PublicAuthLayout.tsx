@@ -74,8 +74,8 @@ export function PublicAuthLayout({ eyebrow, title, description, children }: Publ
         </div>
       </div>
 
-      <main className="mx-auto grid max-w-7xl gap-10 py-8 lg:min-h-[calc(100vh-6rem)] lg:grid-cols-[minmax(0,1.2fr)_minmax(380px,460px)] lg:items-center">
-        <section className="order-2 space-y-8 lg:order-1 lg:pr-12">
+      <main className="mx-auto grid max-w-7xl gap-8 py-6 lg:min-h-[calc(100vh-6rem)] lg:grid-cols-[minmax(0,1.2fr)_minmax(380px,460px)] lg:items-center lg:gap-10 lg:py-8">
+        <section className="order-2 space-y-6 lg:order-1 lg:space-y-8 lg:pr-12">
           <div className="flex items-center gap-3">
             <div className="surface-panel flex h-12 w-12 items-center justify-center">
               <img src="/logo.svg" alt="Prism" className="h-7 w-7" />
@@ -89,7 +89,26 @@ export function PublicAuthLayout({ eyebrow, title, description, children }: Publ
             <p className="page-copy max-w-2xl">{description}</p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="surface-panel p-4 sm:hidden">
+            <p className="text-sm font-semibold text-zinc-50">
+              {isZh
+                ? '登录后，常用操作会集中在一个地方。'
+                : 'After sign-in, the common tasks stay in one place.'}
+            </p>
+            <div className="mt-4 space-y-2.5">
+              {highlights.map((item) => (
+                <div
+                  key={item.title}
+                  className="flex items-center gap-3 rounded-3xl border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3"
+                >
+                  <item.icon className="h-4 w-4 shrink-0 text-emerald-500" />
+                  <p className="text-sm text-zinc-300">{item.title}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="hidden gap-4 sm:grid sm:grid-cols-3">
             {highlights.map((item) => (
               <div key={item.title} className="surface-panel p-5">
                 <item.icon className="mb-4 h-5 w-5 text-emerald-500" />
