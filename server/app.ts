@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'node:path';
@@ -64,6 +65,7 @@ export function createApp() {
   const authRateLimitMax = toBoundedPositiveInt(process.env.AUTH_RATE_LIMIT_MAX, 20, 1, 10_000);
 
   app.disable('x-powered-by');
+  app.use(compression());
   app.use(
     helmet({
       contentSecurityPolicy: false,
@@ -96,6 +98,20 @@ export function createApp() {
     message: { error: 'Too many auth attempts. Please retry later.' },
   });
 
+  // Limit expensive refresh endpoints: 10 per user per minute
+  const refreshLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+      const cookie = req.headers.cookie ?? '';
+      const match = cookie.match(/pd_session=([^;]+)/);
+      return match ? match[1] : (req.ip ?? 'unknown');
+    },
+    message: { error: 'Too many refresh requests. Please wait a moment.' },
+  });
+
   // Cookie parser (manual, no deps)
   app.use((req, _res, next) => {
     const raw = req.headers.cookie ?? '';
@@ -123,6 +139,9 @@ export function createApp() {
   app.use('/local/auth/login', authLimiter);
   app.use('/local/auth/register', authLimiter);
   app.use('/local/auth/password-reset', authLimiter);
+  app.use('/local/auth/portal/market/refresh', refreshLimiter);
+  app.use('/local/auth/portal/news/refresh', refreshLimiter);
+  app.use('/local/auth/portal/node-quality/refresh', refreshLimiter);
   app.use('/local/auth', authRouter);
   app.use('/local/admin', adminRouter);
 

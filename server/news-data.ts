@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { dataDirectory } from './db.js';
@@ -69,6 +70,7 @@ const NEWS_ITEM_LIMIT =
     ? Math.max(4, Math.min(12, configuredNewsItemLimit))
     : DEFAULT_NEWS_ITEM_LIMIT;
 const NEWS_CACHE_TTL_MS = NEWS_CACHE_TTL_MINUTES * 60 * 1000;
+const FETCH_TIMEOUT_MS = 15_000;
 const cacheDirectory = path.join(dataDirectory, 'news-cache');
 const newsCachePath = path.join(cacheDirectory, 'feed.json');
 const REQUEST_HEADERS = {
@@ -164,9 +166,11 @@ function readCacheFile<T>(filePath: string): T | null {
   }
 }
 
-function writeCacheFile(filePath: string, payload: unknown) {
+async function writeCacheFile(filePath: string, payload: unknown) {
   ensureCacheDirectory();
-  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf8');
+  const tmp = `${filePath}.tmp`;
+  await fsPromises.writeFile(tmp, JSON.stringify(payload, null, 2), 'utf8');
+  await fsPromises.rename(tmp, filePath);
 }
 
 function buildGoogleNewsUrl(query: string) {
@@ -271,6 +275,7 @@ function prioritizeItems(topic: NewsTopicDefinition, items: NewsHeadline[]) {
 async function fetchTopicFeed(topic: NewsTopicDefinition): Promise<NewsTopicFeed> {
   const response = await fetch(buildGoogleNewsUrl(topic.query), {
     headers: REQUEST_HEADERS,
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   const xml = await response.text();
@@ -367,8 +372,8 @@ export async function getNewsFeed(forceRefresh = false): Promise<NewsFeedPayload
   }
 
   const request = fetchFeedPayload(cached)
-    .then((payload) => {
-      writeCacheFile(newsCachePath, payload);
+    .then(async (payload) => {
+      await writeCacheFile(newsCachePath, payload);
       return payload;
     })
     .finally(() => {
