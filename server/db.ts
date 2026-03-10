@@ -55,6 +55,17 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires
     ON password_reset_tokens(expires_at);
 
+  CREATE INDEX IF NOT EXISTS idx_users_username
+    ON users(username);
+  CREATE INDEX IF NOT EXISTS idx_sessions_token
+    ON sessions(token);
+  CREATE INDEX IF NOT EXISTS idx_sessions_user_id
+    ON sessions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_sessions_expires_at
+    ON sessions(expires_at);
+  CREATE INDEX IF NOT EXISTS idx_invite_codes_code
+    ON invite_codes(code);
+
   CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,

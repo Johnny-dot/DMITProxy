@@ -259,7 +259,7 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-// GET /local/admin/invite — list all invite codes
+// GET /local/admin/invite — list invite codes (most recent first, max 500)
 router.get('/invite', requireAdmin, (_req, res) => {
   const codes = db
     .prepare(
@@ -269,6 +269,7 @@ router.get('/invite', requireAdmin, (_req, res) => {
     FROM invite_codes i
     LEFT JOIN users u ON u.id = i.used_by
     ORDER BY i.created_at DESC
+    LIMIT 500
   `,
     )
     .all();
@@ -300,12 +301,12 @@ router.delete('/invite/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-// GET /local/admin/users — list all non-admin users
+// GET /local/admin/users — list non-admin users (most recent first, max 500)
 router.get('/users', requireAdmin, (_req, res) => {
   const users = db
     .prepare(
       `
-    SELECT id, username, sub_id, role, created_at FROM users WHERE role = 'user' ORDER BY created_at DESC
+    SELECT id, username, sub_id, role, created_at FROM users WHERE role = 'user' ORDER BY created_at DESC LIMIT 500
   `,
     )
     .all();

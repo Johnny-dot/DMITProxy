@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import { dataDirectory } from './db.js';
 
@@ -91,6 +92,7 @@ interface YahooChartPayload {
 const YAHOO_FINANCE_BASE_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
 const MARKET_DATA_ATTRIBUTION_URL = 'https://finance.yahoo.com';
 const MARKET_PROVIDER = 'Yahoo Finance';
+const FETCH_TIMEOUT_MS = 15_000;
 const DEFAULT_MARKET_CACHE_TTL_MINUTES = 10;
 const configuredCacheTtlMinutes = Number.parseInt(process.env.MARKET_CACHE_TTL_MINUTES ?? '', 10);
 export const MARKET_CACHE_TTL_MINUTES =
@@ -271,9 +273,11 @@ function readCacheFile<T>(filePath: string): T | null {
   }
 }
 
-function writeCacheFile(filePath: string, payload: unknown) {
+async function writeCacheFile(filePath: string, payload: unknown) {
   ensureCacheDirectory();
-  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf8');
+  const tmp = `${filePath}.tmp`;
+  await fsPromises.writeFile(tmp, JSON.stringify(payload, null, 2), 'utf8');
+  await fsPromises.rename(tmp, filePath);
 }
 
 function formatChartLabel(datetime: string) {
@@ -313,6 +317,7 @@ async function fetchYahooChart(
     `${YAHOO_FINANCE_BASE_URL}/${encodeURIComponent(asset.upstreamSymbol)}?interval=${CHART_INTERVAL}&range=${range}`,
     {
       headers: REQUEST_HEADERS,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     },
   );
 
@@ -509,8 +514,8 @@ export async function getMarketSnapshot(forceRefresh = false): Promise<MarketSna
   }
 
   const request = fetchSnapshotPayload()
-    .then((payload) => {
-      writeCacheFile(snapshotCachePath, payload);
+    .then(async (payload) => {
+      await writeCacheFile(snapshotCachePath, payload);
       return payload;
     })
     .finally(() => {
@@ -540,8 +545,8 @@ export async function getMarketChart(
   }
 
   const request = fetchChartDetail(assetId)
-    .then((detail) => {
-      writeCacheFile(cachePath, detail);
+    .then(async (detail) => {
+      await writeCacheFile(cachePath, detail);
       return detail;
     })
     .finally(() => {
