@@ -15,6 +15,9 @@ import type {
 import { cn } from '@/src/utils/cn';
 
 const CATEGORY_ORDER: MarketCategory[] = ['indices', 'metals', 'crypto', 'forex'];
+const MARKET_DISPLAY_CURRENCY_STORAGE_KEY = 'prism:market:display-currency';
+
+type MarketDisplayCurrency = 'USD' | 'CNY';
 
 function formatDateTime(value: number | null, locale: string) {
   if (!value) return '--';
@@ -27,21 +30,137 @@ function formatDateTime(value: number | null, locale: string) {
   }).format(new Date(value));
 }
 
-function formatMarketValue(item: MarketSnapshotItem) {
-  if (item.latest === null) return '--';
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: item.decimals,
-    maximumFractionDigits: item.decimals,
-  }).format(item.latest);
+function getInitialDisplayCurrency(): MarketDisplayCurrency {
+  if (typeof window === 'undefined') return 'USD';
+
+  const stored = window.localStorage.getItem(MARKET_DISPLAY_CURRENCY_STORAGE_KEY);
+  return stored === 'CNY' || stored === 'USD' ? stored : 'USD';
 }
 
-function formatMarketDelta(value: number | null, digits: number, suffix = '') {
-  if (value === null) return '--';
-  const sign = value > 0 ? '+' : '';
-  return `${sign}${new Intl.NumberFormat('en-US', {
+function formatNumber(value: number, digits: number, locale: string) {
+  return new Intl.NumberFormat(locale, {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
-  }).format(value)}${suffix}`;
+  }).format(value);
+}
+
+function getCurrencyPrefix(currency: string) {
+  if (currency === 'USD') return '$';
+  if (currency === 'CNY') return '¥';
+  if (currency === 'HKD') return 'HK$';
+  return '';
+}
+
+function isConvertibleAsset(item: MarketSnapshotItem) {
+  return item.currency === 'USD' && (item.category === 'metals' || item.category === 'crypto');
+}
+
+function resolveDisplayCurrencyCode(
+  item: MarketSnapshotItem,
+  displayCurrency: MarketDisplayCurrency,
+  usdCnyRate: number | null,
+) {
+  if (displayCurrency === 'CNY' && isConvertibleAsset(item) && usdCnyRate) {
+    return 'CNY';
+  }
+
+  return item.currency;
+}
+
+function resolveDisplayValue(
+  value: number | null,
+  item: MarketSnapshotItem,
+  displayCurrency: MarketDisplayCurrency,
+  usdCnyRate: number | null,
+) {
+  if (value === null) return null;
+
+  if (displayCurrency === 'CNY' && isConvertibleAsset(item) && usdCnyRate) {
+    return value * usdCnyRate;
+  }
+
+  return value;
+}
+
+function formatMarketValue(
+  item: MarketSnapshotItem,
+  locale: string,
+  displayCurrency: MarketDisplayCurrency,
+  usdCnyRate: number | null,
+) {
+  const value = resolveDisplayValue(item.latest, item, displayCurrency, usdCnyRate);
+  if (value === null) return '--';
+
+  const currencyCode = resolveDisplayCurrencyCode(item, displayCurrency, usdCnyRate);
+  const prefix = getCurrencyPrefix(currencyCode);
+  const formatted = formatNumber(value, item.decimals, locale);
+
+  if (prefix) return `${prefix}${formatted}`;
+  if (currencyCode === 'pts') return `${formatted} pts`;
+  return `${formatted} ${currencyCode}`;
+}
+
+function formatMarketDelta(
+  value: number | null,
+  digits: number,
+  locale: string,
+  options?: { suffix?: string; currency?: string },
+) {
+  if (value === null) return '--';
+
+  const sign = value > 0 ? '+' : value < 0 ? '-' : '';
+  const formatted = formatNumber(Math.abs(value), digits, locale);
+
+  if (options?.currency) {
+    const prefix = getCurrencyPrefix(options.currency);
+    if (prefix) return `${sign}${prefix}${formatted}`;
+    if (options.currency === 'pts') return `${sign}${formatted} pts`;
+    return `${sign}${formatted} ${options.currency}`;
+  }
+
+  return `${sign}${formatted}${options?.suffix ?? ''}`;
+}
+
+function getDisplayUnitLabel(
+  item: MarketSnapshotItem,
+  displayCurrency: MarketDisplayCurrency,
+  usdCnyRate: number | null,
+  isZh: boolean,
+) {
+  const converted = displayCurrency === 'CNY' && isConvertibleAsset(item) && Boolean(usdCnyRate);
+  const currencyCode = resolveDisplayCurrencyCode(item, displayCurrency, usdCnyRate);
+
+  if (converted) return isZh ? '人民币（换算）' : 'Chinese yuan (converted)';
+  if (currencyCode === 'pts') return isZh ? '点位' : 'Points';
+  if (currencyCode === 'USD') return isZh ? '美元' : 'US dollar';
+  if (currencyCode === 'CNY') return isZh ? '人民币' : 'Chinese yuan';
+  if (currencyCode === 'HKD') return isZh ? '港元' : 'Hong Kong dollar';
+
+  return currencyCode;
+}
+
+function getDisplayUnitHint(
+  item: MarketSnapshotItem,
+  displayCurrency: MarketDisplayCurrency,
+  usdCnyRate: number | null,
+  isZh: boolean,
+) {
+  if (displayCurrency === 'CNY' && isConvertibleAsset(item) && usdCnyRate) {
+    const rate = formatNumber(usdCnyRate, 4, 'en-US');
+    return isZh ? `按 USD/CNY ${rate} 换算` : `Converted with USD/CNY ${rate}`;
+  }
+
+  if (item.currency === 'pts') {
+    return isZh ? '指数按点位显示，不参与币种切换。' : 'Index levels stay in points.';
+  }
+
+  if (item.category === 'forex') {
+    return isZh
+      ? '外汇已统一按人民币报价显示，不受上方 USD/CNY 切换影响。'
+      : 'FX pairs are already quoted against CNY and do not follow the USD/CNY toggle.';
+  }
+
+  return isZh ? '显示原始报价货币。' : 'Shown in the native quote currency.';
 }
 
 function getCategoryLabel(category: MarketCategory, isZh: boolean) {
@@ -51,11 +170,123 @@ function getCategoryLabel(category: MarketCategory, isZh: boolean) {
   return isZh ? '外汇' : 'FX';
 }
 
+const MARKET_ITEM_DESCRIPTIONS: Record<string, { zh: string; en: string }> = {
+  dax: {
+    zh: '德国 DAX 指数，跟踪法兰克福市场主要蓝筹公司。',
+    en: 'Germany’s DAX index tracking major blue-chip companies in Frankfurt.',
+  },
+  ftse: {
+    zh: '英国富时 100 指数，代表伦敦市场大型上市公司表现。',
+    en: 'The UK FTSE 100 index covering large listed companies in London.',
+  },
+  fchi: {
+    zh: '法国 CAC 40 指数，反映巴黎市场 40 只核心蓝筹股走势。',
+    en: 'France’s CAC 40 index covering 40 core blue-chip stocks in Paris.',
+  },
+  n225: {
+    zh: '日经 225 指数，日本 225 只代表性股票的价格加权指数。',
+    en: 'Japan’s Nikkei 225, a price-weighted index of 225 representative stocks.',
+  },
+  ks11: {
+    zh: '韩国综合股价指数，覆盖韩国交易所主要上市公司。',
+    en: 'KOSPI, tracking major companies listed on the Korea Exchange.',
+  },
+  hsi: {
+    zh: '恒生指数，反映香港股市主要大型上市公司的整体走势。',
+    en: 'Hang Seng Index, tracking major listed companies in Hong Kong.',
+  },
+  nasdaq: {
+    zh: '纳斯达克综合指数，覆盖纳斯达克市场的大量科技和成长型公司。',
+    en: 'Nasdaq Composite, covering a broad set of growth and technology stocks.',
+  },
+  sse: {
+    zh: '上证指数，即上证综指，覆盖上海证券交易所挂牌股票的整体表现。',
+    en: 'SSE Composite Index, covering the overall performance of stocks listed in Shanghai.',
+  },
+  stoxx50e: {
+    zh: 'Euro Stoxx 50 指数，追踪欧元区 50 家大型蓝筹公司。',
+    en: 'The Euro Stoxx 50 index tracking 50 large eurozone blue chips.',
+  },
+  gold: {
+    zh: '现货黄金，常被视为避险和通胀对冲资产。',
+    en: 'Spot gold, commonly used as a safe-haven and inflation hedge.',
+  },
+  silver: {
+    zh: '现货白银，兼具贵金属属性和工业需求。',
+    en: 'Spot silver, a precious metal with strong industrial demand.',
+  },
+  platinum: {
+    zh: '铂金，常用于汽车催化和珠宝等行业。',
+    en: 'Platinum, widely used in auto catalysts and jewelry.',
+  },
+  palladium: {
+    zh: '钯金，主要用于汽车尾气催化器等工业场景。',
+    en: 'Palladium, mainly used in catalytic converters and other industrial uses.',
+  },
+  btc: {
+    zh: '比特币，市值最大的去中心化加密货币。',
+    en: 'Bitcoin, the largest decentralized cryptocurrency by market value.',
+  },
+  eth: {
+    zh: '以太坊，支持智能合约和链上应用的主流加密资产。',
+    en: 'Ethereum, a major crypto asset powering smart contracts and on-chain apps.',
+  },
+  sol: {
+    zh: 'Solana 公链的原生代币，强调高吞吐和低手续费。',
+    en: 'Solana’s native token, known for high throughput and low fees.',
+  },
+  xrp: {
+    zh: 'XRP，常被用于跨境支付相关场景。',
+    en: 'XRP, a crypto asset often associated with cross-border payments.',
+  },
+  'usd-cny': {
+    zh: '美元兑人民币，表示 1 美元可兑换多少人民币。',
+    en: 'USD/CNY, showing how many Chinese yuan one US dollar buys.',
+  },
+  'hkd-cny': {
+    zh: '港元兑人民币，表示 1 港元可兑换多少人民币。',
+    en: 'HKD/CNY, showing how many Chinese yuan one Hong Kong dollar buys.',
+  },
+  'eur-cny': {
+    zh: '欧元兑人民币，表示 1 欧元可兑换多少人民币。',
+    en: 'EUR/CNY, showing how many Chinese yuan one euro buys.',
+  },
+  'gbp-cny': {
+    zh: '英镑兑人民币，表示 1 英镑可兑换多少人民币。',
+    en: 'GBP/CNY, showing how many Chinese yuan one British pound buys.',
+  },
+  'jpy-cny': {
+    zh: '日元兑人民币，表示 1 日元可兑换多少人民币。',
+    en: 'JPY/CNY, showing how many Chinese yuan one Japanese yen buys.',
+  },
+  'krw-cny': {
+    zh: '韩元兑人民币，表示 1 韩元可兑换多少人民币。',
+    en: 'KRW/CNY, showing how many Chinese yuan one Korean won buys.',
+  },
+  'try-cny': {
+    zh: '土耳其里拉兑人民币，表示 1 土耳其里拉可兑换多少人民币。',
+    en: 'TRY/CNY, showing how many Chinese yuan one Turkish lira buys.',
+  },
+};
+
+function getAssetDescription(item: MarketSnapshotItem, isZh: boolean) {
+  const description = MARKET_ITEM_DESCRIPTIONS[item.id];
+  if (!description) {
+    return isZh
+      ? `${item.labelZh} 的实时价格与走势说明。`
+      : `A short explanation for ${item.labelEn} and what this market represents.`;
+  }
+
+  return isZh ? description.zh : description.en;
+}
+
 export function MarketTab() {
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
   const locale = isZh ? 'zh-CN' : 'en-US';
 
+  const [displayCurrency, setDisplayCurrency] =
+    useState<MarketDisplayCurrency>(getInitialDisplayCurrency);
   const [snapshot, setSnapshot] = useState<MarketSnapshotPayload | null>(null);
   const [defaultAssetId, setDefaultAssetId] = useState<string | null>(null);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
@@ -65,6 +296,11 @@ export function MarketTab() {
   const [isLoadingSnapshot, setIsLoadingSnapshot] = useState(true);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isRefreshingMarket, setIsRefreshingMarket] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(MARKET_DISPLAY_CURRENCY_STORAGE_KEY, displayCurrency);
+  }, [displayCurrency]);
 
   const loadSnapshot = useCallback(async () => {
     setIsLoadingSnapshot(true);
@@ -134,6 +370,19 @@ export function MarketTab() {
     [selectedAssetId, snapshot?.items],
   );
   const selectedDetail = selectedAssetId ? (detailCache[selectedAssetId] ?? null) : null;
+  const usdCnyRate = useMemo(
+    () => snapshot?.items.find((item) => item.id === 'usd-cny')?.latest ?? null,
+    [snapshot?.items],
+  );
+  const selectedChartSeries = useMemo(() => {
+    if (!selectedDetail || !selectedItem) return [];
+
+    return selectedDetail.series.map((point) => ({
+      ...point,
+      value:
+        resolveDisplayValue(point.value, selectedItem, displayCurrency, usdCnyRate) ?? point.value,
+    }));
+  }, [displayCurrency, selectedDetail, selectedItem, usdCnyRate]);
   const groupedItems = useMemo(
     () =>
       CATEGORY_ORDER.map((category) => ({
@@ -141,6 +390,14 @@ export function MarketTab() {
         items: (snapshot?.items ?? []).filter((item) => item.category === category),
       })).filter((group) => group.items.length > 0),
     [snapshot?.items],
+  );
+
+  const handleSelectAsset = useCallback(
+    (assetId: string) => {
+      setSelectedAssetId(assetId);
+      if (!detailCache[assetId]) void loadDetail(assetId);
+    },
+    [detailCache, loadDetail],
   );
 
   async function handleRefreshMarket() {
@@ -203,9 +460,11 @@ export function MarketTab() {
                 {group.items.map((item) => {
                   const positive = (item.change ?? 0) >= 0;
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={item.id === selectedAssetId}
                       className={cn(
                         'w-full rounded-[20px] border px-3 py-3 text-left transition-colors',
                         item.id === selectedAssetId
@@ -213,20 +472,29 @@ export function MarketTab() {
                           : 'border-[color:var(--border-subtle)] bg-[var(--surface-card)] hover:bg-[var(--surface-strong)]',
                       )}
                       onClick={() => {
-                        setSelectedAssetId(item.id);
-                        if (!detailCache[item.id]) void loadDetail(item.id);
+                        handleSelectAsset(item.id);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          handleSelectAsset(item.id);
+                        }
                       }}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-zinc-50">
-                            {isZh ? item.labelZh : item.labelEn}
+                          <p className="inline-flex max-w-full items-center gap-1 truncate text-sm font-medium text-zinc-50">
+                            <span className="truncate">{isZh ? item.labelZh : item.labelEn}</span>
+                            <InfoTooltip
+                              className="shrink-0"
+                              content={getAssetDescription(item, isZh)}
+                            />
                           </p>
                           <p className="mt-0.5 text-xs text-zinc-500">{item.symbol}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-semibold text-zinc-50">
-                            {formatMarketValue(item)}
+                            {formatMarketValue(item, locale, displayCurrency, usdCnyRate)}
                           </p>
                           <p
                             className={cn(
@@ -234,7 +502,7 @@ export function MarketTab() {
                               positive ? 'text-emerald-300' : 'text-rose-300',
                             )}
                           >
-                            {formatMarketDelta(item.changePercent, 2, '%')}
+                            {formatMarketDelta(item.changePercent, 2, locale, { suffix: '%' })}
                           </p>
                         </div>
                       </div>
@@ -257,10 +525,21 @@ export function MarketTab() {
                           ) : (
                             <ArrowDownRight className="h-3.5 w-3.5" />
                           )}
-                          {formatMarketDelta(item.change, item.decimals)}
+                          {formatMarketDelta(
+                            resolveDisplayValue(item.change, item, displayCurrency, usdCnyRate),
+                            item.decimals,
+                            locale,
+                            {
+                              currency: resolveDisplayCurrencyCode(
+                                item,
+                                displayCurrency,
+                                usdCnyRate,
+                              ),
+                            },
+                          )}
                         </span>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -300,6 +579,34 @@ export function MarketTab() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-1 rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-1 shadow-sm">
+                <button
+                  type="button"
+                  className={cn(
+                    'h-8 min-w-12 rounded-full px-3 text-xs font-medium transition-colors',
+                    displayCurrency === 'USD'
+                      ? 'bg-[var(--surface-strong)] text-zinc-50'
+                      : 'text-zinc-400 hover:bg-[var(--surface-card)] hover:text-zinc-200',
+                  )}
+                  onClick={() => setDisplayCurrency('USD')}
+                  data-testid="market-display-currency-usd"
+                >
+                  USD
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    'h-8 min-w-12 rounded-full px-3 text-xs font-medium transition-colors',
+                    displayCurrency === 'CNY'
+                      ? 'bg-[var(--surface-strong)] text-zinc-50'
+                      : 'text-zinc-400 hover:bg-[var(--surface-card)] hover:text-zinc-200',
+                  )}
+                  onClick={() => setDisplayCurrency('CNY')}
+                  data-testid="market-display-currency-cny"
+                >
+                  CNY
+                </button>
+              </div>
               <div className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-2 text-xs text-zinc-400">
                 {snapshot
                   ? `${isZh ? '更新' : 'Updated'} ${formatDateTime(snapshot.cachedAt, locale)}`
@@ -332,14 +639,20 @@ export function MarketTab() {
                     <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
                       {getCategoryLabel(selectedItem.category, isZh)}
                     </p>
-                    <h3 className="text-xl font-semibold text-zinc-50">
-                      {isZh ? selectedItem.labelZh : selectedItem.labelEn}
-                    </h3>
+                    <div className="inline-flex items-center gap-2">
+                      <h3 className="text-xl font-semibold text-zinc-50">
+                        {isZh ? selectedItem.labelZh : selectedItem.labelEn}
+                      </h3>
+                      <InfoTooltip content={getAssetDescription(selectedItem, isZh)} />
+                    </div>
                     <p className="text-sm text-zinc-500">{selectedItem.symbol}</p>
                   </div>
                   <div className="space-y-2 md:text-right">
                     <p className="text-3xl font-semibold text-zinc-50">
-                      {formatMarketValue(selectedItem)}
+                      {formatMarketValue(selectedItem, locale, displayCurrency, usdCnyRate)}
+                    </p>
+                    <p className="text-xs text-zinc-500">
+                      {getDisplayUnitHint(selectedItem, displayCurrency, usdCnyRate, isZh)}
                     </p>
                     <div
                       className={cn(
@@ -354,8 +667,30 @@ export function MarketTab() {
                       ) : (
                         <ArrowDownRight className="h-4 w-4" />
                       )}
-                      <span>{formatMarketDelta(selectedItem.change, selectedItem.decimals)}</span>
-                      <span>{formatMarketDelta(selectedItem.changePercent, 2, '%')}</span>
+                      <span>
+                        {formatMarketDelta(
+                          resolveDisplayValue(
+                            selectedItem.change,
+                            selectedItem,
+                            displayCurrency,
+                            usdCnyRate,
+                          ),
+                          selectedItem.decimals,
+                          locale,
+                          {
+                            currency: resolveDisplayCurrencyCode(
+                              selectedItem,
+                              displayCurrency,
+                              usdCnyRate,
+                            ),
+                          },
+                        )}
+                      </span>
+                      <span>
+                        {formatMarketDelta(selectedItem.changePercent, 2, locale, {
+                          suffix: '%',
+                        })}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -372,7 +707,7 @@ export function MarketTab() {
                     <div className="h-[220px] w-full min-w-0">
                       <AreaChart
                         responsive
-                        data={selectedDetail.series}
+                        data={selectedChartSeries}
                         style={{ width: '100%', height: '100%' }}
                       >
                         <defs>
@@ -393,10 +728,13 @@ export function MarketTab() {
                         <Tooltip
                           cursor={{ stroke: '#3f3f46', strokeDasharray: '4 4' }}
                           formatter={(value: number) => [
-                            new Intl.NumberFormat('en-US', {
-                              minimumFractionDigits: selectedItem.decimals,
-                              maximumFractionDigits: selectedItem.decimals,
-                            }).format(value),
+                            formatMarketDelta(value, selectedItem.decimals, locale, {
+                              currency: resolveDisplayCurrencyCode(
+                                selectedItem,
+                                displayCurrency,
+                                usdCnyRate,
+                              ),
+                            }),
                             isZh ? selectedItem.labelZh : selectedItem.labelEn,
                           ]}
                           labelFormatter={(label) => (isZh ? `时间 ${label}` : `Date ${label}`)}
@@ -422,6 +760,24 @@ export function MarketTab() {
                 </div>
               </div>
               <div className="grid gap-3">
+                <div className="rounded-[26px] border border-[var(--border-subtle)] bg-[var(--surface-panel)] p-4">
+                  <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                    <span>{isZh ? '显示单位' : 'Display unit'}</span>
+                    <InfoTooltip
+                      content={
+                        isZh
+                          ? '这里会告诉你当前数字是按什么单位显示，以及是否用了人民币换算。'
+                          : 'Shows the current quote unit and whether CNY conversion is applied.'
+                      }
+                    />
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-zinc-50">
+                    {getDisplayUnitLabel(selectedItem, displayCurrency, usdCnyRate, isZh)}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                    {getDisplayUnitHint(selectedItem, displayCurrency, usdCnyRate, isZh)}
+                  </p>
+                </div>
                 <div className="rounded-[26px] border border-[var(--border-subtle)] bg-[var(--surface-panel)] p-4">
                   <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
                     <span>{isZh ? '最近更新' : 'Last updated'}</span>

@@ -9,6 +9,8 @@ export interface MarketAssetDefinition {
   id: string;
   symbol: string;
   upstreamSymbol: string;
+  secondaryUpstreamSymbol?: string;
+  combineMode?: 'multiply';
   category: MarketCategory;
   labelEn: string;
   labelZh: string;
@@ -111,6 +113,36 @@ const REQUEST_HEADERS = {
 };
 
 export const MARKET_ASSETS: MarketAssetDefinition[] = [
+  {
+    id: 'nasdaq',
+    symbol: 'NASDAQ',
+    upstreamSymbol: '^IXIC',
+    category: 'indices',
+    labelEn: 'Nasdaq Composite',
+    labelZh: '纳斯达克综指',
+    currency: 'pts',
+    decimals: 2,
+  },
+  {
+    id: 'hsi',
+    symbol: 'HSI',
+    upstreamSymbol: '^HSI',
+    category: 'indices',
+    labelEn: 'Hang Seng',
+    labelZh: '恒生指数',
+    currency: 'pts',
+    decimals: 2,
+  },
+  {
+    id: 'sse',
+    symbol: '000001.SS',
+    upstreamSymbol: '000001.SS',
+    category: 'indices',
+    labelEn: 'SSE Composite',
+    labelZh: '上证指数',
+    currency: 'pts',
+    decimals: 2,
+  },
   {
     id: 'dax',
     symbol: 'DAX',
@@ -222,13 +254,105 @@ export const MARKET_ASSETS: MarketAssetDefinition[] = [
     decimals: 4,
   },
   {
-    id: 'usd-hkd',
-    symbol: 'USD/HKD',
-    upstreamSymbol: 'USDHKD=X',
+    id: 'hkd-cny',
+    symbol: 'HKD/CNY',
+    upstreamSymbol: 'HKDCNY=X',
     category: 'forex',
-    labelEn: 'USD/HKD',
-    labelZh: '美元/港元',
-    currency: 'HKD',
+    labelEn: 'HKD/CNY',
+    labelZh: '港元/人民币',
+    currency: 'CNY',
+    decimals: 4,
+  },
+  {
+    id: 'platinum',
+    symbol: 'XPT/USD',
+    upstreamSymbol: 'PL=F',
+    category: 'metals',
+    labelEn: 'Platinum',
+    labelZh: '铂金',
+    currency: 'USD',
+    decimals: 2,
+  },
+  {
+    id: 'palladium',
+    symbol: 'XPD/USD',
+    upstreamSymbol: 'PA=F',
+    category: 'metals',
+    labelEn: 'Palladium',
+    labelZh: '钯金',
+    currency: 'USD',
+    decimals: 2,
+  },
+  {
+    id: 'sol',
+    symbol: 'SOL/USD',
+    upstreamSymbol: 'SOL-USD',
+    category: 'crypto',
+    labelEn: 'Solana',
+    labelZh: 'Solana',
+    currency: 'USD',
+    decimals: 2,
+  },
+  {
+    id: 'xrp',
+    symbol: 'XRP/USD',
+    upstreamSymbol: 'XRP-USD',
+    category: 'crypto',
+    labelEn: 'XRP',
+    labelZh: 'XRP',
+    currency: 'USD',
+    decimals: 4,
+  },
+  {
+    id: 'eur-cny',
+    symbol: 'EUR/CNY',
+    upstreamSymbol: 'EURCNY=X',
+    category: 'forex',
+    labelEn: 'EUR/CNY',
+    labelZh: '欧元/人民币',
+    currency: 'CNY',
+    decimals: 4,
+  },
+  {
+    id: 'gbp-cny',
+    symbol: 'GBP/CNY',
+    upstreamSymbol: 'GBPCNY=X',
+    category: 'forex',
+    labelEn: 'GBP/CNY',
+    labelZh: '英镑/人民币',
+    currency: 'CNY',
+    decimals: 4,
+  },
+  {
+    id: 'jpy-cny',
+    symbol: 'JPY/CNY',
+    upstreamSymbol: 'JPYCNY=X',
+    category: 'forex',
+    labelEn: 'JPY/CNY',
+    labelZh: '日元/人民币',
+    currency: 'CNY',
+    decimals: 4,
+  },
+  {
+    id: 'krw-cny',
+    symbol: 'KRW/CNY',
+    upstreamSymbol: 'KRWCNY=X',
+    category: 'forex',
+    labelEn: 'KRW/CNY',
+    labelZh: '韩元/人民币',
+    currency: 'CNY',
+    decimals: 4,
+  },
+  {
+    id: 'try-cny',
+    symbol: 'TRY/CNY',
+    upstreamSymbol: 'TRYUSD=X',
+    secondaryUpstreamSymbol: 'USDCNY=X',
+    combineMode: 'multiply',
+    category: 'forex',
+    labelEn: 'TRY/CNY',
+    labelZh: '土耳其里拉/人民币',
+    currency: 'CNY',
     decimals: 4,
   },
 ] as const;
@@ -273,6 +397,16 @@ function readCacheFile<T>(filePath: string): T | null {
   }
 }
 
+function deleteCacheFile(filePath: string) {
+  if (!fs.existsSync(filePath)) return;
+
+  try {
+    fs.unlinkSync(filePath);
+  } catch {
+    // ignore cache cleanup failures
+  }
+}
+
 async function writeCacheFile(filePath: string, payload: unknown) {
   ensureCacheDirectory();
   const tmp = `${filePath}.tmp`;
@@ -309,12 +443,12 @@ function buildErrorSnapshotItem(asset: MarketAssetDefinition, error: string): Ma
   };
 }
 
-async function fetchYahooChart(
-  asset: MarketAssetDefinition,
+async function fetchYahooChartBySymbol(
+  upstreamSymbol: string,
   range: string,
 ): Promise<YahooChartResult> {
   const response = await fetch(
-    `${YAHOO_FINANCE_BASE_URL}/${encodeURIComponent(asset.upstreamSymbol)}?interval=${CHART_INTERVAL}&range=${range}`,
+    `${YAHOO_FINANCE_BASE_URL}/${encodeURIComponent(upstreamSymbol)}?interval=${CHART_INTERVAL}&range=${range}`,
     {
       headers: REQUEST_HEADERS,
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -349,6 +483,118 @@ async function fetchYahooChart(
   }
 
   return result;
+}
+
+function combineNumbers(
+  left: number | null,
+  right: number | null,
+  mode: MarketAssetDefinition['combineMode'],
+) {
+  if (left === null || right === null) return null;
+  if (mode === 'multiply') return left * right;
+  return null;
+}
+
+function combineTradingPeriod(
+  left?: YahooChartMeta['currentTradingPeriod'],
+  right?: YahooChartMeta['currentTradingPeriod'],
+) {
+  const leftRegular = left?.regular;
+  const rightRegular = right?.regular;
+  if (!leftRegular?.start || !leftRegular?.end) return right;
+  if (!rightRegular?.start || !rightRegular?.end) return left;
+
+  const start = Math.max(leftRegular.start, rightRegular.start);
+  const end = Math.min(leftRegular.end, rightRegular.end);
+  if (start >= end) return left;
+
+  return { regular: { start, end } };
+}
+
+function combineChartSeries(
+  left: MarketChartPoint[],
+  right: MarketChartPoint[],
+  mode: MarketAssetDefinition['combineMode'],
+) {
+  const rightByDate = new Map(right.map((point) => [point.datetime, point]));
+
+  return left
+    .map((point) => {
+      const rightPoint = rightByDate.get(point.datetime);
+      if (!rightPoint) return null;
+
+      const value = combineNumbers(point.value, rightPoint.value, mode);
+      if (value === null) return null;
+
+      return {
+        ...point,
+        value,
+      };
+    })
+    .filter((point): point is MarketChartPoint => point !== null);
+}
+
+function toTimestampSeconds(datetime: string) {
+  return Math.floor(Date.parse(`${datetime}T00:00:00.000Z`) / 1000);
+}
+
+function combineYahooChartResults(
+  primary: YahooChartResult,
+  secondary: YahooChartResult,
+  mode: NonNullable<MarketAssetDefinition['combineMode']>,
+): YahooChartResult {
+  const primarySeries = buildSeries(primary);
+  const secondarySeries = buildSeries(secondary);
+  const combinedSeries = combineChartSeries(primarySeries, secondarySeries, mode);
+
+  return {
+    meta: {
+      regularMarketPrice:
+        combineNumbers(
+          getLatestPrice(primary, primarySeries),
+          getLatestPrice(secondary, secondarySeries),
+          mode,
+        ) ?? undefined,
+      chartPreviousClose:
+        combineNumbers(
+          getPreviousClose(primary, primarySeries),
+          getPreviousClose(secondary, secondarySeries),
+          mode,
+        ) ?? undefined,
+      regularMarketTime: Math.max(
+        primary.meta?.regularMarketTime ?? 0,
+        secondary.meta?.regularMarketTime ?? 0,
+      ),
+      currentTradingPeriod: combineTradingPeriod(
+        primary.meta?.currentTradingPeriod,
+        secondary.meta?.currentTradingPeriod,
+      ),
+    },
+    timestamp: combinedSeries.map((point) => toTimestampSeconds(point.datetime)),
+    indicators: {
+      quote: [
+        {
+          close: combinedSeries.map((point) => point.value),
+        },
+      ],
+    },
+  };
+}
+
+async function fetchYahooChart(
+  asset: MarketAssetDefinition,
+  range: string,
+): Promise<YahooChartResult> {
+  if (!asset.secondaryUpstreamSymbol || !asset.combineMode) {
+    return fetchYahooChartBySymbol(asset.upstreamSymbol, range);
+  }
+
+  const [primary, secondary] = await Promise.all([
+    fetchYahooChartBySymbol(asset.upstreamSymbol, range),
+    fetchYahooChartBySymbol(asset.secondaryUpstreamSymbol, range),
+  ]);
+
+  return combineYahooChartResults(primary, secondary, asset.combineMode);
 }
 
 function buildSeries(result: YahooChartResult): MarketChartPoint[] {
@@ -450,6 +696,45 @@ function buildSnapshotPayload(items: MarketSnapshotItem[]): MarketSnapshotPayloa
   };
 }
 
+function isSnapshotItemCompatible(
+  item: MarketSnapshotItem | null | undefined,
+  asset: MarketAssetDefinition,
+) {
+  if (!item) return false;
+
+  return (
+    item.id === asset.id &&
+    item.symbol === asset.symbol &&
+    item.category === asset.category &&
+    item.labelEn === asset.labelEn &&
+    item.labelZh === asset.labelZh &&
+    item.currency === asset.currency &&
+    item.decimals === asset.decimals
+  );
+}
+
+function isSnapshotPayloadCompatible(payload: MarketSnapshotPayload) {
+  if (!Array.isArray(payload.items) || payload.items.length !== MARKET_ASSETS.length) {
+    return false;
+  }
+
+  return MARKET_ASSETS.every((asset, index) =>
+    isSnapshotItemCompatible(payload.items[index], asset),
+  );
+}
+
+function isChartDetailCompatible(detail: MarketChartDetail, assetId: string) {
+  const asset = assetById.get(assetId);
+  if (!asset) return false;
+
+  return (
+    isSnapshotItemCompatible(detail.asset, asset) &&
+    Array.isArray(detail.series) &&
+    typeof detail.cachedAt === 'number' &&
+    typeof detail.rangeLabel === 'string'
+  );
+}
+
 async function fetchSnapshotPayload(): Promise<MarketSnapshotPayload> {
   const items = await Promise.all(
     MARKET_ASSETS.map(async (asset) => {
@@ -507,8 +792,16 @@ export function getDefaultMarketAssetId() {
 export async function getMarketSnapshot(forceRefresh = false): Promise<MarketSnapshotPayload> {
   if (!forceRefresh) {
     const cached = readCacheFile<MarketSnapshotPayload>(snapshotCachePath);
-    if (cached && typeof cached.cachedAt === 'number' && isFresh(cached.cachedAt)) {
+    if (
+      cached &&
+      typeof cached.cachedAt === 'number' &&
+      isFresh(cached.cachedAt) &&
+      isSnapshotPayloadCompatible(cached)
+    ) {
       return cached;
+    }
+    if (cached && !isSnapshotPayloadCompatible(cached)) {
+      deleteCacheFile(snapshotCachePath);
     }
     if (inflightSnapshot) return inflightSnapshot;
   }
@@ -537,8 +830,16 @@ export async function getMarketChart(
   const cachePath = getChartCachePath(assetId);
   if (!forceRefresh) {
     const cached = readCacheFile<MarketChartDetail>(cachePath);
-    if (cached && typeof cached.cachedAt === 'number' && isFresh(cached.cachedAt)) {
+    if (
+      cached &&
+      typeof cached.cachedAt === 'number' &&
+      isFresh(cached.cachedAt) &&
+      isChartDetailCompatible(cached, assetId)
+    ) {
       return cached;
+    }
+    if (cached && !isChartDetailCompatible(cached, assetId)) {
+      deleteCacheFile(cachePath);
     }
     const inflight = inflightCharts.get(assetId);
     if (inflight) return inflight;

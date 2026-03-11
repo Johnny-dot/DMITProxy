@@ -43,6 +43,43 @@ function buildYahooChartPayload(price: number, previousClose: number, timestamps
   };
 }
 
+function buildYahooChartPayloadFromCloses(
+  closes: number[],
+  previousClose: number,
+  timestamps?: number[],
+) {
+  const chartTimestamps = timestamps ?? closes.map((_, index) => 1772668800 + index * 86_400);
+
+  return {
+    chart: {
+      result: [
+        {
+          meta: {
+            regularMarketPrice: closes[closes.length - 1],
+            chartPreviousClose: previousClose,
+            regularMarketTime: chartTimestamps[chartTimestamps.length - 1],
+            currentTradingPeriod: {
+              regular: {
+                start: chartTimestamps[chartTimestamps.length - 1] - 3600,
+                end: chartTimestamps[chartTimestamps.length - 1] + 3600,
+              },
+            },
+          },
+          timestamp: chartTimestamps,
+          indicators: {
+            quote: [
+              {
+                close: closes,
+              },
+            ],
+          },
+        },
+      ],
+      error: null,
+    },
+  };
+}
+
 async function loadMarketModules(): Promise<LoadedModules> {
   const tempDir = path.resolve(
     '.tmp',
@@ -80,16 +117,46 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+function getCompositeAssetCount(marketModule: LoadedModules['marketModule']) {
+  return marketModule.MARKET_ASSETS.filter((asset) => asset.secondaryUpstreamSymbol).length;
+}
+
+function toSnapshotItem(
+  asset: LoadedModules['marketModule']['MARKET_ASSETS'][number],
+  latest = 100,
+) {
+  return {
+    id: asset.id,
+    symbol: asset.symbol,
+    category: asset.category,
+    labelEn: asset.labelEn,
+    labelZh: asset.labelZh,
+    currency: asset.currency,
+    decimals: asset.decimals,
+    latest,
+    previousClose: latest - 1,
+    change: 1,
+    changePercent: 1,
+    updatedAt: Date.now(),
+    marketOpen: true,
+    status: 'ok',
+  };
+}
+
 describe('market data cache', () => {
   it('caches the market snapshot between calls', async () => {
     const loaded = await loadMarketModules();
 
     try {
       const { marketModule } = loaded;
+      const compositeAssetCount = getCompositeAssetCount(marketModule);
       const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
         const url = String(input);
-        const assetIndex = marketModule.MARKET_ASSETS.findIndex((asset) =>
-          url.includes(encodeURIComponent(asset.upstreamSymbol)),
+        const assetIndex = marketModule.MARKET_ASSETS.findIndex(
+          (asset) =>
+            (asset.secondaryUpstreamSymbol &&
+              url.includes(encodeURIComponent(asset.secondaryUpstreamSymbol))) ||
+            url.includes(encodeURIComponent(asset.upstreamSymbol)),
         );
         const index = assetIndex >= 0 ? assetIndex : 0;
         return new Response(JSON.stringify(buildYahooChartPayload(100 + index, 99 + index)), {
@@ -101,7 +168,7 @@ describe('market data cache', () => {
       const second = await marketModule.getMarketSnapshot();
       const third = await marketModule.getMarketSnapshot(true);
 
-      expect(first.items).toHaveLength(12);
+      expect(first.items).toHaveLength(24);
       expect(first.items[0]).toMatchObject({
         status: 'ok',
         latest: 100,
@@ -109,7 +176,9 @@ describe('market data cache', () => {
       });
       expect(second.cachedAt).toBe(first.cachedAt);
       expect(third.cachedAt).toBeGreaterThanOrEqual(first.cachedAt);
-      expect(fetchMock).toHaveBeenCalledTimes(marketModule.MARKET_ASSETS.length * 2);
+      expect(fetchMock).toHaveBeenCalledTimes(
+        (marketModule.MARKET_ASSETS.length + compositeAssetCount) * 2,
+      );
     } finally {
       loaded.cleanup();
     }
@@ -120,6 +189,7 @@ describe('market data cache', () => {
 
     try {
       const { marketModule } = loaded;
+      const compositeAssetCount = getCompositeAssetCount(marketModule);
       const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
         const url = String(input);
         if (url.includes(encodeURIComponent('BTC-USD'))) {
@@ -145,7 +215,112 @@ describe('market data cache', () => {
         '2026-03-07',
       ]);
       expect(second.cachedAt).toBe(first.cachedAt);
-      expect(fetchMock).toHaveBeenCalledTimes(marketModule.MARKET_ASSETS.length + 1);
+      expect(fetchMock).toHaveBeenCalledTimes(
+        marketModule.MARKET_ASSETS.length + compositeAssetCount + 1,
+      );
+    } finally {
+      loaded.cleanup();
+    }
+  });
+
+  it('ignores stale snapshot cache when asset order changes', async () => {
+    const loaded = await loadMarketModules();
+
+    try {
+      const { dbModule, marketModule } = loaded;
+      const staleItems = [
+        ...marketModule.MARKET_ASSETS.filter((asset) => asset.id === 'dax'),
+        ...marketModule.MARKET_ASSETS.filter((asset) => asset.id !== 'dax'),
+      ].map((asset, index) => toSnapshotItem(asset, 100 + index));
+
+      const cacheDir = path.join(dbModule.dataDirectory, 'market-cache');
+      fs.mkdirSync(cacheDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(cacheDir, 'snapshot.json'),
+        JSON.stringify({
+          provider: 'Yahoo Finance',
+          attributionUrl: 'https://finance.yahoo.com',
+          ttlMinutes: 10,
+          cachedAt: Date.now(),
+          items: staleItems,
+        }),
+        'utf8',
+      );
+
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+        const url = String(input);
+        const assetIndex = marketModule.MARKET_ASSETS.findIndex(
+          (asset) =>
+            (asset.secondaryUpstreamSymbol &&
+              url.includes(encodeURIComponent(asset.secondaryUpstreamSymbol))) ||
+            url.includes(encodeURIComponent(asset.upstreamSymbol)),
+        );
+        const index = assetIndex >= 0 ? assetIndex : 0;
+        return new Response(JSON.stringify(buildYahooChartPayload(100 + index, 99 + index)), {
+          status: 200,
+        });
+      });
+
+      const snapshot = await marketModule.getMarketSnapshot();
+
+      expect(snapshot.items[0]?.id).toBe('nasdaq');
+      expect(snapshot.items[1]?.id).toBe('hsi');
+      expect(snapshot.items[2]?.id).toBe('sse');
+      expect(fetchMock).toHaveBeenCalled();
+    } finally {
+      loaded.cleanup();
+    }
+  });
+
+  it('builds TRY/CNY from TRY/USD and USD/CNY feeds', async () => {
+    const loaded = await loadMarketModules();
+
+    try {
+      const { marketModule } = loaded;
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+        const url = String(input);
+
+        if (url.includes(encodeURIComponent('TRYUSD=X'))) {
+          return new Response(
+            JSON.stringify(
+              buildYahooChartPayloadFromCloses(
+                [0.0226, 0.0228, 0.0227],
+                0.0228,
+                [1772668800, 1772755200, 1772841600],
+              ),
+            ),
+            { status: 200 },
+          );
+        }
+
+        if (url.includes(encodeURIComponent('USDCNY=X'))) {
+          return new Response(
+            JSON.stringify(
+              buildYahooChartPayloadFromCloses(
+                [6.936, 6.95, 6.872],
+                6.897,
+                [1772668800, 1772755200, 1772841600],
+              ),
+            ),
+            { status: 200 },
+          );
+        }
+
+        return new Response(JSON.stringify(buildYahooChartPayload(200, 198)), { status: 200 });
+      });
+
+      await marketModule.getMarketSnapshot(true);
+      const detail = await marketModule.getMarketChart('try-cny', true);
+
+      expect(detail.asset).toMatchObject({
+        id: 'try-cny',
+        symbol: 'TRY/CNY',
+        currency: 'CNY',
+      });
+      expect(detail.series).toHaveLength(3);
+      expect(detail.series[0]?.value).toBeCloseTo(0.1567536, 8);
+      expect(detail.series[1]?.value).toBeCloseTo(0.15846, 8);
+      expect(detail.series[2]?.value).toBeCloseTo(0.1559944, 8);
     } finally {
       loaded.cleanup();
     }
