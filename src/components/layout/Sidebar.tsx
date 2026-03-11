@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Link as LinkIcon,
+  Newspaper,
   Server,
   Settings,
   ShieldCheck,
@@ -26,6 +27,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const userCenterLabel = isZh ? '用户中心' : 'User Center';
   const overviewLabel = isZh ? '概览' : 'Overview';
   const marketLabel = isZh ? '市场' : 'Markets';
+  const newsLabel = isZh ? '资讯' : 'News';
   const setupLabel = isZh ? '使用订阅' : 'Set up';
   const helpLabel = isZh ? '帮助' : 'Help';
   const communityLabel = isZh ? '社区' : 'Community';
@@ -51,6 +53,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       testId: 'sidebar-user-overview',
     },
     {
+      icon: LinkIcon,
+      label: setupLabel,
+      to: '/my-subscription?section=setup',
+      active: location.pathname === '/my-subscription' && activeUserSection === 'setup',
+      testId: 'sidebar-user-setup',
+    },
+    {
       icon: TrendingUp,
       label: marketLabel,
       to: '/my-subscription?section=market',
@@ -58,11 +67,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       testId: 'sidebar-user-market',
     },
     {
-      icon: LinkIcon,
-      label: setupLabel,
-      to: '/my-subscription?section=setup',
-      active: location.pathname === '/my-subscription' && activeUserSection === 'setup',
-      testId: 'sidebar-user-setup',
+      icon: Newspaper,
+      label: newsLabel,
+      to: '/my-subscription?section=news',
+      active: location.pathname === '/my-subscription' && activeUserSection === 'news',
+      testId: 'sidebar-user-news',
     },
     {
       icon: LifeBuoy,
@@ -88,13 +97,15 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     role === 'user'
       ? activeUserSection === 'market'
         ? marketLabel
-        : activeUserSection === 'setup'
-          ? setupLabel
-          : activeUserSection === 'help'
-            ? helpLabel
-            : activeUserSection === 'community'
-              ? communityLabel
-              : overviewLabel
+        : activeUserSection === 'news'
+          ? newsLabel
+          : activeUserSection === 'setup'
+            ? setupLabel
+            : activeUserSection === 'help'
+              ? helpLabel
+              : activeUserSection === 'community'
+                ? communityLabel
+                : overviewLabel
       : t('nav.dashboard');
 
   return (

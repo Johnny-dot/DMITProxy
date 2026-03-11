@@ -284,8 +284,30 @@ async function verifyHome(
   if (viewport === 'desktop') {
     await waitForVisible(page.getByTestId('sidebar-user-overview'), timeoutMs);
     await waitForVisible(page.getByTestId('sidebar-user-setup'), timeoutMs);
+    await waitForVisible(page.getByTestId('sidebar-user-market'), timeoutMs);
+    await waitForVisible(page.getByTestId('sidebar-user-news'), timeoutMs);
     await waitForVisible(page.getByTestId('sidebar-user-display-name'), timeoutMs);
     await waitForVisible(page.getByTestId('navbar-signout'), timeoutMs);
+    const sidebarOrder = await page
+      .locator(
+        '[data-testid="sidebar-user-overview"], [data-testid="sidebar-user-setup"], [data-testid="sidebar-user-market"], [data-testid="sidebar-user-news"], [data-testid="sidebar-user-help"], [data-testid="sidebar-user-community"]',
+      )
+      .evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute('data-testid')).filter(Boolean),
+      );
+    const expectedOrder = [
+      'sidebar-user-overview',
+      'sidebar-user-setup',
+      'sidebar-user-market',
+      'sidebar-user-news',
+      'sidebar-user-help',
+      'sidebar-user-community',
+    ];
+    if (JSON.stringify(sidebarOrder) !== JSON.stringify(expectedOrder)) {
+      throw new Error(
+        `Unexpected user sidebar order: ${JSON.stringify(sidebarOrder)} (expected ${JSON.stringify(expectedOrder)})`,
+      );
+    }
   } else {
     await waitForVisible(page.getByTestId('navbar-language-toggle-mobile'), timeoutMs);
     await waitForVisible(page.getByTestId('navbar-signout-mobile'), timeoutMs);
@@ -324,6 +346,11 @@ async function verifySubscriptionReady(
 async function verifyMarket(page: Page, baseUrl: string, timeoutMs: number) {
   await openPage(page, `${baseUrl}/my-subscription?section=market`);
   await waitForVisible(page.getByTestId('portal-market-tab'), timeoutMs);
+}
+
+async function verifyNews(page: Page, baseUrl: string, timeoutMs: number) {
+  await openPage(page, `${baseUrl}/my-subscription?section=news`);
+  await waitForVisible(page.getByTestId('portal-news-tab'), timeoutMs);
 }
 
 async function verifyCommunity(page: Page, baseUrl: string, timeoutMs: number) {
@@ -629,6 +656,17 @@ async function main() {
     );
 
     await runCheck(
+      'News page renders correctly',
+      'desktop',
+      'zh-CN',
+      `${options.baseUrl}/my-subscription?section=news`,
+      'news-zh',
+      async () => {
+        await verifyNews(page, options.baseUrl, options.timeoutMs);
+      },
+    );
+
+    await runCheck(
       'Community page renders correctly',
       'desktop',
       'zh-CN',
@@ -824,6 +862,17 @@ async function main() {
       'community-mobile',
       async () => {
         await verifyCommunity(page, options.baseUrl, options.timeoutMs);
+      },
+    );
+
+    await runCheck(
+      'Mobile news page renders correctly',
+      'mobile',
+      'zh-CN',
+      `${options.baseUrl}/my-subscription?section=news`,
+      'news-mobile',
+      async () => {
+        await verifyNews(page, options.baseUrl, options.timeoutMs);
       },
     );
 

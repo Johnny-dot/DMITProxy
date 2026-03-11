@@ -4,9 +4,11 @@ export interface NewsHeadline {
   id: string;
   topicId: NewsTopicId;
   title: string;
+  summary: string | null;
   source: string;
   sourceUrl: string | null;
   url: string;
+  imageUrl: string | null;
   publishedAt: number | null;
 }
 
@@ -23,7 +25,7 @@ export interface NewsTopicFeed {
 
 export interface NewsFeedPayload {
   provider: string;
-  attributionUrl: string;
+  attributionUrl: string | null;
   cachedAt: number;
   ttlMinutes: number;
   topics: NewsTopicFeed[];

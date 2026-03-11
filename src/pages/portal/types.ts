@@ -44,12 +44,13 @@ export type PlatformKey = 'all' | 'windows' | 'macos' | 'android' | 'ios';
 export type PortalTab =
   | 'home'
   | 'market'
+  | 'news'
   | 'setup'
   | 'help'
   | 'community'
   | 'notifications'
   | 'management';
-export type UserPortalTab = 'home' | 'market' | 'setup' | 'help' | 'community';
+export type UserPortalTab = 'home' | 'market' | 'news' | 'setup' | 'help' | 'community';
 export type SetupFocus = 'overview' | 'downloads';
 export type ViewerRole = 'user' | 'admin';
 
@@ -87,7 +88,15 @@ export function toMillis(value: number): number {
 }
 
 export function getUserPortalSectionParam(tab: PortalTab): UserPortalTab {
-  if (tab === 'market' || tab === 'setup' || tab === 'help' || tab === 'community') return tab;
+  if (
+    tab === 'market' ||
+    tab === 'news' ||
+    tab === 'setup' ||
+    tab === 'help' ||
+    tab === 'community'
+  ) {
+    return tab;
+  }
   return 'home';
 }
 
@@ -96,6 +105,7 @@ export function resolveUserPortalSection(value: string | null): {
   setupFocus: SetupFocus;
 } {
   if (value === 'market') return { tab: 'market', setupFocus: 'overview' };
+  if (value === 'news') return { tab: 'news', setupFocus: 'overview' };
   if (value === 'community') return { tab: 'community', setupFocus: 'overview' };
   if (value === 'clients') return { tab: 'setup', setupFocus: 'downloads' };
   if (value === 'help' || value === 'support') return { tab: 'help', setupFocus: 'overview' };
@@ -110,6 +120,7 @@ export function isPortalTab(value: string | null): value is PortalTab {
   return (
     value === 'home' ||
     value === 'market' ||
+    value === 'news' ||
     value === 'setup' ||
     value === 'help' ||
     value === 'community' ||

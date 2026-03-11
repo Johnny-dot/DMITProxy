@@ -6,6 +6,10 @@ describe('portal section helpers', () => {
     expect(getUserPortalSectionParam('help')).toBe('help');
   });
 
+  it('maps the news tab to its own section parameter', () => {
+    expect(getUserPortalSectionParam('news')).toBe('news');
+  });
+
   it('resolves help routes to the dedicated help tab', () => {
     expect(resolveUserPortalSection('help')).toEqual({
       tab: 'help',
@@ -21,6 +25,13 @@ describe('portal section helpers', () => {
     expect(resolveUserPortalSection('clients')).toEqual({
       tab: 'setup',
       setupFocus: 'downloads',
+    });
+  });
+
+  it('resolves the dedicated news route to the news tab', () => {
+    expect(resolveUserPortalSection('news')).toEqual({
+      tab: 'news',
+      setupFocus: 'overview',
     });
   });
 });

@@ -5,6 +5,7 @@ import { CommunityTab } from '@/src/pages/portal/CommunityTab';
 import { HelpTab } from '@/src/pages/portal/HelpTab';
 import { HomeTab } from '@/src/pages/portal/HomeTab';
 import { MarketTab } from '@/src/pages/portal/MarketTab';
+import { NewsTab } from '@/src/pages/portal/NewsTab';
 import { SubscriptionTab } from '@/src/pages/portal/SubscriptionTab';
 import { Button } from '@/src/components/ui/Button';
 import { useToast } from '@/src/components/ui/Toast';
@@ -83,8 +84,9 @@ export function MySubscriptionPage() {
       const response = await fetch('/local/auth/portal/context', { credentials: 'include' });
       if (response.ok) {
         const data = await response.json().catch(() => null);
-        if (!data)
+        if (!data) {
           throw new Error(isZh ? '无法解析用户中心响应。' : 'Failed to parse portal response.');
+        }
         setContext(data as PortalContextResponse);
         return;
       }
@@ -150,7 +152,7 @@ export function MySubscriptionPage() {
       const data = await refreshCurrentNodeQuality();
       setClientStats(data.stats ?? null);
       setNodeQuality(data.nodeQuality ?? null);
-      toast(isZh ? '节点检测结果已刷新。' : 'Node quality refreshed.', 'success');
+      toast(isZh ? '节点质量检测结果已刷新。' : 'Node quality refreshed.', 'success');
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         await handleUnauthorized();
@@ -160,7 +162,7 @@ export function MySubscriptionPage() {
         error instanceof Error
           ? error.message
           : isZh
-            ? '刷新节点检测结果失败。'
+            ? '刷新节点质量检测结果失败。'
             : 'Failed to refresh node quality.',
         'error',
       );
@@ -173,9 +175,9 @@ export function MySubscriptionPage() {
     if (activeTab === 'home') {
       return {
         kicker: isZh ? '账户概览' : 'Account overview',
-        title: isZh ? '先确认你的账号状态。' : 'Check your account status first.',
+        title: isZh ? '先确认你的账户状态。' : 'Check your account status first.',
         description: isZh
-          ? '订阅是否可用、流量还剩多少、当前线路如何，都能先在这里看到。'
+          ? '订阅是否可用、流量还剩多少、当前线路表现如何，都能先在这里看到。'
           : 'See whether your subscription is ready, how much traffic is left, and how your current route is performing.',
       };
     }
@@ -183,10 +185,20 @@ export function MySubscriptionPage() {
     if (activeTab === 'market') {
       return {
         kicker: isZh ? '市场' : 'Markets',
-        title: isZh ? '看看今天的重要行情。' : 'Catch today’s key market moves.',
+        title: isZh ? '只看今天的重要行情。' : 'Catch today’s key market moves.',
         description: isZh
-          ? '重点标的、价格变化和相关新闻放在一起，方便快速浏览。'
-          : 'Key assets, price changes, and related headlines are grouped together for a quick scan.',
+          ? '重点标的、价格变化和走势细节单独放在一页里，更方便看盘。'
+          : 'Key assets, price changes, and chart details now live on their own page for faster scanning.',
+      };
+    }
+
+    if (activeTab === 'news') {
+      return {
+        kicker: isZh ? '资讯' : 'News',
+        title: isZh ? '按主题看最新资讯。' : 'Browse the latest headlines by topic.',
+        description: isZh
+          ? '把市场、宏观、科技和 AI 访谈拆成独立资讯页，不再和行情挤在同一屏。'
+          : 'Markets, macro, technology, and AI coverage now have a dedicated page instead of sharing the market view.',
       };
     }
 
@@ -250,7 +262,7 @@ export function MySubscriptionPage() {
       )}
       data-testid="my-subscription-page"
     >
-      {activeTab === 'market' || activeTab === 'home' ? null : (
+      {activeTab === 'market' || activeTab === 'news' || activeTab === 'home' ? null : (
         <section className="surface-card space-y-3 p-6 md:p-7">
           <p className="section-kicker">{sectionMeta.kicker}</p>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
@@ -279,6 +291,8 @@ export function MySubscriptionPage() {
         />
       ) : activeTab === 'market' ? (
         <MarketTab />
+      ) : activeTab === 'news' ? (
+        <NewsTab />
       ) : activeTab === 'community' ? (
         <CommunityTab
           communityLinks={context.settings.communityLinks}
