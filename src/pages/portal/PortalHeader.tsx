@@ -15,7 +15,7 @@ export function PortalHeader({ siteName, currentUsername, onLogout }: PortalHead
   const { t } = useI18n();
 
   return (
-    <header className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+    <header className="w-full px-4 pt-4 sm:px-6 lg:px-8">
       <div className="surface-card flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div className="flex min-w-0 items-center gap-3">
           <div className="surface-panel flex h-11 w-11 items-center justify-center">

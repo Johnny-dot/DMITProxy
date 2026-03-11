@@ -30,7 +30,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const newsLabel = isZh ? '资讯' : 'News';
   const setupLabel = isZh ? '使用订阅' : 'Set up';
   const helpLabel = isZh ? '帮助' : 'Help';
-  const communityLabel = isZh ? '社区' : 'Community';
   const activeUserSection = resolveUserPortalSection(
     new URLSearchParams(location.search).get('section'),
   ).tab;
@@ -80,13 +79,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       active: location.pathname === '/my-subscription' && activeUserSection === 'help',
       testId: 'sidebar-user-help',
     },
-    {
-      icon: Users,
-      label: communityLabel,
-      to: '/my-subscription?section=community',
-      active: location.pathname === '/my-subscription' && activeUserSection === 'community',
-      testId: 'sidebar-user-community',
-    },
   ];
 
   const resolvedDisplayName = displayName ?? username ?? 'Prism';
@@ -103,9 +95,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             ? setupLabel
             : activeUserSection === 'help'
               ? helpLabel
-              : activeUserSection === 'community'
-                ? communityLabel
-                : overviewLabel
+              : overviewLabel
       : t('nav.dashboard');
 
   return (

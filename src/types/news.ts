@@ -1,4 +1,17 @@
-export type NewsTopicId = 'markets' | 'macro' | 'technology' | 'aiTalks' | 'crypto';
+export type NewsTopicId = 'markets' | 'macro' | 'world' | 'technology' | 'aiTalks' | 'crypto';
+export type NewsCardLayout = 'image' | 'text';
+
+export interface NewsHeadlineMetrics {
+  likes: number;
+  comments: number;
+  saves: number;
+}
+
+export interface NewsDetailBlock {
+  id: string;
+  type: 'paragraph' | 'quote';
+  content: string;
+}
 
 export interface NewsHeadline {
   id: string;
@@ -10,6 +23,13 @@ export interface NewsHeadline {
   url: string;
   imageUrl: string | null;
   publishedAt: number | null;
+  authorName?: string | null;
+  authorHandle?: string | null;
+  authorAvatar?: string | null;
+  tags?: string[];
+  metrics?: NewsHeadlineMetrics;
+  detailBlocks?: NewsDetailBlock[];
+  cardLayout?: NewsCardLayout;
 }
 
 export interface NewsTopicFeed {

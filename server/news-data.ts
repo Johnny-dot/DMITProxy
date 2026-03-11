@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { dataDirectory } from './db.js';
 
-export type NewsTopicId = 'markets' | 'macro' | 'technology' | 'aiTalks' | 'crypto';
+export type NewsTopicId = 'markets' | 'macro' | 'world' | 'technology' | 'aiTalks' | 'crypto';
 
 type NewsSourceKind = 'rss' | 'google';
 
@@ -73,12 +73,16 @@ export class NewsFeedError extends Error {
   }
 }
 
+export interface ArticleContent {
+  paragraphs: string[];
+}
+
 const GOOGLE_NEWS_ATTRIBUTION_URL = 'https://news.google.com/';
 const GOOGLE_NEWS_SEARCH_URL = 'https://news.google.com/rss/search';
 const NEWS_PROVIDER = 'Curated multi-source feed';
-const NEWS_CACHE_SCHEMA_VERSION = 2;
+const NEWS_CACHE_SCHEMA_VERSION = 5;
 const DEFAULT_NEWS_CACHE_TTL_MINUTES = 15;
-const DEFAULT_NEWS_ITEM_LIMIT = 8;
+const DEFAULT_NEWS_ITEM_LIMIT = 28;
 const configuredNewsCacheTtlMinutes = Number.parseInt(process.env.NEWS_CACHE_TTL_MINUTES ?? '', 10);
 const configuredNewsItemLimit = Number.parseInt(process.env.NEWS_ITEM_LIMIT ?? '', 10);
 const NEWS_CACHE_TTL_MINUTES =
@@ -87,10 +91,13 @@ const NEWS_CACHE_TTL_MINUTES =
     : DEFAULT_NEWS_CACHE_TTL_MINUTES;
 const NEWS_ITEM_LIMIT =
   Number.isFinite(configuredNewsItemLimit) && configuredNewsItemLimit > 0
-    ? Math.max(4, Math.min(12, configuredNewsItemLimit))
+    ? Math.max(10, Math.min(40, configuredNewsItemLimit))
     : DEFAULT_NEWS_ITEM_LIMIT;
 const NEWS_CACHE_TTL_MS = NEWS_CACHE_TTL_MINUTES * 60 * 1000;
 const FETCH_TIMEOUT_MS = 15_000;
+const ARTICLE_FETCH_TIMEOUT_MS = 8_000;
+const ARTICLE_IMAGE_ENRICH_LIMIT_PER_TOPIC = 8;
+const ARTICLE_FETCH_CONCURRENCY = 8;
 const cacheDirectory = path.join(dataDirectory, 'news-cache');
 const newsCachePath = path.join(cacheDirectory, 'feed.json');
 const REQUEST_HEADERS = {
@@ -100,6 +107,10 @@ const REQUEST_HEADERS = {
   'Cache-Control': 'no-cache',
   'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133 Safari/537.36 PrismNewsFeed/1.0',
+};
+const ARTICLE_REQUEST_HEADERS = {
+  ...REQUEST_HEADERS,
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 };
 
 const RSS_SOURCES = {
@@ -184,6 +195,168 @@ const RSS_SOURCES = {
     sourceName: 'Lex Fridman Podcast',
     sourceUrl: 'https://lexfridman.com/podcast/',
   },
+  cnnWorld: {
+    id: 'cnn-world',
+    kind: 'rss',
+    label: 'CNN World',
+    attributionUrl: 'http://rss.cnn.com/rss/edition.rss',
+    url: 'http://rss.cnn.com/rss/edition.rss',
+    sourceName: 'CNN',
+    sourceUrl: 'https://www.cnn.com',
+  },
+  bbcChinese: {
+    id: 'bbc-chinese',
+    kind: 'rss',
+    label: 'BBC Chinese',
+    attributionUrl: 'https://feeds.bbci.co.uk/zhongwen/simp/rss.xml',
+    url: 'https://feeds.bbci.co.uk/zhongwen/simp/rss.xml',
+    sourceName: 'BBC Chinese',
+    sourceUrl: 'https://www.bbc.com/zhongwen/simp',
+  },
+  rfiChinese: {
+    id: 'rfi-chinese',
+    kind: 'rss',
+    label: 'RFI Chinese',
+    attributionUrl: 'https://www.rfi.fr/cn/%E4%B8%AD%E5%9B%BD/rss',
+    url: 'https://www.rfi.fr/cn/%E4%B8%AD%E5%9B%BD/rss',
+    sourceName: 'RFI',
+    sourceUrl: 'https://www.rfi.fr/cn/',
+  },
+  engadget: {
+    id: 'engadget',
+    kind: 'rss',
+    label: 'Engadget',
+    attributionUrl: 'https://www.engadget.com/rss.xml',
+    url: 'https://www.engadget.com/rss.xml',
+    sourceName: 'Engadget',
+    sourceUrl: 'https://www.engadget.com',
+  },
+  arsTechnica: {
+    id: 'ars-technica',
+    kind: 'rss',
+    label: 'Ars Technica',
+    attributionUrl: 'https://feeds.arstechnica.com/arstechnica/index',
+    url: 'https://feeds.arstechnica.com/arstechnica/index',
+    sourceName: 'Ars Technica',
+    sourceUrl: 'https://arstechnica.com',
+  },
+  fastCompany: {
+    id: 'fast-company',
+    kind: 'rss',
+    label: 'Fast Company',
+    attributionUrl: 'https://www.fastcompany.com/rss',
+    url: 'https://www.fastcompany.com/rss',
+    sourceName: 'Fast Company',
+    sourceUrl: 'https://www.fastcompany.com',
+  },
+  mitTechnologyReview: {
+    id: 'mit-technology-review',
+    kind: 'rss',
+    label: 'MIT Technology Review',
+    attributionUrl: 'https://www.technologyreview.com/feed/',
+    url: 'https://www.technologyreview.com/feed/',
+    sourceName: 'MIT Technology Review',
+    sourceUrl: 'https://www.technologyreview.com',
+  },
+  wiredBusiness: {
+    id: 'wired-business',
+    kind: 'rss',
+    label: 'WIRED Business',
+    attributionUrl: 'https://www.wired.com/feed/category/business/latest/rss',
+    url: 'https://www.wired.com/feed/category/business/latest/rss',
+    sourceName: 'WIRED',
+    sourceUrl: 'https://www.wired.com',
+  },
+  wiredAi: {
+    id: 'wired-ai',
+    kind: 'rss',
+    label: 'WIRED AI',
+    attributionUrl: 'https://www.wired.com/feed/tag/ai/latest/rss',
+    url: 'https://www.wired.com/feed/tag/ai/latest/rss',
+    sourceName: 'WIRED',
+    sourceUrl: 'https://www.wired.com',
+  },
+  guardianTechnology: {
+    id: 'guardian-technology',
+    kind: 'rss',
+    label: 'The Guardian Technology',
+    attributionUrl: 'https://www.theguardian.com/technology/rss',
+    url: 'https://www.theguardian.com/technology/rss',
+    sourceName: 'The Guardian',
+    sourceUrl: 'https://www.theguardian.com/technology',
+  },
+  newScientistTechnology: {
+    id: 'new-scientist-technology',
+    kind: 'rss',
+    label: 'New Scientist Technology',
+    attributionUrl: 'https://www.newscientist.com/subject/technology/feed/',
+    url: 'https://www.newscientist.com/subject/technology/feed/',
+    sourceName: 'New Scientist',
+    sourceUrl: 'https://www.newscientist.com/subject/technology/',
+  },
+  scienceDailyTechnology: {
+    id: 'science-daily-technology',
+    kind: 'rss',
+    label: 'ScienceDaily Technology',
+    attributionUrl: 'https://www.sciencedaily.com/rss/top/technology.xml',
+    url: 'https://www.sciencedaily.com/rss/top/technology.xml',
+    sourceName: 'ScienceDaily',
+    sourceUrl: 'https://www.sciencedaily.com/news/computers_math/technology/',
+  },
+  scienceDailyAi: {
+    id: 'science-daily-ai',
+    kind: 'rss',
+    label: 'ScienceDaily Artificial Intelligence',
+    attributionUrl: 'https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml',
+    url: 'https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml',
+    sourceName: 'ScienceDaily',
+    sourceUrl: 'https://www.sciencedaily.com/news/computers_math/artificial_intelligence/',
+  },
+  physOrg: {
+    id: 'phys-org',
+    kind: 'rss',
+    label: 'Phys.org',
+    attributionUrl: 'https://phys.org/rss-feed/',
+    url: 'https://phys.org/rss-feed/',
+    sourceName: 'Phys.org',
+    sourceUrl: 'https://phys.org/',
+  },
+  spaceCom: {
+    id: 'space-com',
+    kind: 'rss',
+    label: 'Space.com',
+    attributionUrl: 'https://www.space.com/feeds/all',
+    url: 'https://www.space.com/feeds/all',
+    sourceName: 'Space.com',
+    sourceUrl: 'https://www.space.com/',
+  },
+  huggingFaceBlog: {
+    id: 'huggingface-blog',
+    kind: 'rss',
+    label: 'Hugging Face Blog',
+    attributionUrl: 'https://huggingface.co/blog/feed.xml',
+    url: 'https://huggingface.co/blog/feed.xml',
+    sourceName: 'Hugging Face',
+    sourceUrl: 'https://huggingface.co/blog',
+  },
+  hackerNews: {
+    id: 'hacker-news',
+    kind: 'rss',
+    label: 'Hacker News',
+    attributionUrl: 'https://news.ycombinator.com/rss',
+    url: 'https://news.ycombinator.com/rss',
+    sourceName: 'Hacker News',
+    sourceUrl: 'https://news.ycombinator.com',
+  },
+  natureNews: {
+    id: 'nature-news',
+    kind: 'rss',
+    label: 'Nature News',
+    attributionUrl: 'https://www.nature.com/nature.rss',
+    url: 'https://www.nature.com/nature.rss',
+    sourceName: 'Nature',
+    sourceUrl: 'https://www.nature.com/news',
+  },
 } satisfies Record<string, NewsSourceDefinition>;
 
 function createGoogleNewsSource(id: string, label: string, query: string): NewsSourceDefinition {
@@ -203,7 +376,7 @@ const AI_TALKS_PRIMARY_KEYWORDS =
 const AI_TALKS_BONUS_KEYWORDS =
   /full interview|podcast transcript|light cone|dwarkesh|lex fridman|hard fork|summit/i;
 const AI_TALKS_PEOPLE_KEYWORDS =
-  /sam altman|dario amodei|anthropic|demis hassabis|deepmind|mustafa suleyman|openai|boris cherny|claude code|sundar pichai|jensen huang/i;
+  /sam altman|dario amodei|anthropic|demis hassabis|deepmind|mustafa suleyman|openai|boris cherny|claude code|sundar pichai|jensen huang|kai-fu lee|liang wenfeng|deepseek|karpathy|ilya sutskever/i;
 const AI_TALKS_NOISE_KEYWORDS = /\b(opinion|editorial|review)\b/i;
 
 function scoreAiTalkItem(item: NewsHeadline) {
@@ -221,83 +394,112 @@ function scoreAiTalkItem(item: NewsHeadline) {
 const NEWS_TOPICS: NewsTopicDefinition[] = [
   {
     id: 'markets',
-    labelEn: 'Markets',
-    labelZh: '\u5e02\u573a',
-    descriptionEn: 'Broad market moves, major indices, and risk sentiment.',
-    descriptionZh:
-      '\u5927\u76d8\u8d70\u52bf\u3001\u4e3b\u8981\u6307\u6570\u548c\u98ce\u9669\u60c5\u7eea\u3002',
+    labelEn: 'Internet',
+    labelZh: '互联网',
+    descriptionEn: 'Consumer apps, gadgets, platform updates, and internet culture.',
+    descriptionZh: '消费级 App、设备、平台动态和互联网话题。',
     sources: [
-      RSS_SOURCES.marketwatchTop,
-      RSS_SOURCES.cnbcFinance,
+      RSS_SOURCES.engadget,
+      RSS_SOURCES.theVerge,
+      RSS_SOURCES.guardianTechnology,
+      RSS_SOURCES.fastCompany,
       createGoogleNewsSource(
-        'google-markets',
-        'Google News Markets',
-        'stock market OR markets when:1d',
+        'google-internet-cn',
+        'Google News Chinese Tech',
+        '(ByteDance OR Tencent OR Alibaba OR Xiaomi OR "BYD" OR "CATL" OR Baidu OR Huawei) technology product when:7d',
       ),
     ],
   },
   {
     id: 'macro',
-    labelEn: 'Macro',
-    labelZh: '\u5b8f\u89c2',
-    descriptionEn: 'Rates, inflation, central banks, and macro policy headlines.',
-    descriptionZh:
-      '\u5229\u7387\u3001\u901a\u80c0\u3001\u592e\u884c\u548c\u5b8f\u89c2\u653f\u7b56\u3002',
+    labelEn: 'Business',
+    labelZh: '商业',
+    descriptionEn: 'Companies, strategy, chips, and the business side of technology.',
+    descriptionZh: '公司策略、芯片产业、科技商业化和行业走向。',
     sources: [
       RSS_SOURCES.cnbcTop,
-      RSS_SOURCES.cnbcFinance,
+      RSS_SOURCES.wiredBusiness,
+      RSS_SOURCES.mitTechnologyReview,
+      RSS_SOURCES.techCrunch,
       createGoogleNewsSource(
-        'google-macro',
-        'Google News Macro',
-        'fed OR inflation OR treasury yields when:1d',
+        'google-business-ai',
+        'Google News AI Business',
+        '(OpenAI OR Anthropic OR DeepSeek OR "Google DeepMind" OR "xAI" OR "Mistral") funding OR launch OR partnership OR valuation when:14d',
+      ),
+    ],
+  },
+  {
+    id: 'world',
+    labelEn: 'Global',
+    labelZh: '国际',
+    descriptionEn:
+      'International reporting, policy shifts, diplomacy, and China-facing coverage from global desks.',
+    descriptionZh: '国际局势、政策变化、外交动态，以及全球媒体对中国与亚洲议题的报道。',
+    sources: [
+      RSS_SOURCES.cnnWorld,
+      RSS_SOURCES.bbcChinese,
+      RSS_SOURCES.rfiChinese,
+      createGoogleNewsSource(
+        'google-global-wires',
+        'Google News Global Wires',
+        '(site:reuters.com OR site:apnews.com OR site:cn.nytimes.com OR site:cn.wsj.com) (China OR Asia OR trade OR policy OR technology) when:7d',
+      ),
+      createGoogleNewsSource(
+        'google-global-policy-watch',
+        'Google News Policy Watch',
+        'site:www.gov.cn (国务院 OR 政策 OR 要闻 OR 人工智能 OR 科技) when:30d',
       ),
     ],
   },
   {
     id: 'technology',
     labelEn: 'Technology',
-    labelZh: '\u79d1\u6280',
-    descriptionEn: 'AI, semis, and large-cap tech movers that affect sentiment.',
-    descriptionZh:
-      'AI\u3001\u534a\u5bfc\u4f53\u548c\u5f71\u54cd\u60c5\u7eea\u7684\u5927\u578b\u79d1\u6280\u80a1\u3002',
+    labelZh: '科技',
+    descriptionEn: 'AI models, developer tools, hardware, and the tech stack moving fast.',
+    descriptionZh: 'AI 模型、开发者工具、硬件和快速演进的科技赛道。',
     sources: [
-      RSS_SOURCES.theVerge,
-      RSS_SOURCES.techCrunch,
+      RSS_SOURCES.hackerNews,
+      RSS_SOURCES.arsTechnica,
       RSS_SOURCES.ventureBeat,
+      RSS_SOURCES.wiredAi,
+      RSS_SOURCES.huggingFaceBlog,
       RSS_SOURCES.cnbcTech,
     ],
   },
   {
     id: 'aiTalks',
     labelEn: 'AI talks',
-    labelZh: 'AI \u8bbf\u8c08',
+    labelZh: 'AI 访谈',
     descriptionEn:
       'Podcast episodes, interviews, and long-form conversations with AI company leaders.',
-    descriptionZh:
-      'AI \u516c\u53f8\u6838\u5fc3\u4eba\u7269\u7684\u64ad\u5ba2\u3001\u8bbf\u8c08\u548c\u957f\u5bf9\u8bdd\u5185\u5bb9\u3002',
+    descriptionZh: 'AI 公司核心人物的播客、访谈和长对话内容。',
     sources: [
       RSS_SOURCES.lexFridmanPodcast,
       createGoogleNewsSource(
         'google-ai-talks',
         'Google News AI Talks',
-        '("Sam Altman" OR "Dario Amodei" OR "Demis Hassabis" OR "Sundar Pichai" OR "Mustafa Suleyman" OR "Boris Cherny" OR "Jensen Huang") (podcast OR interview OR conversation) AI when:30d',
+        '("Sam Altman" OR "Dario Amodei" OR "Demis Hassabis" OR "Sundar Pichai" OR "Jensen Huang" OR "Kai-Fu Lee" OR "Liang Wenfeng" OR "Andrej Karpathy" OR "Ilya Sutskever") (podcast OR interview OR conversation OR "in conversation") when:14d',
       ),
     ],
     scoreItem: scoreAiTalkItem,
   },
   {
     id: 'crypto',
-    labelEn: 'Crypto',
-    labelZh: '\u52a0\u5bc6',
-    descriptionEn: 'Bitcoin, Ethereum, ETFs, and crypto market structure.',
-    descriptionZh:
-      '\u6bd4\u7279\u5e01\u3001\u4ee5\u592a\u574a\u3001ETF \u548c\u52a0\u5bc6\u5e02\u573a\u7ed3\u6784\u3002',
+    labelEn: 'Frontier',
+    labelZh: '前沿',
+    descriptionEn: 'Science, space, biology, robotics, and breakthroughs worth knowing about.',
+    descriptionZh: '科学、太空、生物、机器人和那些值得关注的前沿突破。',
     sources: [
-      RSS_SOURCES.coindesk,
+      RSS_SOURCES.natureNews,
+      RSS_SOURCES.physOrg,
+      RSS_SOURCES.spaceCom,
+      RSS_SOURCES.newScientistTechnology,
+      RSS_SOURCES.scienceDailyTechnology,
+      RSS_SOURCES.scienceDailyAi,
       createGoogleNewsSource(
-        'google-crypto',
-        'Google News Crypto',
-        'bitcoin OR ethereum OR crypto market when:1d',
+        'google-frontier-natgeo',
+        'Google News National Geographic',
+        'site:nationalgeographic.com (science OR climate OR archaeology OR wildlife OR space) when:14d',
       ),
     ],
   },
@@ -386,7 +588,7 @@ function getTagValue(block: string, tagName: string) {
 }
 
 function getSource(block: string) {
-  const match = block.match(/<source(?:\s+url=(["'])(.*?)\1)?[^>]*>([\s\S]*?)<\/source>/i);
+  const match = block.match(/<source\b(?:\s+url=(["'])(.*?)\1)?[^>]*>([\s\S]*?)<\/source>/i);
   return {
     sourceUrl: match?.[2] ? decodeXmlEntities(match[2].trim()) : null,
     sourceName: match?.[3] ? decodeXmlEntities(match[3].trim()) : '',
@@ -452,6 +654,34 @@ function resolveUrl(value: string, baseUrl?: string | null) {
   }
 }
 
+function isMediaAssetUrl(value: string | null) {
+  if (!value) return false;
+  return /\.(?:avif|gif|jpe?g|png|svg|webp)(?:$|[?#])/i.test(value);
+}
+
+function resolveRssItemSource(
+  itemSource: { sourceName: string; sourceUrl: string | null },
+  fallbackSource: NewsSourceDefinition,
+  baseUrl?: string | null,
+) {
+  const sourceName = itemSource.sourceName.trim();
+  const resolvedSourceUrl = itemSource.sourceUrl
+    ? (resolveUrl(itemSource.sourceUrl, baseUrl) ?? itemSource.sourceUrl)
+    : null;
+
+  if (sourceName && !isMediaAssetUrl(resolvedSourceUrl)) {
+    return {
+      sourceName,
+      sourceUrl: resolvedSourceUrl,
+    };
+  }
+
+  return {
+    sourceName: fallbackSource.sourceName || fallbackSource.label,
+    sourceUrl: fallbackSource.sourceUrl || fallbackSource.attributionUrl,
+  };
+}
+
 function normalizeNewsUrl(value: string) {
   try {
     const url = new URL(value);
@@ -493,6 +723,42 @@ function extractImageFromHtml(value: string, baseUrl?: string | null) {
   return null;
 }
 
+function extractImageFromMetaTags(value: string, baseUrl?: string | null) {
+  const preferredNames = [
+    'og:image:secure_url',
+    'og:image:url',
+    'og:image',
+    'twitter:image:src',
+    'twitter:image',
+  ];
+
+  for (const tagName of preferredNames) {
+    const metaPattern = /<meta\b([^>]*?)\/?>/gi;
+    for (const match of value.matchAll(metaPattern)) {
+      const attrs = parseAttributes(match[1]);
+      const property = (attrs.property ?? attrs.name ?? '').toLowerCase();
+      if (property !== tagName) continue;
+
+      const content = attrs.content ?? attrs.href ?? '';
+      const imageUrl = resolveUrl(content, baseUrl);
+      if (imageUrl) return imageUrl;
+    }
+  }
+
+  const linkPattern = /<link\b([^>]*?)\/?>/gi;
+  for (const match of value.matchAll(linkPattern)) {
+    const attrs = parseAttributes(match[1]);
+    const rel = (attrs.rel ?? '').toLowerCase();
+    if (rel !== 'image_src') continue;
+
+    const href = attrs.href ?? '';
+    const imageUrl = resolveUrl(href, baseUrl);
+    if (imageUrl) return imageUrl;
+  }
+
+  return null;
+}
+
 function extractImageUrl(block: string, htmlFragments: string[], baseUrl?: string | null) {
   for (const tagName of ['media:content', 'media:thumbnail', 'enclosure']) {
     const pattern = new RegExp(`<${escapeRegExp(tagName)}\\b([^>]*)\\/?>`, 'gi');
@@ -525,6 +791,84 @@ function extractImageUrl(block: string, htmlFragments: string[], baseUrl?: strin
   }
 
   return null;
+}
+
+function isLikelyThumbnailImageUrl(value: string | null) {
+  if (!value) return true;
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return true;
+
+  if (
+    normalized.includes('/ace/ws/240/') ||
+    normalized.includes('/news/tmb/') ||
+    normalized.includes('/thumbnail/') ||
+    normalized.includes('/thumb_') ||
+    normalized.includes('/thumb/')
+  ) {
+    return true;
+  }
+
+  try {
+    const url = new URL(value);
+    const width = Number.parseInt(url.searchParams.get('width') ?? '', 10);
+    if (Number.isFinite(width) && width > 0 && width < 480) {
+      return true;
+    }
+
+    const resize = url.searchParams.get('resize') ?? '';
+    if (resize) {
+      const [resizeWidth] = resize
+        .split(',')
+        .map((part) => Number.parseInt(part.trim(), 10))
+        .filter((part) => Number.isFinite(part) && part > 0);
+      if (resizeWidth && resizeWidth < 480) {
+        return true;
+      }
+    }
+  } catch {
+    return normalized.includes('thumbnail') || normalized.includes('thumb');
+  }
+
+  return false;
+}
+
+function shouldEnrichArticleImage(item: NewsHeadline) {
+  if (!item.url) return false;
+
+  try {
+    const url = new URL(item.url);
+    if (url.hostname.includes('news.google.com')) return false;
+  } catch {
+    return false;
+  }
+
+  return !item.imageUrl || isLikelyThumbnailImageUrl(item.imageUrl);
+}
+
+async function fetchArticleImageUrl(url: string) {
+  try {
+    const response = await fetch(url, {
+      headers: ARTICLE_REQUEST_HEADERS,
+      signal: AbortSignal.timeout(ARTICLE_FETCH_TIMEOUT_MS),
+    });
+
+    if (!response.ok) return null;
+
+    const contentType = (response.headers.get('content-type') ?? '').toLowerCase();
+    if (
+      contentType &&
+      !contentType.includes('text/html') &&
+      !contentType.includes('application/xhtml+xml')
+    ) {
+      return null;
+    }
+
+    const html = await response.text();
+    return extractImageFromMetaTags(html, url) ?? extractImageFromHtml(html, url);
+  } catch {
+    return null;
+  }
 }
 
 function createHeadlineId(topicId: NewsTopicId, sourceId: string, title: string, url: string) {
@@ -583,8 +927,8 @@ function parseRssItems(xml: string, topic: NewsTopicDefinition, source: NewsSour
           getTagValue(block, 'dc:date') ||
           getTagValue(block, 'published'),
       );
-      const { sourceName, sourceUrl } = getSource(block);
-      const title = normalizeTitle(rawTitle, sourceName || source.sourceName || '');
+      const resolvedSource = resolveRssItemSource(getSource(block), source, source.attributionUrl);
+      const title = normalizeTitle(rawTitle, resolvedSource.sourceName);
       if (!title || !url) return null;
 
       const resolvedUrl = resolveUrl(url, source.attributionUrl) ?? url;
@@ -593,8 +937,8 @@ function parseRssItems(xml: string, topic: NewsTopicDefinition, source: NewsSour
         topicId: topic.id,
         title,
         summary: normalizeSummary(description || content, title),
-        source: sourceName || source.sourceName || source.label,
-        sourceUrl: sourceUrl || source.sourceUrl || source.attributionUrl,
+        source: resolvedSource.sourceName,
+        sourceUrl: resolvedSource.sourceUrl,
         url: resolvedUrl,
         imageUrl: extractImageUrl(block, [content, description], resolvedUrl) ?? null,
         publishedAt,
@@ -714,6 +1058,66 @@ function prioritizeItems(topic: NewsTopicDefinition, items: NewsHeadline[]) {
   return sorted.slice(0, NEWS_ITEM_LIMIT);
 }
 
+async function enrichTopicImages(topics: NewsTopicFeed[]) {
+  const candidateUrls = new Set<string>();
+
+  for (const topic of topics) {
+    if (topic.status !== 'ok') continue;
+
+    let selectedForTopic = 0;
+    for (const item of topic.items) {
+      if (!shouldEnrichArticleImage(item)) continue;
+
+      candidateUrls.add(item.url);
+      selectedForTopic += 1;
+      if (selectedForTopic >= ARTICLE_IMAGE_ENRICH_LIMIT_PER_TOPIC) break;
+    }
+  }
+
+  const urls = Array.from(candidateUrls);
+  if (urls.length === 0) return topics;
+
+  const imageByUrl = new Map<string, string>();
+  let currentIndex = 0;
+
+  async function worker() {
+    while (currentIndex < urls.length) {
+      const index = currentIndex;
+      currentIndex += 1;
+
+      const articleUrl = urls[index];
+      const imageUrl = await fetchArticleImageUrl(articleUrl);
+      if (imageUrl) {
+        imageByUrl.set(articleUrl, imageUrl);
+      }
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(ARTICLE_FETCH_CONCURRENCY, urls.length) }, () =>
+    worker(),
+  );
+  await Promise.all(workers);
+
+  if (imageByUrl.size === 0) return topics;
+
+  return topics.map((topic) => {
+    if (topic.status !== 'ok') return topic;
+
+    return {
+      ...topic,
+      items: topic.items.map((item) => {
+        const imageUrl = imageByUrl.get(item.url);
+        if (!imageUrl) return item;
+        if (!item.imageUrl) return { ...item, imageUrl };
+        if (isLikelyThumbnailImageUrl(item.imageUrl) && imageUrl !== item.imageUrl) {
+          return { ...item, imageUrl };
+        }
+        return item;
+      }),
+    };
+  });
+}
+
 async function fetchSourceXml(source: NewsSourceDefinition) {
   const targetUrl =
     source.kind === 'google'
@@ -813,7 +1217,7 @@ async function fetchFeedPayload(
       }
     }),
   );
-  const topics = topicResults.map((result) => result.topic);
+  const topics = await enrichTopicImages(topicResults.map((result) => result.topic));
 
   return {
     provider: NEWS_PROVIDER,
@@ -855,4 +1259,68 @@ export async function getNewsFeed(forceRefresh = false): Promise<NewsFeedPayload
 export async function refreshNewsFeed() {
   const feed = await getNewsFeed(true);
   return { feed };
+}
+
+function extractArticleParagraphs(html: string): string[] {
+  // Try to find main content container
+  const containerPatterns = [
+    /<article\b[^>]*>([\s\S]*?)<\/article>/i,
+    /<main\b[^>]*>([\s\S]*?)<\/main>/i,
+    /<div\b[^>]+(?:class|id)=["'][^"']*\b(?:article[_-]?body|post[_-]?body|entry[_-]?content|article[_-]?content|story[_-]?body|post[_-]?content|content[_-]?body)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+  ];
+
+  let contentHtml = '';
+  for (const pattern of containerPatterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) {
+      contentHtml = match[1];
+      break;
+    }
+  }
+
+  if (!contentHtml) contentHtml = html;
+
+  const paragraphs: string[] = [];
+  for (const match of contentHtml.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)) {
+    const text = stripHtml(match[1]).trim();
+    if (text.length < 45) continue;
+    paragraphs.push(text);
+    if (paragraphs.length >= 30) break;
+  }
+
+  return paragraphs;
+}
+
+export async function fetchArticleContent(url: string): Promise<ArticleContent> {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new NewsFeedError('Invalid article URL', 400);
+  }
+
+  if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+    throw new NewsFeedError('Only http/https URLs are supported', 400);
+  }
+
+  if (parsedUrl.hostname.includes('news.google.com')) {
+    return { paragraphs: [] };
+  }
+
+  const response = await fetch(url, {
+    headers: ARTICLE_REQUEST_HEADERS,
+    signal: AbortSignal.timeout(ARTICLE_FETCH_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new NewsFeedError(`Article returned HTTP ${response.status}`, response.status);
+  }
+
+  const contentType = (response.headers.get('content-type') ?? '').toLowerCase();
+  if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+    return { paragraphs: [] };
+  }
+
+  const html = await response.text();
+  return { paragraphs: extractArticleParagraphs(html) };
 }

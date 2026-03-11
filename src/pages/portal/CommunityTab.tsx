@@ -1,26 +1,19 @@
 import React, { useMemo, useState } from 'react';
-import { BellRing, Copy, ExternalLink, LifeBuoy, QrCode, Users } from 'lucide-react';
+import { Copy, ExternalLink, QrCode, Users } from 'lucide-react';
 import { Button } from '@/src/components/ui/Button';
 import { cn } from '@/src/utils/cn';
 import type { CommunityLink } from '@/src/types/communityLink';
-import { getCommunityPlatformLabel } from '@/src/types/communityLink';
+import { COMMUNITY_PLATFORM_OPTIONS, getCommunityPlatformLabel } from '@/src/types/communityLink';
 import type { PortalTab } from './types';
+import { COPY_RESET_DELAY_MS } from './types';
 
 interface CommunityTabProps {
   communityLinks: CommunityLink[];
   isZh: boolean;
-  announcementText?: string;
-  supportContact?: string;
   onSetSection?: (tab: PortalTab) => void;
 }
 
-export function CommunityTab({
-  communityLinks,
-  isZh,
-  announcementText = '',
-  supportContact = '',
-  onSetSection,
-}: CommunityTabProps) {
+export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTabProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedQrId, setExpandedQrId] = useState<string | null>(null);
 
@@ -37,8 +30,10 @@ export function CommunityTab({
       ),
     [communityLinks],
   );
-  const latestAnnouncement = announcementText.trim();
-  const latestSupport = supportContact.trim();
+  const placeholderPlatforms = useMemo(
+    () => COMMUNITY_PLATFORM_OPTIONS.filter((item) => item.value !== 'custom'),
+    [],
+  );
 
   function handleCopy(text: string, id: string) {
     if (!text.trim()) return;
@@ -46,7 +41,7 @@ export function CommunityTab({
       setCopiedId(id);
       window.setTimeout(() => {
         setCopiedId((current) => (current === id ? null : current));
-      }, 2000);
+      }, COPY_RESET_DELAY_MS);
     });
   }
 
@@ -57,101 +52,43 @@ export function CommunityTab({
 
   if (visibleLinks.length === 0) {
     return (
-      <section className="surface-card overflow-hidden" data-testid="portal-community-tab">
-        <div className="grid gap-px bg-[var(--border-subtle)] xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="space-y-6 bg-[var(--surface-card)] p-6 md:p-7">
-            <div className="space-y-3">
-              <p className="section-kicker">{isZh ? '社区入口' : 'Community'}</p>
-              <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
-                {isZh ? '暂时还没有可加入的社区。' : 'No community link is available yet.'}
-              </h2>
-              <p className="max-w-2xl text-sm leading-7 text-zinc-400">
-                {isZh
-                  ? '等管理员发布新的群组入口后，你就会在这里直接看到链接、二维码和加入说明。'
-                  : 'Once the team publishes a new invite, the link, QR code, and join notes will appear here automatically.'}
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="surface-panel p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  {isZh ? '当前状态' : 'Current status'}
-                </p>
-                <p className="mt-2 text-sm font-medium text-zinc-50">
-                  {isZh ? '还没有公开入口' : 'No public invite yet'}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-zinc-400">
-                  {isZh
-                    ? '只要有可用的社区入口，这个区域就会自动更新，不需要你反复查找。'
-                    : 'As soon as a community link is published, this space will update automatically.'}
-                </p>
-              </div>
-
-              <div className="surface-panel p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  {isZh ? '建议下一步' : 'Recommended next step'}
-                </p>
-                <p className="mt-2 text-sm font-medium text-zinc-50">
-                  {isZh ? '先完成订阅接入' : 'Finish setup first'}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-zinc-400">
-                  {isZh
-                    ? '先去使用订阅页面完成客户端下载和导入，后面拿到社区入口时就能直接加入。'
-                    : 'Open setup first so your client is ready when the invite arrives.'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {onSetSection ? (
-                <Button variant="secondary" size="sm" onClick={() => onSetSection('setup')}>
-                  {isZh ? '打开使用订阅' : 'Open setup'}
-                </Button>
-              ) : null}
-              {latestSupport ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCopy(latestSupport, 'empty-support')}
-                >
-                  {copiedId === 'empty-support'
-                    ? isZh
-                      ? '已复制'
-                      : 'Copied'
-                    : isZh
-                      ? '复制支持联系方式'
-                      : 'Copy support contact'}
-                </Button>
-              ) : null}
-            </div>
+      <section className="surface-card space-y-6 p-6 md:p-7" data-testid="portal-community-tab">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
+              {isZh ? '暂时还没有可加入的社区。' : 'No community link is available yet.'}
+            </h2>
+            <p className="text-sm leading-7 text-zinc-400">
+              {isZh ? '入口发布后会直接显示在这里。' : 'Published links will appear here directly.'}
+            </p>
           </div>
 
-          <div className="space-y-4 bg-[var(--surface-card)] p-6 md:p-7">
-            <div className="surface-panel p-4">
-              <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                <BellRing className="h-3.5 w-3.5" />
-                <span>{isZh ? '最新说明' : 'Latest note'}</span>
-              </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-zinc-300">
-                {latestAnnouncement ||
-                  (isZh
-                    ? '暂时还没有新的公告，你可以先完成订阅配置。'
-                    : 'No new announcement has been posted yet. You can finish your subscription setup first.')}
-              </p>
-            </div>
+          {onSetSection ? (
+            <Button variant="secondary" size="sm" onClick={() => onSetSection('setup')}>
+              {isZh ? '打开使用订阅' : 'Open setup'}
+            </Button>
+          ) : null}
+        </div>
 
-            <div className="surface-panel p-4">
-              <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                <LifeBuoy className="h-3.5 w-3.5" />
-                <span>{isZh ? '支持联系方式' : 'Support contact'}</span>
-              </div>
-              <p className="mt-3 break-all text-sm leading-7 text-zinc-300">
-                {latestSupport ||
-                  (isZh
-                    ? '暂时还没有公开的支持渠道。后续如果有更新，会显示在这里。'
-                    : 'No support channel is published yet. It will appear here when available.')}
-              </p>
-            </div>
+        <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {placeholderPlatforms.map((platform) => (
+              <article
+                key={platform.value}
+                className="surface-panel rounded-[24px] border border-dashed border-[color:var(--border-subtle)] p-4"
+              >
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/10 px-3 py-1 text-xs text-zinc-300">
+                  <Users className="h-3.5 w-3.5" />
+                  {isZh ? platform.labelZh : platform.labelEn}
+                </div>
+                <p className="mt-4 text-sm font-medium text-zinc-100">
+                  {isZh ? '待发布' : 'Pending'}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-zinc-400">
+                  {isZh ? '发布后显示链接和二维码。' : 'Link and QR code will appear here.'}
+                </p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
@@ -160,17 +97,11 @@ export function CommunityTab({
 
   return (
     <section className="space-y-6" data-testid="portal-community-tab">
-      <div className="surface-card space-y-3 p-6 md:p-7">
-        <p className="section-kicker">{isZh ? '社区入口' : 'Community'}</p>
-        <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-          {isZh ? '找到适合你的社区入口。' : 'Find the right community link for you.'}
-        </h2>
-        <p className="max-w-3xl text-sm leading-7 text-zinc-400">
-          {isZh
-            ? '群链接、二维码和加入说明都会放在这里，按需要打开即可。'
-            : 'Links, QR codes, and join notes are collected here so you can open the one you need.'}
-        </p>
-      </div>
+      <p className="text-sm leading-7 text-zinc-400">
+        {isZh
+          ? `当前有 ${visibleLinks.length} 个可用社区入口，按平台选择即可。`
+          : `${visibleLinks.length} community link${visibleLinks.length > 1 ? 's are' : ' is'} available.`}
+      </p>
 
       <div className="grid gap-6 xl:grid-cols-2">
         {visibleLinks.map((entry) => {
@@ -245,7 +176,7 @@ export function CommunityTab({
               </div>
 
               {entry.url.trim() ? (
-                <div className="surface-panel break-all px-4 py-3 text-xs leading-6 text-zinc-300">
+                <div className="surface-panel break-all rounded-[20px] px-4 py-3 text-xs leading-6 text-zinc-300">
                   {entry.url}
                 </div>
               ) : null}
@@ -259,7 +190,7 @@ export function CommunityTab({
                 )}
               >
                 {entry.rules.trim() ? (
-                  <div className="surface-panel p-4">
+                  <div className="surface-panel rounded-[24px] p-4">
                     <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
                       {isZh ? '加入规则' : 'Rules'}
                     </p>
@@ -270,7 +201,7 @@ export function CommunityTab({
                 ) : null}
 
                 {entry.notes.trim() ? (
-                  <div className="surface-panel p-4">
+                  <div className="surface-panel rounded-[24px] p-4">
                     <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
                       {isZh ? '备注' : 'Notes'}
                     </p>
@@ -315,7 +246,7 @@ function CommunityQr({ value, isZh }: { value: string; isZh: boolean }) {
   }
 
   return (
-    <div className="surface-panel flex justify-center p-4">
+    <div className="surface-panel flex justify-center rounded-[24px] p-4">
       <canvas ref={canvasRef} className="block" />
     </div>
   );

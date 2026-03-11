@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError, refreshCurrentNodeQuality } from '@/src/api/client';
-import { CommunityTab } from '@/src/pages/portal/CommunityTab';
 import { HelpTab } from '@/src/pages/portal/HelpTab';
 import { HomeTab } from '@/src/pages/portal/HomeTab';
 import { MarketTab } from '@/src/pages/portal/MarketTab';
@@ -262,7 +261,10 @@ export function MySubscriptionPage() {
       )}
       data-testid="my-subscription-page"
     >
-      {activeTab === 'market' || activeTab === 'news' || activeTab === 'home' ? null : (
+      {activeTab === 'market' ||
+      activeTab === 'news' ||
+      activeTab === 'home' ||
+      activeTab === 'help' ? null : (
         <section className="surface-card space-y-3 p-6 md:p-7">
           <p className="section-kicker">{sectionMeta.kicker}</p>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
@@ -293,18 +295,13 @@ export function MySubscriptionPage() {
         <MarketTab />
       ) : activeTab === 'news' ? (
         <NewsTab />
-      ) : activeTab === 'community' ? (
-        <CommunityTab
+      ) : activeTab === 'help' ? (
+        <HelpTab
+          portalSettings={context.settings}
           communityLinks={context.settings.communityLinks}
           isZh={isZh}
-          announcementText={
-            context.settings.announcementActive ? context.settings.announcementText : ''
-          }
-          supportContact={context.settings.supportTelegram}
           onSetSection={setSection}
         />
-      ) : activeTab === 'help' ? (
-        <HelpTab portalSettings={context.settings} isZh={isZh} onSetSection={setSection} />
       ) : (
         <SubscriptionTab
           initialFocus={setupFocus}

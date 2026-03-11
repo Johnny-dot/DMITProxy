@@ -19,6 +19,10 @@ describe('portal section helpers', () => {
       tab: 'help',
       setupFocus: 'overview',
     });
+    expect(resolveUserPortalSection('community')).toEqual({
+      tab: 'help',
+      setupFocus: 'overview',
+    });
   });
 
   it('keeps setup download deep links working', () => {

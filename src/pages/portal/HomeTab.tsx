@@ -232,26 +232,6 @@ function OverviewCard({
             ? '订阅还在准备中，你可以先看看适合自己的客户端和导入步骤。'
             : 'Your subscription is still being prepared. You can still check the recommended client and import steps first.'}
       </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            onSetSection('setup');
-            onCopy(subscriptionUniversalUrl, 'home-universal');
-          }}
-          disabled={!hasSubscription}
-        >
-          {isZh ? '复制订阅' : 'Copy link'}
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => onSetSection('setup')}>
-          {isZh ? '打开使用订阅' : 'Open setup'}
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => onSetSection('community')}>
-          {isZh ? '打开社区' : 'Open community'}
-        </Button>
-      </div>
     </section>
   );
 }

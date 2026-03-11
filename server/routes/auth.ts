@@ -22,7 +22,7 @@ import {
   MarketDataError,
   refreshMarketData,
 } from '../market-data.js';
-import { getNewsFeed, refreshNewsFeed, NewsFeedError } from '../news-data.js';
+import { getNewsFeed, refreshNewsFeed, fetchArticleContent, NewsFeedError } from '../news-data.js';
 
 const router = Router();
 const SESSION_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -573,6 +573,29 @@ router.post('/portal/news/refresh', async (req, res) => {
     }
     const detail = error instanceof Error ? error.message : 'Unknown error';
     return res.status(502).json({ error: `Failed to refresh news feed: ${detail}` });
+  }
+});
+
+router.get('/portal/news/article-content', async (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  const session = getUserSession(token);
+  if (!session || session.role !== 'user') {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const url = typeof req.query.url === 'string' ? req.query.url.trim() : null;
+  if (!url) {
+    return res.status(400).json({ error: 'Missing url parameter' });
+  }
+
+  try {
+    const content = await fetchArticleContent(url);
+    return res.json(content);
+  } catch (error) {
+    if (error instanceof NewsFeedError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    return res.status(502).json({ error: 'Failed to fetch article content' });
   }
 });
 

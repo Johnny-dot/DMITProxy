@@ -75,6 +75,17 @@ export function refreshNewsFeed(): Promise<NewsRefreshResponse> {
   });
 }
 
+export interface ArticleContent {
+  paragraphs: string[];
+}
+
+export function getArticleContent(url: string): Promise<ArticleContent> {
+  return localFetch<ArticleContent>(
+    `/local/auth/portal/news/article-content?url=${encodeURIComponent(url)}`,
+    { fallbackError: 'Failed to load article content' },
+  );
+}
+
 export async function refreshCurrentNodeQuality(): Promise<RefreshCurrentNodeQualityResult> {
   return localFetch<RefreshCurrentNodeQualityResult>('/local/auth/portal/node-quality/refresh', {
     method: 'POST',

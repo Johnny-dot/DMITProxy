@@ -63,6 +63,8 @@ export function InfoTooltip({ content, className }: InfoTooltipProps) {
           className="inline-flex h-4 w-4 items-center justify-center rounded-full text-zinc-500 transition-colors hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           aria-label={content}
           aria-describedby={isOpen ? tooltipId : undefined}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
           onMouseEnter={open}
           onMouseLeave={close}
           onFocus={open}
