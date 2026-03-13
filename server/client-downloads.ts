@@ -1,14 +1,23 @@
 export type ClientDownloadId =
   | 'v2rayN'
   | 'v2rayNG'
+  | 'surge'
   | 'shadowrocket'
+  | 'clashBox'
   | 'clashVerge'
   | 'flClash'
+  | 'exclave'
   | 'clashMeta'
   | 'sparkle'
   | 'singBox'
   | 'hiddify';
-export type ClientDownloadPlatform = 'windows' | 'macos' | 'android' | 'ios';
+export type ClientDownloadPlatform =
+  | 'windows'
+  | 'macos'
+  | 'linux'
+  | 'android'
+  | 'ios'
+  | 'harmonyos';
 
 export interface GitHubReleaseAsset {
   name: string;
@@ -42,7 +51,9 @@ const MIRROR_TARGETS: Record<
       matchers: [/universal\.apk$/i],
     },
   },
+  surge: {},
   shadowrocket: {},
+  clashBox: {},
   clashVerge: {
     windows: {
       repo: 'clash-verge-rev/clash-verge-rev',
@@ -54,6 +65,7 @@ const MIRROR_TARGETS: Record<
     },
   },
   flClash: {},
+  exclave: {},
   clashMeta: {},
   sparkle: {},
   singBox: {},
@@ -77,9 +89,12 @@ export function isClientDownloadId(value: string): value is ClientDownloadId {
   return (
     value === 'v2rayN' ||
     value === 'v2rayNG' ||
+    value === 'surge' ||
     value === 'shadowrocket' ||
+    value === 'clashBox' ||
     value === 'clashVerge' ||
     value === 'flClash' ||
+    value === 'exclave' ||
     value === 'clashMeta' ||
     value === 'sparkle' ||
     value === 'singBox' ||
@@ -88,7 +103,14 @@ export function isClientDownloadId(value: string): value is ClientDownloadId {
 }
 
 export function isClientDownloadPlatform(value: string): value is ClientDownloadPlatform {
-  return value === 'windows' || value === 'macos' || value === 'android' || value === 'ios';
+  return (
+    value === 'windows' ||
+    value === 'macos' ||
+    value === 'linux' ||
+    value === 'android' ||
+    value === 'ios' ||
+    value === 'harmonyos'
+  );
 }
 
 export function getMirrorTarget(

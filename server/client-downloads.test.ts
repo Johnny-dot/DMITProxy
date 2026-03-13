@@ -38,7 +38,11 @@ describe('client download mirror selection', () => {
 
   it('marks only supported client/platform pairs as mirrorable', () => {
     expect(supportsManagedClientMirror('v2rayN', 'windows')).toBe(true);
+    expect(supportsManagedClientMirror('v2rayN', 'linux')).toBe(false);
+    expect(supportsManagedClientMirror('surge', 'ios')).toBe(false);
     expect(supportsManagedClientMirror('shadowrocket', 'ios')).toBe(false);
+    expect(supportsManagedClientMirror('clashBox', 'harmonyos')).toBe(false);
+    expect(supportsManagedClientMirror('exclave', 'android')).toBe(false);
     expect(supportsManagedClientMirror('hiddify', 'android')).toBe(true);
   });
 
@@ -61,7 +65,11 @@ describe('client download mirror selection', () => {
   });
 
   it('returns null when a platform has no managed mirror asset', () => {
+    expect(selectGitHubReleaseAsset(release, 'v2rayN', 'linux')).toBeNull();
+    expect(selectGitHubReleaseAsset(release, 'surge', 'ios')).toBeNull();
     expect(selectGitHubReleaseAsset(release, 'shadowrocket', 'ios')).toBeNull();
+    expect(selectGitHubReleaseAsset(release, 'clashBox', 'harmonyos')).toBeNull();
+    expect(selectGitHubReleaseAsset(release, 'exclave', 'android')).toBeNull();
     expect(selectGitHubReleaseAsset(release, 'hiddify', 'ios')).toBeNull();
   });
 });

@@ -64,8 +64,10 @@ interface SubscriptionTabProps {
 const PLATFORM_OPTIONS: Array<{ key: GuidePlatform; label: string; zhLabel: string }> = [
   { key: 'windows', label: 'Windows', zhLabel: 'Windows' },
   { key: 'macos', label: 'macOS', zhLabel: 'macOS' },
+  { key: 'linux', label: 'Linux', zhLabel: 'Linux' },
   { key: 'android', label: 'Android', zhLabel: 'Android' },
   { key: 'ios', label: 'iPhone / iPad', zhLabel: 'iPhone / iPad' },
+  { key: 'harmonyos', label: 'HarmonyOS NEXT', zhLabel: 'HarmonyOS NEXT' },
 ];
 
 const CLIENT_META: Array<{
@@ -82,18 +84,18 @@ const CLIENT_META: Array<{
     id: 'v2rayN',
     name: 'v2rayN',
     icon: Monitor,
-    os: 'Windows',
-    platforms: ['windows'],
+    os: 'Windows / Linux',
+    platforms: ['windows', 'linux'],
     recommendedFor: ['windows'],
     descZh: 'Windows 上最直接的传统选择。',
-    descEn: 'A straightforward classic choice for Windows.',
+    descEn: 'A straightforward classic choice for Windows and Linux.',
   },
   {
     id: 'clashVerge',
     name: 'Clash Verge',
     icon: Monitor,
-    os: 'Windows / macOS',
-    platforms: ['windows', 'macos'],
+    os: 'Windows / macOS / Linux',
+    platforms: ['windows', 'macos', 'linux'],
     recommendedFor: ['macos'],
     descZh: '适合需要规则组和策略控制的用户。',
     descEn: 'Best when you want rules, groups, and policy control.',
@@ -104,9 +106,19 @@ const CLIENT_META: Array<{
     icon: Smartphone,
     os: 'Android',
     platforms: ['android'],
-    recommendedFor: ['android'],
+    recommendedFor: [],
     descZh: 'Android 上成熟稳定，适合日常使用。',
     descEn: 'A stable Android option for everyday use.',
+  },
+  {
+    id: 'surge',
+    name: 'Surge',
+    icon: Apple,
+    os: 'iPhone / iPad',
+    platforms: ['ios'],
+    recommendedFor: [],
+    descZh: 'iOS 上更偏向规则与高级控制的选择，适合熟悉代理规则的用户。',
+    descEn: 'A stronger iOS option for users who want deeper rule control and advanced tuning.',
   },
   {
     id: 'shadowrocket',
@@ -122,11 +134,21 @@ const CLIENT_META: Array<{
     id: 'flClash',
     name: 'FlClash',
     icon: Smartphone,
-    os: 'Windows / macOS / Android',
-    platforms: ['windows', 'macos', 'android'],
-    recommendedFor: [],
+    os: 'Windows / macOS / Linux / Android',
+    platforms: ['windows', 'macos', 'linux', 'android'],
+    recommendedFor: ['android'],
     descZh: 'Mihomo 绯讳笅鏇寸幇浠ｇ殑涓€绫诲鎴风锛岄€傚悎瑙勫垯缁勩€佸垎娴佸拰鏃ュ父浣跨敤銆?',
     descEn: 'A more modern first-tier Mihomo client for rule groups, routing, and everyday use.',
+  },
+  {
+    id: 'exclave',
+    name: 'Exclave',
+    icon: Smartphone,
+    os: 'Android',
+    platforms: ['android'],
+    recommendedFor: [],
+    descZh: '偏轻量的 Android 客户端，适合单节点和想要快速导入的用户。',
+    descEn: 'Android client focused on quick imports and lighter setups.',
   },
   {
     id: 'clashMeta',
@@ -139,11 +161,22 @@ const CLIENT_META: Array<{
     descEn: 'The official MetaCubeX Android client when you want fuller Mihomo controls.',
   },
   {
+    id: 'clashBox',
+    name: 'ClashBox',
+    icon: Smartphone,
+    os: 'HarmonyOS NEXT',
+    platforms: ['harmonyos'],
+    recommendedFor: ['harmonyos'],
+    descZh: 'HarmonyOS NEXT 上更直接的 Clash/Mihomo 选择，适合先用 Clash 格式导入订阅。',
+    descEn:
+      'A straightforward Clash and Mihomo option for HarmonyOS NEXT. Start with the Clash format for the cleanest import path.',
+  },
+  {
     id: 'sparkle',
     name: 'Sparkle',
     icon: Monitor,
-    os: 'Windows / macOS',
-    platforms: ['windows', 'macos'],
+    os: 'Windows / macOS / Linux',
+    platforms: ['windows', 'macos', 'linux'],
     recommendedFor: [],
     descZh: '杈冩柊鐨?Mihomo 妗岄潰 GUI锛屾洿鍋忓悜鐜颁唬鍖栫殑绛栫暐缁勫拰绐楀彛浣撻獙銆?',
     descEn: 'A newer Mihomo desktop GUI with a more modern rule-group experience.',
@@ -152,8 +185,8 @@ const CLIENT_META: Array<{
     id: 'singBox',
     name: 'Sing-box',
     icon: Terminal,
-    os: 'Android / macOS / iPhone / iPad',
-    platforms: ['android', 'macos', 'ios'],
+    os: 'Android / macOS / Linux / iPhone / iPad',
+    platforms: ['android', 'macos', 'linux', 'ios'],
     recommendedFor: [],
     descZh:
       'sing-box 绯讳竴绫婚€夋嫨锛孌NS 鍜屽崗璁窡杩涙洿蹇紝浣嗘洿閫傚悎鎰挎剰鐮旂┒閰嶇疆鐨勭敤鎴枫€?',
@@ -164,13 +197,31 @@ const CLIENT_META: Array<{
     id: 'hiddify',
     name: 'Hiddify',
     icon: Smartphone,
-    os: 'Windows / macOS / Android / iPhone / iPad',
-    platforms: ['windows', 'macos', 'android', 'ios'],
-    recommendedFor: ['windows', 'android', 'ios'],
+    os: 'Windows / macOS',
+    platforms: ['windows', 'macos'],
+    recommendedFor: ['windows'],
     descZh: '上手最快，支持 URL、剪贴板和二维码导入。',
     descEn: 'Fastest to onboard with URL, clipboard, and QR import.',
   },
 ];
+
+const DEFAULT_CLIENT_BY_PLATFORM: Record<GuidePlatform, ClientId> = {
+  windows: 'flClash',
+  macos: 'flClash',
+  linux: 'flClash',
+  android: 'flClash',
+  ios: 'shadowrocket',
+  harmonyos: 'clashBox',
+};
+
+const PLATFORM_CLIENT_ORDER: Record<GuidePlatform, ClientId[]> = {
+  windows: ['flClash', 'v2rayN', 'sparkle'],
+  macos: ['flClash', 'sparkle', 'singBox'],
+  linux: ['flClash', 'v2rayN', 'sparkle', 'singBox'],
+  android: ['flClash', 'exclave', 'clashMeta', 'singBox', 'v2rayNG'],
+  ios: ['shadowrocket', 'surge', 'singBox'],
+  harmonyos: ['clashBox'],
+};
 
 const V2RAYN_GUIDE_SOURCE_URL = 'https://v2rayn.org/';
 const V2RAYN_WINDOWS_SCREENSHOTS = {
@@ -218,6 +269,70 @@ const HIDDIFY_SCREENSHOTS = {
   updateProfile: '/guides/hiddify/update-profile.png',
 } as const;
 
+const FLCLASH_GUIDE_SOURCE_URL = 'https://help.jegovpn.com/en/tool/flclash';
+const FLCLASH_SCREENSHOTS = {
+  newConfiguration: '/guides/flclash/new-configuration.png',
+  url: '/guides/flclash/url.png',
+  editConfiguration: '/guides/flclash/edit-configuration.png',
+  enableProxy: '/guides/flclash/enable-proxy.png',
+  nodeSelection: '/guides/flclash/node-selection.png',
+} as const;
+
+const SPARKLE_GUIDE_SOURCE_URL = 'https://mihomoparty.net/tutorial/';
+const SPARKLE_SCREENSHOTS = {
+  start: '/guides/sparkle/start.webp',
+  addSubscription: '/guides/sparkle/add-subscription.webp',
+  subscription: '/guides/sparkle/subscription.webp',
+  proxies: '/guides/sparkle/proxies.webp',
+  systemProxy: '/guides/sparkle/system-proxy.webp',
+} as const;
+
+const SURGE_GUIDE_SOURCE_URL = 'https://help.jegovpn.com/en/tool/surge';
+const SURGE_SCREENSHOTS = {
+  dropdownMenu: '/guides/surge/dropdown-menu.png',
+  downloadConfiguration: '/guides/surge/download-configuration.png',
+  pasteLink: '/guides/surge/paste-link.png',
+  configurationFile: '/guides/surge/configuration-file.png',
+  startConnection: '/guides/surge/start-connection.png',
+} as const;
+
+const SINGBOX_APPLE_GUIDE_SOURCE_URL = 'https://help.jegovpn.com/en/tool/sing-boxforapple';
+const SINGBOX_APPLE_SCREENSHOTS = {
+  macosConfigurationSettings: '/guides/sing-box/apple/macos-configuration-settings.png',
+  macosEnableSingBox: '/guides/sing-box/apple/macos-enable-sing-box.png',
+  macosInternetMode: '/guides/sing-box/apple/macos-internet-mode.png',
+  macosNodeSelection: '/guides/sing-box/apple/macos-node-selection.png',
+  iosConfigurationSettings1: '/guides/sing-box/apple/ios-configuration-settings-1.png',
+  iosConfigurationSettings2: '/guides/sing-box/apple/ios-configuration-settings-2.png',
+  iosEnableSingBox1: '/guides/sing-box/apple/ios-enable-sing-box-1.png',
+  iosEnableSingBox2: '/guides/sing-box/apple/ios-enable-sing-box-2.png',
+  iosGroups: '/guides/sing-box/apple/ios-groups.png',
+} as const;
+
+const SINGBOX_ANDROID_GUIDE_SOURCE_URL = 'https://help.jegovpn.com/en/tool/sing-boxforandroid';
+const SINGBOX_ANDROID_SCREENSHOTS = {
+  createConfig1: '/guides/sing-box/android/create-config-1.jpg',
+  createConfig2: '/guides/sing-box/android/create-config-2.jpg',
+  configSettings: '/guides/sing-box/android/config-settings.jpg',
+  vpnPermission: '/guides/sing-box/android/vpn-permission.jpg',
+  nodeSelection: '/guides/sing-box/android/node-selection.jpg',
+} as const;
+
+const CLASHBOX_GUIDE_SOURCE_URL = 'https://help.jegovpn.com/en/tool/clashbox';
+const CLASHBOX_SCREENSHOTS = {
+  home: '/guides/clashbox/home.png',
+  profile: '/guides/clashbox/profile.jpg',
+  start: '/guides/clashbox/start.jpg',
+} as const;
+
+const CLASH_META_GUIDE_SOURCE_URL = 'https://help.jegovpn.com/en/tool/clash-for-android';
+const CLASH_META_SCREENSHOTS = {
+  home: '/guides/clash-meta/home.png',
+  configuration: '/guides/clash-meta/configuration.png',
+  saveConfiguration: '/guides/clash-meta/save-configuration.png',
+  startProxy: '/guides/clash-meta/start-proxy.png',
+} as const;
+
 const GUIDE_SCREENSHOT_HIGHLIGHTS: Record<string, GuideScreenshotHighlight[]> = {
   [CLASH_VERGE_SCREENSHOTS.profilesEmpty]: [
     { x: 4, y: 23, w: 15, h: 11 },
@@ -259,9 +374,11 @@ const GUIDE_SCREENSHOT_HIGHLIGHTS: Record<string, GuideScreenshotHighlight[]> = 
 function detectInitialPlatform(): GuidePlatform {
   if (typeof window === 'undefined') return 'windows';
   const ua = window.navigator.userAgent.toLowerCase();
+  if (ua.includes('harmonyos') || ua.includes('openharmony')) return 'harmonyos';
   if (ua.includes('android')) return 'android';
   if (ua.includes('iphone') || ua.includes('ipad')) return 'ios';
   if (ua.includes('mac os') || ua.includes('macintosh')) return 'macos';
+  if (ua.includes('linux') || ua.includes('x11')) return 'linux';
   return 'windows';
 }
 
@@ -272,12 +389,31 @@ function getPlatformLabel(platform: GuidePlatform, isZh: boolean) {
   );
 }
 
+function getPlatformBlurb(platform: GuidePlatform, isZh: boolean) {
+  if (platform === 'windows') {
+    return isZh ? '适合电脑端日常使用。' : 'A solid choice for desktop use.';
+  }
+  if (platform === 'macos') {
+    return isZh ? '适合偏好规则组和策略控制。' : 'Best if you prefer rules and policy control.';
+  }
+  if (platform === 'linux') {
+    return isZh
+      ? '适合 Linux 上的 Clash、v2rayN 和 sing-box 客户端。'
+      : 'Best for Clash, v2rayN, and sing-box clients on Linux.';
+  }
+  if (platform === 'android') {
+    return isZh ? '适合手机上快速导入。' : 'Great for quick setup on your phone.';
+  }
+  if (platform === 'harmonyos') {
+    return isZh
+      ? '适合 HarmonyOS NEXT 上的 Clash 类客户端导入。'
+      : 'Best for Clash-style clients on HarmonyOS NEXT.';
+  }
+  return isZh ? '适合 iPhone 和 iPad 导入。' : 'Best for import on iPhone and iPad.';
+}
+
 function getRecommendedClientId(platform: GuidePlatform): ClientId {
-  return (
-    CLIENT_META.find((client) => client.recommendedFor.includes(platform))?.id ??
-    CLIENT_META.find((client) => client.platforms.includes(platform))?.id ??
-    'hiddify'
-  );
+  return DEFAULT_CLIENT_BY_PLATFORM[platform];
 }
 
 function createStep(
@@ -303,14 +439,22 @@ function buildClientGuide(
     ? '不同版本按钮名称会有差异，但导入路径一般都在这些位置。'
     : 'Button labels vary by version, but the import flow is usually in these places.';
 
-  if (clientId === 'flClash' || clientId === 'clashMeta' || clientId === 'sparkle') {
+  if (
+    clientId === 'flClash' ||
+    clientId === 'clashMeta' ||
+    clientId === 'sparkle' ||
+    clientId === 'clashBox'
+  ) {
     const clientName =
       clientId === 'clashMeta'
         ? 'Clash Meta for Android'
-        : clientId === 'sparkle'
-          ? 'Sparkle'
-          : 'FlClash';
-    const connectPermission = platform === 'android' ? 'Allow VPN' : 'Allow system proxy';
+        : clientId === 'clashBox'
+          ? 'ClashBox'
+          : clientId === 'sparkle'
+            ? 'Sparkle'
+            : 'FlClash';
+    const connectPermission =
+      platform === 'android' || platform === 'harmonyos' ? 'Allow VPN' : 'Allow system proxy';
 
     return {
       recommendedFormat: 'clash',
@@ -349,7 +493,13 @@ function buildClientGuide(
 
   if (clientId === 'singBox') {
     const appLabel =
-      platform === 'ios' ? 'Sing-box VT' : platform === 'macos' ? 'Sing-box for Mac' : 'Sing-box';
+      platform === 'ios'
+        ? 'Sing-box VT'
+        : platform === 'macos'
+          ? 'Singbox for Mac'
+          : platform === 'linux'
+            ? 'Singbox for Linux'
+            : 'Sing-box';
     const connectPermission =
       platform === 'android' || platform === 'ios' ? 'Allow VPN' : 'Allow system proxy';
 
@@ -448,6 +598,74 @@ function buildClientGuide(
               'Import alone does not route traffic until proxy mode is enabled.',
               'Proxy / TUN',
               ['Policy group', 'System proxy', 'TUN'],
+              'Connect',
+            ),
+          ],
+    };
+  }
+
+  if (clientId === 'surge') {
+    return {
+      recommendedFormat: 'surge',
+      note: isZh
+        ? 'Surge 更适合用 Surge 格式导入，这样规则组和配置字段兼容性会更好。'
+        : 'Surge imports are cleaner with the Surge format, especially when you rely on rule groups and Surge-native fields.',
+      steps: isZh
+        ? [
+            createStep(
+              'launch',
+              '先进入配置或模块入口',
+              'Surge 一般从配置列表、下载配置，或右上角加号进入导入。',
+              '第一次打开时，先完成本地网络权限或基础初始化。',
+              '配置 / 导入',
+              ['配置列表', '下载配置', '右上角 +'],
+              '打开导入入口',
+            ),
+            createStep(
+              'import',
+              '切到 Surge 格式后再导入',
+              '先把当前页面切到 Surge，再把复制的链接贴进 Surge 的下载配置入口。',
+              '如果配置导入后规则组不完整，先检查是不是用了 Universal 链接。',
+              '下载配置',
+              ['Surge 格式', '粘贴订阅 URL', '保存配置'],
+              '导入配置',
+            ),
+            createStep(
+              'connect',
+              '更新配置后启用并允许 VPN',
+              '先确认配置和策略组已经更新，再点连接或启用增强模式。',
+              '连接不上时优先检查本地 VPN 权限和配置更新时间。',
+              '连接',
+              ['更新配置', '选择策略组', '允许 VPN'],
+              '开始连接',
+            ),
+          ]
+        : [
+            createStep(
+              'launch',
+              'Open the profiles or import entry first',
+              'Surge usually imports from the profiles list, download profile flow, or the top-right add button.',
+              'Finish any first-run network permission or base setup before importing.',
+              'Profiles / Import',
+              ['Profiles list', 'Download profile', 'Top-right +'],
+              'Open import entry',
+            ),
+            createStep(
+              'import',
+              'Switch to the Surge format before importing',
+              'Set this page to Surge first, then paste the copied link into Surge.',
+              'If groups or fields look incomplete after import, check that you did not use the Universal link.',
+              'Download profile',
+              ['Surge format', 'Paste subscription URL', 'Save profile'],
+              'Import profile',
+            ),
+            createStep(
+              'connect',
+              'Refresh the profile, then enable it and allow VPN',
+              'Make sure the profile and policy groups are up to date before connecting.',
+              'If traffic does not move, check local VPN permission and whether the profile refreshed successfully.',
+              'Connect',
+              ['Refresh profile', 'Choose policy group', 'Allow VPN'],
               'Connect',
             ),
           ],
@@ -580,6 +798,74 @@ function buildClientGuide(
               'If the list stays empty, refresh the subscription first.',
               'VPN permission',
               ['Refresh', 'Pick node', 'Allow VPN'],
+              'Connect',
+            ),
+          ],
+    };
+  }
+
+  if (clientId === 'exclave') {
+    return {
+      recommendedFormat: 'universal',
+      note: isZh
+        ? 'Exclave 的导入路径和经典安卓 V2Ray 客户端接近，优先用 Universal 链接会更稳。'
+        : 'Exclave stays close to classic Android V2Ray clients, and the Universal link is usually the safest import path.',
+      steps: isZh
+        ? [
+            createStep(
+              'launch',
+              '先打开订阅或配置入口',
+              'Exclave 一般会把导入入口放在订阅、配置或右上角加号里。',
+              '第一次启动时，先完成核心初始化或权限提示。',
+              '订阅 / 配置',
+              ['订阅列表', '右上角 +', '导入入口'],
+              '打开入口',
+            ),
+            createStep(
+              'import',
+              '优先粘贴 Universal 订阅链接',
+              '保持当前页面为 Universal，再把复制的订阅链接粘贴到 Exclave。',
+              '如果你刚复制过链接，优先尝试 URL 或剪贴板导入。',
+              'URL 导入',
+              ['Universal 格式', '粘贴 URL', '保存 / 更新'],
+              '导入订阅',
+            ),
+            createStep(
+              'connect',
+              '刷新后选节点并允许 VPN',
+              '先确认节点列表已经拉下来，再点连接。',
+              '节点为空时，先检查订阅是否刷新成功。',
+              'VPN 权限',
+              ['刷新订阅', '选择节点', '允许 VPN'],
+              '开始连接',
+            ),
+          ]
+        : [
+            createStep(
+              'launch',
+              'Open the subscription or profile entry first',
+              'Exclave usually places imports under subscriptions, profiles, or the top-right plus menu.',
+              'Finish any first-run core setup or permission prompts before importing.',
+              'Subscription / Profile',
+              ['Subscription list', 'Top-right +', 'Import entry'],
+              'Open entry',
+            ),
+            createStep(
+              'import',
+              'Prefer the Universal subscription link',
+              'Keep this page on Universal, then paste the copied subscription link into Exclave.',
+              'If you just copied the link, URL or clipboard import is usually the fastest path.',
+              'Import by URL',
+              ['Universal format', 'Paste URL', 'Save / Update'],
+              'Import subscription',
+            ),
+            createStep(
+              'connect',
+              'Refresh, pick a node, and allow VPN',
+              'Make sure the node list has loaded before connecting.',
+              'If the node list stays empty, refresh the subscription again first.',
+              'VPN permission',
+              ['Refresh subscription', 'Pick node', 'Allow VPN'],
               'Connect',
             ),
           ],
@@ -1476,13 +1762,1085 @@ function buildRealHiddifyGuide(platformLabel: string, isZh: boolean): ClientGuid
   };
 }
 
+function buildRealFlClashGuide(platformLabel: string, isZh: boolean): ClientGuide {
+  return {
+    recommendedFormat: 'clash',
+    note: isZh
+      ? `这组步骤使用公开的 FlClash 真机截图；${platformLabel} 上布局可能略有差异，但导入顺序基本一致。`
+      : `These steps use public FlClash screenshots. The ${platformLabel} layout may differ slightly, but the import flow stays effectively the same.`,
+    sourceLabel: isZh ? 'FlClash 图文教程来源' : 'FlClash tutorial source',
+    sourceUrl: FLCLASH_GUIDE_SOURCE_URL,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先打开配置页并准备新建订阅',
+            '进入 Config 或 Profiles 页面，找到 New Configuration 之类的入口。',
+            '首次启动如果弹出核心初始化或权限提示，先完成再继续。',
+            '配置页',
+            ['Configs / Profiles', 'New Configuration', '导入入口'],
+            '打开配置页',
+            {
+              src: FLCLASH_SCREENSHOTS.newConfiguration,
+              alt: 'FlClash 新建配置入口',
+            },
+          ),
+          createStep(
+            'import',
+            '把当前页面切到 Clash，再粘贴订阅 URL',
+            '先在这里复制 Clash 链接，再在 FlClash 里选择 URL 导入并粘贴。',
+            'Mihomo/Clash 客户端一旦格式选错，策略组通常不会完整出现。',
+            'URL 导入',
+            ['Clash 格式', '粘贴 URL', '保存配置'],
+            '导入订阅',
+            {
+              src: FLCLASH_SCREENSHOTS.url,
+              alt: 'FlClash URL 导入界面',
+            },
+          ),
+          createStep(
+            'connect',
+            '确认配置写入并主动刷新一次',
+            '保存后回到配置卡片，确认新配置已经出现，必要时手动更新。',
+            '如果节点为空，先检查是不是还没刷新配置。',
+            '配置卡片',
+            ['已创建配置', '刷新配置', '等待资源加载'],
+            '检查配置',
+            {
+              src: FLCLASH_SCREENSHOTS.editConfiguration,
+              alt: 'FlClash 配置详情界面',
+            },
+          ),
+          createStep(
+            'connect',
+            '先选节点或策略组',
+            '进入 Proxy 页面，先确认节点和策略组已经加载出来，再切换到你要用的目标。',
+            '先选好节点，再开代理，排错会简单很多。',
+            '节点选择',
+            ['打开 Proxy', '选择节点', '确认已切换'],
+            '选择节点',
+            {
+              src: FLCLASH_SCREENSHOTS.nodeSelection,
+              alt: 'FlClash 节点选择界面',
+            },
+          ),
+          createStep(
+            'connect',
+            '最后开启代理或系统代理',
+            '回到主界面打开代理开关；桌面端再确认系统代理已经接管流量。',
+            '只导入不打开代理时，浏览器和系统流量不会真正经过 FlClash。',
+            '开始连接',
+            ['启用代理', '允许系统权限', '回到浏览器测试'],
+            '开始连接',
+            {
+              src: FLCLASH_SCREENSHOTS.enableProxy,
+              alt: 'FlClash 开启代理',
+            },
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Open the config screen and prepare a new profile',
+            'Go to Configs or Profiles and find the new configuration entry.',
+            'If first launch prompts for core setup or permissions, finish that first.',
+            'Config screen',
+            ['Configs / Profiles', 'New Configuration', 'Import entry'],
+            'Open config screen',
+            {
+              src: FLCLASH_SCREENSHOTS.newConfiguration,
+              alt: 'FlClash new configuration entry',
+            },
+          ),
+          createStep(
+            'import',
+            'Switch this page to Clash, then paste the subscription URL',
+            'Copy the Clash link from here first, then import it by URL inside FlClash.',
+            'If the format is wrong, policy groups are usually the first thing to look broken.',
+            'URL import',
+            ['Clash format', 'Paste URL', 'Save profile'],
+            'Import subscription',
+            {
+              src: FLCLASH_SCREENSHOTS.url,
+              alt: 'FlClash URL import screen',
+            },
+          ),
+          createStep(
+            'connect',
+            'Confirm the profile exists and refresh once',
+            'After saving, return to the profile card and make sure the imported config is visible.',
+            'If the node list stays empty, check whether the profile was refreshed.',
+            'Profile card',
+            ['Imported config', 'Refresh profile', 'Wait for resources'],
+            'Check profile',
+            {
+              src: FLCLASH_SCREENSHOTS.editConfiguration,
+              alt: 'FlClash profile details',
+            },
+          ),
+          createStep(
+            'connect',
+            'Pick a node or policy group first',
+            'Open Proxy and confirm nodes and policy groups have loaded before switching.',
+            'Choosing the node before enabling proxy makes troubleshooting much simpler.',
+            'Node selection',
+            ['Open Proxy', 'Choose a node', 'Confirm it switched'],
+            'Select node',
+            {
+              src: FLCLASH_SCREENSHOTS.nodeSelection,
+              alt: 'FlClash node selection',
+            },
+          ),
+          createStep(
+            'connect',
+            'Enable proxy or system proxy last',
+            'Turn on the proxy switch from the main screen; on desktop also confirm system proxy is active.',
+            'Importing alone does not move browser or system traffic until proxy mode is enabled.',
+            'Connect',
+            ['Enable proxy', 'Allow permissions', 'Test in the browser'],
+            'Connect',
+            {
+              src: FLCLASH_SCREENSHOTS.enableProxy,
+              alt: 'Enable proxy in FlClash',
+            },
+          ),
+        ],
+  };
+}
+
+function buildRealSparkleGuide(platformLabel: string, isZh: boolean): ClientGuide {
+  return {
+    recommendedFormat: 'clash',
+    note: isZh
+      ? `这组截图来自 Mihomo Party 教程；Sparkle 和它属于近似分支，${platformLabel} 上的订阅与代理流程基本一致。`
+      : `These screenshots come from the Mihomo Party tutorial. Sparkle tracks a very similar desktop flow on ${platformLabel}, so the subscription and proxy steps still line up closely.`,
+    sourceLabel: isZh
+      ? 'Sparkle / Mihomo Party 教程来源'
+      : 'Sparkle / Mihomo Party tutorial source',
+    sourceUrl: SPARKLE_GUIDE_SOURCE_URL,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先看主界面，确认订阅入口在哪',
+            '打开 Sparkle 后，先确认左侧导航和主界面都正常显示，订阅入口通常就在侧栏里。',
+            '如果刚安装完成，先把必要权限或管理员提示处理掉。',
+            '主界面',
+            ['侧边栏', 'Profiles / Subscriptions', '系统权限'],
+            '打开主界面',
+            {
+              src: SPARKLE_SCREENSHOTS.start,
+              alt: 'Sparkle 主界面',
+            },
+          ),
+          createStep(
+            'import',
+            '新建远程订阅',
+            '进入订阅页后，点击添加订阅或类似入口，准备导入新的远程配置。',
+            'Sparkle 的订阅入口名称可能略有变化，但都在订阅或配置区域。',
+            '新建订阅',
+            ['Subscriptions', 'Add subscription', 'Remote profile'],
+            '新建订阅',
+            {
+              src: SPARKLE_SCREENSHOTS.addSubscription,
+              alt: 'Sparkle 新建订阅',
+            },
+          ),
+          createStep(
+            'import',
+            '切到 Clash 格式并粘贴订阅链接',
+            '复制当前页面的 Clash 链接，再粘贴到 Sparkle 的订阅地址输入框里并保存。',
+            '如果导入后看不到策略组，先检查是不是导错了格式。',
+            '订阅地址',
+            ['Clash 格式', '粘贴 URL', '保存并刷新'],
+            '保存订阅',
+            {
+              src: SPARKLE_SCREENSHOTS.subscription,
+              alt: 'Sparkle 订阅管理界面',
+            },
+          ),
+          createStep(
+            'connect',
+            '切到 Proxies 选择节点或策略组',
+            '确认订阅刷新完成后，到 Proxies 页面里选中你想用的节点或自动选择组。',
+            '导入成功但没选节点时，流量通常还不会按预期走代理。',
+            '节点与策略组',
+            ['打开 Proxies', '选择节点', '确认当前组已切换'],
+            '选择节点',
+            {
+              src: SPARKLE_SCREENSHOTS.proxies,
+              alt: 'Sparkle 代理组和节点',
+            },
+          ),
+          createStep(
+            'connect',
+            '最后开启系统代理',
+            '回到主界面，打开 System Proxy 或等价代理开关，让浏览器和系统流量接管到 Sparkle。',
+            'TUN 可以后面再研究，第一次先把 System Proxy 跑通就够了。',
+            '系统代理',
+            ['回到首页', '开启 System Proxy', '重新打开网页测试'],
+            '开始连接',
+            {
+              src: SPARKLE_SCREENSHOTS.systemProxy,
+              alt: 'Sparkle 开启系统代理',
+            },
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Open the home screen and find the subscription entry',
+            'After Sparkle launches, confirm the sidebar and the subscription area are visible.',
+            'Handle any first-run permission or admin prompt before importing.',
+            'Home screen',
+            ['Sidebar', 'Profiles / Subscriptions', 'System permissions'],
+            'Open home',
+            {
+              src: SPARKLE_SCREENSHOTS.start,
+              alt: 'Sparkle home screen',
+            },
+          ),
+          createStep(
+            'import',
+            'Create a new remote subscription',
+            'Open the subscription page and add a new remote profile.',
+            'The label may differ by build, but it stays in the subscriptions or profile area.',
+            'New subscription',
+            ['Subscriptions', 'Add subscription', 'Remote profile'],
+            'Create subscription',
+            {
+              src: SPARKLE_SCREENSHOTS.addSubscription,
+              alt: 'Create subscription in Sparkle',
+            },
+          ),
+          createStep(
+            'import',
+            'Switch this page to Clash and paste the link',
+            'Copy the Clash subscription link from here, paste it into Sparkle, then save and refresh.',
+            'If policy groups are missing after import, check the format first.',
+            'Subscription URL',
+            ['Clash format', 'Paste URL', 'Save and refresh'],
+            'Save subscription',
+            {
+              src: SPARKLE_SCREENSHOTS.subscription,
+              alt: 'Sparkle subscription management screen',
+            },
+          ),
+          createStep(
+            'connect',
+            'Choose a node or policy group in Proxies',
+            'Once the subscription has refreshed, switch to Proxies and choose the node or group you want.',
+            'Importing successfully is not enough if no active group is selected.',
+            'Nodes and groups',
+            ['Open Proxies', 'Choose a node', 'Confirm the active group changed'],
+            'Select node',
+            {
+              src: SPARKLE_SCREENSHOTS.proxies,
+              alt: 'Sparkle proxies and nodes',
+            },
+          ),
+          createStep(
+            'connect',
+            'Enable system proxy last',
+            'Return to the main page and turn on System Proxy so browser and system traffic actually route through Sparkle.',
+            'You can explore TUN later. System Proxy is the cleanest first test.',
+            'System proxy',
+            ['Return home', 'Enable System Proxy', 'Reload a page and test'],
+            'Connect',
+            {
+              src: SPARKLE_SCREENSHOTS.systemProxy,
+              alt: 'Enable system proxy in Sparkle',
+            },
+          ),
+        ],
+  };
+}
+
+function buildRealSurgeGuide(isZh: boolean): ClientGuide {
+  return {
+    recommendedFormat: 'surge',
+    note: isZh
+      ? '这组步骤使用公开的 Surge 真机截图，直接按 Surge 配置导入流程走即可。'
+      : 'These steps use public Surge screenshots and follow the normal Surge profile import flow.',
+    sourceLabel: isZh ? 'Surge 图文教程来源' : 'Surge tutorial source',
+    sourceUrl: SURGE_GUIDE_SOURCE_URL,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先打开导入或下载配置入口',
+            '进入 Surge 后，先从下拉菜单或配置页进入 Download Configuration 一类的入口。',
+            '第一次使用先不用折腾脚本和模块，先把订阅导入成功。',
+            '导入入口',
+            ['下拉菜单', 'Profiles', 'Download Configuration'],
+            '打开导入入口',
+            {
+              src: SURGE_SCREENSHOTS.dropdownMenu,
+              alt: 'Surge 下拉菜单',
+            },
+          ),
+          createStep(
+            'import',
+            '新建远程配置',
+            '点击下载配置或新增配置，让 Surge 准备接收一个新的远程订阅。',
+            'Surge 更适合直接使用 Surge 格式订阅，不建议这里贴 Universal。',
+            '新建配置',
+            ['Download Configuration', 'Remote profile', '配置列表'],
+            '新建配置',
+            {
+              src: SURGE_SCREENSHOTS.downloadConfiguration,
+              alt: 'Surge 下载配置入口',
+            },
+          ),
+          createStep(
+            'import',
+            '粘贴当前页面的 Surge 订阅链接',
+            '先把当前页面切到 Surge，再把复制好的订阅地址粘贴到 Surge 的输入框里。',
+            '如果规则组看起来不完整，优先检查是不是用了错误格式的链接。',
+            '订阅链接',
+            ['Surge 格式', '粘贴 URL', '保存配置'],
+            '导入配置',
+            {
+              src: SURGE_SCREENSHOTS.pasteLink,
+              alt: 'Surge 粘贴订阅链接',
+            },
+          ),
+          createStep(
+            'connect',
+            '确认配置文件已经生成并刷新',
+            '保存后回到配置文件列表，确认刚才的配置已经出现，必要时手动刷新一次。',
+            '导入后先确认规则和策略组都正常加载，再去启动。',
+            '配置文件',
+            ['配置已生成', '刷新配置', '等待资源完成'],
+            '检查配置',
+            {
+              src: SURGE_SCREENSHOTS.configurationFile,
+              alt: 'Surge 配置文件列表',
+            },
+          ),
+          createStep(
+            'connect',
+            '最后启动并允许 VPN',
+            '确认配置可用后点击启动，iPhone / iPad 会弹出 VPN 权限确认。',
+            '如果导入成功但网络仍然直连，通常是这里的 VPN 权限还没放行。',
+            '开始连接',
+            ['启动配置', '允许 VPN', '回到应用测试'],
+            '开始连接',
+            {
+              src: SURGE_SCREENSHOTS.startConnection,
+              alt: 'Surge 启动连接',
+            },
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Open the import or download profile entry first',
+            'Inside Surge, start from the dropdown menu or profile screen and open Download Configuration.',
+            'Ignore scripts and modules for now. Get the subscription imported first.',
+            'Import entry',
+            ['Dropdown menu', 'Profiles', 'Download Configuration'],
+            'Open import entry',
+            {
+              src: SURGE_SCREENSHOTS.dropdownMenu,
+              alt: 'Surge dropdown menu',
+            },
+          ),
+          createStep(
+            'import',
+            'Create a new remote profile',
+            'Use the download configuration flow to add a new remote subscription profile.',
+            'Surge works best with the Surge format here instead of the Universal link.',
+            'New profile',
+            ['Download Configuration', 'Remote profile', 'Profile list'],
+            'Create profile',
+            {
+              src: SURGE_SCREENSHOTS.downloadConfiguration,
+              alt: 'Surge download configuration screen',
+            },
+          ),
+          createStep(
+            'import',
+            'Paste the Surge subscription URL from this page',
+            'Switch this page to Surge first, then paste the copied link into Surge.',
+            'If groups or fields look incomplete after import, the wrong format is the first thing to check.',
+            'Subscription URL',
+            ['Surge format', 'Paste URL', 'Save profile'],
+            'Import profile',
+            {
+              src: SURGE_SCREENSHOTS.pasteLink,
+              alt: 'Paste subscription URL into Surge',
+            },
+          ),
+          createStep(
+            'connect',
+            'Confirm the profile exists and refresh it',
+            'Return to the profile list, confirm the new configuration file is present, and refresh if needed.',
+            'Make sure rules and policy groups have loaded before you start the connection.',
+            'Profile file',
+            ['Profile created', 'Refresh profile', 'Wait for resources'],
+            'Check profile',
+            {
+              src: SURGE_SCREENSHOTS.configurationFile,
+              alt: 'Surge configuration file list',
+            },
+          ),
+          createStep(
+            'connect',
+            'Start the profile and allow VPN',
+            'Once the profile looks correct, start it and accept the iOS VPN permission prompt.',
+            'If import succeeded but traffic stays direct, this VPN permission is usually the missing step.',
+            'Connect',
+            ['Start profile', 'Allow VPN', 'Test in the app or browser'],
+            'Connect',
+            {
+              src: SURGE_SCREENSHOTS.startConnection,
+              alt: 'Start the connection in Surge',
+            },
+          ),
+        ],
+  };
+}
+
+function buildRealSingBoxAppleGuide(platform: 'ios' | 'macos', isZh: boolean): ClientGuide {
+  if (platform === 'macos') {
+    return {
+      recommendedFormat: 'singbox',
+      note: isZh
+        ? '这组步骤使用公开的 Singbox for Mac 真机截图，直接按 SFM 的配置导入流程走即可。'
+        : 'These steps use public Singbox for Mac screenshots and follow the standard SFM profile import flow.',
+      sourceLabel: isZh ? 'Sing-box for Apple 教程来源' : 'Sing-box for Apple tutorial source',
+      sourceUrl: SINGBOX_APPLE_GUIDE_SOURCE_URL,
+      steps: isZh
+        ? [
+            createStep(
+              'launch',
+              '先打开配置管理页',
+              '进入 Singbox for Mac 后，先到配置或 Profiles 页面，准备新增远程配置。',
+              '第一次启动如果要求授予网络或代理权限，先完成。',
+              '配置页',
+              ['Profiles', 'Configurations', '导入入口'],
+              '打开配置页',
+              {
+                src: SINGBOX_APPLE_SCREENSHOTS.macosConfigurationSettings,
+                alt: 'Singbox for Mac 配置管理页',
+              },
+            ),
+            createStep(
+              'import',
+              '切到 Sing-box 格式并保存配置',
+              '先在这里复制 Sing-box 链接，再在 SFM 的配置输入框里粘贴并保存。',
+              'Sing-box 客户端最好直接吃 Sing-box 格式，兼容性最稳。',
+              '配置导入',
+              ['Sing-box 格式', '粘贴 URL', '保存配置'],
+              '导入配置',
+              {
+                src: SINGBOX_APPLE_SCREENSHOTS.macosEnableSingBox,
+                alt: 'Singbox for Mac 保存配置并启用',
+              },
+            ),
+            createStep(
+              'connect',
+              '确认网络模式或系统代理设置',
+              '导入后先检查网络模式，确认系统代理或对应接管方式已经准备好。',
+              '桌面端如果不接管系统代理，浏览器流量通常还不会真正经过 sing-box。',
+              '网络模式',
+              ['Network mode', 'System proxy', '允许系统权限'],
+              '检查模式',
+              {
+                src: SINGBOX_APPLE_SCREENSHOTS.macosInternetMode,
+                alt: 'Singbox for Mac 网络模式设置',
+              },
+            ),
+            createStep(
+              'connect',
+              '选择节点或策略组并连接',
+              '确认配置和规则加载完成后，选择节点或策略组，再开始连接。',
+              '第一次连通后再改 DNS、路由之类高级开关，排错会轻松很多。',
+              '节点选择',
+              ['选择节点', '确认分组', '开始连接'],
+              '开始连接',
+              {
+                src: SINGBOX_APPLE_SCREENSHOTS.macosNodeSelection,
+                alt: 'Singbox for Mac 节点选择',
+              },
+            ),
+          ]
+        : [
+            createStep(
+              'launch',
+              'Open the profile management screen first',
+              'Inside Singbox for Mac, go to Profiles or Configurations and prepare a new remote profile.',
+              'If first launch asks for network or proxy permission, finish that first.',
+              'Profile screen',
+              ['Profiles', 'Configurations', 'Import entry'],
+              'Open profile screen',
+              {
+                src: SINGBOX_APPLE_SCREENSHOTS.macosConfigurationSettings,
+                alt: 'Singbox for Mac profile management screen',
+              },
+            ),
+            createStep(
+              'import',
+              'Switch this page to Sing-box and save the profile',
+              'Copy the Sing-box link from here, paste it into SFM, then save the profile.',
+              'Sing-box clients are most reliable when they import the Sing-box format directly.',
+              'Profile import',
+              ['Sing-box format', 'Paste URL', 'Save profile'],
+              'Import profile',
+              {
+                src: SINGBOX_APPLE_SCREENSHOTS.macosEnableSingBox,
+                alt: 'Save and enable profile in Singbox for Mac',
+              },
+            ),
+            createStep(
+              'connect',
+              'Confirm network mode or system proxy',
+              'After import, check the network mode and make sure system proxy handoff is ready.',
+              'Desktop traffic usually stays direct until system proxy has actually been taken over.',
+              'Network mode',
+              ['Network mode', 'System proxy', 'Allow permissions'],
+              'Check mode',
+              {
+                src: SINGBOX_APPLE_SCREENSHOTS.macosInternetMode,
+                alt: 'Singbox for Mac network mode settings',
+              },
+            ),
+            createStep(
+              'connect',
+              'Choose a node or group and connect',
+              'Once rules and resources have finished loading, select the node or group you want and connect.',
+              'Leave advanced DNS or routing toggles alone until the first connection works.',
+              'Node selection',
+              ['Choose node', 'Confirm group', 'Connect'],
+              'Connect',
+              {
+                src: SINGBOX_APPLE_SCREENSHOTS.macosNodeSelection,
+                alt: 'Singbox for Mac node selection',
+              },
+            ),
+          ],
+    };
+  }
+
+  return {
+    recommendedFormat: 'singbox',
+    note: isZh
+      ? '这组步骤使用公开的 Sing-box VT 真机截图，按 iPhone / iPad 上的配置导入顺序走即可。'
+      : 'These steps use public Sing-box VT screenshots and follow the normal iPhone / iPad import flow.',
+    sourceLabel: isZh ? 'Sing-box for Apple 教程来源' : 'Sing-box for Apple tutorial source',
+    sourceUrl: SINGBOX_APPLE_GUIDE_SOURCE_URL,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先进入配置页准备新增订阅',
+            '打开 Sing-box VT 后，先进入配置或 Profiles 页面，准备新增远程配置。',
+            '如果刚安装完成，先把网络扩展或基础权限提示处理掉。',
+            '配置页',
+            ['Profiles', 'Configurations', '新增配置'],
+            '打开配置页',
+            {
+              src: SINGBOX_APPLE_SCREENSHOTS.iosConfigurationSettings1,
+              alt: 'Sing-box VT 配置页',
+            },
+          ),
+          createStep(
+            'import',
+            '切到 Sing-box 格式并保存配置',
+            '先在这里复制 Sing-box 链接，再在 App 里粘贴到远程配置或 URL 输入框并保存。',
+            '如果你看到 JSON、Profile 或 Configuration 字样，基本就是对的入口。',
+            '导入配置',
+            ['Sing-box 格式', '粘贴 URL', '保存配置'],
+            '保存配置',
+            {
+              src: SINGBOX_APPLE_SCREENSHOTS.iosConfigurationSettings2,
+              alt: 'Sing-box VT 保存配置',
+            },
+          ),
+          createStep(
+            'connect',
+            '回到主页启用 sing-box',
+            '配置保存后，回到主页或运行页，把 sing-box 开关打开。',
+            '如果导入成功却还没开始代理，通常就是开关还没真正启用。',
+            '启用配置',
+            ['返回主页', '打开 sing-box', '确认状态变化'],
+            '启用 sing-box',
+            {
+              src: SINGBOX_APPLE_SCREENSHOTS.iosEnableSingBox1,
+              alt: 'Sing-box VT 启用连接',
+            },
+          ),
+          createStep(
+            'connect',
+            '允许 iOS 的 VPN / 网络扩展权限',
+            'iPhone / iPad 第一次连接时会弹出系统确认，需要手动允许。',
+            '如果状态看起来已开启但网络还是直连，优先回来看这一步。',
+            '系统权限',
+            ['Allow VPN', '系统确认', '返回应用'],
+            '允许权限',
+            {
+              src: SINGBOX_APPLE_SCREENSHOTS.iosEnableSingBox2,
+              alt: 'Sing-box VT iOS 权限确认',
+            },
+          ),
+          createStep(
+            'connect',
+            '最后选择节点或策略组',
+            '连接建立后，到分组页里选中要使用的节点或策略组。',
+            '先用默认规则跑通，再去改更细的 DNS 或路由设置。',
+            '分组选择',
+            ['打开 Groups', '选择节点', '确认当前分组'],
+            '选择节点',
+            {
+              src: SINGBOX_APPLE_SCREENSHOTS.iosGroups,
+              alt: 'Sing-box VT 分组和节点选择',
+            },
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Open the configuration screen first',
+            'After launching Sing-box VT, go to Profiles or Configurations and prepare a new remote profile.',
+            'If installation just finished, clear any network extension or base permission prompt first.',
+            'Configuration screen',
+            ['Profiles', 'Configurations', 'New profile'],
+            'Open configuration screen',
+            {
+              src: SINGBOX_APPLE_SCREENSHOTS.iosConfigurationSettings1,
+              alt: 'Sing-box VT configuration screen',
+            },
+          ),
+          createStep(
+            'import',
+            'Switch this page to Sing-box and save the profile',
+            'Copy the Sing-box link from here, paste it into the remote profile or URL field inside the app, then save.',
+            'If the app talks about JSON, Profiles, or Configurations, you are usually in the right place.',
+            'Import profile',
+            ['Sing-box format', 'Paste URL', 'Save profile'],
+            'Save profile',
+            {
+              src: SINGBOX_APPLE_SCREENSHOTS.iosConfigurationSettings2,
+              alt: 'Save a profile in Sing-box VT',
+            },
+          ),
+          createStep(
+            'connect',
+            'Return home and enable sing-box',
+            'After the profile is saved, go back to the main screen and turn sing-box on.',
+            'If import worked but no proxy starts, the switch often was not fully enabled yet.',
+            'Enable profile',
+            ['Return home', 'Turn on sing-box', 'Confirm status changed'],
+            'Enable sing-box',
+            {
+              src: SINGBOX_APPLE_SCREENSHOTS.iosEnableSingBox1,
+              alt: 'Enable the connection in Sing-box VT',
+            },
+          ),
+          createStep(
+            'connect',
+            'Allow the iOS VPN / network extension prompt',
+            'The first connection on iPhone or iPad triggers a system confirmation that you must accept.',
+            'If the app looks active but traffic stays direct, check this permission first.',
+            'System permission',
+            ['Allow VPN', 'Accept system prompt', 'Return to app'],
+            'Allow permission',
+            {
+              src: SINGBOX_APPLE_SCREENSHOTS.iosEnableSingBox2,
+              alt: 'iOS permission prompt in Sing-box VT',
+            },
+          ),
+          createStep(
+            'connect',
+            'Choose a node or policy group last',
+            'Once the connection is up, open the groups page and choose the node or policy group you want.',
+            'Keep DNS and routing tweaks for later. Start with the default rules first.',
+            'Groups',
+            ['Open Groups', 'Choose node', 'Confirm active group'],
+            'Select node',
+            {
+              src: SINGBOX_APPLE_SCREENSHOTS.iosGroups,
+              alt: 'Groups and node selection in Sing-box VT',
+            },
+          ),
+        ],
+  };
+}
+
+function buildRealSingBoxAndroidGuide(isZh: boolean): ClientGuide {
+  return {
+    recommendedFormat: 'singbox',
+    note: isZh
+      ? '这组步骤使用公开的 sing-box for Android 真机截图。'
+      : 'These steps use public sing-box for Android screenshots.',
+    sourceLabel: isZh ? 'sing-box for Android 教程来源' : 'sing-box for Android tutorial source',
+    sourceUrl: SINGBOX_ANDROID_GUIDE_SOURCE_URL,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先新建一个远程配置',
+            '打开 sing-box for Android 后，先从 Profiles 或新增配置入口开始。',
+            '第一次启动如果要初始化核心或读取存储权限，先完成。',
+            '新增配置',
+            ['Profiles', '新增配置', '远程配置'],
+            '新建配置',
+            {
+              src: SINGBOX_ANDROID_SCREENSHOTS.createConfig1,
+              alt: 'sing-box for Android 新建配置第一步',
+            },
+          ),
+          createStep(
+            'import',
+            '继续选择远程导入方式',
+            '在新增配置流程里继续往下走，选择通过 URL 或远程配置导入。',
+            'sing-box 原生格式通常会走 Profiles / Config 这条路径。',
+            '导入方式',
+            ['Remote profile', 'URL 导入', '继续下一步'],
+            '选择导入方式',
+            {
+              src: SINGBOX_ANDROID_SCREENSHOTS.createConfig2,
+              alt: 'sing-box for Android 新建配置第二步',
+            },
+          ),
+          createStep(
+            'import',
+            '切到 Sing-box 格式并保存配置',
+            '先在这里复制 Sing-box 链接，再在配置设置页里粘贴并保存。',
+            '如果导入后解析报错，先检查是不是复制了错误格式的链接。',
+            '配置设置',
+            ['Sing-box 格式', '粘贴 URL', '保存配置'],
+            '保存配置',
+            {
+              src: SINGBOX_ANDROID_SCREENSHOTS.configSettings,
+              alt: 'sing-box for Android 配置设置页',
+            },
+          ),
+          createStep(
+            'connect',
+            '开始连接并允许 VPN',
+            '保存后回到主界面开始连接，Android 会弹出 VPN 权限请求。',
+            '如果列表已经有节点但网络还是不通，通常就是这一步没放行。',
+            'VPN 权限',
+            ['开始连接', 'Allow VPN', '返回应用'],
+            '允许 VPN',
+            {
+              src: SINGBOX_ANDROID_SCREENSHOTS.vpnPermission,
+              alt: 'sing-box for Android VPN 权限确认',
+            },
+          ),
+          createStep(
+            'connect',
+            '最后选择节点或策略组',
+            '连接建立后，到分组页里选中你要使用的节点或策略组。',
+            '先用默认规则跑通，再去改更底层的 DNS 或路由开关。',
+            '节点选择',
+            ['打开 Groups', '选择节点', '确认当前分组'],
+            '选择节点',
+            {
+              src: SINGBOX_ANDROID_SCREENSHOTS.nodeSelection,
+              alt: 'sing-box for Android 节点选择',
+            },
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Create a new remote profile first',
+            'After opening sing-box for Android, start from Profiles or the new profile entry.',
+            'If first launch needs core initialization or storage permission, finish that first.',
+            'New profile',
+            ['Profiles', 'New profile', 'Remote profile'],
+            'Create profile',
+            {
+              src: SINGBOX_ANDROID_SCREENSHOTS.createConfig1,
+              alt: 'Create a new profile in sing-box for Android',
+            },
+          ),
+          createStep(
+            'import',
+            'Continue with the remote import flow',
+            'In the profile creation flow, keep going and choose URL or remote profile import.',
+            'The sing-box-native path usually stays under Profiles or Configs.',
+            'Import method',
+            ['Remote profile', 'URL import', 'Continue'],
+            'Choose import method',
+            {
+              src: SINGBOX_ANDROID_SCREENSHOTS.createConfig2,
+              alt: 'Continue remote profile import in sing-box for Android',
+            },
+          ),
+          createStep(
+            'import',
+            'Switch this page to Sing-box and save the profile',
+            'Copy the Sing-box link from here, paste it into the settings screen, then save.',
+            'If parsing fails after import, the first thing to check is whether the wrong format was copied.',
+            'Profile settings',
+            ['Sing-box format', 'Paste URL', 'Save profile'],
+            'Save profile',
+            {
+              src: SINGBOX_ANDROID_SCREENSHOTS.configSettings,
+              alt: 'Profile settings in sing-box for Android',
+            },
+          ),
+          createStep(
+            'connect',
+            'Start the profile and allow VPN',
+            'Return to the main screen, start the connection, and accept Android’s VPN permission prompt.',
+            'If the node list is visible but traffic still fails, this permission is usually the missing piece.',
+            'VPN permission',
+            ['Start connection', 'Allow VPN', 'Return to app'],
+            'Allow VPN',
+            {
+              src: SINGBOX_ANDROID_SCREENSHOTS.vpnPermission,
+              alt: 'VPN permission prompt in sing-box for Android',
+            },
+          ),
+          createStep(
+            'connect',
+            'Choose a node or policy group last',
+            'After the connection comes up, open the groups page and choose the node or policy group you want.',
+            'Leave lower-level DNS and routing toggles alone until the first connection is stable.',
+            'Node selection',
+            ['Open Groups', 'Choose node', 'Confirm active group'],
+            'Select node',
+            {
+              src: SINGBOX_ANDROID_SCREENSHOTS.nodeSelection,
+              alt: 'Node selection in sing-box for Android',
+            },
+          ),
+        ],
+  };
+}
+
+function buildRealClashBoxGuide(isZh: boolean): ClientGuide {
+  return {
+    recommendedFormat: 'clash',
+    note: isZh
+      ? '这组步骤使用公开的 ClashBox 真机截图，适合 HarmonyOS NEXT 直接按 Clash 流程导入。'
+      : 'These steps use public ClashBox screenshots and follow the normal Clash-style import flow on HarmonyOS NEXT.',
+    sourceLabel: isZh ? 'ClashBox 图文教程来源' : 'ClashBox tutorial source',
+    sourceUrl: CLASHBOX_GUIDE_SOURCE_URL,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先打开 ClashBox 主界面',
+            '进入 ClashBox 后，先找到 Profiles、配置或导入入口。',
+            'HarmonyOS NEXT 上第一次启动如果有系统提示，先完成。',
+            '主界面',
+            ['Profiles', '配置页', '导入入口'],
+            '打开主界面',
+            {
+              src: CLASHBOX_SCREENSHOTS.home,
+              alt: 'ClashBox 主界面',
+            },
+          ),
+          createStep(
+            'import',
+            '切到 Clash 格式并保存订阅',
+            '先复制当前页面的 Clash 链接，再粘贴到 ClashBox 的配置或订阅输入框里并保存。',
+            'ClashBox 最稳妥的导入方式还是 Clash 格式，不要先贴 Universal。',
+            '导入配置',
+            ['Clash 格式', '粘贴 URL', '保存配置'],
+            '保存订阅',
+            {
+              src: CLASHBOX_SCREENSHOTS.profile,
+              alt: 'ClashBox 配置和订阅页面',
+            },
+          ),
+          createStep(
+            'connect',
+            '最后启动并允许系统接管',
+            '确认配置加载完成后再点击启动，让 ClashBox 接管网络流量。',
+            '如果导入成功但网络不通，优先检查系统权限或代理接管状态。',
+            '开始连接',
+            ['启动配置', '允许系统权限', '回到浏览器测试'],
+            '开始连接',
+            {
+              src: CLASHBOX_SCREENSHOTS.start,
+              alt: 'ClashBox 开始连接',
+            },
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Open the ClashBox home screen first',
+            'Inside ClashBox, start from the Profiles, configuration, or import entry.',
+            'If HarmonyOS NEXT shows a first-run prompt, finish that first.',
+            'Home screen',
+            ['Profiles', 'Config screen', 'Import entry'],
+            'Open home',
+            {
+              src: CLASHBOX_SCREENSHOTS.home,
+              alt: 'ClashBox home screen',
+            },
+          ),
+          createStep(
+            'import',
+            'Switch this page to Clash and save the profile',
+            'Copy the Clash link from here, paste it into ClashBox, then save the remote profile.',
+            'ClashBox is most reliable when you start with the Clash format instead of the Universal link.',
+            'Profile import',
+            ['Clash format', 'Paste URL', 'Save profile'],
+            'Save profile',
+            {
+              src: CLASHBOX_SCREENSHOTS.profile,
+              alt: 'ClashBox profile import screen',
+            },
+          ),
+          createStep(
+            'connect',
+            'Start the profile and allow system takeover',
+            'Once the profile has loaded, start the connection so ClashBox takes over network traffic.',
+            'If import succeeds but traffic still fails, check system permissions or proxy takeover first.',
+            'Connect',
+            ['Start profile', 'Allow system permission', 'Test in browser'],
+            'Connect',
+            {
+              src: CLASHBOX_SCREENSHOTS.start,
+              alt: 'Start the connection in ClashBox',
+            },
+          ),
+        ],
+  };
+}
+
+function buildRealClashMetaGuide(isZh: boolean): ClientGuide {
+  return {
+    recommendedFormat: 'clash',
+    note: isZh
+      ? '这组截图来自公开的 Clash for Android 教程；Clash Meta for Android 的订阅导入入口和流程基本一致。'
+      : 'These screenshots come from a public Clash for Android walkthrough. Clash Meta for Android keeps a nearly identical Clash-style import flow.',
+    sourceLabel: isZh
+      ? 'Clash Meta for Android 教程来源'
+      : 'Clash Meta for Android tutorial source',
+    sourceUrl: CLASH_META_GUIDE_SOURCE_URL,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先打开配置主界面',
+            '进入 Clash Meta for Android 后，先找到配置列表或 Profiles 页。',
+            '第一次启动如果还没初始化核心或权限，先处理掉。',
+            '配置首页',
+            ['Profiles', '配置列表', '导入入口'],
+            '打开配置页',
+            {
+              src: CLASH_META_SCREENSHOTS.home,
+              alt: 'Clash Meta for Android 主界面',
+            },
+          ),
+          createStep(
+            'import',
+            '新建远程配置并准备粘贴链接',
+            '在配置页里新增一个远程配置，准备导入当前页面的 Clash 订阅。',
+            'Meta 系客户端同样应该优先使用 Clash 格式，别先贴 Universal。',
+            '新增配置',
+            ['Clash 格式', 'Remote profile', 'URL 导入'],
+            '新建配置',
+            {
+              src: CLASH_META_SCREENSHOTS.configuration,
+              alt: 'Clash Meta for Android 配置界面',
+            },
+          ),
+          createStep(
+            'import',
+            '粘贴 Clash 链接并保存',
+            '复制当前页面的 Clash 订阅链接，粘贴到配置输入框并保存。',
+            '如果规则或策略组不完整，通常先回头检查格式和刷新状态。',
+            '保存配置',
+            ['粘贴 URL', '保存配置', '回到列表'],
+            '保存配置',
+            {
+              src: CLASH_META_SCREENSHOTS.saveConfiguration,
+              alt: 'Clash Meta for Android 保存配置',
+            },
+          ),
+          createStep(
+            'connect',
+            '最后启动代理并允许 VPN',
+            '确认配置加载完成后再启动代理，Android 会弹出 VPN 权限请求。',
+            '如果看得到节点却还是不通，优先检查这一步有没有放行。',
+            '开启代理',
+            ['启动代理', 'Allow VPN', '回到浏览器测试'],
+            '开始连接',
+            {
+              src: CLASH_META_SCREENSHOTS.startProxy,
+              alt: 'Clash Meta for Android 开启代理',
+            },
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Open the profile screen first',
+            'Inside Clash Meta for Android, start from the profile list or Profiles screen.',
+            'If core setup or permissions are still pending, finish that first.',
+            'Profile home',
+            ['Profiles', 'Profile list', 'Import entry'],
+            'Open profile screen',
+            {
+              src: CLASH_META_SCREENSHOTS.home,
+              alt: 'Clash Meta for Android home screen',
+            },
+          ),
+          createStep(
+            'import',
+            'Create a remote profile and prepare the link',
+            'From the profile page, create a new remote profile and prepare to import the Clash subscription from this page.',
+            'Meta-family clients should still import the Clash format here, not the Universal link.',
+            'New profile',
+            ['Clash format', 'Remote profile', 'URL import'],
+            'Create profile',
+            {
+              src: CLASH_META_SCREENSHOTS.configuration,
+              alt: 'Clash Meta for Android profile configuration screen',
+            },
+          ),
+          createStep(
+            'import',
+            'Paste the Clash URL and save',
+            'Copy the Clash subscription link from here, paste it into the input field, and save the profile.',
+            'If rules or groups look incomplete later, check the format and refresh state first.',
+            'Save profile',
+            ['Paste URL', 'Save profile', 'Return to list'],
+            'Save profile',
+            {
+              src: CLASH_META_SCREENSHOTS.saveConfiguration,
+              alt: 'Save profile in Clash Meta for Android',
+            },
+          ),
+          createStep(
+            'connect',
+            'Start the proxy and allow VPN last',
+            'After the profile has loaded, start the proxy and accept Android’s VPN permission prompt.',
+            'If nodes are visible but traffic still fails, this permission is the first thing to re-check.',
+            'Start proxy',
+            ['Start proxy', 'Allow VPN', 'Test in browser'],
+            'Connect',
+            {
+              src: CLASH_META_SCREENSHOTS.startProxy,
+              alt: 'Start proxy in Clash Meta for Android',
+            },
+          ),
+        ],
+  };
+}
+
 function decorateGuideWithRealScreenshots(
   guide: ClientGuide,
   clientId: ClientId,
   platform: GuidePlatform,
   isZh: boolean,
 ): ClientGuide {
-  if (clientId === 'v2rayN' && platform === 'windows') {
+  if (clientId === 'flClash' && ['windows', 'macos', 'linux', 'android'].includes(platform)) {
+    return buildRealFlClashGuide(getPlatformLabel(platform, isZh), isZh);
+  }
+
+  if (clientId === 'v2rayN' && (platform === 'windows' || platform === 'linux')) {
     return buildRealV2RayNGuide(isZh);
   }
 
@@ -1490,12 +2848,36 @@ function decorateGuideWithRealScreenshots(
     return buildRealClashVergeGuide(getPlatformLabel(platform, isZh), isZh);
   }
 
+  if (clientId === 'sparkle' && ['windows', 'macos', 'linux'].includes(platform)) {
+    return buildRealSparkleGuide(getPlatformLabel(platform, isZh), isZh);
+  }
+
   if (clientId === 'v2rayNG' && platform === 'android') {
     return buildRealV2RayNGGuide(isZh);
   }
 
+  if (clientId === 'clashMeta' && platform === 'android') {
+    return buildRealClashMetaGuide(isZh);
+  }
+
+  if (clientId === 'singBox' && platform === 'android') {
+    return buildRealSingBoxAndroidGuide(isZh);
+  }
+
   if (clientId === 'shadowrocket' && platform === 'ios') {
     return buildRealShadowrocketGuide(isZh);
+  }
+
+  if (clientId === 'surge' && platform === 'ios') {
+    return buildRealSurgeGuide(isZh);
+  }
+
+  if (clientId === 'singBox' && (platform === 'ios' || platform === 'macos')) {
+    return buildRealSingBoxAppleGuide(platform, isZh);
+  }
+
+  if (clientId === 'clashBox' && platform === 'harmonyos') {
+    return buildRealClashBoxGuide(isZh);
   }
 
   if (clientId === 'hiddify') {
@@ -1528,6 +2910,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
       clash: subId ? buildSubscriptionUrl(subId, 'clash') : '',
       v2ray: subId ? buildSubscriptionUrl(subId, 'v2ray') : '',
       singbox: subId ? buildSubscriptionUrl(subId, 'singbox') : '',
+      surge: subId ? buildSubscriptionUrl(subId, 'surge') : '',
     }),
     [subId],
   );
@@ -1555,6 +2938,11 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
         label: 'Singbox',
         desc: isZh ? '适合 sing-box 客户端' : 'For sing-box clients',
       },
+      {
+        key: 'surge' as const,
+        label: 'Surge',
+        desc: isZh ? '适合 Surge 客户端' : 'For Surge clients',
+      },
     ],
     [isZh],
   );
@@ -1567,13 +2955,23 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
           : ((client.recommendedFor[0] ?? client.platforms[0]) as ClientDownloadPlatform);
         const useEnglishDescription =
           isZh &&
-          (client.id === 'flClash' ||
+          ((client.id === 'v2rayN' && activePlatform === 'linux') ||
+            client.id === 'flClash' ||
             client.id === 'clashMeta' ||
             client.id === 'sparkle' ||
             client.id === 'singBox');
         return {
           id: client.id,
-          name: client.name,
+          name:
+            client.id === 'singBox'
+              ? preferredPlatform === 'ios'
+                ? 'Sing-box VT'
+                : preferredPlatform === 'macos'
+                  ? 'Singbox for Mac'
+                  : preferredPlatform === 'linux'
+                    ? 'Singbox for Linux'
+                    : client.name
+              : client.name,
           icon: client.icon,
           os: client.os,
           platforms: client.platforms,
@@ -1585,10 +2983,21 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     [activePlatform, isZh],
   );
 
-  const visibleClients = useMemo(
-    () => clients.filter((client) => client.platforms.includes(activePlatform)),
-    [activePlatform, clients],
-  );
+  const visibleClients = useMemo(() => {
+    const preferredOrder = PLATFORM_CLIENT_ORDER[activePlatform];
+
+    return [...clients]
+      .filter(
+        (client) => client.platforms.includes(activePlatform) && preferredOrder.includes(client.id),
+      )
+      .sort((left, right) => {
+        const leftIndex = preferredOrder.indexOf(left.id);
+        const rightIndex = preferredOrder.indexOf(right.id);
+        const normalizedLeftIndex = leftIndex === -1 ? Number.MAX_SAFE_INTEGER : leftIndex;
+        const normalizedRightIndex = rightIndex === -1 ? Number.MAX_SAFE_INTEGER : rightIndex;
+        return normalizedLeftIndex - normalizedRightIndex;
+      });
+  }, [activePlatform, clients]);
   const recommendedClientId = useMemo(
     () => getRecommendedClientId(activePlatform),
     [activePlatform],
@@ -1672,7 +3081,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 : 'Choose the device you use most and the recommended client, format, and guide will switch together.'
             }
           />
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {PLATFORM_OPTIONS.map((platform) => (
               <button
                 key={platform.key}
@@ -1690,21 +3099,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   {isZh ? platform.zhLabel : platform.label}
                 </p>
                 <p className="mt-1 text-xs leading-6 text-zinc-400">
-                  {platform.key === 'windows'
-                    ? isZh
-                      ? '适合电脑端日常使用。'
-                      : 'A solid choice for desktop use.'
-                    : platform.key === 'macos'
-                      ? isZh
-                        ? '适合偏好规则和策略控制。'
-                        : 'Best if you prefer rules and policy control.'
-                      : platform.key === 'android'
-                        ? isZh
-                          ? '适合手机上快速导入。'
-                          : 'Great for quick setup on your phone.'
-                        : isZh
-                          ? '适合 iPhone 和 iPad 导入。'
-                          : 'Best for import on iPhone and iPad.'}
+                  {getPlatformBlurb(platform.key, isZh)}
                 </p>
               </button>
             ))}
@@ -1827,7 +3222,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             </Button>
           </div>
           {showFormatOptions ? (
-            <div className="grid gap-2 md:grid-cols-4">
+            <div className="grid gap-2 md:grid-cols-5">
               {formatOptions.map((format) => (
                 <button
                   key={format.key}
@@ -1989,12 +3384,19 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
               ))}
             </div>
           ) : (
-            <div className="grid gap-4 xl:grid-cols-3">
-              {guide.steps.map((step, index) => (
-                <div key={`${activeClient.id}-${step.tone}-${index}`}>
-                  <GuideStepCard step={step} index={index} />
-                </div>
-              ))}
+            <div className="space-y-4">
+              <div className="rounded-[20px] border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm leading-6 text-amber-100">
+                {isZh
+                  ? '当前客户端暂时只有简化步骤，没有站内真机图文教程。'
+                  : 'This client currently uses a simplified text guide without on-site screenshots.'}
+              </div>
+              <div className="grid gap-4 xl:grid-cols-3">
+                {guide.steps.map((step, index) => (
+                  <div key={`${activeClient.id}-${step.tone}-${index}`}>
+                    <GuideStepCard step={step} index={index} />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           <Button

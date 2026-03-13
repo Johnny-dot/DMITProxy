@@ -1,14 +1,23 @@
 export type ClientDownloadId =
   | 'v2rayN'
   | 'v2rayNG'
+  | 'surge'
   | 'shadowrocket'
+  | 'clashBox'
   | 'clashVerge'
   | 'flClash'
+  | 'exclave'
   | 'clashMeta'
   | 'sparkle'
   | 'singBox'
   | 'hiddify';
-export type ClientDownloadPlatform = 'windows' | 'macos' | 'android' | 'ios';
+export type ClientDownloadPlatform =
+  | 'windows'
+  | 'macos'
+  | 'linux'
+  | 'android'
+  | 'ios'
+  | 'harmonyos';
 
 export interface ClientDownloadLinks {
   github: string;
@@ -18,9 +27,12 @@ export interface ClientDownloadLinks {
 const OFFICIAL_DOWNLOADS: Record<ClientDownloadId, string> = {
   v2rayN: 'https://github.com/2dust/v2rayN/releases/latest',
   v2rayNG: 'https://github.com/2dust/v2rayNG/releases/latest',
+  surge: 'https://apps.apple.com/app/surge-5/id1442620678',
   shadowrocket: 'https://apps.apple.com/app/shadowrocket/id932747118',
+  clashBox: 'https://github.com/xiaobaigroup/ClashBox/releases/latest',
   clashVerge: 'https://github.com/clash-verge-rev/clash-verge-rev/releases/latest',
   flClash: 'https://github.com/chen08209/FlClash/releases/latest',
+  exclave: 'https://github.com/dyhkwong/Exclave/releases/latest',
   clashMeta: 'https://github.com/MetaCubeX/ClashMetaForAndroid/releases/latest',
   sparkle: 'https://github.com/xishang0128/mihomo-party/releases/latest',
   singBox: 'https://sing-box.sagernet.org/zh/clients/android/',
@@ -33,6 +45,7 @@ const PLATFORM_OFFICIAL_DOWNLOADS: Partial<
   singBox: {
     android: 'https://sing-box.sagernet.org/zh/clients/android/',
     macos: 'https://sing-box.sagernet.org/zh/clients/apple/',
+    linux: 'https://sing-box.sagernet.org/zh/installation/package-manager/',
     ios: 'https://apps.apple.com/app/sing-box-vt/id6673731168',
   },
 };
@@ -40,9 +53,12 @@ const PLATFORM_OFFICIAL_DOWNLOADS: Partial<
 const MANAGED_MIRROR_SUPPORTED_PLATFORMS: Record<ClientDownloadId, ClientDownloadPlatform[]> = {
   v2rayN: ['windows'],
   v2rayNG: ['android'],
+  surge: [],
   shadowrocket: [],
+  clashBox: [],
   clashVerge: ['windows', 'macos'],
   flClash: [],
+  exclave: [],
   clashMeta: [],
   sparkle: [],
   singBox: [],
@@ -58,11 +74,14 @@ const DEFAULT_VPS_FILES: Partial<
   v2rayNG: {
     android: 'v2rayNG-universal.apk',
   },
+  surge: {},
   clashVerge: {
     windows: 'clash-verge-x64-setup.exe',
     macos: 'clash-verge-x64.dmg',
   },
+  clashBox: {},
   flClash: {},
+  exclave: {},
   clashMeta: {},
   sparkle: {},
   singBox: {},
@@ -96,9 +115,12 @@ function resolveVpsDownload(id: ClientDownloadId, platform: ClientDownloadPlatfo
   const explicit = {
     v2rayN: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_V2RAYN_URL),
     v2rayNG: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_V2RAYNG_URL),
+    surge: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SURGE_URL),
     shadowrocket: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SHADOWROCKET_URL),
+    clashBox: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_CLASHBOX_URL),
     clashVerge: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_CLASH_VERGE_URL),
     flClash: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_FLCLASH_URL),
+    exclave: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_EXCLAVE_URL),
     clashMeta: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_CLASH_META_URL),
     sparkle: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SPARKLE_URL),
     singBox: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SING_BOX_URL),

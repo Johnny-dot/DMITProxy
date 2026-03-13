@@ -41,7 +41,7 @@ export interface PortalContextResponse {
 }
 
 export type SubscriptionFormat = 'universal' | 'clash' | 'v2ray' | 'singbox' | 'surge' | 'quanx';
-export type PlatformKey = 'all' | 'windows' | 'macos' | 'android' | 'ios';
+export type PlatformKey = 'all' | 'windows' | 'macos' | 'linux' | 'android' | 'ios' | 'harmonyos';
 export type PortalTab =
   | 'home'
   | 'market'
@@ -59,9 +59,12 @@ export interface ClientCard {
   id:
     | 'v2rayN'
     | 'v2rayNG'
+    | 'surge'
     | 'shadowrocket'
+    | 'clashBox'
     | 'clashVerge'
     | 'flClash'
+    | 'exclave'
     | 'clashMeta'
     | 'sparkle'
     | 'singBox'

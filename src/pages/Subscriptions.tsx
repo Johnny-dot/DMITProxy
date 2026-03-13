@@ -48,9 +48,9 @@ export function SubscriptionsPage() {
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeSubTab, setActiveSubTab] = useState('universal');
-  const [activeOsTab, setActiveOsTab] = useState<'windows' | 'macos' | 'ios' | 'android'>(
-    'windows',
-  );
+  const [activeOsTab, setActiveOsTab] = useState<
+    'windows' | 'macos' | 'linux' | 'ios' | 'android' | 'harmonyos'
+  >('windows');
   const [subId, setSubId] = useState(() => localStorage.getItem(STORAGE_KEY) ?? '');
 
   const [qrOpen, setQrOpen] = useState(false);
@@ -75,6 +75,11 @@ export function SubscriptionsPage() {
         t('subscriptions.tutorial.macos2'),
         t('subscriptions.tutorial.macos3'),
       ],
+      linux: [
+        t('subscriptions.tutorial.linux1'),
+        t('subscriptions.tutorial.linux2'),
+        t('subscriptions.tutorial.linux3'),
+      ],
       ios: [
         t('subscriptions.tutorial.ios1'),
         t('subscriptions.tutorial.ios2'),
@@ -84,6 +89,11 @@ export function SubscriptionsPage() {
         t('subscriptions.tutorial.android1'),
         t('subscriptions.tutorial.android2'),
         t('subscriptions.tutorial.android3'),
+      ],
+      harmonyos: [
+        t('subscriptions.tutorial.harmonyos1'),
+        t('subscriptions.tutorial.harmonyos2'),
+        t('subscriptions.tutorial.harmonyos3'),
       ],
     }),
     [t],
@@ -510,27 +520,34 @@ export function SubscriptionsPage() {
             ? '“官方源”会打开 GitHub 或应用商店；“镜像下载”走当前站点 VPS 的缓存，适合官方源较慢时使用。'
             : 'Official opens GitHub or the app store. Mirror serves the cached package from this VPS when official sources are slow.'}
         </p>
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
           {[
             {
               name: 'Windows',
               icon: Wind,
-              version: 'v2rayN',
-              id: 'v2rayN' as const,
+              version: 'FlClash',
+              id: 'flClash' as const,
               platform: 'windows' as const,
             },
             {
               name: 'macOS',
               icon: Apple,
-              version: 'Clash Verge',
-              id: 'clashVerge' as const,
+              version: 'FlClash',
+              id: 'flClash' as const,
               platform: 'macos' as const,
+            },
+            {
+              name: 'Linux',
+              icon: Terminal,
+              version: 'FlClash',
+              id: 'flClash' as const,
+              platform: 'linux' as const,
             },
             {
               name: 'Android',
               icon: Smartphone,
-              version: 'v2rayNG',
-              id: 'v2rayNG' as const,
+              version: 'FlClash',
+              id: 'flClash' as const,
               platform: 'android' as const,
             },
             {
@@ -539,6 +556,13 @@ export function SubscriptionsPage() {
               version: 'Shadowrocket',
               id: 'shadowrocket' as const,
               platform: 'ios' as const,
+            },
+            {
+              name: 'HarmonyOS NEXT',
+              icon: Smartphone,
+              version: 'ClashBox',
+              id: 'clashBox' as const,
+              platform: 'harmonyos' as const,
             },
           ].map((client) => {
             const links = getClientDownloadLinks(client.id, client.platform);
@@ -594,7 +618,7 @@ export function SubscriptionsPage() {
         <Card>
           <CardContent className="p-6 space-y-6">
             <Tabs>
-              <TabsList className="grid grid-cols-4 w-full">
+              <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
                 <TabsTrigger
                   active={activeOsTab === 'windows'}
                   onClick={() => setActiveOsTab('windows')}
@@ -607,6 +631,12 @@ export function SubscriptionsPage() {
                 >
                   macOS
                 </TabsTrigger>
+                <TabsTrigger
+                  active={activeOsTab === 'linux'}
+                  onClick={() => setActiveOsTab('linux')}
+                >
+                  Linux
+                </TabsTrigger>
                 <TabsTrigger active={activeOsTab === 'ios'} onClick={() => setActiveOsTab('ios')}>
                   iOS
                 </TabsTrigger>
@@ -615,6 +645,12 @@ export function SubscriptionsPage() {
                   onClick={() => setActiveOsTab('android')}
                 >
                   Android
+                </TabsTrigger>
+                <TabsTrigger
+                  active={activeOsTab === 'harmonyos'}
+                  onClick={() => setActiveOsTab('harmonyos')}
+                >
+                  HarmonyOS NEXT
                 </TabsTrigger>
               </TabsList>
 
@@ -632,7 +668,15 @@ export function SubscriptionsPage() {
               ))}
             </Tabs>
             <div className="border-t border-white/5 pt-4 text-xs text-zinc-500">
-              {t('subscriptions.tip', { name: 'Universal' })}
+              {t('subscriptions.tip', {
+                name:
+                  activeOsTab === 'windows' ||
+                  activeOsTab === 'macos' ||
+                  activeOsTab === 'linux' ||
+                  activeOsTab === 'harmonyos'
+                    ? 'Clash'
+                    : 'Universal',
+              })}
             </div>
           </CardContent>
         </Card>
