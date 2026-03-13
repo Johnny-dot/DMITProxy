@@ -45,8 +45,70 @@ describe('xuiClients helpers', () => {
     const rows = flattenInboundClients(inbounds);
     expect(rows).toHaveLength(1);
     expect(rows[0].username).toBe('alice@example.com');
+    expect(rows[0].clientId).toBe('uuid-1');
     expect(rows[0].up).toBe(1024);
     expect(rows[0].down).toBe(2048);
+    expect(rows[0].configSource).toBe('settings');
+  });
+
+  it('uses protocol-specific client identifiers', () => {
+    const inbounds: Inbound[] = [
+      {
+        id: 2,
+        remark: 'trojan-inbound',
+        protocol: 'trojan',
+        port: 443,
+        enable: true,
+        up: 0,
+        down: 0,
+        total: 0,
+        expiryTime: 0,
+        settings: JSON.stringify({
+          clients: [
+            {
+              password: 'trojan-secret',
+              email: 'bob@example.com',
+              enable: true,
+              expiryTime: 0,
+              totalGB: 0,
+              subId: 'trojan-sub',
+            },
+          ],
+        }),
+        clientStats: [],
+      },
+      {
+        id: 3,
+        remark: 'ss-inbound',
+        protocol: 'shadowsocks',
+        port: 8443,
+        enable: true,
+        up: 0,
+        down: 0,
+        total: 0,
+        expiryTime: 0,
+        settings: JSON.stringify({
+          clients: [
+            {
+              email: 'charlie@example.com',
+              method: 'aes-256-gcm',
+              password: 'ss-secret',
+              enable: true,
+              expiryTime: 0,
+              totalGB: 0,
+              subId: 'ss-sub',
+            },
+          ],
+        }),
+        clientStats: [],
+      },
+    ];
+
+    const rows = flattenInboundClients(inbounds);
+    expect(rows.find((row) => row.protocol === 'trojan')?.clientId).toBe('trojan-secret');
+    expect(rows.find((row) => row.protocol === 'shadowsocks')?.clientId).toBe(
+      'charlie@example.com',
+    );
   });
 
   it('returns expired status when expiry is in the past', () => {
@@ -59,6 +121,7 @@ describe('xuiClients helpers', () => {
       inboundRemark: 'test',
       protocol: 'vless',
       port: 443,
+      clientId: 'uuid-1',
       email: 'alice@example.com',
       username: 'alice',
       uuid: 'uuid-1',
@@ -69,6 +132,8 @@ describe('xuiClients helpers', () => {
       up: 0,
       down: 0,
       deviceLimit: 0,
+      configSource: 'settings',
+      rawClient: { id: 'uuid-1', email: 'alice@example.com', subId: 'sub-1' },
     });
 
     expect(status).toBe('expired');

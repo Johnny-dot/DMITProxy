@@ -168,7 +168,7 @@ describe('market data cache', () => {
       const second = await marketModule.getMarketSnapshot();
       const third = await marketModule.getMarketSnapshot(true);
 
-      expect(first.items).toHaveLength(24);
+      expect(first.items).toHaveLength(30);
       expect(first.items[0]).toMatchObject({
         status: 'ok',
         latest: 100,

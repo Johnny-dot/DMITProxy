@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 // Persists across refreshes within the same browser tab session.
 // Prevents re-authentication via a lingering 3X-UI cookie after an explicit logout.
-const LOGGED_OUT_KEY = 'pd:logged_out';
+export const LOGGED_OUT_KEY = 'pd:logged_out';
 const HAS_CONFIGURED_XUI = isXuiConfigured();
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

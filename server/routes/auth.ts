@@ -3,12 +3,18 @@ import { db, hashPassword, verifyPassword, generateToken, hashToken } from '../d
 import {
   autoProvisionClientForRegisteredUser,
   fetchClientStatsBySubId,
+  fetchServerStatusForPortal,
   XuiAdminError,
 } from '../xui-admin.js';
 import { getNodeQualityProfile } from '../node-quality.js';
 import { probeAndStoreNodeQualityProfile } from '../node-quality-probe.js';
 import { buildLegacyAppleSharedResource, parseStoredSharedResources } from '../shared-resources.js';
 import { parseStoredCommunityLinks } from '../community-links.js';
+import {
+  ANNOUNCEMENT_CURRENT_CREATED_AT_KEY,
+  ensureAnnouncementHistoryEntry,
+  parseAnnouncementHistory,
+} from '../announcement-history.js';
 import {
   normalizeUserAvatarStyle,
   resolveUserDisplayName,
@@ -367,6 +373,8 @@ router.get('/portal/context', (req, res) => {
         'supportTelegram',
         'announcementText',
         'announcementActive',
+        'announcementHistory',
+        ?,
         'sharedResources',
         'communityLinks',
         'sharedAppleIdTitle',
@@ -375,7 +383,11 @@ router.get('/portal/context', (req, res) => {
       )
     `,
     )
-    .all() as Array<{ key: string; value: string; updated_at: number }>;
+    .all(ANNOUNCEMENT_CURRENT_CREATED_AT_KEY) as Array<{
+    key: string;
+    value: string;
+    updated_at: number;
+  }>;
 
   const settingsMap = new Map(settingsRows.map((row) => [row.key, row]));
   const siteName = settingsMap.get('siteName')?.value?.trim() || 'Prism';
@@ -399,7 +411,6 @@ router.get('/portal/context', (req, res) => {
         );
   const communityLinks = parseStoredCommunityLinks(settingsMap.get('communityLinks')?.value);
 
-  const now = Date.now();
   const notifications: Array<{
     id: string;
     level: 'info' | 'success' | 'warning';
@@ -407,6 +418,26 @@ router.get('/portal/context', (req, res) => {
     message: string;
     createdAt: number;
   }> = [];
+  const userCreatedAt = session.created_at * 1000;
+  const supportContactCreatedAt =
+    (settingsMap.get('supportTelegram')?.updated_at ?? session.created_at) * 1000;
+  const parsedCurrentAnnouncementCreatedAt = Number.parseInt(
+    settingsMap.get(ANNOUNCEMENT_CURRENT_CREATED_AT_KEY)?.value ?? '',
+    10,
+  );
+  const currentAnnouncementCreatedAt =
+    Number.isFinite(parsedCurrentAnnouncementCreatedAt) && parsedCurrentAnnouncementCreatedAt > 0
+      ? parsedCurrentAnnouncementCreatedAt
+      : (settingsMap.get('announcementText')?.updated_at ?? session.created_at) * 1000;
+  let announcementHistory = parseAnnouncementHistory(settingsMap.get('announcementHistory')?.value);
+
+  if (announcementActive && announcementText) {
+    announcementHistory = ensureAnnouncementHistoryEntry(
+      announcementHistory,
+      announcementText,
+      currentAnnouncementCreatedAt,
+    );
+  }
 
   if (session.sub_id) {
     notifications.push({
@@ -414,7 +445,7 @@ router.get('/portal/context', (req, res) => {
       level: 'success',
       title: 'Subscription ready',
       message: 'Your subscription link is active. You can import or update it in your client now.',
-      createdAt: now,
+      createdAt: userCreatedAt,
     });
   } else {
     notifications.push({
@@ -423,17 +454,17 @@ router.get('/portal/context', (req, res) => {
       title: 'Subscription pending',
       message:
         'Your account exists, but subscription is not assigned yet. Please check Help for support details.',
-      createdAt: now,
+      createdAt: userCreatedAt,
     });
   }
 
-  if (announcementActive && announcementText) {
+  for (const announcement of announcementHistory) {
     notifications.push({
-      id: 'admin-announcement',
+      id: announcement.id,
       level: 'info',
       title: 'Admin announcement',
-      message: announcementText,
-      createdAt: (settingsMap.get('announcementText')?.updated_at ?? now / 1000) * 1000,
+      message: announcement.message,
+      createdAt: announcement.createdAt,
     });
   }
 
@@ -443,9 +474,11 @@ router.get('/portal/context', (req, res) => {
       level: 'info',
       title: 'Support contact',
       message: `Need help? Contact support: ${supportTelegram}`,
-      createdAt: now,
+      createdAt: supportContactCreatedAt,
     });
   }
+
+  notifications.sort((left, right) => right.createdAt - left.createdAt);
 
   return res.json({
     user: {
@@ -606,15 +639,28 @@ router.get('/portal/stats', async (req, res) => {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  if (!session.sub_id) {
-    return res.json({ stats: null, nodeQuality: null });
-  }
+  const serverStatusPromise = fetchServerStatusForPortal().catch((error) => {
+    console.error('[Prism] /portal/stats: fetchServerStatusForPortal failed:', error);
+    return null;
+  });
 
   try {
-    const stats = await fetchClientStatsBySubId(session.sub_id);
+    if (!session.sub_id) {
+      return res.json({
+        stats: null,
+        nodeQuality: null,
+        serverStatus: await serverStatusPromise,
+      });
+    }
+
+    const [stats, serverStatus] = await Promise.all([
+      fetchClientStatsBySubId(session.sub_id),
+      serverStatusPromise,
+    ]);
     return res.json({
       stats,
       nodeQuality: stats ? getNodeQualityProfile(stats.inboundId) : null,
+      serverStatus,
     });
   } catch (error) {
     console.error('[Prism] /portal/stats: fetchClientStatsBySubId failed:', error);

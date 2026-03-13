@@ -39,24 +39,29 @@ export function Layout() {
         )}
       </AnimatePresence>
 
-      <div className="flex min-w-0 flex-1 flex-col px-4 pb-4 md:px-6">
-        <header className="surface-card mt-4 flex h-16 items-center px-4 md:px-6">
-          <div className="flex w-full items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMobileMenuOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div className="min-w-0 flex-1">
-              <Navbar />
-            </div>
+      <div className="flex min-w-0 flex-1 flex-col pb-4">
+        <main
+          className="min-h-0 flex-1 overflow-y-auto py-4 md:py-6"
+          style={{ scrollbarGutter: 'stable' }}
+        >
+          <div className="content-shell-wide sticky top-0 z-10 px-4 pb-4 md:px-6 md:pb-6 xl:px-8">
+            <header className="surface-card flex h-16 items-center px-4 md:px-6">
+              <div className="flex w-full items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+                <div className="min-w-0 flex-1">
+                  <Navbar />
+                </div>
+              </div>
+            </header>
           </div>
-        </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto py-4 md:py-6">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}

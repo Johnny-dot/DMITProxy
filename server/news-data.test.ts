@@ -439,4 +439,56 @@ describe('news data aggregation', () => {
       loaded.cleanup();
     }
   });
+
+  it('returns stale cache immediately and refreshes in the background', async () => {
+    const loaded = await loadNewsModules();
+
+    try {
+      const { newsModule } = loaded;
+      const staleCachedAt = Date.now() - 20 * 60 * 1000;
+      const cacheDir = path.join(process.env.DATA_DIR!, 'news-cache');
+      const cachePath = path.join(cacheDir, 'feed.json');
+
+      fs.mkdirSync(cacheDir, { recursive: true });
+      fs.writeFileSync(
+        cachePath,
+        JSON.stringify(
+          {
+            schemaVersion: 5,
+            provider: 'Curated multi-source feed',
+            attributionUrl: null,
+            cachedAt: staleCachedAt,
+            ttlMinutes: 15,
+            topics: [
+              {
+                id: 'markets',
+                labelEn: 'Internet',
+                labelZh: '浜掕仈缃?',
+                descriptionEn: 'Cached topic',
+                descriptionZh: 'Cached topic',
+                status: 'ok',
+                items: [],
+              },
+            ],
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+
+      const fetchMock = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response(VERGE_FEED, { status: 200 }));
+
+      const cached = await newsModule.getNewsFeed();
+      expect(cached.cachedAt).toBe(staleCachedAt);
+
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(fetchMock).toHaveBeenCalled();
+      await newsModule.warmNewsFeed();
+    } finally {
+      loaded.cleanup();
+    }
+  });
 });

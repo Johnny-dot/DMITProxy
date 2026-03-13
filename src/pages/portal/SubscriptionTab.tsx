@@ -159,7 +159,7 @@ const V2RAYNG_SCREENSHOTS = {
   startProxy: '/guides/v2rayng/start-proxy.webp',
 } as const;
 
-const SHADOWROCKET_GUIDE_SOURCE_URL = 'https://help.jegovpn.com/';
+const SHADOWROCKET_GUIDE_SOURCE_URL = 'https://wiki.zgcvpn.com/en/sw/ios/shadowrocket';
 const SHADOWROCKET_SCREENSHOTS = {
   addSubscription: '/guides/shadowrocket/add-subscription.png',
   connectNode: '/guides/shadowrocket/connect-node.png',
@@ -201,15 +201,6 @@ const GUIDE_SCREENSHOT_HIGHLIGHTS: Record<string, GuideScreenshotHighlight[]> = 
   [CLASH_VERGE_SCREENSHOTS.systemProxy]: [
     { x: 35.5, y: 17, w: 30, h: 9 },
     { x: 74, y: 30.5, w: 20.5, h: 10 },
-  ],
-  [SHADOWROCKET_SCREENSHOTS.addSubscription]: [
-    { x: 26.5, y: 3.5, w: 7.5, h: 13 },
-    { x: 51.5, y: 14.5, w: 22, h: 10 },
-    { x: 44.5, y: 29.5, w: 24, h: 11 },
-  ],
-  [SHADOWROCKET_SCREENSHOTS.connectNode]: [
-    { x: 2.5, y: 18, w: 94, h: 18 },
-    { x: 82, y: 18, w: 16, h: 18 },
   ],
   [HIDDIFY_SCREENSHOTS.addFromClipboard]: [{ x: 18, y: 56, w: 31, h: 41 }],
   [HIDDIFY_SCREENSHOTS.addManually]: [
@@ -1398,6 +1389,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     getRecommendedClientId(detectInitialPlatform()),
   );
   const [activeFormat, setActiveFormat] = useState<SubscriptionFormat>('universal');
+  const [showFormatOptions, setShowFormatOptions] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [hasCopied, setHasCopied] = useState(false);
   const [hasMarkedConnected, setHasMarkedConnected] = useState(false);
@@ -1491,10 +1483,15 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     isZh,
   );
   const activeSubUrl = subscriptionLinks[activeFormat];
+  const activeFormatOption =
+    formatOptions.find((item) => item.key === activeFormat) ?? formatOptions[0];
+  const recommendedFormatOption =
+    formatOptions.find((item) => item.key === guide.recommendedFormat) ?? formatOptions[0];
   const usesRealGuideScreenshots = guide.steps.some((step) => Boolean(step.screenshot));
 
   useEffect(() => {
     setActiveFormat(guide.recommendedFormat);
+    setShowFormatOptions(false);
   }, [guide.recommendedFormat, activeClient.id]);
 
   useEffect(() => {
@@ -1643,32 +1640,87 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 : 'The link below is matched to the current client first, but you can still switch formats manually.'
             }
           />
-          <div className="grid gap-2 md:grid-cols-4">
-            {formatOptions.map((format) => (
-              <button
-                key={format.key}
-                type="button"
-                onClick={() => setActiveFormat(format.key)}
-                data-testid={`portal-setup-format-${format.key}`}
-                className={cn(
-                  'rounded-[20px] border p-3 text-left transition-colors',
-                  activeFormat === format.key
-                    ? 'border-emerald-500/40 bg-emerald-500/10'
-                    : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] hover:border-[color:var(--border-strong)]',
-                )}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-zinc-50">{format.label}</p>
-                  {guide.recommendedFormat === format.key ? (
-                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300">
-                      {isZh ? '当前推荐' : 'Recommended'}
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-1 text-[11px] leading-5 text-zinc-400">{format.desc}</p>
-              </button>
-            ))}
+          <div className="flex flex-col gap-3 rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-300">
+                  {activeFormat === guide.recommendedFormat
+                    ? isZh
+                      ? '\u5df2\u6309\u5f53\u524d\u5ba2\u6237\u7aef\u81ea\u52a8\u5339\u914d'
+                      : 'Auto-matched to current client'
+                    : isZh
+                      ? '\u5df2\u624b\u52a8\u5207\u6362\u683c\u5f0f'
+                      : 'Manual format override'}
+                </span>
+                <span className="rounded-full border border-[color:var(--border-subtle)] bg-black/10 px-2.5 py-1 text-[11px] text-zinc-300">
+                  {activeClient.name} / {recommendedFormatOption.label}
+                  {activeFormat === guide.recommendedFormat
+                    ? ''
+                    : isZh
+                      ? ' \u63a8\u8350'
+                      : ' recommended'}
+                </span>
+              </div>
+              <p className="text-sm text-zinc-300">
+                {activeFormat === guide.recommendedFormat
+                  ? isZh
+                    ? `\u73b0\u5728\u663e\u793a\u7684\u662f ${activeClient.name} \u5bf9\u5e94\u7684 ${recommendedFormatOption.label} \u8ba2\u9605\uff0c\u53ef\u4ee5\u76f4\u63a5\u590d\u5236\u3002`
+                    : `You are seeing the ${recommendedFormatOption.label} link for ${activeClient.name}, ready to copy.`
+                  : isZh
+                    ? `\u4f60\u76ee\u524d\u624b\u52a8\u5207\u6362\u5230\u4e86 ${activeFormatOption.label} \u683c\u5f0f\u3002\u5982\u679c\u60f3\u56de\u5230\u9ed8\u8ba4\u63a8\u8350\uff0c\u5207\u6362\u5ba2\u6237\u7aef\u540e\u4f1a\u81ea\u52a8\u6062\u590d\u3002`
+                    : `You have manually switched to the ${activeFormatOption.label} format. Changing the client will reset this back to the recommended format.`}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant={showFormatOptions ? 'secondary' : 'outline'}
+              size="sm"
+              className="shrink-0 gap-2"
+              onClick={() => setShowFormatOptions((current) => !current)}
+              data-testid="portal-setup-toggle-formats"
+            >
+              {showFormatOptions
+                ? isZh
+                  ? '\u6536\u8d77\u5176\u4ed6\u683c\u5f0f'
+                  : 'Hide other formats'
+                : isZh
+                  ? '\u5207\u6362\u5176\u4ed6\u683c\u5f0f'
+                  : 'Switch format'}
+              {showFormatOptions ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )}
+            </Button>
           </div>
+          {showFormatOptions ? (
+            <div className="grid gap-2 md:grid-cols-4">
+              {formatOptions.map((format) => (
+                <button
+                  key={format.key}
+                  type="button"
+                  onClick={() => setActiveFormat(format.key)}
+                  data-testid={`portal-setup-format-${format.key}`}
+                  className={cn(
+                    'rounded-[20px] border p-3 text-left transition-colors',
+                    activeFormat === format.key
+                      ? 'border-emerald-500/40 bg-emerald-500/10'
+                      : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] hover:border-[color:var(--border-strong)]',
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-zinc-50">{format.label}</p>
+                    {guide.recommendedFormat === format.key ? (
+                      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300">
+                        {isZh ? '当前推荐' : 'Recommended'}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-[11px] leading-5 text-zinc-400">{format.desc}</p>
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className="surface-panel space-y-4 rounded-[28px] p-4 md:p-5">
             {hasSubscription ? (
               <>
@@ -1934,7 +1986,23 @@ function GuideScreenshotStepCard({ step, index }: { step: GuideStep; index: numb
     return <GuideStepCard step={step} index={index} />;
   }
 
+  const [naturalImageSize, setNaturalImageSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+  const naturalRatio = naturalImageSize ? naturalImageSize.width / naturalImageSize.height : null;
   const highlights = GUIDE_SCREENSHOT_HIGHLIGHTS[step.screenshot.src] ?? [];
+  const screenshotLayout =
+    naturalRatio !== null && naturalRatio < 0.7
+      ? 'narrowPortrait'
+      : naturalRatio !== null && naturalRatio < 1.05
+        ? 'portrait'
+        : 'landscape';
+  const screenshotLayoutMaxWidth =
+    screenshotLayout === 'narrowPortrait' ? 320 : screenshotLayout === 'portrait' ? 448 : null;
+  const screenshotRenderMaxWidth = naturalImageSize
+    ? Math.min(naturalImageSize.width * 1.25, screenshotLayoutMaxWidth ?? Number.POSITIVE_INFINITY)
+    : screenshotLayoutMaxWidth;
   const toneClasses =
     step.tone === 'launch'
       ? {
@@ -1986,33 +2054,43 @@ function GuideScreenshotStepCard({ step, index }: { step: GuideStep; index: numb
             toneClasses.panel,
           )}
         >
-          <div className="relative overflow-hidden rounded-[18px] border border-white/10 bg-white/5">
-            <img
-              src={step.screenshot.src}
-              alt={step.screenshot.alt}
-              loading="lazy"
-              className="h-auto w-full object-contain"
-            />
-            {highlights.length ? (
-              <div className="pointer-events-none absolute inset-0">
-                {highlights.map((highlight, highlightIndex) => (
-                  <div
-                    key={`${step.screenshot?.src}-${highlightIndex}`}
-                    className="absolute rounded-[16px] border-2 border-red-500/95 bg-red-500/10 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_16px_40px_rgba(220,38,38,0.18)]"
-                    style={{
-                      left: `${highlight.x}%`,
-                      top: `${highlight.y}%`,
-                      width: `${highlight.w}%`,
-                      height: `${highlight.h}%`,
-                    }}
-                  >
-                    <span className="absolute left-2 top-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white shadow-lg">
-                      {highlightIndex + 1}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
+          <div className="flex justify-center">
+            <div
+              className="relative w-full overflow-hidden rounded-[18px] border border-white/10 bg-white/5"
+              style={screenshotRenderMaxWidth ? { maxWidth: screenshotRenderMaxWidth } : undefined}
+            >
+              <img
+                src={step.screenshot.src}
+                alt={step.screenshot.alt}
+                loading="lazy"
+                className="block h-auto w-full"
+                onLoad={(event) => {
+                  const { naturalWidth, naturalHeight } = event.currentTarget;
+                  if (!naturalWidth || !naturalHeight) return;
+                  setNaturalImageSize({ width: naturalWidth, height: naturalHeight });
+                }}
+              />
+              {highlights.length ? (
+                <div className="pointer-events-none absolute inset-0">
+                  {highlights.map((highlight, highlightIndex) => (
+                    <div
+                      key={`${step.screenshot?.src}-${highlightIndex}`}
+                      className="absolute rounded-[16px] border-2 border-red-500/95 bg-red-500/10 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_16px_40px_rgba(220,38,38,0.18)]"
+                      style={{
+                        left: `${highlight.x}%`,
+                        top: `${highlight.y}%`,
+                        width: `${highlight.w}%`,
+                        height: `${highlight.h}%`,
+                      }}
+                    >
+                      <span className="absolute left-2 top-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white shadow-lg">
+                        {highlightIndex + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
         </a>
 
@@ -2039,6 +2117,10 @@ function GuideScreenshotStepCard({ step, index }: { step: GuideStep; index: numb
   );
 }
 
+function isClientCardActionTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement && Boolean(target.closest('[data-client-action]'));
+}
+
 function ClientHighlightCard({
   client,
   activePlatform,
@@ -2056,11 +2138,24 @@ function ClientHighlightCard({
 }) {
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={isActive}
+      onClick={(event) => {
+        if (isClientCardActionTarget(event.target)) return;
+        onSelect(client.id);
+      }}
+      onKeyDown={(event) => {
+        if (isClientCardActionTarget(event.target)) return;
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        onSelect(client.id);
+      }}
       className={cn(
-        'rounded-[28px] border p-5 transition-colors',
+        'cursor-pointer rounded-[28px] border p-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)]',
         isActive
           ? 'border-emerald-500/40 bg-emerald-500/10'
-          : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)]',
+          : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] hover:border-[color:var(--border-strong)]',
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -2086,6 +2181,7 @@ function ClientHighlightCard({
           type="button"
           variant={isActive ? 'secondary' : 'outline'}
           size="sm"
+          className="hidden"
           onClick={() => onSelect(client.id)}
         >
           {isZh ? '使用这个客户端' : 'Use this client'}
@@ -2099,6 +2195,7 @@ function ClientHighlightCard({
           className="gap-2"
           onClick={() => onOpenDownload(client.links.github, client.id)}
           data-testid="portal-setup-download-primary"
+          data-client-action="true"
           disabled={!client.links.github}
         >
           <Download className="h-4 w-4" />
@@ -2110,6 +2207,7 @@ function ClientHighlightCard({
           size="sm"
           className="gap-2"
           onClick={() => onOpenDownload(client.links.github, client.id)}
+          data-client-action="true"
           disabled={!client.links.github}
         >
           <ExternalLink className="h-4 w-4" />
@@ -2121,6 +2219,7 @@ function ClientHighlightCard({
           size="sm"
           className="gap-2"
           onClick={() => onOpenDownload(client.links.vps, client.id)}
+          data-client-action="true"
           disabled={!client.links.vps}
         >
           <ExternalLink className="h-4 w-4" />
@@ -2146,9 +2245,24 @@ function ClientCompactCard({
 }) {
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={isActive}
+      onClick={(event) => {
+        if (isClientCardActionTarget(event.target)) return;
+        onSelect(client.id);
+      }}
+      onKeyDown={(event) => {
+        if (isClientCardActionTarget(event.target)) return;
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        onSelect(client.id);
+      }}
       className={cn(
-        'surface-panel rounded-[24px] border p-4 transition-colors',
-        isActive && 'border-emerald-500/30 bg-emerald-500/5',
+        'surface-panel cursor-pointer rounded-[24px] border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)]',
+        isActive
+          ? 'border-emerald-500/30 bg-emerald-500/5'
+          : 'hover:border-[color:var(--border-strong)]',
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -2159,7 +2273,13 @@ function ClientCompactCard({
             <p className="text-xs leading-6 text-zinc-400">{client.desc}</p>
           </div>
         </div>
-        <Button type="button" variant="ghost" size="sm" onClick={() => onSelect(client.id)}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="hidden"
+          onClick={() => onSelect(client.id)}
+        >
           {isZh ? '切换' : 'Select'}
         </Button>
       </div>
@@ -2170,6 +2290,7 @@ function ClientCompactCard({
           size="sm"
           className="gap-2"
           onClick={() => onOpenDownload(client.links.github, client.id)}
+          data-client-action="true"
           disabled={!client.links.github}
         >
           <ExternalLink className="h-4 w-4" />
@@ -2181,6 +2302,7 @@ function ClientCompactCard({
           size="sm"
           className="gap-2"
           onClick={() => onOpenDownload(client.links.vps, client.id)}
+          data-client-action="true"
           disabled={!client.links.vps}
         >
           <ExternalLink className="h-4 w-4" />

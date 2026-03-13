@@ -10,6 +10,14 @@ export interface AuthSessionHint {
   hasUserSessionCookie: boolean;
 }
 
+interface XuiApiEnvelope<T> {
+  success?: boolean;
+  msg?: string;
+  obj?: T;
+  error?: string;
+  detail?: string;
+}
+
 export async function getAuthSessionHint(): Promise<AuthSessionHint> {
   const data = await localFetch<{ hasAdminCookie?: boolean; hasUserSessionCookie?: boolean }>(
     '/local/auth/admin-session-hint',
@@ -64,6 +72,42 @@ export async function login(username: string, password: string) {
 export async function logout() {
   const BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/+$/, '');
   await fetch(`${BASE}/logout`, { method: 'POST', credentials: 'include' });
+}
+
+async function apiFormFetch<T>(
+  path: string,
+  formData: Record<string, string>,
+  fallbackError: string,
+): Promise<T> {
+  const BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/+$/, '');
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(formData).toString(),
+  });
+
+  if (res.status === 401 || res.redirected) {
+    throw new ApiError(401, 'Unauthorized');
+  }
+
+  const text = await res.text();
+  let data: XuiApiEnvelope<T> | null = null;
+  try {
+    data = text ? (JSON.parse(text) as XuiApiEnvelope<T>) : null;
+  } catch {
+    throw new Error(`Invalid response from upstream API (HTTP ${res.status}) for ${path}`);
+  }
+
+  if (!res.ok) {
+    throw new ApiError(res.status, extractErrorMessage(data, fallbackError));
+  }
+
+  if (!data || typeof data !== 'object' || data.success !== true) {
+    throw new Error(extractErrorMessage(data, fallbackError));
+  }
+
+  return (data.obj ?? null) as T;
 }
 
 // Server Status
@@ -150,5 +194,69 @@ export async function deleteInboundClientByEmail(inboundId: number, email: strin
     {
       method: 'POST',
     },
+  );
+}
+
+function xuiPostHeaders() {
+  return { 'Content-Type': 'application/x-www-form-urlencoded' };
+}
+
+export function getInboundLastOnline(options?: RequestInit) {
+  return apiFetch<Record<string, number>>('/panel/api/inbounds/lastOnline', {
+    method: 'POST',
+    headers: xuiPostHeaders(),
+    ...options,
+  });
+}
+
+export async function getInboundClientIps(email: string, options?: RequestInit) {
+  const normalizedEmail = email.trim();
+  if (!normalizedEmail) {
+    throw new Error('Missing client email');
+  }
+  return apiFetch<unknown>(`/panel/api/inbounds/clientIps/${encodeURIComponent(normalizedEmail)}`, {
+    method: 'POST',
+    headers: xuiPostHeaders(),
+    ...options,
+  });
+}
+
+export async function resetInboundClientTraffic(inboundId: number, email: string) {
+  const normalizedEmail = email.trim();
+  if (!normalizedEmail) {
+    throw new Error('Missing client email');
+  }
+  return apiFetch<null>(
+    `/panel/api/inbounds/${inboundId}/resetClientTraffic/${encodeURIComponent(normalizedEmail)}`,
+    {
+      method: 'POST',
+      headers: xuiPostHeaders(),
+    },
+  );
+}
+
+export interface UpdateInboundClientInput {
+  inboundId: number;
+  clientId: string;
+  client: Record<string, unknown>;
+}
+
+export async function updateInboundClient({
+  inboundId,
+  clientId,
+  client,
+}: UpdateInboundClientInput) {
+  const normalizedClientId = clientId.trim();
+  if (!normalizedClientId) {
+    throw new Error('Missing client id');
+  }
+
+  return apiFormFetch<null>(
+    `/panel/api/inbounds/updateClient/${encodeURIComponent(normalizedClientId)}`,
+    {
+      id: String(inboundId),
+      settings: JSON.stringify({ clients: [client] }),
+    },
+    'Failed to update client',
   );
 }

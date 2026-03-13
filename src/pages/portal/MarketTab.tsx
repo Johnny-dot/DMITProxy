@@ -165,7 +165,7 @@ function getDisplayUnitHint(
 
 function getCategoryLabel(category: MarketCategory, isZh: boolean) {
   if (category === 'indices') return isZh ? '全球指数' : 'Global indices';
-  if (category === 'metals') return isZh ? '贵金属' : 'Precious metals';
+  if (category === 'metals') return isZh ? '金属' : 'Metals';
   if (category === 'crypto') return isZh ? '加密货币' : 'Crypto';
   return isZh ? '外汇' : 'FX';
 }
@@ -223,6 +223,18 @@ const MARKET_ITEM_DESCRIPTIONS: Record<string, { zh: string; en: string }> = {
     zh: '钯金，主要用于汽车尾气催化器等工业场景。',
     en: 'Palladium, mainly used in catalytic converters and other industrial uses.',
   },
+  copper: {
+    zh: '高级铜期货，常被用来观察全球工业需求与制造业景气。',
+    en: 'High-grade copper futures, often used as a read on global industrial demand.',
+  },
+  aluminum: {
+    zh: '铝期货，反映包装、建材和制造链中的金属成本变化。',
+    en: 'Aluminum futures, reflecting metal costs across packaging, construction, and manufacturing.',
+  },
+  zinc: {
+    zh: '锌期货，常用于镀锌和工业合金，能反映部分工业活动。',
+    en: 'Zinc futures, widely used in galvanizing and alloys, giving another view of industrial activity.',
+  },
   btc: {
     zh: '比特币，市值最大的去中心化加密货币。',
     en: 'Bitcoin, the largest decentralized cryptocurrency by market value.',
@@ -238,6 +250,18 @@ const MARKET_ITEM_DESCRIPTIONS: Record<string, { zh: string; en: string }> = {
   xrp: {
     zh: 'XRP，常被用于跨境支付相关场景。',
     en: 'XRP, a crypto asset often associated with cross-border payments.',
+  },
+  bnb: {
+    zh: 'BNB，BNB Chain 生态的原生代币，常用于手续费折扣与链上应用。',
+    en: 'BNB, the native token of the BNB Chain ecosystem, often used for fee discounts and on-chain activity.',
+  },
+  ada: {
+    zh: 'ADA，Cardano 公链的代币，强调研究驱动的区块链设计和质押生态。',
+    en: 'ADA, Cardano’s token, associated with a research-driven blockchain and staking ecosystem.',
+  },
+  doge: {
+    zh: '狗狗币，社区影响力很强的流行加密资产，常对风险偏好变化敏感。',
+    en: 'Dogecoin, a community-driven crypto asset that is often sensitive to shifts in retail risk appetite.',
   },
   'usd-cny': {
     zh: '美元兑人民币，表示 1 美元可兑换多少人民币。',
@@ -632,7 +656,7 @@ export function MarketTab() {
           ) : null}
 
           {selectedItem ? (
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_300px]">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)] min-[1700px]:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.8fr)] min-[2200px]:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.85fr)]">
               <div className="min-w-0 rounded-[30px] border border-[var(--border-subtle)] bg-[var(--surface-panel)] p-4 md:p-5">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-1">

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, LogIn } from 'lucide-react';
-import { useAuth } from '@/src/context/AuthContext';
+import { LOGGED_OUT_KEY, useAuth } from '@/src/context/AuthContext';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { useI18n } from '@/src/context/I18nContext';
@@ -19,6 +19,14 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const hasConfiguredXui = isXuiConfigured();
+  const redirectToUserPortal = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(LOGGED_OUT_KEY);
+      window.location.replace('/my-subscription');
+      return;
+    }
+    navigate('/my-subscription', { replace: true });
+  };
   const adminLoginUnavailableMessage = isZh
     ? '面板登录尚未配置完成，请先在服务器 .env 中补齐 3X-UI 参数。'
     : t('login.adminLoginUnavailable');
@@ -53,8 +61,7 @@ export function LoginPage() {
 
       const localData = await localRes.json().catch(() => null);
       if (localRes.ok) {
-        await refreshAuth();
-        navigate('/my-subscription', { replace: true });
+        redirectToUserPortal();
         return;
       }
 

@@ -116,7 +116,7 @@ export function TrafficPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="content-shell-wide w-full min-w-0 space-y-6 px-4 md:px-6 xl:px-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t('traffic.title')}</h1>
         <p className="text-zinc-400 mt-1">{t('traffic.subtitle')}</p>

@@ -16,7 +16,7 @@ function isValidTab(value: string | null): value is UserCenterTab {
   return VALID_TABS.includes(value as UserCenterTab);
 }
 
-export function UsersCenterPage() {
+export function UsersCenterPage({ embedded = false }: { embedded?: boolean }) {
   const { t, language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const isZh = language === 'zh-CN';
@@ -71,7 +71,12 @@ export function UsersCenterPage() {
   };
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <div
+      className={cn(
+        'w-full min-w-0 space-y-6',
+        !embedded && 'content-shell-wide px-4 md:px-6 xl:px-8',
+      )}
+    >
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{isZh ? '用户中心' : 'User Center'}</h1>
         <p className="text-zinc-400 mt-1">

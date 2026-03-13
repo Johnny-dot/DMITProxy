@@ -49,6 +49,21 @@ export interface XuiClientUsage {
   enable: boolean;
 }
 
+export interface XuiServerStatus {
+  cpu: number;
+  cpuCores: number;
+  mem: { current: number; total: number };
+  swap: { current: number; total: number };
+  disk: { current: number; total: number };
+  xray: { state: string; version: string };
+  uptime: number;
+  loads: number[];
+  tcpCount: number;
+  udpCount: number;
+  netIO: { up: number; down: number };
+  netTraffic: { sent: number; recv: number };
+}
+
 interface XuiRequestResult {
   status: number;
   body: string;
@@ -541,4 +556,28 @@ export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientU
 
   const refreshed = await getStatsSnapshot(cookieHeader, true);
   return refreshed.snapshot.bySubId.get(normalizedSubId) ?? null;
+}
+
+export async function fetchServerStatusForPortal(): Promise<XuiServerStatus | null> {
+  const creds = getXuiCredentials();
+  if (!creds) {
+    console.warn(
+      '[Prism] fetchServerStatusForPortal: XUI credentials not configured, server status unavailable',
+    );
+    return null;
+  }
+
+  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
+  const response = await requestXuiJson<XuiServerStatus>(
+    '/panel/api/server/status',
+    'GET',
+    null,
+    cookieHeader,
+  );
+
+  if (!response.success || !response.obj) {
+    throw new XuiAdminError(response.msg || 'Failed to fetch server status from 3X-UI');
+  }
+
+  return response.obj;
 }

@@ -1,8 +1,10 @@
 import React from 'react';
+import type { ServerStatus } from '@/src/api/xui';
 import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 import { Skeleton } from '@/src/components/ui/Skeleton';
+import { ServerStatusCard } from '@/src/components/status/ServerStatusCard';
 import { cn } from '@/src/utils/cn';
 import { formatTraffic } from '@/src/utils/xuiClients';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
@@ -17,6 +19,7 @@ interface HomeTabProps {
   hasSubscription: boolean;
   subscriptionUniversalUrl: string;
   clientStats?: ClientStats;
+  serverStatus?: ServerStatus | null;
   nodeQuality?: NodeQualityProfile | null;
   isStatsLoading?: boolean;
   onRefreshNodeQuality?: () => void;
@@ -34,6 +37,7 @@ export function HomeTab({
   hasSubscription,
   subscriptionUniversalUrl,
   clientStats,
+  serverStatus,
   nodeQuality,
   isStatsLoading,
   onRefreshNodeQuality,
@@ -143,8 +147,22 @@ export function HomeTab({
         />
       )}
 
-      {hasSubscription && (
-        <TrafficStatsCard isZh={isZh} stats={clientStats} isLoading={isStatsLoading} />
+      {hasSubscription ? (
+        <section className="grid gap-6 xl:grid-cols-2">
+          <TrafficStatsCard
+            isZh={isZh}
+            stats={clientStats}
+            isLoading={isStatsLoading}
+            className="min-w-0 h-full"
+          />
+          <ServerStatusCard
+            serverStatus={serverStatus}
+            isLoading={isStatsLoading}
+            className="min-w-0 h-full"
+          />
+        </section>
+      ) : (
+        <ServerStatusCard serverStatus={serverStatus} isLoading={isStatsLoading} />
       )}
 
       {hasSubscription && clientStats && (
@@ -240,10 +258,12 @@ function TrafficStatsCard({
   isZh,
   stats,
   isLoading,
+  className,
 }: {
   isZh: boolean;
   stats?: ClientStats;
   isLoading?: boolean;
+  className?: string;
 }) {
   const trafficUsed = stats ? stats.up + stats.down : 0;
   const usagePercent =
@@ -274,7 +294,7 @@ function TrafficStatsCard({
   const isExpired = Boolean(stats && stats.expiryTime > 0 && stats.expiryTime < Date.now());
 
   return (
-    <section className="surface-card space-y-5 p-6 md:p-7">
+    <section className={cn('surface-card space-y-5 p-6 md:p-7', className)}>
       <div className="space-y-2">
         <p className="section-kicker">{isZh ? '使用情况' : 'Usage'}</p>
         <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
@@ -286,7 +306,7 @@ function TrafficStatsCard({
         <div className="space-y-3">
           <Skeleton className="h-4 w-48" />
           <Skeleton className="h-2 w-full" />
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
@@ -331,7 +351,7 @@ function TrafficStatsCard({
             )}
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
             <MetricPanel
               label={isZh ? '上传' : 'Upload'}
               value={formatTraffic(stats.up)}

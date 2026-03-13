@@ -212,6 +212,30 @@
   .soft-divider {
     border-color: var(--border-subtle);
   }
+
+  .content-shell-wide {
+    width: 100%;
+    margin-inline: 0 auto;
+    max-width: 1600px;
+  }
+
+  @media (min-width: 1800px) {
+    .content-shell-wide {
+      max-width: 1880px;
+    }
+  }
+
+  @media (min-width: 2200px) {
+    .content-shell-wide {
+      max-width: 2280px;
+    }
+  }
+
+  @media (min-width: 3000px) {
+    .content-shell-wide {
+      max-width: 2480px;
+    }
+  }
 }
 
 ::-webkit-scrollbar {

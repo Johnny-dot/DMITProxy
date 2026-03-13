@@ -23,6 +23,16 @@ import {
   parseStoredCommunityLinks,
   sanitizeCommunityLinksInput,
 } from '../community-links.js';
+import {
+  ANNOUNCEMENT_CURRENT_CREATED_AT_KEY,
+  ANNOUNCEMENT_HISTORY_KEY,
+  appendAnnouncementHistoryEntry,
+  buildAnnouncementNotificationId,
+  ensureAnnouncementHistoryEntry,
+  type AnnouncementHistoryEntry,
+  parseAnnouncementHistory,
+  removeAnnouncementHistoryEntry,
+} from '../announcement-history.js';
 
 const router = Router();
 const xuiTarget = getXuiTarget();
@@ -51,6 +61,26 @@ interface AppSettings {
   announcementActive: boolean;
   sharedResources: SharedResource[];
   communityLinks: CommunityLink[];
+}
+
+interface StoredAppSettingRow {
+  value: string;
+  updated_at: number;
+}
+
+interface AnnouncementState {
+  announcementText: string;
+  announcementActive: boolean;
+  announcementCreatedAt: number | null;
+  announcementId: string | null;
+  history: AnnouncementHistoryEntry[];
+}
+
+interface AdminAnnouncement {
+  id: string;
+  message: string;
+  createdAt: number;
+  isActive: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -152,15 +182,70 @@ function updateSettings(partial: Partial<AppSettings>): AppSettings {
     [keyof AppSettings, AppSettings[keyof AppSettings]]
   >;
   if (entries.length === 0) return getSettings();
+  const updatedAtMs = Date.now();
+  const updatedAtSeconds = Math.floor(updatedAtMs / 1000);
+
+  const currentAnnouncementRow = db
+    .prepare('SELECT value, updated_at FROM app_settings WHERE key = ?')
+    .get('announcementText') as { value: string; updated_at: number } | undefined;
+  const currentAnnouncementText = currentAnnouncementRow?.value?.trim() ?? '';
+  const currentAnnouncementCreatedAtRow = db
+    .prepare('SELECT value FROM app_settings WHERE key = ?')
+    .get(ANNOUNCEMENT_CURRENT_CREATED_AT_KEY) as { value: string } | undefined;
+  const parsedCurrentAnnouncementCreatedAt = Number.parseInt(
+    currentAnnouncementCreatedAtRow?.value ?? '',
+    10,
+  );
+  const currentAnnouncementCreatedAt =
+    Number.isFinite(parsedCurrentAnnouncementCreatedAt) && parsedCurrentAnnouncementCreatedAt > 0
+      ? parsedCurrentAnnouncementCreatedAt
+      : (currentAnnouncementRow?.updated_at ?? updatedAtSeconds) * 1000;
+  const currentAnnouncementHistoryRow = db
+    .prepare('SELECT value FROM app_settings WHERE key = ?')
+    .get(ANNOUNCEMENT_HISTORY_KEY) as { value: string } | undefined;
+  const nextAnnouncementText =
+    partial.announcementText !== undefined ? String(partial.announcementText).trim() : undefined;
+  const nextAnnouncementCreatedAt =
+    nextAnnouncementText === undefined
+      ? null
+      : !nextAnnouncementText
+        ? null
+        : nextAnnouncementText === currentAnnouncementText
+          ? currentAnnouncementCreatedAt
+          : updatedAtMs;
+  const nextAnnouncementHistory =
+    nextAnnouncementText !== undefined
+      ? (() => {
+          const existingHistory = parseAnnouncementHistory(currentAnnouncementHistoryRow?.value);
+          const seededHistory = currentAnnouncementText
+            ? ensureAnnouncementHistoryEntry(
+                existingHistory,
+                currentAnnouncementText,
+                currentAnnouncementCreatedAt,
+              )
+            : existingHistory;
+          if (!nextAnnouncementText || nextAnnouncementText === currentAnnouncementText) {
+            return seededHistory;
+          }
+
+          return appendAnnouncementHistoryEntry(seededHistory, nextAnnouncementText, updatedAtMs);
+        })()
+      : null;
 
   const stmt = db.prepare(`
     INSERT INTO app_settings (key, value, updated_at)
-    VALUES (?, ?, unixepoch())
+    VALUES (?, ?, ?)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
   `);
 
   const tx = db.transaction(() => {
     for (const [key, value] of entries) {
+      const storedUpdatedAtSeconds =
+        key === 'announcementText' &&
+        nextAnnouncementText !== undefined &&
+        nextAnnouncementCreatedAt
+          ? Math.floor(nextAnnouncementCreatedAt / 1000)
+          : updatedAtSeconds;
       const stored =
         key === 'announcementActive'
           ? value
@@ -169,12 +254,138 @@ function updateSettings(partial: Partial<AppSettings>): AppSettings {
           : key === 'sharedResources' || key === 'communityLinks'
             ? JSON.stringify(value)
             : String(value);
-      stmt.run(key, stored);
+      stmt.run(key, stored, storedUpdatedAtSeconds);
+    }
+
+    if (nextAnnouncementHistory !== null) {
+      stmt.run(ANNOUNCEMENT_HISTORY_KEY, JSON.stringify(nextAnnouncementHistory), updatedAtSeconds);
+      stmt.run(
+        ANNOUNCEMENT_CURRENT_CREATED_AT_KEY,
+        nextAnnouncementCreatedAt ? String(nextAnnouncementCreatedAt) : '',
+        updatedAtSeconds,
+      );
     }
   });
 
   tx();
   return getSettings();
+}
+
+const upsertAppSettingStmt = db.prepare(`
+  INSERT INTO app_settings (key, value, updated_at)
+  VALUES (?, ?, ?)
+  ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+`);
+
+function writeAppSetting(key: string, value: string, updatedAtSeconds: number) {
+  upsertAppSettingStmt.run(key, value, updatedAtSeconds);
+}
+
+function readAnnouncementState(): AnnouncementState {
+  const rows = db
+    .prepare(
+      `
+      SELECT key, value, updated_at
+      FROM app_settings
+      WHERE key IN ('announcementText', 'announcementActive', ?, ?)
+    `,
+    )
+    .all(ANNOUNCEMENT_HISTORY_KEY, ANNOUNCEMENT_CURRENT_CREATED_AT_KEY) as Array<{
+    key: string;
+    value: string;
+    updated_at: number;
+  }>;
+
+  const announcementTextRow = rows.find((row) => row.key === 'announcementText') as
+    | StoredAppSettingRow
+    | undefined;
+  const announcementActiveRow = rows.find((row) => row.key === 'announcementActive') as
+    | StoredAppSettingRow
+    | undefined;
+  const announcementHistoryRow = rows.find((row) => row.key === ANNOUNCEMENT_HISTORY_KEY) as
+    | StoredAppSettingRow
+    | undefined;
+  const announcementCurrentCreatedAtRow = rows.find(
+    (row) => row.key === ANNOUNCEMENT_CURRENT_CREATED_AT_KEY,
+  ) as StoredAppSettingRow | undefined;
+
+  const announcementText = announcementTextRow?.value?.trim() ?? '';
+  const announcementActive = parseBoolean(announcementActiveRow?.value ?? '0');
+  const parsedAnnouncementCreatedAt = Number.parseInt(
+    announcementCurrentCreatedAtRow?.value ?? '',
+    10,
+  );
+  const announcementCreatedAt = announcementText
+    ? Number.isFinite(parsedAnnouncementCreatedAt) && parsedAnnouncementCreatedAt > 0
+      ? parsedAnnouncementCreatedAt
+      : announcementTextRow
+        ? announcementTextRow.updated_at * 1000
+        : null
+    : null;
+  const seededHistory =
+    announcementText && announcementCreatedAt !== null
+      ? ensureAnnouncementHistoryEntry(
+          parseAnnouncementHistory(announcementHistoryRow?.value),
+          announcementText,
+          announcementCreatedAt,
+        )
+      : parseAnnouncementHistory(announcementHistoryRow?.value);
+
+  return {
+    announcementText,
+    announcementActive,
+    announcementCreatedAt,
+    announcementId:
+      announcementText && announcementCreatedAt !== null
+        ? buildAnnouncementNotificationId(announcementCreatedAt)
+        : null,
+    history: seededHistory,
+  };
+}
+
+function serializeAdminAnnouncements(state: AnnouncementState): AdminAnnouncement[] {
+  return state.history.map((entry) => ({
+    id: entry.id,
+    message: entry.message,
+    createdAt: entry.createdAt,
+    isActive: state.announcementActive && entry.id === state.announcementId,
+  }));
+}
+
+function persistAnnouncementState(state: {
+  announcementText: string;
+  announcementActive: boolean;
+  announcementCreatedAt: number | null;
+  history: AnnouncementHistoryEntry[];
+}) {
+  const normalizedHistory = state.history;
+  const persistedAtSeconds = Math.floor(Date.now() / 1000);
+  const tx = db.transaction(() => {
+    writeAppSetting(
+      ANNOUNCEMENT_HISTORY_KEY,
+      JSON.stringify(normalizedHistory),
+      persistedAtSeconds,
+    );
+    writeAppSetting('announcementActive', state.announcementActive ? '1' : '0', persistedAtSeconds);
+    writeAppSetting(
+      ANNOUNCEMENT_CURRENT_CREATED_AT_KEY,
+      state.announcementCreatedAt ? String(state.announcementCreatedAt) : '',
+      persistedAtSeconds,
+    );
+
+    if (state.announcementText && state.announcementCreatedAt !== null) {
+      writeAppSetting(
+        'announcementText',
+        state.announcementText,
+        Math.floor(state.announcementCreatedAt / 1000),
+      );
+      return;
+    }
+
+    writeAppSetting('announcementText', '', persistedAtSeconds);
+  });
+
+  tx();
 }
 
 // Verify admin by checking if requester has a valid 3X-UI session cookie
@@ -421,6 +632,77 @@ router.get('/settings', requireAdmin, (_req, res) => {
 router.put('/settings', requireAdmin, (req, res) => {
   const updated = updateSettings(sanitizeSettingsInput(req.body));
   res.json({ ok: true, settings: updated });
+});
+
+router.get('/announcements', requireAdmin, (_req, res) => {
+  res.json({ announcements: serializeAdminAnnouncements(readAnnouncementState()) });
+});
+
+router.post('/announcements', requireAdmin, (req, res) => {
+  const message = String(req.body?.message ?? '').trim();
+  if (!message) {
+    return res.status(400).json({ error: 'Announcement message is required' });
+  }
+  if (message.length > 2000) {
+    return res.status(400).json({ error: 'Announcement message must be 2000 characters or less' });
+  }
+
+  const nextCreatedAt = Date.now();
+  const current = readAnnouncementState();
+  const nextHistory = appendAnnouncementHistoryEntry(current.history, message, nextCreatedAt);
+
+  persistAnnouncementState({
+    announcementText: message,
+    announcementActive: true,
+    announcementCreatedAt: nextCreatedAt,
+    history: nextHistory,
+  });
+
+  return res.json({
+    ok: true,
+    announcements: serializeAdminAnnouncements(readAnnouncementState()),
+  });
+});
+
+router.delete('/announcements/:id', requireAdmin, (req, res) => {
+  const targetId = String(req.params.id ?? '').trim();
+  if (!targetId) {
+    return res.status(400).json({ error: 'Announcement id is required' });
+  }
+
+  const current = readAnnouncementState();
+  const existing = current.history.find((entry) => entry.id === targetId);
+  if (!existing) {
+    return res.status(404).json({ error: 'Announcement not found' });
+  }
+
+  const nextHistory = removeAnnouncementHistoryEntry(current.history, targetId);
+  const deletingCurrentAnnouncement = current.announcementId === targetId;
+  const fallbackAnnouncement = nextHistory[0] ?? null;
+
+  persistAnnouncementState({
+    announcementText: deletingCurrentAnnouncement
+      ? current.announcementActive
+        ? (fallbackAnnouncement?.message ?? '')
+        : ''
+      : current.announcementText,
+    announcementActive: deletingCurrentAnnouncement
+      ? current.announcementActive
+        ? Boolean(fallbackAnnouncement)
+        : false
+      : current.announcementActive,
+    announcementCreatedAt: deletingCurrentAnnouncement
+      ? current.announcementActive
+        ? (fallbackAnnouncement?.createdAt ?? null)
+        : null
+      : current.announcementCreatedAt,
+    history: nextHistory,
+  });
+
+  return res.json({
+    ok: true,
+    announcements: serializeAdminAnnouncements(readAnnouncementState()),
+  });
 });
 
 router.get('/node-quality', requireAdmin, (_req, res) => {

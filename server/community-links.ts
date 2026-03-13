@@ -21,6 +21,7 @@ const VALID_PLATFORMS = new Set<CommunityPlatform>([
   'wechat',
   'custom',
 ]);
+const MAX_QR_CONTENT_LENGTH = 3 * 1024 * 1024;
 
 function sanitizeCommunityLink(input: unknown): CommunityLink | null {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
@@ -31,8 +32,8 @@ function sanitizeCommunityLink(input: unknown): CommunityLink | null {
   const summary = typeof payload.summary === 'string' ? payload.summary.trim().slice(0, 240) : '';
   const rules = typeof payload.rules === 'string' ? payload.rules.trim().slice(0, 4000) : '';
   const notes = typeof payload.notes === 'string' ? payload.notes.trim().slice(0, 4000) : '';
-  const qrContent =
-    typeof payload.qrContent === 'string' ? payload.qrContent.trim().slice(0, 4000) : '';
+  const rawQrContent = typeof payload.qrContent === 'string' ? payload.qrContent.trim() : '';
+  const qrContent = rawQrContent.length <= MAX_QR_CONTENT_LENGTH ? rawQrContent : '';
 
   if (!title && !url && !summary && !rules && !notes && !qrContent) return null;
 

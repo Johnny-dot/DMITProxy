@@ -1,11 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bell, LogOut, Search, User } from 'lucide-react';
+import { Bell, LogOut, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { LanguageToggle } from '../ui/LanguageToggle';
 import { useToast } from '../ui/Toast';
+import {
+  ApiError,
+  createAdminAnnouncement,
+  deleteAdminAnnouncement,
+  getAdminAnnouncements,
+  type AdminAnnouncement,
+} from '@/src/api/client';
 import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
 import { NotificationsPanel } from './NotificationsPanel';
@@ -30,6 +36,27 @@ function getNotificationStorageKey(role: 'admin' | 'user' | null, username: stri
   return 'prism:admin-notifications:v1';
 }
 
+function isUnauthorizedError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
+}
+
+function getUserNotificationActionPath(id: string): string | undefined {
+  if (id === 'subscription-ready' || id === 'subscription-pending') {
+    return '/my-subscription?section=setup';
+  }
+
+  return undefined;
+}
+
+function withAction(item: NotificationItem, actionPath?: string): NotificationItem {
+  if (!actionPath) return item;
+
+  return {
+    ...item,
+    actionPath,
+  };
+}
+
 export function Navbar() {
   const { logout, role, username, displayName, avatarStyle, refreshAuth } = useAuth();
   const { toast } = useToast();
@@ -41,6 +68,10 @@ export function Navbar() {
   const [isRefreshingNotifications, setIsRefreshingNotifications] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [adminAnnouncements, setAdminAnnouncements] = useState<AdminAnnouncement[]>([]);
+  const [announcementDraft, setAnnouncementDraft] = useState('');
+  const [isSendingAnnouncement, setIsSendingAnnouncement] = useState(false);
+  const [deletingAnnouncementId, setDeletingAnnouncementId] = useState<string | null>(null);
 
   const notificationStorageKey = useMemo(
     () => getNotificationStorageKey(role, username),
@@ -77,6 +108,13 @@ export function Navbar() {
     window.localStorage.setItem(notificationStorageKey, JSON.stringify(notifications));
   }, [notificationStorageKey, notifications]);
 
+  useEffect(() => {
+    if (role === 'admin') return;
+    setAdminAnnouncements([]);
+    setAnnouncementDraft('');
+    setDeletingAnnouncementId(null);
+  }, [role]);
+
   const getRelativeTime = useCallback(
     (createdAt: number) => {
       const diffMinutes = Math.max(0, Math.floor((Date.now() - createdAt) / 60000));
@@ -91,22 +129,23 @@ export function Navbar() {
     (context: PortalContextResponse): NotificationItem[] =>
       context.notifications.map((item) => {
         const localized = localizePortalNotification(item, isZh, context.settings.supportTelegram);
+        const actionPath = getUserNotificationActionPath(item.id);
 
         return {
-          id: item.id,
-          title: localized.title,
-          message: localized.message,
-          level: item.level,
-          createdAt: item.createdAt,
-          read: false,
-          actionPath:
-            item.id === 'subscription-ready' || item.id === 'subscription-pending'
-              ? '/my-subscription?section=setup'
-              : '/my-subscription?section=home',
-          actionLabel: t('notifications.open'),
+          ...withAction(
+            {
+              id: item.id,
+              title: localized.title,
+              message: localized.message,
+              level: item.level,
+              createdAt: item.createdAt,
+              read: false,
+            },
+            actionPath,
+          ),
         };
       }),
-    [isZh, t],
+    [isZh],
   );
 
   const syncAuthAfterUnauthorized = useCallback(async () => {
@@ -148,18 +187,21 @@ export function Navbar() {
           const previousMap = new Map<string, NotificationItem>(
             previous.map((item) => [item.id, item]),
           );
-          return generated.map((item) => ({
-            ...item,
-            read: previousMap.get(item.id)?.read ?? false,
-          }));
+          return generated
+            .map((item) => ({
+              ...item,
+              read: previousMap.get(item.id)?.read ?? false,
+            }))
+            .sort((left, right) => right.createdAt - left.createdAt);
         });
         return;
       }
 
-      const [systemRes, settingsRes, statusRes] = await Promise.allSettled([
+      const [systemRes, settingsRes, statusRes, announcementsRes] = await Promise.allSettled([
         fetch('/local/admin/system', { credentials: 'include' }),
         fetch('/local/admin/settings', { credentials: 'include' }),
         fetch('/api/panel/api/server/status', { credentials: 'include' }),
+        getAdminAnnouncements(),
       ]);
 
       const settledResponses = [systemRes, settingsRes, statusRes]
@@ -171,6 +213,14 @@ export function Navbar() {
         await syncAuthAfterUnauthorized();
         return;
       }
+      if (announcementsRes.status === 'rejected' && isUnauthorizedError(announcementsRes.reason)) {
+        await syncAuthAfterUnauthorized();
+        return;
+      }
+
+      if (announcementsRes.status === 'fulfilled') {
+        setAdminAnnouncements(announcementsRes.value);
+      }
 
       const generated: Array<Omit<NotificationItem, 'read'>> = [];
 
@@ -181,8 +231,6 @@ export function Navbar() {
           title: t('systemNotifications.serverOkTitle'),
           message: t('systemNotifications.serverOkBody'),
           createdAt: now,
-          actionPath: '/',
-          actionLabel: t('notifications.open'),
         });
       } else {
         generated.push({
@@ -192,7 +240,6 @@ export function Navbar() {
           message: t('systemNotifications.serverErrorBody'),
           createdAt: now,
           actionPath: '/settings',
-          actionLabel: t('notifications.open'),
         });
       }
 
@@ -206,7 +253,6 @@ export function Navbar() {
             message: t('systemNotifications.publicUrlMissingBody'),
             createdAt: now,
             actionPath: '/settings',
-            actionLabel: t('notifications.open'),
           });
         }
         if (!String(settings.supportTelegram ?? '').trim()) {
@@ -217,7 +263,6 @@ export function Navbar() {
             message: t('systemNotifications.supportMissingBody'),
             createdAt: now,
             actionPath: '/settings',
-            actionLabel: t('notifications.open'),
           });
         }
         if (!settings.announcementActive) {
@@ -228,7 +273,6 @@ export function Navbar() {
             message: t('systemNotifications.announcementInactiveBody'),
             createdAt: now,
             actionPath: '/settings',
-            actionLabel: t('notifications.open'),
           });
         }
       }
@@ -245,8 +289,6 @@ export function Navbar() {
             title: t('systemNotifications.autoProvisionReadyTitle'),
             message: t('systemNotifications.autoProvisionReadyBody'),
             createdAt: now,
-            actionPath: '/users?tab=accounts',
-            actionLabel: t('notifications.open'),
           });
         } else if (systemFlags.xuiAutoProvisionEnabled) {
           generated.push({
@@ -256,7 +298,6 @@ export function Navbar() {
             message: t('systemNotifications.autoProvisionCredsMissingBody'),
             createdAt: now,
             actionPath: '/users?tab=accounts',
-            actionLabel: t('notifications.open'),
           });
         }
       }
@@ -287,6 +328,9 @@ export function Navbar() {
             return right.createdAt - left.createdAt;
           });
       });
+      if (announcementsRes.status === 'rejected') {
+        throw announcementsRes.reason;
+      }
     } catch {
       toast(t('notifications.refreshFailed'), 'error');
     } finally {
@@ -298,6 +342,17 @@ export function Navbar() {
     if (!role) return;
     void refreshNotifications();
   }, [role, language, refreshNotifications]);
+
+  useEffect(() => {
+    if (!role || typeof window === 'undefined') return;
+
+    const handleWindowFocus = () => {
+      void refreshNotifications();
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    return () => window.removeEventListener('focus', handleWindowFocus);
+  }, [role, refreshNotifications]);
 
   function openNotifications() {
     setIsNotificationsOpen(true);
@@ -314,8 +369,62 @@ export function Navbar() {
     setNotifications((previous) => previous.map((item) => ({ ...item, read: true })));
   }
 
-  function clearNotifications() {
-    setNotifications([]);
+  async function handleAnnouncementSubmit() {
+    const message = announcementDraft.trim();
+    if (role !== 'admin' || !message || isSendingAnnouncement) return;
+
+    setIsSendingAnnouncement(true);
+    try {
+      const nextAnnouncements = await createAdminAnnouncement(message);
+      setAdminAnnouncements(nextAnnouncements);
+      setAnnouncementDraft('');
+      toast(isZh ? '公告已发送' : 'Announcement sent', 'success');
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        await syncAuthAfterUnauthorized();
+        return;
+      }
+      const messageText =
+        error instanceof Error
+          ? error.message
+          : isZh
+            ? '发送公告失败'
+            : 'Failed to send announcement';
+      toast(messageText, 'error');
+    } finally {
+      setIsSendingAnnouncement(false);
+    }
+  }
+
+  async function handleAnnouncementDelete(id: string) {
+    if (role !== 'admin' || deletingAnnouncementId) return;
+    const confirmed = window.confirm(
+      isZh
+        ? '删除后，用户侧已经收到的这条公告也会同步移除。确定继续吗？'
+        : 'Delete this announcement for users as well?',
+    );
+    if (!confirmed) return;
+
+    setDeletingAnnouncementId(id);
+    try {
+      const nextAnnouncements = await deleteAdminAnnouncement(id);
+      setAdminAnnouncements(nextAnnouncements);
+      toast(isZh ? '公告已删除' : 'Announcement deleted', 'success');
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        await syncAuthAfterUnauthorized();
+        return;
+      }
+      const messageText =
+        error instanceof Error
+          ? error.message
+          : isZh
+            ? '删除公告失败'
+            : 'Failed to delete announcement';
+      toast(messageText, 'error');
+    } finally {
+      setDeletingAnnouncementId(null);
+    }
   }
 
   function openNotificationAction(item: NotificationItem) {
@@ -338,88 +447,83 @@ export function Navbar() {
   }
 
   return (
-    <div className="flex w-full items-center justify-between gap-4">
-      <div className="flex min-w-0 flex-1 items-center gap-4">
-        <div className="relative hidden w-full max-w-md sm:block">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          <Input
-            placeholder={t('nav.searchPlaceholder')}
-            className="h-11 bg-[var(--surface-panel)] pl-11 shadow-none"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 md:gap-3">
-        <LanguageToggle compact className="hidden sm:inline-flex" testIdPrefix="navbar-language" />
-        <ThemeToggle testId="navbar-theme-toggle" />
-        <Button
-          variant="outline"
-          size="icon"
-          className="relative"
-          onClick={openNotifications}
-          title={t('notifications.title')}
-          data-testid="navbar-notifications"
-        >
-          <Bell className="h-4 w-4" />
-          {unreadCount > 0 && (
-            <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-emerald-500" />
-          )}
-        </Button>
-        <div className="hidden h-8 w-px bg-[var(--border-subtle)] sm:block" />
-        <Button
-          variant={location.pathname === '/profile' ? 'secondary' : 'outline'}
-          size="sm"
-          className="hidden gap-2 sm:flex"
-          onClick={() => navigate('/profile')}
-        >
-          <User className="h-4 w-4" />
-          {t('nav.profile')}
-        </Button>
-        <Button
-          variant={location.pathname === '/profile' ? 'secondary' : 'outline'}
-          size="icon"
-          className="sm:hidden"
-          onClick={() => navigate('/profile')}
-        >
-          <User className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="hidden gap-2 sm:flex"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          data-testid="navbar-signout"
-        >
-          <LogOut className="h-4 w-4" />
-          {t('portal.signOut')}
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="sm:hidden"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          title={t('portal.signOut')}
-          data-testid="navbar-signout-mobile"
-        >
-          <LogOut className="h-4 w-4" />
-        </Button>
-      </div>
-
+    <div className="flex w-full items-center justify-end gap-2 md:gap-3">
+      <LanguageToggle compact className="hidden sm:inline-flex" testIdPrefix="navbar-language" />
+      <ThemeToggle testId="navbar-theme-toggle" />
+      <Button
+        variant="outline"
+        size="icon"
+        className="relative"
+        onClick={openNotifications}
+        title={t('notifications.title')}
+        data-testid="navbar-notifications"
+      >
+        <Bell className="h-4 w-4" />
+        {unreadCount > 0 && (
+          <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-emerald-500" />
+        )}
+      </Button>
+      <div className="hidden h-8 w-px bg-[var(--border-subtle)] sm:block" />
+      <Button
+        variant={location.pathname === '/profile' ? 'secondary' : 'outline'}
+        size="sm"
+        className="hidden gap-2 sm:flex"
+        onClick={() => navigate('/profile')}
+      >
+        <User className="h-4 w-4" />
+        {t('nav.profile')}
+      </Button>
+      <Button
+        variant={location.pathname === '/profile' ? 'secondary' : 'outline'}
+        size="icon"
+        className="sm:hidden"
+        onClick={() => navigate('/profile')}
+      >
+        <User className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="hidden gap-2 sm:flex"
+        onClick={handleLogout}
+        disabled={isLoggingOut}
+        data-testid="navbar-signout"
+      >
+        <LogOut className="h-4 w-4" />
+        {t('portal.signOut')}
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        className="sm:hidden"
+        onClick={handleLogout}
+        disabled={isLoggingOut}
+        title={t('portal.signOut')}
+        data-testid="navbar-signout-mobile"
+      >
+        <LogOut className="h-4 w-4" />
+      </Button>
       <NotificationsPanel
         open={isNotificationsOpen}
+        isZh={isZh}
+        adminMode={role === 'admin'}
         notifications={notifications}
+        adminAnnouncements={adminAnnouncements}
+        announcementDraft={announcementDraft}
         isRefreshing={isRefreshingNotifications}
+        isSendingAnnouncement={isSendingAnnouncement}
         unreadCount={unreadCount}
+        deletingAnnouncementId={deletingAnnouncementId}
         getRelativeTime={getRelativeTime}
         t={t}
         onClose={() => setIsNotificationsOpen(false)}
         onRefresh={() => void refreshNotifications()}
         onMarkAllRead={markAllNotificationsRead}
-        onClearAll={clearNotifications}
         onMarkRead={markNotificationRead}
         onOpenAction={openNotificationAction}
+        onAnnouncementDraftChange={setAnnouncementDraft}
+        onAnnouncementSubmit={() => void handleAnnouncementSubmit()}
+        onAnnouncementDelete={(id) => void handleAnnouncementDelete(id)}
         viewerName={role === 'user' ? resolvedDisplayName : null}
         viewerAvatarStyle={role === 'user' ? avatarStyle : null}
       />

@@ -13,6 +13,13 @@ export interface AdminSettings {
   communityLinks: CommunityLink[];
 }
 
+export interface AdminAnnouncement {
+  id: string;
+  message: string;
+  createdAt: number;
+  isActive: boolean;
+}
+
 export function getAdminSettings(): Promise<AdminSettings> {
   return localFetch<AdminSettings>('/local/admin/settings', {
     fallbackError: 'Failed to load settings',
@@ -26,6 +33,39 @@ export async function saveAdminSettings(payload: Partial<AdminSettings>): Promis
     fallbackError: 'Failed to save settings',
   });
   return data.settings;
+}
+
+export async function getAdminAnnouncements(): Promise<AdminAnnouncement[]> {
+  const data = await localFetch<{ announcements?: AdminAnnouncement[] }>(
+    '/local/admin/announcements',
+    {
+      fallbackError: 'Failed to load announcements',
+    },
+  );
+  return Array.isArray(data.announcements) ? data.announcements : [];
+}
+
+export async function createAdminAnnouncement(message: string): Promise<AdminAnnouncement[]> {
+  const data = await localFetch<{ announcements?: AdminAnnouncement[] }>(
+    '/local/admin/announcements',
+    {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+      fallbackError: 'Failed to send announcement',
+    },
+  );
+  return Array.isArray(data.announcements) ? data.announcements : [];
+}
+
+export async function deleteAdminAnnouncement(id: string): Promise<AdminAnnouncement[]> {
+  const data = await localFetch<{ announcements?: AdminAnnouncement[] }>(
+    `/local/admin/announcements/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+      fallbackError: 'Failed to delete announcement',
+    },
+  );
+  return Array.isArray(data.announcements) ? data.announcements : [];
 }
 
 export async function clearPortalSessions(): Promise<number> {

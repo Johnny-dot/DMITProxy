@@ -94,6 +94,10 @@ const NEWS_ITEM_LIMIT =
     ? Math.max(10, Math.min(40, configuredNewsItemLimit))
     : DEFAULT_NEWS_ITEM_LIMIT;
 const NEWS_CACHE_TTL_MS = NEWS_CACHE_TTL_MINUTES * 60 * 1000;
+const NEWS_BACKGROUND_REFRESH_INTERVAL_MS = Math.max(
+  60_000,
+  NEWS_CACHE_TTL_MS - Math.min(60_000, Math.floor(NEWS_CACHE_TTL_MS / 3)),
+);
 const FETCH_TIMEOUT_MS = 15_000;
 const ARTICLE_FETCH_TIMEOUT_MS = 8_000;
 const ARTICLE_IMAGE_ENRICH_LIMIT_PER_TOPIC = 8;
@@ -1230,17 +1234,8 @@ async function fetchFeedPayload(
   };
 }
 
-export async function getNewsFeed(forceRefresh = false): Promise<NewsFeedPayload> {
-  const cached = readNewsCache();
-
-  if (!forceRefresh) {
-    if (cached && typeof cached.cachedAt === 'number' && isFresh(cached.cachedAt)) {
-      return cached;
-    }
-    if (inflightFeed) return inflightFeed;
-  }
-
-  const request = fetchFeedPayload(cached)
+function queueFeedRefresh(previousFeed: NewsFeedPayload | null) {
+  const request = fetchFeedPayload(previousFeed)
     .then(async (payload) => {
       await writeCacheFile(newsCachePath, {
         ...payload,
@@ -1256,8 +1251,57 @@ export async function getNewsFeed(forceRefresh = false): Promise<NewsFeedPayload
   return request;
 }
 
+function triggerBackgroundFeedRefresh(reason: string) {
+  void warmNewsFeed().catch((error) => {
+    console.error(`[Prism] News background refresh (${reason}) failed:`, error);
+  });
+}
+
+export function startNewsFeedBackgroundRefresh() {
+  triggerBackgroundFeedRefresh('startup');
+
+  const timer = setInterval(() => {
+    triggerBackgroundFeedRefresh('interval');
+  }, NEWS_BACKGROUND_REFRESH_INTERVAL_MS);
+  timer.unref?.();
+
+  return () => {
+    clearInterval(timer);
+  };
+}
+
+export async function warmNewsFeed(forceRefresh = false): Promise<NewsFeedPayload> {
+  const cached = readNewsCache();
+  if (inflightFeed) return inflightFeed;
+
+  if (!forceRefresh) {
+    if (cached && typeof cached.cachedAt === 'number' && isFresh(cached.cachedAt)) {
+      return cached;
+    }
+  }
+
+  return queueFeedRefresh(cached);
+}
+
+export async function getNewsFeed(forceRefresh = false): Promise<NewsFeedPayload> {
+  if (forceRefresh) {
+    return warmNewsFeed(true);
+  }
+
+  const cached = readNewsCache();
+  if (cached) {
+    if (typeof cached.cachedAt === 'number' && !isFresh(cached.cachedAt)) {
+      triggerBackgroundFeedRefresh('stale-read');
+    }
+    return cached;
+  }
+
+  if (inflightFeed) return inflightFeed;
+  return warmNewsFeed();
+}
+
 export async function refreshNewsFeed() {
-  const feed = await getNewsFeed(true);
+  const feed = await warmNewsFeed(true);
   return { feed };
 }
 

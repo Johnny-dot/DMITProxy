@@ -3,13 +3,12 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
+import { LOGGED_OUT_KEY } from '@/src/context/AuthContext';
 import { useI18n } from '@/src/context/I18nContext';
-import { useAuth } from '@/src/context/AuthContext';
 import { PublicAuthLayout } from '@/src/components/public/PublicAuthLayout';
 
 export function UserRegisterPage() {
   const navigate = useNavigate();
-  const { refreshAuth } = useAuth();
   const { t, language } = useI18n();
   const isZh = language === 'zh-CN';
   const [params] = useSearchParams();
@@ -19,6 +18,15 @@ export function UserRegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const redirectToUserPortal = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(LOGGED_OUT_KEY);
+      window.location.replace('/my-subscription');
+      return;
+    }
+    navigate('/my-subscription', { replace: true });
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,8 +49,7 @@ export function UserRegisterPage() {
         body: JSON.stringify({ username, password }),
       });
       if (loginRes.ok) {
-        await refreshAuth();
-        navigate('/my-subscription', { replace: true });
+        redirectToUserPortal();
       } else {
         navigate('/login', { replace: true });
       }

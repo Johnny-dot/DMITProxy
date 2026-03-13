@@ -1,6 +1,9 @@
 import type { Inbound, InboundClient } from '@/src/api/client';
 
 type JsonRecord = Record<string, unknown>;
+export type XuiClientSettingsRecord = JsonRecord;
+
+export type XuiClientConfigSource = 'settings' | 'stats';
 
 export type ClientStatus = 'active' | 'disabled' | 'expired';
 
@@ -10,6 +13,7 @@ export interface XuiClientRow {
   inboundRemark: string;
   protocol: string;
   port: number;
+  clientId: string;
   email: string;
   username: string;
   uuid: string;
@@ -20,6 +24,8 @@ export interface XuiClientRow {
   up: number;
   down: number;
   deviceLimit: number;
+  configSource: XuiClientConfigSource;
+  rawClient: XuiClientSettingsRecord;
 }
 
 function toNumber(value: unknown, fallback = 0): number {
@@ -61,6 +67,24 @@ function normalizeKey(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function resolveClientIdentifier(
+  protocol: string,
+  client: JsonRecord,
+  stats?: InboundClient,
+): string {
+  const lowerProtocol = protocol.trim().toLowerCase();
+
+  if (lowerProtocol === 'trojan') {
+    return normalizeText(client.password) || normalizeText(client.id) || normalizeText(stats?.id);
+  }
+
+  if (lowerProtocol === 'shadowsocks') {
+    return normalizeText(client.email) || normalizeText(client.id) || normalizeText(stats?.email);
+  }
+
+  return normalizeText(client.id) || normalizeText(stats?.id);
+}
+
 function resolveClientStatus(enable: boolean, expiryTime: number): ClientStatus {
   if (!enable) return 'disabled';
   if (expiryTime > 0 && Date.now() > expiryTime) return 'expired';
@@ -89,11 +113,13 @@ function buildClientRow(
   inbound: Inbound,
   rawClient: JsonRecord,
   stats?: InboundClient,
+  configSource: XuiClientConfigSource = 'settings',
 ): XuiClientRow {
   const email = normalizeText(rawClient.email) || normalizeText(stats?.email);
   const id = normalizeText(rawClient.id) || normalizeText(stats?.id);
   const subId = normalizeText(rawClient.subId) || normalizeText(stats?.subId);
   const username = email || subId || id || `inbound-${inbound.id}-client`;
+  const clientId = resolveClientIdentifier(inbound.protocol, rawClient, stats);
 
   const up = toNumber(stats?.up, toNumber(rawClient.up));
   const down = toNumber(stats?.down, toNumber(rawClient.down));
@@ -108,6 +134,7 @@ function buildClientRow(
     inboundRemark: inbound.remark,
     protocol: inbound.protocol,
     port: inbound.port,
+    clientId,
     email,
     username,
     uuid: id,
@@ -118,6 +145,8 @@ function buildClientRow(
     up,
     down,
     deviceLimit,
+    configSource,
+    rawClient: { ...rawClient },
   };
 }
 
@@ -163,6 +192,7 @@ export function flattenInboundClients(inbounds: Inbound[]): XuiClientRow[] {
             inbound,
             client,
             pickClientStats(client, statsByEmail, statsById, statsBySubId),
+            'settings',
           ),
         );
       }
@@ -182,16 +212,21 @@ export function flattenInboundClients(inbounds: Inbound[]): XuiClientRow[] {
       );
       if (statKey && rawClientKeys.has(statKey)) continue;
       rows.push(
-        buildClientRow(inbound, {
-          email: stat.email,
-          id: stat.id,
-          subId: stat.subId,
-          enable: stat.enable,
-          expiryTime: stat.expiryTime,
-          totalGB: stat.totalGB,
-          up: stat.up,
-          down: stat.down,
-        }),
+        buildClientRow(
+          inbound,
+          {
+            email: stat.email,
+            id: stat.id,
+            subId: stat.subId,
+            enable: stat.enable,
+            expiryTime: stat.expiryTime,
+            totalGB: stat.totalGB,
+            up: stat.up,
+            down: stat.down,
+          },
+          undefined,
+          'stats',
+        ),
       );
     }
   }

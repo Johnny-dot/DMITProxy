@@ -87,7 +87,7 @@ export function InboundsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="content-shell-wide w-full min-w-0 space-y-6 px-4 md:px-6 xl:px-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('inbounds.title')}</h1>

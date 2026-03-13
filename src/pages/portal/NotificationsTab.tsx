@@ -39,7 +39,7 @@ export function localizePortalNotification(
     };
   }
 
-  if (item.id === 'admin-announcement') {
+  if (item.id === 'admin-announcement' || item.id.startsWith('admin-announcement:')) {
     return {
       ...item,
       title: '最新说明',

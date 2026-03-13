@@ -117,7 +117,11 @@ const LOAD_MORE_NOTE_BATCH = 12;
 const PREFETCH_NOTE_THRESHOLD = 10;
 const AUTO_REFRESH_COOLDOWN_MS = 8_000;
 
-export function NewsTab() {
+interface NewsTabProps {
+  isActive?: boolean;
+}
+
+export function NewsTab({ isActive = true }: NewsTabProps) {
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
   const locale = isZh ? 'zh-CN' : 'en-US';
@@ -281,7 +285,7 @@ export function NewsTab() {
 
       try {
         lastAutoRefreshAtRef.current = now;
-        const data = await refreshNewsFeed();
+        const data = await getNewsFeed();
         applyNewsFeed(data.feed);
         setNewsError('');
 
@@ -344,22 +348,25 @@ export function NewsTab() {
   }, [prefetchMoreNotes]);
 
   useEffect(() => {
+    if (!isActive) return;
     if (feedDeck.length === 0) return;
     if (feedDeck.length - visibleCount > PREFETCH_NOTE_THRESHOLD) return;
     void prefetchMoreNotes();
-  }, [feedDeck.length, prefetchMoreNotes, visibleCount]);
+  }, [feedDeck.length, isActive, prefetchMoreNotes, visibleCount]);
 
   // Auto-retry when live edge is reached: silently check for new content every 25s
   useEffect(() => {
+    if (!isActive) return;
     if (!hasReachedLiveEdge) return;
     const timer = window.setTimeout(() => {
       appendLockRef.current = false;
       appendMoreNotes();
     }, 25_000);
     return () => window.clearTimeout(timer);
-  }, [appendMoreNotes, hasReachedLiveEdge]);
+  }, [appendMoreNotes, hasReachedLiveEdge, isActive]);
 
   useEffect(() => {
+    if (!isActive) return undefined;
     const node = loadMoreRef.current;
     if (!node || feedDeck.length === 0) return undefined;
 
@@ -375,10 +382,10 @@ export function NewsTab() {
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [appendMoreNotes, feedDeck.length]);
+  }, [appendMoreNotes, feedDeck.length, isActive]);
 
   useEffect(() => {
-    if (!masonryContainer) return;
+    if (!isActive || !masonryContainer) return;
 
     const updateWidth = () => {
       setMasonryWidth(masonryContainer.clientWidth);
@@ -393,7 +400,7 @@ export function NewsTab() {
       observer.disconnect();
       window.removeEventListener('resize', updateWidth);
     };
-  }, [masonryContainer]);
+  }, [isActive, masonryContainer]);
 
   const updatedLabel = newsFeed?.cachedAt
     ? isZh

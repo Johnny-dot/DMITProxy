@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError, refreshCurrentNodeQuality } from '@/src/api/client';
+import type { ServerStatus } from '@/src/api/xui';
 import { HelpTab } from '@/src/pages/portal/HelpTab';
 import { HomeTab } from '@/src/pages/portal/HomeTab';
 import { MarketTab } from '@/src/pages/portal/MarketTab';
@@ -33,6 +34,7 @@ export function MySubscriptionPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [clientStats, setClientStats] = useState<ClientStats | null | 'loading'>('loading');
+  const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [nodeQuality, setNodeQuality] = useState<NodeQualityProfile | null>(null);
   const [isRefreshingNodeQuality, setIsRefreshingNodeQuality] = useState(false);
 
@@ -42,6 +44,7 @@ export function MySubscriptionPage() {
   );
   const activeTab = sectionState.tab;
   const setupFocus = sectionState.setupFocus;
+  const [hasVisitedNewsTab, setHasVisitedNewsTab] = useState(() => activeTab === 'news');
 
   const setSection = useCallback(
     (tab: PortalTab) => {
@@ -110,8 +113,15 @@ export function MySubscriptionPage() {
     void loadContext();
   }, [loadContext]);
 
+  useEffect(() => {
+    if (activeTab === 'news') {
+      setHasVisitedNewsTab(true);
+    }
+  }, [activeTab]);
+
   const loadStats = useCallback(async () => {
     setClientStats('loading');
+    setServerStatus(null);
     setNodeQuality(null);
 
     try {
@@ -127,18 +137,20 @@ export function MySubscriptionPage() {
 
       const data = (await response.json().catch(() => null)) as PortalStatsResponse | null;
       setClientStats(data?.stats ?? null);
+      setServerStatus(data?.serverStatus ?? null);
       setNodeQuality(data?.nodeQuality ?? null);
     } catch {
       setClientStats(null);
+      setServerStatus(null);
       setNodeQuality(null);
     }
   }, [handleUnauthorized]);
 
   useEffect(() => {
-    if (context) {
+    if (context && activeTab === 'home') {
       void loadStats();
     }
-  }, [context, loadStats]);
+  }, [activeTab, context, loadStats]);
 
   const handleCopy = useCallback((text: string) => {
     if (!text) return;
@@ -256,9 +268,7 @@ export function MySubscriptionPage() {
 
   return (
     <div
-      className={cn(
-        'mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-2 sm:px-6 lg:px-8 2xl:max-w-[1720px]',
-      )}
+      className={cn('content-shell-wide flex flex-col gap-4 px-4 py-2 md:px-6 xl:px-8')}
       data-testid="my-subscription-page"
     >
       {activeTab === 'market' ||
@@ -282,6 +292,7 @@ export function MySubscriptionPage() {
           hasSubscription={hasSubscription}
           subscriptionUniversalUrl={subscriptionLinks.universal}
           clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
+          serverStatus={serverStatus}
           nodeQuality={nodeQuality}
           isStatsLoading={clientStats === 'loading'}
           onRefreshNodeQuality={handleRefreshNodeQuality}
@@ -293,9 +304,7 @@ export function MySubscriptionPage() {
         />
       ) : activeTab === 'market' ? (
         <MarketTab />
-      ) : activeTab === 'news' ? (
-        <NewsTab />
-      ) : activeTab === 'help' ? (
+      ) : activeTab === 'news' ? null : activeTab === 'help' ? (
         <HelpTab
           portalSettings={context.settings}
           communityLinks={context.settings.communityLinks}
@@ -309,6 +318,15 @@ export function MySubscriptionPage() {
           onSetSection={setSection}
         />
       )}
+
+      {hasVisitedNewsTab ? (
+        <div
+          className={cn(activeTab === 'news' ? 'block' : 'hidden')}
+          aria-hidden={activeTab !== 'news'}
+        >
+          <NewsTab isActive={activeTab === 'news'} />
+        </div>
+      ) : null}
     </div>
   );
 }

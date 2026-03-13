@@ -54,6 +54,20 @@ async function createTestContext(options?: {
     notes: string;
     updatedAt: number | null;
   };
+  mockServerStatus?: {
+    cpu: number;
+    cpuCores: number;
+    mem: { current: number; total: number };
+    swap: { current: number; total: number };
+    disk: { current: number; total: number };
+    xray: { state: string; version: string };
+    uptime: number;
+    loads: number[];
+    tcpCount: number;
+    udpCount: number;
+    netIO: { up: number; down: number };
+    netTraffic: { sent: number; recv: number };
+  };
 }): Promise<TestContext> {
   const previousEnv = new Map<string, string | undefined>();
   for (const key of TEST_ENV_KEYS) {
@@ -138,13 +152,23 @@ async function createTestContext(options?: {
 
   vi.doUnmock('./xui-admin.js');
   vi.doUnmock('./node-quality-probe.js');
-  if (options?.mockClientStats) {
+  if (options?.mockClientStats || options?.mockServerStatus) {
     const mockClientStats = options.mockClientStats;
+    const mockServerStatus = options.mockServerStatus;
     vi.doMock('./xui-admin.js', async () => {
       const actual = await vi.importActual<typeof import('./xui-admin.js')>('./xui-admin.js');
       return {
         ...actual,
-        fetchClientStatsBySubId: vi.fn(async () => mockClientStats),
+        ...(mockClientStats
+          ? {
+              fetchClientStatsBySubId: vi.fn(async () => mockClientStats),
+            }
+          : {}),
+        ...(mockServerStatus
+          ? {
+              fetchServerStatusForPortal: vi.fn(async () => mockServerStatus),
+            }
+          : {}),
       };
     });
   }
@@ -529,10 +553,82 @@ describe.sequential('Local Auth Integration', () => {
     expect(portalRes.body.notifications).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: 'admin-announcement',
+          id: expect.stringMatching(/^admin-announcement(?::\d+)?$/),
           message: 'Maintenance window tonight',
         }),
       ]),
+    );
+  });
+
+  it('returns announcement history newest first and keeps recurring notices on stable timestamps', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const stmt = context.db.prepare(`
+      INSERT INTO app_settings (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `);
+
+    stmt.run('supportTelegram', '@prism_support', now - 300);
+    stmt.run('announcementActive', '1', now + 60);
+    stmt.run('announcementText', 'Newest notice', now + 60);
+    stmt.run(
+      'announcementHistory',
+      JSON.stringify([
+        {
+          id: `admin-announcement:${(now - 120) * 1000}`,
+          message: 'Older notice',
+          createdAt: (now - 120) * 1000,
+        },
+        {
+          id: `admin-announcement:${(now + 60) * 1000}`,
+          message: 'Newest notice',
+          createdAt: (now + 60) * 1000,
+        },
+      ]),
+      now + 60,
+    );
+    context.db
+      .prepare('UPDATE users SET created_at = ? WHERE username = ?')
+      .run(now - 600, 'alice');
+
+    const loginRes = await request(context.app).post('/local/auth/login').send({
+      username: 'alice',
+      password: 'secret456',
+    });
+    expect(loginRes.status).toBe(200);
+
+    const rawSetCookie = loginRes.headers['set-cookie'];
+    const setCookies =
+      rawSetCookie === undefined ? [] : Array.isArray(rawSetCookie) ? rawSetCookie : [rawSetCookie];
+    const sessionCookie = setCookies.find((entry) => entry.startsWith('pd_session='));
+    expect(sessionCookie).toBeTruthy();
+
+    const portalRes = await request(context.app)
+      .get('/local/auth/portal/context')
+      .set('Cookie', sessionCookie!.split(';')[0]);
+
+    expect(portalRes.status).toBe(200);
+
+    const notifications = portalRes.body.notifications as Array<{
+      id: string;
+      message: string;
+      createdAt: number;
+    }>;
+    const announcementMessages = notifications
+      .filter((item) => item.id.startsWith('admin-announcement:'))
+      .map((item) => item.message);
+
+    expect(notifications[0]).toMatchObject({
+      id: `admin-announcement:${(now + 60) * 1000}`,
+      message: 'Newest notice',
+      createdAt: (now + 60) * 1000,
+    });
+    expect(announcementMessages).toEqual(['Newest notice', 'Older notice']);
+    expect(notifications.find((item) => item.id === 'subscription-pending')?.createdAt).toBe(
+      (now - 600) * 1000,
+    );
+    expect(notifications.find((item) => item.id === 'support-contact')?.createdAt).toBe(
+      (now - 300) * 1000,
     );
   });
 
@@ -664,6 +760,20 @@ describe.sequential('Portal Stats Integration', () => {
         expiryTime: 0,
         enable: true,
       },
+      mockServerStatus: {
+        cpu: 12.5,
+        cpuCores: 4,
+        mem: { current: 536_870_912, total: 2_147_483_648 },
+        swap: { current: 0, total: 0 },
+        disk: { current: 4_294_967_296, total: 21_474_836_480 },
+        xray: { state: 'running', version: '1.8.9' },
+        uptime: 123_456,
+        loads: [0.22, 0.18, 0.11],
+        tcpCount: 42,
+        udpCount: 12,
+        netIO: { up: 2048, down: 4096 },
+        netTraffic: { sent: 8192, recv: 16384 },
+      },
     });
   });
 
@@ -741,6 +851,18 @@ describe.sequential('Portal Stats Integration', () => {
       disneyplusStatus: 'limited',
       primevideoStatus: 'supported',
       xStatus: 'limited',
+    });
+    expect(statsRes.body.serverStatus).toMatchObject({
+      cpu: 12.5,
+      cpuCores: 4,
+      xray: {
+        state: 'running',
+        version: '1.8.9',
+      },
+      netIO: {
+        up: 2048,
+        down: 4096,
+      },
     });
   });
 

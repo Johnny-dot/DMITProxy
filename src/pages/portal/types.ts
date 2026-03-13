@@ -1,4 +1,5 @@
 import type { Monitor } from 'lucide-react';
+import type { ServerStatus } from '@/src/api/xui';
 import type { getClientDownloadLinks } from '@/src/utils/clientDownloads';
 import type { CommunityLink } from '@/src/types/communityLink';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
@@ -79,6 +80,7 @@ export interface ClientStats {
 export interface PortalStatsResponse {
   stats: ClientStats | null;
   nodeQuality: NodeQualityProfile | null;
+  serverStatus: ServerStatus | null;
 }
 
 export const COPY_RESET_DELAY_MS = 2000;

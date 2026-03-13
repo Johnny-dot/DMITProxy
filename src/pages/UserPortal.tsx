@@ -6,6 +6,7 @@ import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
 import { Button } from '@/src/components/ui/Button';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
+import type { ServerStatus } from '@/src/api/xui';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import { UsersCenterPage } from './UsersCenter';
 import { PortalHeader } from './portal/PortalHeader';
@@ -47,6 +48,7 @@ export function UserPortalPage() {
 
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [clientStats, setClientStats] = useState<ClientStats | null | 'loading'>('loading');
+  const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [nodeQuality, setNodeQuality] = useState<NodeQualityProfile | null>(null);
 
   // -----------------------------------------------------------------------
@@ -158,6 +160,7 @@ export function UserPortalPage() {
 
   const loadStats = useCallback(async () => {
     setClientStats('loading');
+    setServerStatus(null);
     setNodeQuality(null);
     try {
       const res = await fetch('/local/auth/portal/stats', { credentials: 'include' });
@@ -172,10 +175,12 @@ export function UserPortalPage() {
       });
       const typed = data as PortalStatsResponse | null;
       setClientStats(typed?.stats ?? null);
+      setServerStatus(typed?.serverStatus ?? null);
       setNodeQuality(typed?.nodeQuality ?? null);
     } catch (error) {
       console.error('[portal] loadStats: network error:', error);
       setClientStats(null);
+      setServerStatus(null);
       setNodeQuality(null);
     }
   }, []);
@@ -184,6 +189,7 @@ export function UserPortalPage() {
     if (viewerRole === 'user') void loadStats();
     else {
       setClientStats(null);
+      setServerStatus(null);
       setNodeQuality(null);
     }
   }, [viewerRole, loadStats]);
@@ -413,6 +419,7 @@ export function UserPortalPage() {
             hasSubscription={hasSubscription}
             subscriptionUniversalUrl={subscriptionLinks.universal}
             clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
+            serverStatus={serverStatus}
             isStatsLoading={clientStats === 'loading'}
             onCopy={handleCopy}
             onSetSection={setSection}
@@ -430,7 +437,7 @@ export function UserPortalPage() {
 
         {activeTab === 'management' && isAdminView && (
           <section className="surface-card w-full p-4 md:p-6">
-            <UsersCenterPage />
+            <UsersCenterPage embedded />
           </section>
         )}
 
