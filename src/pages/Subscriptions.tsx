@@ -658,7 +658,7 @@ export function SubscriptionsPage() {
 
       {qrOpen && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-[var(--overlay)] p-4"
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--overlay)] p-4"
           onClick={() => setQrOpen(false)}
           role="button"
           tabIndex={0}

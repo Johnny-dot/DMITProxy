@@ -740,7 +740,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
       </Card>
       {activityModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
           onClick={() => (isResettingTraffic ? undefined : setActivityModal(null))}
         >
           <div className="surface-card w-full max-w-xl" onClick={(e) => e.stopPropagation()}>
@@ -874,7 +874,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
       )}
       {editClient && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
           onClick={() => (isSavingClient ? undefined : setEditClient(null))}
         >
           <div className="surface-card w-full max-w-xl" onClick={(e) => e.stopPropagation()}>
@@ -1056,7 +1056,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
           ];
           return (
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
+              className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
               onClick={() => setSubModal(null)}
             >
               <div className="surface-card w-full max-w-md" onClick={(e) => e.stopPropagation()}>

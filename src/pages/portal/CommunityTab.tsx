@@ -386,7 +386,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
 
       {previewQr ? (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-[color:var(--overlay)] p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-[color:var(--overlay)] p-4 backdrop-blur-sm"
           onClick={() => setPreviewQr(null)}
         >
           <div
