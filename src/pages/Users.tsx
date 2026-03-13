@@ -481,7 +481,9 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
           <div className="space-y-3">
             <p className="section-kicker">{t('users.title')}</p>
             <h1 className="text-3xl font-semibold tracking-tight">{t('users.title')}</h1>
-            <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('users.subtitle')}</p>
+            <p className="max-w-3xl text-sm leading-7 text-[var(--text-secondary)]">
+              {t('users.subtitle')}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={load} disabled={isLoading}>
@@ -494,7 +496,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
           </div>
         </section>
       ) : (
-        <div className="flex items-center gap-2">
+        <div className="glass-pill inline-flex items-center gap-2 p-2">
           <Button variant="outline" size="icon" onClick={load} disabled={isLoading}>
             <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
           </Button>
@@ -520,7 +522,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
               </div>
             </div>
             <div className="relative w-full sm:w-72 xl:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-secondary)]" />
               <Input
                 placeholder={t('users.searchPlaceholder')}
                 className="pl-10 h-9"
@@ -611,15 +613,15 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                   return (
                     <TableRow key={user.key}>
                       <TableCell className="font-medium">{user.username}</TableCell>
-                      <TableCell className="hidden lg:table-cell text-zinc-400 text-xs">
+                      <TableCell className="hidden text-xs text-[var(--text-secondary)] lg:table-cell">
                         {user.inboundRemark} · {user.protocol.toUpperCase()}:{user.port}
                       </TableCell>
-                      <TableCell className="hidden xl:table-cell font-mono text-xs text-zinc-500">
+                      <TableCell className="hidden font-mono text-xs text-[var(--text-tertiary)] xl:table-cell">
                         {user.subId || t('users.noSubId')}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1.5 min-w-[140px]">
-                          <div className="flex justify-between text-[10px] text-zinc-500">
+                          <div className="flex justify-between text-[10px] text-[var(--text-secondary)]">
                             <span>{formatTraffic(trafficUsed)}</span>
                             <span>
                               {user.totalGB > 0
@@ -627,7 +629,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                                 : t('common.unlimited')}
                             </span>
                           </div>
-                          <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                          <div className="glass-progress-track h-1.5 w-full overflow-hidden">
                             <div
                               className={cn(
                                 'h-full rounded-full transition-all duration-500',
@@ -645,10 +647,10 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                       <TableCell className="hidden md:table-cell">
                         {user.deviceLimit || t('common.unlimited')}
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell text-zinc-400 text-xs">
+                      <TableCell className="hidden text-xs text-[var(--text-secondary)] sm:table-cell">
                         {formatExpiry(user.expiryTime)}
                       </TableCell>
-                      <TableCell className="hidden 2xl:table-cell text-zinc-400 text-xs">
+                      <TableCell className="hidden text-xs text-[var(--text-secondary)] 2xl:table-cell">
                         {formatLastOnlineValue(getClientLastOnline(user))}
                       </TableCell>
                       <TableCell>
@@ -738,18 +740,22 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
       </Card>
       {activityModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
           onClick={() => (isResettingTraffic ? undefined : setActivityModal(null))}
         >
           <div className="surface-card w-full max-w-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
+            <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border-subtle)] px-5 py-4">
               <div className="space-y-1">
-                <p className="font-semibold text-zinc-50">{t('users.clientActivityTitle')}</p>
-                <p className="text-sm text-zinc-400">{t('users.clientActivityDescription')}</p>
+                <p className="font-semibold text-[var(--text-primary)]">
+                  {t('users.clientActivityTitle')}
+                </p>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  {t('users.clientActivityDescription')}
+                </p>
               </div>
               <button
                 onClick={() => (isResettingTraffic ? undefined : setActivityModal(null))}
-                className="text-zinc-500 transition-colors hover:text-zinc-200"
+                className="text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
                 disabled={isResettingTraffic}
               >
                 <X className="h-5 w-5" />
@@ -759,14 +765,14 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
             <div className="space-y-5 px-5 py-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                     {t('users.username')}
                   </label>
                   <Input value={activityModal.client.username} readOnly disabled />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                     {t('users.lastOnline')}
                   </label>
                   <Input
@@ -779,7 +785,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                     {t('users.inbound')}
                   </label>
                   <Input
@@ -790,7 +796,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                     {t('users.editClientSubIdLabel')}
                   </label>
                   <Input
@@ -802,12 +808,12 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                   {t('users.onlineIps')}
                 </label>
                 <div className="rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-4 py-3">
                   {activityModal.isLoading ? (
-                    <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                       <RefreshCw className="h-4 w-4 animate-spin" />
                       <span>{t('common.loading')}</span>
                     </div>
@@ -822,7 +828,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-[var(--text-secondary)]">
                       {activityModal.emptyMessage || t('users.noIpRecords')}
                     </p>
                   )}
@@ -830,7 +836,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--border-subtle)] px-5 py-4">
               <Button
                 type="button"
                 variant="ghost"
@@ -868,18 +874,22 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
       )}
       {editClient && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
           onClick={() => (isSavingClient ? undefined : setEditClient(null))}
         >
           <div className="surface-card w-full max-w-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
+            <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border-subtle)] px-5 py-4">
               <div className="space-y-1">
-                <p className="font-semibold text-zinc-50">{t('users.editClientDetails')}</p>
-                <p className="text-sm text-zinc-400">{t('users.editClientDescription')}</p>
+                <p className="font-semibold text-[var(--text-primary)]">
+                  {t('users.editClientDetails')}
+                </p>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  {t('users.editClientDescription')}
+                </p>
               </div>
               <button
                 onClick={() => (isSavingClient ? undefined : setEditClient(null))}
-                className="text-zinc-500 transition-colors hover:text-zinc-200"
+                className="text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
                 disabled={isSavingClient}
               >
                 <X className="h-5 w-5" />
@@ -889,7 +899,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
             <div className="space-y-5 px-5 py-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                     {t('users.editClientUsernameLabel')}
                   </label>
                   <Input
@@ -904,7 +914,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                     {t('users.editClientEnabledLabel')}
                   </label>
                   <div className="flex gap-2">
@@ -942,7 +952,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                     {t('users.editClientTrafficLimitLabel')}
                   </label>
                   <Input
@@ -957,11 +967,13 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                     }
                     disabled={isSavingClient}
                   />
-                  <p className="text-xs text-zinc-500">{t('users.editClientTrafficLimitHint')}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    {t('users.editClientTrafficLimitHint')}
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                     {t('users.editClientDeviceLimitLabel')}
                   </label>
                   <Input
@@ -976,13 +988,15 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                     }
                     disabled={isSavingClient}
                   />
-                  <p className="text-xs text-zinc-500">{t('users.editClientDeviceLimitHint')}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    {t('users.editClientDeviceLimitHint')}
+                  </p>
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                     {t('users.editClientExpiryLabel')}
                   </label>
                   <Input
@@ -995,11 +1009,13 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                     }
                     disabled={isSavingClient}
                   />
-                  <p className="text-xs text-zinc-500">{t('users.editClientExpiryHint')}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    {t('users.editClientExpiryHint')}
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                     {t('users.editClientSubIdLabel')}
                   </label>
                   <Input value={editClient.client.subId} readOnly disabled />
@@ -1007,14 +1023,14 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">
+                <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
                   {t('users.editClientClientIdLabel')}
                 </label>
                 <Input value={editClient.client.clientId} readOnly disabled />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 border-t border-white/10 px-5 py-4">
+            <div className="flex items-center justify-end gap-2 border-t border-[color:var(--border-subtle)] px-5 py-4">
               <Button
                 type="button"
                 variant="ghost"
@@ -1040,20 +1056,20 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
           ];
           return (
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
               onClick={() => setSubModal(null)}
             >
               <div className="surface-card w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                <div className="flex items-center justify-between border-b border-[color:var(--border-subtle)] px-5 py-4">
                   <div>
-                    <p className="font-semibold text-zinc-50">{subModal.username}</p>
-                    <p className="text-xs text-zinc-500 font-mono mt-0.5">
+                    <p className="font-semibold text-[var(--text-primary)]">{subModal.username}</p>
+                    <p className="mt-0.5 font-mono text-xs text-[var(--text-secondary)]">
                       {subModal.subId || t('users.noSubId')}
                     </p>
                   </div>
                   <button
                     onClick={() => setSubModal(null)}
-                    className="text-zinc-500 hover:text-zinc-200 transition-colors"
+                    className="text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1064,20 +1080,21 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                     const url = subModal.subId ? buildSubscriptionUrl(subModal.subId, format) : '';
                     const isCopied = copiedKey === key;
                     return (
-                      <div
-                        key={key}
-                        className="flex items-center gap-2 bg-zinc-800/50 rounded-lg px-3 py-2"
-                      >
-                        <span className="text-xs font-medium text-zinc-400 w-16 shrink-0">
+                      <div key={key} className="surface-panel flex items-center gap-2 px-3 py-2">
+                        <span className="w-16 shrink-0 text-xs font-medium text-[var(--text-secondary)]">
                           {label}
                         </span>
-                        <span className="flex-1 text-xs font-mono text-zinc-300 truncate">
-                          {url || <span className="text-zinc-600">{t('users.subUrlMissing')}</span>}
+                        <span className="flex-1 truncate font-mono text-xs text-[var(--text-primary)]">
+                          {url || (
+                            <span className="text-[var(--text-tertiary)]">
+                              {t('users.subUrlMissing')}
+                            </span>
+                          )}
                         </span>
                         <button
                           disabled={!url}
                           onClick={() => copyLink(url, key)}
-                          className="shrink-0 text-zinc-500 hover:text-emerald-400 disabled:opacity-30 transition-colors"
+                          className="shrink-0 text-[var(--text-secondary)] transition-colors hover:text-emerald-400 disabled:opacity-30"
                         >
                           {isCopied ? (
                             <Check className="w-4 h-4 text-emerald-400" />
@@ -1092,8 +1109,8 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
 
                 {subQrImage && (
                   <div className="px-5 pb-5 flex flex-col items-center gap-2">
-                    <p className="text-xs text-zinc-500">Universal QR</p>
-                    <img src={subQrImage} alt="QR Code" className="w-40 h-40 rounded-lg" />
+                    <p className="text-xs text-[var(--text-secondary)]">Universal QR</p>
+                    <img src={subQrImage} alt="QR Code" className="w-40 h-40 rounded-[20px]" />
                   </div>
                 )}
               </div>

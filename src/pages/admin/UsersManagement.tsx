@@ -191,15 +191,20 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
 
   return (
     <div className="w-full min-w-0 space-y-8">
-      <div>
+      <div className={cn(!embedded && 'surface-card space-y-3 p-6 md:p-7')}>
         {!embedded && (
           <>
             <h1 className="text-3xl font-bold tracking-tight">{t('userAccounts.title')}</h1>
-            <p className="text-zinc-400 mt-1">{t('userAccounts.subtitle')}</p>
+            <p className="mt-1 text-[var(--text-secondary)]">{t('userAccounts.subtitle')}</p>
           </>
         )}
-        <div className={cn('flex flex-wrap items-center gap-2 text-xs', embedded ? '' : 'mt-3')}>
-          <span className="text-zinc-500">{t('userAccounts.autoProvision')}:</span>
+        <div
+          className={cn(
+            'glass-pill inline-flex flex-wrap items-center gap-2 p-3 text-xs',
+            embedded ? '' : 'mt-3',
+          )}
+        >
+          <span className="text-[var(--text-secondary)]">{t('userAccounts.autoProvision')}:</span>
           <Badge variant={systemFlags?.xuiAutoProvisionEnabled ? 'success' : 'secondary'}>
             {systemFlags?.xuiAutoProvisionEnabled
               ? t('userAccounts.autoProvisionEnabled')
@@ -210,7 +215,9 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
               <span className="text-amber-500">{t('userAccounts.autoProvisionMissingCreds')}</span>
             )}
           {!systemFlags?.xuiAutoProvisionEnabled && (
-            <span className="text-zinc-500">{t('userAccounts.autoProvisionOff')}</span>
+            <span className="text-[var(--text-secondary)]">
+              {t('userAccounts.autoProvisionOff')}
+            </span>
           )}
           {systemFlags?.xuiAutoProvisionEnabled &&
             systemFlags?.xuiAutoProvisionCredentialsConfigured && (
@@ -223,7 +230,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Ticket className="w-5 h-5 text-zinc-400" />
+              <Ticket className="w-5 h-5 text-[var(--text-secondary)]" />
               {t('userAccounts.inviteCodes')}
             </CardTitle>
             <Button size="sm" className="gap-2" onClick={createInvite}>
@@ -240,7 +247,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
               ))}
             </div>
           ) : codes.length === 0 ? (
-            <p className="text-zinc-500 text-sm text-center py-6">
+            <p className="py-6 text-center text-sm text-[var(--text-secondary)]">
               {t('userAccounts.noInviteCodes')}
             </p>
           ) : (
@@ -248,7 +255,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
               {codes.map((code) => (
                 <div
                   key={code.id}
-                  className="flex items-center justify-between bg-zinc-900/50 border border-white/5 rounded-lg px-4 py-3"
+                  className="surface-panel flex items-center justify-between px-4 py-3"
                 >
                   <div className="space-y-1.5 min-w-0">
                     <div className="flex items-center gap-3">
@@ -261,7 +268,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                         <Badge variant="success">{t('userAccounts.available')}</Badge>
                       )}
                     </div>
-                    <p className="text-[11px] text-zinc-500">
+                    <p className="text-[11px] text-[var(--text-secondary)]">
                       {t('userAccounts.inviteCreatedAt', {
                         date: new Date(code.created_at * 1000).toLocaleString(),
                       })}
@@ -310,7 +317,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-zinc-400" />
+            <Users className="w-5 h-5 text-[var(--text-secondary)]" />
             {t('userAccounts.registeredUsers')}
           </CardTitle>
         </CardHeader>
@@ -322,17 +329,19 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
               ))}
             </div>
           ) : users.length === 0 ? (
-            <p className="text-zinc-500 text-sm text-center py-6">{t('userAccounts.noUsers')}</p>
+            <p className="py-6 text-center text-sm text-[var(--text-secondary)]">
+              {t('userAccounts.noUsers')}
+            </p>
           ) : (
             <div className="space-y-3">
               {users.map((user) => (
                 <div
                   key={user.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/50 border border-white/5 rounded-lg px-4 py-3"
+                  className="surface-panel flex flex-col justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center"
                 >
                   <div>
                     <p className="font-medium">{user.username}</p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       {t('userAccounts.joined', {
                         date: new Date(user.created_at * 1000).toLocaleDateString(),
                       })}
@@ -367,11 +376,11 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                     ) : (
                       <>
                         {user.sub_id ? (
-                          <code className="text-xs text-zinc-400 font-mono truncate flex-1">
+                          <code className="flex-1 truncate font-mono text-xs text-[var(--text-secondary)]">
                             {user.sub_id}
                           </code>
                         ) : (
-                          <span className="text-xs text-zinc-600 flex-1">
+                          <span className="flex-1 text-xs text-[var(--text-tertiary)]">
                             {t('userAccounts.noSubAssigned')}
                           </span>
                         )}
@@ -408,10 +417,12 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
               ))}
             </div>
           )}
-          <p className="text-xs text-zinc-600 mt-4">{t('userAccounts.registrationTip')}</p>
+          <p className="mt-4 text-xs text-[var(--text-tertiary)]">
+            {t('userAccounts.registrationTip')}
+          </p>
           {latestResetLink && (
-            <div className="mt-4 rounded-lg border border-white/10 bg-zinc-900/40 p-3 space-y-2">
-              <p className="text-xs text-zinc-400">
+            <div className="surface-panel mt-4 space-y-2 p-3">
+              <p className="text-xs text-[var(--text-secondary)]">
                 {t('userAccounts.latestResetLink', {
                   username: latestResetLink.username,
                   expiresAt:
@@ -421,7 +432,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                 })}
               </p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 truncate text-xs font-mono text-zinc-300">
+                <code className="flex-1 truncate font-mono text-xs text-[var(--text-primary)]">
                   {latestResetLink.link}
                 </code>
                 <Button

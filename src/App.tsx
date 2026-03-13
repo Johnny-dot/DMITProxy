@@ -39,8 +39,11 @@ const UserResetPasswordPage = lazy(() =>
 
 function RouteLoading() {
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
+    <div className="flex min-h-screen items-center justify-center px-6">
+      <div className="surface-card flex items-center gap-4 px-6 py-5">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--border-subtle)] border-t-[var(--accent)]" />
+        <span className="text-sm text-[var(--text-secondary)]">Loading</span>
+      </div>
     </div>
   );
 }

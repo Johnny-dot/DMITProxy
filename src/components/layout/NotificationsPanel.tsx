@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   AlertCircle,
@@ -50,7 +51,7 @@ function LevelIcon({ level }: { level: NotificationItem['level'] }) {
   if (level === 'success') return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
   if (level === 'warning') return <TriangleAlert className="h-4 w-4 text-amber-500" />;
   if (level === 'error') return <AlertCircle className="h-4 w-4 text-red-500" />;
-  return <Info className="h-4 w-4 text-zinc-400" />;
+  return <Info className="h-4 w-4 text-[var(--text-secondary)]" />;
 }
 
 export function NotificationsPanel({
@@ -82,7 +83,7 @@ export function NotificationsPanel({
   const renderSystemNotifications = () => {
     if (notifications.length === 0) {
       return (
-        <div className="flex min-h-[120px] items-center justify-center rounded-[24px] border border-dashed border-[color:var(--border-subtle)] px-4 text-sm text-zinc-500">
+        <div className="flex min-h-[120px] items-center justify-center rounded-[24px] border border-dashed border-[color:var(--border-subtle)] px-4 text-sm text-[var(--text-secondary)]">
           {adminMode
             ? isZh
               ? '当前没有新的系统提醒。'
@@ -104,14 +105,18 @@ export function NotificationsPanel({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <LevelIcon level={item.level} />
-              <p className="truncate text-sm font-medium text-zinc-50">{item.title}</p>
+              <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                {item.title}
+              </p>
             </div>
-            <p className="mt-2 text-xs leading-5 text-zinc-500">{item.message}</p>
+            <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{item.message}</p>
           </div>
           {!item.read && <span className="mt-1.5 h-2 w-2 rounded-full bg-emerald-500" />}
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] text-zinc-500">{getRelativeTime(item.createdAt)}</span>
+          <span className="text-[11px] text-[var(--text-secondary)]">
+            {getRelativeTime(item.createdAt)}
+          </span>
           <div className="flex items-center gap-1.5">
             {!item.read && (
               <Button
@@ -140,7 +145,9 @@ export function NotificationsPanel({
     ));
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -150,7 +157,7 @@ export function NotificationsPanel({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
             onClick={onClose}
-            className="fixed inset-0 z-[80] bg-[color:var(--overlay)]"
+            className="fixed inset-0 z-[80] bg-[color:var(--overlay)] backdrop-blur-sm"
           />
           <motion.aside
             initial={{ x: 24, opacity: 0 }}
@@ -159,11 +166,11 @@ export function NotificationsPanel({
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="fixed inset-x-4 bottom-4 top-4 z-[90] flex flex-col sm:left-auto sm:w-[410px]"
           >
-            <div className="surface-card flex h-full flex-col">
+            <div className="surface-card flex h-full flex-col overflow-hidden">
               <div className="soft-divider border-b px-5 py-5">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <Bell className="h-4 w-4 text-zinc-400" />
+                    <Bell className="h-4 w-4 text-[var(--text-secondary)]" />
                     <h3 className="text-sm font-semibold">{t('notifications.title')}</h3>
                   </div>
                   <div className="flex items-center gap-2">
@@ -175,7 +182,7 @@ export function NotificationsPanel({
                     </Button>
                   </div>
                 </div>
-                <p className="mt-3 text-xs leading-5 text-zinc-500">
+                <p className="mt-3 text-xs leading-5 text-[var(--text-secondary)]">
                   {adminMode
                     ? isZh
                       ? '在这里直接发布公告、查看历史，并把已发送公告从用户侧同步删除。'
@@ -183,7 +190,7 @@ export function NotificationsPanel({
                     : t('notifications.subtitle')}
                 </p>
                 {viewerName && (
-                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-2">
+                  <div className="glass-pill mt-4 inline-flex items-center gap-2 px-3 py-2">
                     <span
                       className={cn(
                         'flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold',
@@ -192,20 +199,22 @@ export function NotificationsPanel({
                     >
                       {getAvatarInitials(viewerName)}
                     </span>
-                    <span className="text-sm font-medium text-zinc-50">{viewerName}</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">
+                      {viewerName}
+                    </span>
                   </div>
                 )}
                 {adminMode && (
-                  <div className="mt-4 rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-1">
+                  <div className="surface-panel mt-4 p-1">
                     <div className="grid grid-cols-2 gap-1">
                       <button
                         type="button"
                         onClick={() => setAdminView('announcements')}
                         className={cn(
-                          'rounded-[18px] px-3 py-2 text-left transition-colors',
+                          'px-3 py-2 text-left',
                           adminView === 'announcements'
-                            ? 'bg-[var(--surface-card)] text-zinc-50 shadow-sm'
-                            : 'text-zinc-400 hover:bg-[var(--surface-card)]/70 hover:text-zinc-200',
+                            ? 'glass-nav-item-active'
+                            : 'glass-nav-item',
                         )}
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -221,10 +230,8 @@ export function NotificationsPanel({
                         type="button"
                         onClick={() => setAdminView('system')}
                         className={cn(
-                          'rounded-[18px] px-3 py-2 text-left transition-colors',
-                          adminView === 'system'
-                            ? 'bg-[var(--surface-card)] text-zinc-50 shadow-sm'
-                            : 'text-zinc-400 hover:bg-[var(--surface-card)]/70 hover:text-zinc-200',
+                          'px-3 py-2 text-left',
+                          adminView === 'system' ? 'glass-nav-item-active' : 'glass-nav-item',
                         )}
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -278,10 +285,10 @@ export function NotificationsPanel({
                               <Megaphone className="h-4 w-4" />
                             </div>
                             <div className="space-y-1">
-                              <p className="text-sm font-medium text-zinc-50">
+                              <p className="text-sm font-medium text-[var(--text-primary)]">
                                 {isZh ? '发布公告' : 'Publish'}
                               </p>
-                              <p className="text-xs leading-5 text-zinc-500">
+                              <p className="text-xs leading-5 text-[var(--text-secondary)]">
                                 {isZh
                                   ? '会同步到用户首页和通知中心。'
                                   : 'Syncs to the user home page and notification center.'}
@@ -295,7 +302,7 @@ export function NotificationsPanel({
                           </Badge>
                         </div>
                         <textarea
-                          className="min-h-[96px] w-full rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 text-sm text-[var(--text-primary)] shadow-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2"
+                          className="min-h-[96px] w-full rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-4 py-3 text-sm text-[var(--text-primary)] backdrop-blur-xl placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
                           value={announcementDraft}
                           placeholder={
                             isZh
@@ -306,7 +313,7 @@ export function NotificationsPanel({
                           onChange={(event) => onAnnouncementDraftChange?.(event.target.value)}
                         />
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <p className="text-xs leading-5 text-zinc-500">
+                          <p className="text-xs leading-5 text-[var(--text-secondary)]">
                             {isZh
                               ? '删除历史公告时，用户收到的同一条公告也会一起移除。'
                               : 'Deleting sent announcements removes them for users too.'}
@@ -334,10 +341,10 @@ export function NotificationsPanel({
                       <section className="space-y-2">
                         <div className="flex items-center justify-between px-1">
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
                               {isZh ? '已发送公告' : 'History'}
                             </p>
-                            <p className="mt-1 text-xs leading-5 text-zinc-500">
+                            <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
                               {isZh
                                 ? '这里保留你已经发过的公告历史。'
                                 : 'Previously sent announcements stay here.'}
@@ -346,7 +353,7 @@ export function NotificationsPanel({
                         </div>
 
                         {adminAnnouncements.length === 0 ? (
-                          <div className="flex min-h-[120px] items-center justify-center rounded-[24px] border border-dashed border-[color:var(--border-subtle)] px-4 text-sm text-zinc-500">
+                          <div className="flex min-h-[120px] items-center justify-center rounded-[24px] border border-dashed border-[color:var(--border-subtle)] px-4 text-sm text-[var(--text-secondary)]">
                             {isZh ? '还没有发送过公告。' : 'No announcements have been sent yet.'}
                           </div>
                         ) : (
@@ -355,7 +362,7 @@ export function NotificationsPanel({
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0 space-y-2">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-sm font-medium text-zinc-50">
+                                    <p className="text-sm font-medium text-[var(--text-primary)]">
                                       {isZh ? '系统公告' : 'Announcement'}
                                     </p>
                                     <Badge variant={item.isActive ? 'success' : 'secondary'}>
@@ -368,7 +375,7 @@ export function NotificationsPanel({
                                           : 'History'}
                                     </Badge>
                                   </div>
-                                  <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                                  <p className="whitespace-pre-wrap text-sm leading-6 text-[var(--text-secondary)]">
                                     {item.message}
                                   </p>
                                 </div>
@@ -391,7 +398,7 @@ export function NotificationsPanel({
                                   </span>
                                 </Button>
                               </div>
-                              <p className="text-[11px] text-zinc-500">
+                              <p className="text-[11px] text-[var(--text-secondary)]">
                                 {getRelativeTime(item.createdAt)}
                               </p>
                             </div>
@@ -403,10 +410,10 @@ export function NotificationsPanel({
                     <section className="space-y-3">
                       <div className="flex items-start justify-between gap-3 px-1">
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
                             {isZh ? '系统提醒' : 'System reminders'}
                           </p>
-                          <p className="mt-1 text-xs leading-5 text-zinc-500">
+                          <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
                             {isZh
                               ? '只在管理员端显示，用来提示运行状态和配置问题。'
                               : 'Visible only to admins for runtime and configuration issues.'}
@@ -429,6 +436,7 @@ export function NotificationsPanel({
           </motion.aside>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

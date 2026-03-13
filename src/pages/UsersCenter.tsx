@@ -77,22 +77,22 @@ export function UsersCenterPage({ embedded = false }: { embedded?: boolean }) {
         !embedded && 'content-shell-wide px-4 md:px-6 xl:px-8',
       )}
     >
-      <div>
+      <section className="surface-card space-y-3 p-6 md:p-7">
         <h1 className="text-3xl font-bold tracking-tight">{isZh ? '用户中心' : 'User Center'}</h1>
-        <p className="text-zinc-400 mt-1">
+        <p className="mt-1 text-[var(--text-secondary)]">
           {isZh
             ? '在一个页面里统一管理用户、在线状态和邀请码。'
             : 'Manage users, online activity, and invite accounts in one workspace.'}
         </p>
-      </div>
+      </section>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="glass-pill inline-flex flex-wrap items-center gap-2 p-2">
         {tabItems.map((item) => (
           <Button
             key={item.key}
-            variant={activeTab === item.key ? 'secondary' : 'outline'}
+            variant={activeTab === item.key ? 'secondary' : 'ghost'}
             size="sm"
-            className={cn('gap-2')}
+            className="h-11 gap-2 px-4"
             onClick={() => switchTab(item.key)}
           >
             <item.icon className="w-4 h-4" />
