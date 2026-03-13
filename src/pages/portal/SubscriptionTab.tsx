@@ -3121,7 +3121,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 : 'Start with the recommended client. Common alternatives stay below and the guide updates when you switch.'
             }
           />
-          <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="space-y-4">
             <ClientHighlightCard
               client={clients.find((item) => item.id === recommendedClientId) ?? activeClient}
               activePlatform={activePlatform}
@@ -3135,17 +3135,19 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 {isZh ? '备选客户端' : 'Alternatives'}
               </p>
               {alternativeClients.length > 0 ? (
-                alternativeClients.map((client) => (
-                  <div key={client.id}>
-                    <ClientCompactCard
-                      client={client}
-                      isZh={isZh}
-                      isActive={client.id === activeClient.id}
-                      onSelect={setActiveClientId}
-                      onOpenDownload={openDownload}
-                    />
-                  </div>
-                ))
+                <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+                  {alternativeClients.map((client) => (
+                    <div key={client.id} className="h-full">
+                      <ClientCompactCard
+                        client={client}
+                        isZh={isZh}
+                        isActive={client.id === activeClient.id}
+                        onSelect={setActiveClientId}
+                        onOpenDownload={openDownload}
+                      />
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="surface-panel rounded-[24px] p-4 text-sm leading-6 text-zinc-400">
                   {isZh
@@ -3693,7 +3695,7 @@ function ClientHighlightCard({
           : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] hover:border-[color:var(--border-strong)]',
       )}
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="space-y-3">
           <span className="inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-300">
             {isZh ? '主推荐' : 'Primary pick'}
@@ -3722,7 +3724,7 @@ function ClientHighlightCard({
           {isZh ? '使用这个客户端' : 'Use this client'}
         </Button>
       </div>
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 lg:justify-end">
         <Button
           type="button"
           variant="secondary"
@@ -3794,7 +3796,7 @@ function ClientCompactCard({
         onSelect(client.id);
       }}
       className={cn(
-        'surface-panel cursor-pointer rounded-[24px] border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)]',
+        'surface-panel flex h-full cursor-pointer flex-col justify-between rounded-[24px] border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)]',
         isActive
           ? 'border-emerald-500/30 bg-emerald-500/5'
           : 'hover:border-[color:var(--border-strong)]',
