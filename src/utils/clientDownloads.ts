@@ -1,4 +1,13 @@
-export type ClientDownloadId = 'v2rayN' | 'v2rayNG' | 'shadowrocket' | 'clashVerge' | 'hiddify';
+export type ClientDownloadId =
+  | 'v2rayN'
+  | 'v2rayNG'
+  | 'shadowrocket'
+  | 'clashVerge'
+  | 'flClash'
+  | 'clashMeta'
+  | 'sparkle'
+  | 'singBox'
+  | 'hiddify';
 export type ClientDownloadPlatform = 'windows' | 'macos' | 'android' | 'ios';
 
 export interface ClientDownloadLinks {
@@ -6,12 +15,26 @@ export interface ClientDownloadLinks {
   vps: string;
 }
 
-const GITHUB_DOWNLOADS: Record<ClientDownloadId, string> = {
+const OFFICIAL_DOWNLOADS: Record<ClientDownloadId, string> = {
   v2rayN: 'https://github.com/2dust/v2rayN/releases/latest',
   v2rayNG: 'https://github.com/2dust/v2rayNG/releases/latest',
   shadowrocket: 'https://apps.apple.com/app/shadowrocket/id932747118',
   clashVerge: 'https://github.com/clash-verge-rev/clash-verge-rev/releases/latest',
+  flClash: 'https://github.com/chen08209/FlClash/releases/latest',
+  clashMeta: 'https://github.com/MetaCubeX/ClashMetaForAndroid/releases/latest',
+  sparkle: 'https://github.com/xishang0128/mihomo-party/releases/latest',
+  singBox: 'https://sing-box.sagernet.org/zh/clients/android/',
   hiddify: 'https://github.com/hiddify/hiddify-app/releases/latest',
+};
+
+const PLATFORM_OFFICIAL_DOWNLOADS: Partial<
+  Record<ClientDownloadId, Partial<Record<ClientDownloadPlatform, string>>>
+> = {
+  singBox: {
+    android: 'https://sing-box.sagernet.org/zh/clients/android/',
+    macos: 'https://sing-box.sagernet.org/zh/clients/apple/',
+    ios: 'https://apps.apple.com/app/sing-box-vt/id6673731168',
+  },
 };
 
 const MANAGED_MIRROR_SUPPORTED_PLATFORMS: Record<ClientDownloadId, ClientDownloadPlatform[]> = {
@@ -19,6 +42,10 @@ const MANAGED_MIRROR_SUPPORTED_PLATFORMS: Record<ClientDownloadId, ClientDownloa
   v2rayNG: ['android'],
   shadowrocket: [],
   clashVerge: ['windows', 'macos'],
+  flClash: [],
+  clashMeta: [],
+  sparkle: [],
+  singBox: [],
   hiddify: ['windows', 'macos', 'android'],
 };
 
@@ -35,6 +62,10 @@ const DEFAULT_VPS_FILES: Partial<
     windows: 'clash-verge-x64-setup.exe',
     macos: 'clash-verge-x64.dmg',
   },
+  flClash: {},
+  clashMeta: {},
+  sparkle: {},
+  singBox: {},
   hiddify: {
     windows: 'hiddify-windows-x64.exe',
     macos: 'hiddify-macos.dmg',
@@ -67,6 +98,10 @@ function resolveVpsDownload(id: ClientDownloadId, platform: ClientDownloadPlatfo
     v2rayNG: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_V2RAYNG_URL),
     shadowrocket: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SHADOWROCKET_URL),
     clashVerge: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_CLASH_VERGE_URL),
+    flClash: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_FLCLASH_URL),
+    clashMeta: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_CLASH_META_URL),
+    sparkle: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SPARKLE_URL),
+    singBox: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SING_BOX_URL),
     hiddify: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_HIDDIFY_URL),
   } satisfies Record<ClientDownloadId, string>;
 
@@ -79,12 +114,16 @@ function resolveVpsDownload(id: ClientDownloadId, platform: ClientDownloadPlatfo
   return supportsManagedMirror(id, platform) ? buildManagedMirrorPath(id, platform) : '';
 }
 
+function resolveOfficialDownload(id: ClientDownloadId, platform: ClientDownloadPlatform): string {
+  return PLATFORM_OFFICIAL_DOWNLOADS[id]?.[platform] ?? OFFICIAL_DOWNLOADS[id];
+}
+
 export function getClientDownloadLinks(
   id: ClientDownloadId,
   platform: ClientDownloadPlatform = 'windows',
 ): ClientDownloadLinks {
   return {
-    github: GITHUB_DOWNLOADS[id],
+    github: resolveOfficialDownload(id, platform),
     vps: resolveVpsDownload(id, platform),
   };
 }

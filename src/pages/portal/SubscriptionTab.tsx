@@ -119,6 +119,48 @@ const CLIENT_META: Array<{
     descEn: 'The most common import flow on iPhone and iPad.',
   },
   {
+    id: 'flClash',
+    name: 'FlClash',
+    icon: Smartphone,
+    os: 'Windows / macOS / Android',
+    platforms: ['windows', 'macos', 'android'],
+    recommendedFor: [],
+    descZh: 'Mihomo 绯讳笅鏇寸幇浠ｇ殑涓€绫诲鎴风锛岄€傚悎瑙勫垯缁勩€佸垎娴佸拰鏃ュ父浣跨敤銆?',
+    descEn: 'A more modern first-tier Mihomo client for rule groups, routing, and everyday use.',
+  },
+  {
+    id: 'clashMeta',
+    name: 'Clash Meta for Android',
+    icon: Smartphone,
+    os: 'Android',
+    platforms: ['android'],
+    recommendedFor: [],
+    descZh: 'MetaCubeX 瀹樻柟 Android 瀹㈡埛绔紝閫傚悎瑕佹洿瀹屾暣 Mihomo 鍔熻兘鐨勭敤鎴枫€?',
+    descEn: 'The official MetaCubeX Android client when you want fuller Mihomo controls.',
+  },
+  {
+    id: 'sparkle',
+    name: 'Sparkle',
+    icon: Monitor,
+    os: 'Windows / macOS',
+    platforms: ['windows', 'macos'],
+    recommendedFor: [],
+    descZh: '杈冩柊鐨?Mihomo 妗岄潰 GUI锛屾洿鍋忓悜鐜颁唬鍖栫殑绛栫暐缁勫拰绐楀彛浣撻獙銆?',
+    descEn: 'A newer Mihomo desktop GUI with a more modern rule-group experience.',
+  },
+  {
+    id: 'singBox',
+    name: 'Sing-box',
+    icon: Terminal,
+    os: 'Android / macOS / iPhone / iPad',
+    platforms: ['android', 'macos', 'ios'],
+    recommendedFor: [],
+    descZh:
+      'sing-box 绯讳竴绫婚€夋嫨锛孌NS 鍜屽崗璁窡杩涙洿蹇紝浣嗘洿閫傚悎鎰挎剰鐮旂┒閰嶇疆鐨勭敤鎴枫€?',
+    descEn:
+      'A first-tier sing-box option with faster DNS and protocol support for more advanced users.',
+  },
+  {
     id: 'hiddify',
     name: 'Hiddify',
     icon: Smartphone,
@@ -260,6 +302,91 @@ function buildClientGuide(
   const note = isZh
     ? '不同版本按钮名称会有差异，但导入路径一般都在这些位置。'
     : 'Button labels vary by version, but the import flow is usually in these places.';
+
+  if (clientId === 'flClash' || clientId === 'clashMeta' || clientId === 'sparkle') {
+    const clientName =
+      clientId === 'clashMeta'
+        ? 'Clash Meta for Android'
+        : clientId === 'sparkle'
+          ? 'Sparkle'
+          : 'FlClash';
+    const connectPermission = platform === 'android' ? 'Allow VPN' : 'Allow system proxy';
+
+    return {
+      recommendedFormat: 'clash',
+      note: `${clientName} belongs to the Mihomo/Clash family, so keep this page on the Clash format during import.`,
+      steps: [
+        createStep(
+          'launch',
+          `Open the Profiles or Config screen in ${clientName}`,
+          'Subscription imports usually live under Profiles, Configs, or the subscription page.',
+          'If the app wants to initialize its core first, let that finish before importing.',
+          'Profiles / Config',
+          ['Profiles', 'Configs', 'Subscriptions'],
+          'Open import entry',
+        ),
+        createStep(
+          'import',
+          'Switch to the Clash format, then paste the subscription link',
+          'Choose Clash on this page first, then paste the subscription URL into the client.',
+          'If policy groups do not show up after import, the first thing to check is whether the format is wrong.',
+          'Import from URL',
+          ['Clash format', 'Subscription URL', 'Save / Update'],
+          'Import Clash profile',
+        ),
+        createStep(
+          'connect',
+          'Refresh, choose a policy group, then enable proxy',
+          'Make sure nodes and groups are loaded before enabling TUN or system proxy.',
+          'Importing alone does not move traffic until the proxy mode is enabled.',
+          'Proxy / TUN',
+          ['Refresh subscription', 'Choose group', connectPermission],
+          'Connect',
+        ),
+      ],
+    };
+  }
+
+  if (clientId === 'singBox') {
+    const appLabel =
+      platform === 'ios' ? 'Sing-box VT' : platform === 'macos' ? 'Sing-box for Mac' : 'Sing-box';
+    const connectPermission =
+      platform === 'android' || platform === 'ios' ? 'Allow VPN' : 'Allow system proxy';
+
+    return {
+      recommendedFormat: 'singbox',
+      note: `${appLabel} works best with the Sing-box format, so switch this page to Sing-box first for the cleanest import path.`,
+      steps: [
+        createStep(
+          'launch',
+          `Open the profile import entry in ${appLabel}`,
+          'Sing-box clients usually place imports under Profiles, Configs, or Servers.',
+          'On first launch you may need to allow network or VPN permission before importing.',
+          'Profiles / Servers',
+          ['Profiles', 'Configs', 'Servers'],
+          'Open import entry',
+        ),
+        createStep(
+          'import',
+          'Switch to the Sing-box format before importing',
+          'Choose Sing-box on this page first, then import by URL or clipboard inside the client.',
+          'If the client talks about Profiles or JSON, that is usually the sing-box-native import path.',
+          'Import Sing-box profile',
+          ['Sing-box format', 'URL / Clipboard', 'Save'],
+          'Import profile',
+        ),
+        createStep(
+          'connect',
+          'Save, switch to the imported profile, then connect',
+          'Make sure nodes, DNS, and rule resources have loaded before you hit connect.',
+          'These clients expose more low-level options, so avoid changing unfamiliar toggles until the import works.',
+          'Connect',
+          ['Select imported profile', 'Refresh subscription', connectPermission],
+          'Connect',
+        ),
+      ],
+    };
+  }
 
   if (clientId === 'clashVerge') {
     return {
@@ -1438,6 +1565,12 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
         const preferredPlatform = client.platforms.includes(activePlatform)
           ? activePlatform
           : ((client.recommendedFor[0] ?? client.platforms[0]) as ClientDownloadPlatform);
+        const useEnglishDescription =
+          isZh &&
+          (client.id === 'flClash' ||
+            client.id === 'clashMeta' ||
+            client.id === 'sparkle' ||
+            client.id === 'singBox');
         return {
           id: client.id,
           name: client.name,
@@ -1445,7 +1578,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
           os: client.os,
           platforms: client.platforms,
           recommendedFor: client.recommendedFor,
-          desc: isZh ? client.descZh : client.descEn,
+          desc: useEnglishDescription ? client.descEn : isZh ? client.descZh : client.descEn,
           links: getClientDownloadLinks(client.id, preferredPlatform),
         };
       }),

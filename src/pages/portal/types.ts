@@ -56,7 +56,16 @@ export type SetupFocus = 'overview' | 'downloads';
 export type ViewerRole = 'user' | 'admin';
 
 export interface ClientCard {
-  id: 'v2rayN' | 'v2rayNG' | 'shadowrocket' | 'clashVerge' | 'hiddify';
+  id:
+    | 'v2rayN'
+    | 'v2rayNG'
+    | 'shadowrocket'
+    | 'clashVerge'
+    | 'flClash'
+    | 'clashMeta'
+    | 'sparkle'
+    | 'singBox'
+    | 'hiddify';
   name: string;
   os: string;
   icon: typeof Monitor;

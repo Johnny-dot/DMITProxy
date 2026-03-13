@@ -120,7 +120,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
 
   return (
     <section className="space-y-6" data-testid="portal-help-tab">
-      <Tabs className="gap-0">
+      <Tabs className="gap-4">
         <section className="surface-card p-4 md:p-5" data-testid="portal-help-switcher">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <TabsList className="w-full justify-start overflow-x-auto lg:w-auto">

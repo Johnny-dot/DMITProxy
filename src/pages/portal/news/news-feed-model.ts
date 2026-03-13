@@ -225,7 +225,6 @@ function getSourceBoost(source: string) {
     normalized.includes('national geographic') ||
     normalized.includes('science daily') ||
     normalized.includes('fast company') ||
-    normalized.includes('phys.org') ||
     normalized.includes('space.com')
   ) {
     return 3;

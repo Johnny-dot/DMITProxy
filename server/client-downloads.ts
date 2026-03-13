@@ -1,4 +1,13 @@
-export type ClientDownloadId = 'v2rayN' | 'v2rayNG' | 'shadowrocket' | 'clashVerge' | 'hiddify';
+export type ClientDownloadId =
+  | 'v2rayN'
+  | 'v2rayNG'
+  | 'shadowrocket'
+  | 'clashVerge'
+  | 'flClash'
+  | 'clashMeta'
+  | 'sparkle'
+  | 'singBox'
+  | 'hiddify';
 export type ClientDownloadPlatform = 'windows' | 'macos' | 'android' | 'ios';
 
 export interface GitHubReleaseAsset {
@@ -44,6 +53,10 @@ const MIRROR_TARGETS: Record<
       matchers: [/x64\.dmg$/i],
     },
   },
+  flClash: {},
+  clashMeta: {},
+  sparkle: {},
+  singBox: {},
   hiddify: {
     windows: {
       repo: 'hiddify/hiddify-app',
@@ -66,6 +79,10 @@ export function isClientDownloadId(value: string): value is ClientDownloadId {
     value === 'v2rayNG' ||
     value === 'shadowrocket' ||
     value === 'clashVerge' ||
+    value === 'flClash' ||
+    value === 'clashMeta' ||
+    value === 'sparkle' ||
+    value === 'singBox' ||
     value === 'hiddify'
   );
 }

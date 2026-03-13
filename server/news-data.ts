@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import type { Browser } from 'playwright';
 import { dataDirectory } from './db.js';
 
 export type NewsTopicId = 'markets' | 'macro' | 'world' | 'technology' | 'aiTalks' | 'crypto';
@@ -77,33 +78,60 @@ export interface ArticleContent {
   paragraphs: string[];
 }
 
+interface CachedArticleContent extends ArticleContent {
+  schemaVersion: number;
+  url: string;
+  cachedAt: number;
+  ttlMinutes: number;
+}
+
 const GOOGLE_NEWS_ATTRIBUTION_URL = 'https://news.google.com/';
 const GOOGLE_NEWS_SEARCH_URL = 'https://news.google.com/rss/search';
 const NEWS_PROVIDER = 'Curated multi-source feed';
-const NEWS_CACHE_SCHEMA_VERSION = 5;
+const NEWS_CACHE_SCHEMA_VERSION = 6;
+const ARTICLE_CACHE_SCHEMA_VERSION = 1;
 const DEFAULT_NEWS_CACHE_TTL_MINUTES = 15;
+const DEFAULT_ARTICLE_CACHE_TTL_MINUTES = 24 * 60;
 const DEFAULT_NEWS_ITEM_LIMIT = 28;
 const configuredNewsCacheTtlMinutes = Number.parseInt(process.env.NEWS_CACHE_TTL_MINUTES ?? '', 10);
+const configuredArticleCacheTtlMinutes = Number.parseInt(
+  process.env.NEWS_ARTICLE_CACHE_TTL_MINUTES ?? '',
+  10,
+);
 const configuredNewsItemLimit = Number.parseInt(process.env.NEWS_ITEM_LIMIT ?? '', 10);
 const NEWS_CACHE_TTL_MINUTES =
   Number.isFinite(configuredNewsCacheTtlMinutes) && configuredNewsCacheTtlMinutes > 0
     ? Math.max(5, Math.min(30, configuredNewsCacheTtlMinutes))
     : DEFAULT_NEWS_CACHE_TTL_MINUTES;
+const ARTICLE_CACHE_TTL_MINUTES =
+  Number.isFinite(configuredArticleCacheTtlMinutes) && configuredArticleCacheTtlMinutes > 0
+    ? Math.max(60, Math.min(7 * 24 * 60, configuredArticleCacheTtlMinutes))
+    : DEFAULT_ARTICLE_CACHE_TTL_MINUTES;
 const NEWS_ITEM_LIMIT =
   Number.isFinite(configuredNewsItemLimit) && configuredNewsItemLimit > 0
     ? Math.max(10, Math.min(40, configuredNewsItemLimit))
     : DEFAULT_NEWS_ITEM_LIMIT;
 const NEWS_CACHE_TTL_MS = NEWS_CACHE_TTL_MINUTES * 60 * 1000;
+const ARTICLE_CACHE_TTL_MS = ARTICLE_CACHE_TTL_MINUTES * 60 * 1000;
 const NEWS_BACKGROUND_REFRESH_INTERVAL_MS = Math.max(
   60_000,
   NEWS_CACHE_TTL_MS - Math.min(60_000, Math.floor(NEWS_CACHE_TTL_MS / 3)),
 );
 const FETCH_TIMEOUT_MS = 15_000;
 const ARTICLE_FETCH_TIMEOUT_MS = 8_000;
+const ARTICLE_BROWSER_TIMEOUT_MS = 12_000;
 const ARTICLE_IMAGE_ENRICH_LIMIT_PER_TOPIC = 8;
 const ARTICLE_FETCH_CONCURRENCY = 8;
+const ARTICLE_PARAGRAPH_LIMIT = 40;
+const ARTICLE_FETCH_MIN_PARAGRAPHS = 3;
+const ARTICLE_FETCH_MIN_CHARACTERS = 420;
+const ARTICLE_PREWARM_LIMIT = 6;
+const ARTICLE_PREWARM_CONCURRENCY = 2;
+const ARTICLE_CACHE_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
+const ARTICLE_CACHE_RETENTION_MS = Math.max(ARTICLE_CACHE_TTL_MS * 2, 24 * 60 * 60 * 1000);
 const cacheDirectory = path.join(dataDirectory, 'news-cache');
 const newsCachePath = path.join(cacheDirectory, 'feed.json');
+const articleCacheDirectory = path.join(cacheDirectory, 'articles');
 const REQUEST_HEADERS = {
   Accept:
     'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, text/html;q=0.8, */*;q=0.7',
@@ -116,6 +144,19 @@ const ARTICLE_REQUEST_HEADERS = {
   ...REQUEST_HEADERS,
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 };
+const CJK_TEXT_PATTERN = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
+const ARTICLE_BOILERPLATE_PATTERNS = [
+  /^posts from this (?:author|topic) will be added to your daily email digest and your homepage feed\.?$/i,
+  /^sign up for .+ sent to your inbox (?:weekly|daily)\.?$/i,
+  /^if you buy something from (?:a|an) .+ link, .+ may earn a commission(?:\..*)?$/i,
+  /^see our ethics statement\.?$/i,
+  /^this story is part of .+$/i,
+];
+
+let articleBrowserPromise: Promise<Browser> | null = null;
+const inflightArticleContent = new Map<string, Promise<ArticleContent>>();
+const inflightArticlePrewarm = new Set<string>();
+let lastArticleCacheCleanupAt = 0;
 
 const RSS_SOURCES = {
   marketwatchTop: {
@@ -316,15 +357,6 @@ const RSS_SOURCES = {
     sourceName: 'ScienceDaily',
     sourceUrl: 'https://www.sciencedaily.com/news/computers_math/artificial_intelligence/',
   },
-  physOrg: {
-    id: 'phys-org',
-    kind: 'rss',
-    label: 'Phys.org',
-    attributionUrl: 'https://phys.org/rss-feed/',
-    url: 'https://phys.org/rss-feed/',
-    sourceName: 'Phys.org',
-    sourceUrl: 'https://phys.org/',
-  },
   spaceCom: {
     id: 'space-com',
     kind: 'rss',
@@ -495,7 +527,6 @@ const NEWS_TOPICS: NewsTopicDefinition[] = [
     descriptionZh: '科学、太空、生物、机器人和那些值得关注的前沿突破。',
     sources: [
       RSS_SOURCES.natureNews,
-      RSS_SOURCES.physOrg,
       RSS_SOURCES.spaceCom,
       RSS_SOURCES.newScientistTechnology,
       RSS_SOURCES.scienceDailyTechnology,
@@ -517,8 +548,19 @@ function ensureCacheDirectory() {
   }
 }
 
+function ensureArticleCacheDirectory() {
+  ensureCacheDirectory();
+  if (!fs.existsSync(articleCacheDirectory)) {
+    fs.mkdirSync(articleCacheDirectory, { recursive: true });
+  }
+}
+
 function isFresh(cachedAt: number) {
   return Date.now() - cachedAt < NEWS_CACHE_TTL_MS;
+}
+
+function isArticleCacheFresh(cachedAt: number) {
+  return Date.now() - cachedAt < ARTICLE_CACHE_TTL_MS;
 }
 
 function readCacheFile<T>(filePath: string): T | null {
@@ -544,6 +586,66 @@ function readNewsCache() {
     return null;
   }
   return cached;
+}
+
+function createArticleCachePath(url: string) {
+  const hash = createHash('sha1').update(url).digest('hex');
+  return path.join(articleCacheDirectory, `${hash}.json`);
+}
+
+function readArticleContentCache(url: string) {
+  const cached = readCacheFile<CachedArticleContent>(createArticleCachePath(url));
+  if (!cached || cached.schemaVersion !== ARTICLE_CACHE_SCHEMA_VERSION || cached.url !== url) {
+    return null;
+  }
+  return cached;
+}
+
+async function writeArticleContentCache(url: string, content: ArticleContent) {
+  if (content.paragraphs.length === 0) return;
+  ensureArticleCacheDirectory();
+  await writeCacheFile(createArticleCachePath(url), {
+    schemaVersion: ARTICLE_CACHE_SCHEMA_VERSION,
+    url,
+    paragraphs: content.paragraphs,
+    cachedAt: Date.now(),
+    ttlMinutes: ARTICLE_CACHE_TTL_MINUTES,
+  } satisfies CachedArticleContent);
+}
+
+async function cleanupExpiredArticleCache(force = false) {
+  const now = Date.now();
+  if (!force && now - lastArticleCacheCleanupAt < ARTICLE_CACHE_CLEANUP_INTERVAL_MS) {
+    return;
+  }
+  lastArticleCacheCleanupAt = now;
+
+  if (!fs.existsSync(articleCacheDirectory)) {
+    return;
+  }
+
+  let files: string[] = [];
+  try {
+    files = await fsPromises.readdir(articleCacheDirectory);
+  } catch {
+    return;
+  }
+
+  await Promise.allSettled(
+    files
+      .filter((file) => file.endsWith('.json'))
+      .map(async (file) => {
+        const filePath = path.join(articleCacheDirectory, file);
+        try {
+          const stats = await fsPromises.stat(filePath);
+          if (now - stats.mtimeMs > ARTICLE_CACHE_RETENTION_MS) {
+            await fsPromises.unlink(filePath);
+          }
+        } catch {
+          // ignore cache cleanup races
+        }
+      }),
+  );
 }
 
 function buildGoogleNewsUrl(query: string) {
@@ -1252,9 +1354,15 @@ function queueFeedRefresh(previousFeed: NewsFeedPayload | null) {
 }
 
 function triggerBackgroundFeedRefresh(reason: string) {
-  void warmNewsFeed().catch((error) => {
-    console.error(`[Prism] News background refresh (${reason}) failed:`, error);
-  });
+  void warmNewsFeed()
+    .then((payload) =>
+      prewarmFeedArticleContents(payload).catch((error) => {
+        console.error(`[Prism] News article prewarm (${reason}) failed:`, error);
+      }),
+    )
+    .catch((error) => {
+      console.error(`[Prism] News background refresh (${reason}) failed:`, error);
+    });
 }
 
 export function startNewsFeedBackgroundRefresh() {
@@ -1327,15 +1435,277 @@ function extractArticleParagraphs(html: string): string[] {
   const paragraphs: string[] = [];
   for (const match of contentHtml.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)) {
     const text = stripHtml(match[1]).trim();
-    if (text.length < 45) continue;
     paragraphs.push(text);
-    if (paragraphs.length >= 30) break;
+    if (paragraphs.length >= ARTICLE_PARAGRAPH_LIMIT) break;
   }
 
-  return paragraphs;
+  return normalizeArticleParagraphs(paragraphs);
 }
 
-export async function fetchArticleContent(url: string): Promise<ArticleContent> {
+function getArticleParagraphMinimumLength(text: string) {
+  return CJK_TEXT_PATTERN.test(text) ? 22 : 45;
+}
+
+function isLikelyArticleBoilerplate(text: string) {
+  return ARTICLE_BOILERPLATE_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function normalizeArticleParagraphs(paragraphs: string[]) {
+  const normalized: string[] = [];
+  const seen = new Set<string>();
+
+  for (const paragraph of paragraphs) {
+    const text = paragraph.replace(/\s+/g, ' ').trim();
+    if (!text) continue;
+    if (text.length < getArticleParagraphMinimumLength(text)) continue;
+    if (isLikelyArticleBoilerplate(text)) continue;
+    if (seen.has(text)) continue;
+    seen.add(text);
+    normalized.push(text);
+    if (normalized.length >= ARTICLE_PARAGRAPH_LIMIT) break;
+  }
+
+  return normalized;
+}
+
+function getArticleParagraphCharacterCount(paragraphs: string[]) {
+  return paragraphs.reduce((total, paragraph) => total + paragraph.length, 0);
+}
+
+function shouldUseBrowserArticleFallback(paragraphs: string[]) {
+  return (
+    paragraphs.length < ARTICLE_FETCH_MIN_PARAGRAPHS ||
+    getArticleParagraphCharacterCount(paragraphs) < ARTICLE_FETCH_MIN_CHARACTERS
+  );
+}
+
+async function getArticleBrowser() {
+  if (!articleBrowserPromise) {
+    articleBrowserPromise = import('playwright')
+      .then(({ chromium }) => chromium.launch({ headless: true }))
+      .catch((error) => {
+        articleBrowserPromise = null;
+        throw error;
+      });
+  }
+
+  return articleBrowserPromise;
+}
+
+async function extractArticleParagraphsWithBrowser(url: string) {
+  const browser = await getArticleBrowser();
+  const context = await browser.newContext({
+    userAgent: ARTICLE_REQUEST_HEADERS['User-Agent'],
+    locale: 'en-US',
+    extraHTTPHeaders: {
+      Accept: ARTICLE_REQUEST_HEADERS.Accept,
+      'Accept-Language': ARTICLE_REQUEST_HEADERS['Accept-Language'],
+      'Cache-Control': ARTICLE_REQUEST_HEADERS['Cache-Control'],
+    },
+  });
+  const page = await context.newPage();
+
+  try {
+    await page.route('**/*', async (route) => {
+      const type = route.request().resourceType();
+      if (type === 'image' || type === 'font' || type === 'media') {
+        await route.abort();
+        return;
+      }
+      await route.continue();
+    });
+
+    await page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: ARTICLE_BROWSER_TIMEOUT_MS,
+    });
+    await page.waitForLoadState('networkidle', { timeout: 2_500 }).catch(() => {});
+
+    const selectors = [
+      '[itemprop="articleBody"]',
+      '[data-testid="article-body"]',
+      '.article__body',
+      '.article-body',
+      '.article-content',
+      '.entry-content',
+      '.post-content',
+      '.story-body',
+      '.content-body',
+      'article',
+      'main',
+      '[role="main"]',
+    ];
+
+    let bestParagraphs: string[] = [];
+    let bestScore = 0;
+
+    for (const selector of selectors) {
+      const matches = await page.locator(selector).count();
+      for (let index = 0; index < matches; index += 1) {
+        const texts = await page
+          .locator(selector)
+          .nth(index)
+          .locator('p')
+          .allTextContents()
+          .catch(() => []);
+        const paragraphs = normalizeArticleParagraphs(texts);
+        const score = getArticleParagraphCharacterCount(paragraphs);
+
+        if (score > bestScore) {
+          bestParagraphs = paragraphs;
+          bestScore = score;
+        }
+
+        if (!shouldUseBrowserArticleFallback(paragraphs)) {
+          return paragraphs;
+        }
+      }
+    }
+
+    if (bestParagraphs.length > 0) {
+      return bestParagraphs;
+    }
+
+    const bodyParagraphs = normalizeArticleParagraphs(
+      await page
+        .locator('body p')
+        .allTextContents()
+        .catch(() => []),
+    );
+    return bodyParagraphs;
+  } finally {
+    await page.close().catch(() => {});
+    await context.close().catch(() => {});
+  }
+}
+
+async function fetchArticleContentFromOrigin(
+  url: string,
+  options: { allowBrowserFallback?: boolean } = {},
+): Promise<ArticleContent> {
+  const allowBrowserFallback = options.allowBrowserFallback ?? true;
+  let fetchError: Error | null = null;
+
+  try {
+    const response = await fetch(url, {
+      headers: ARTICLE_REQUEST_HEADERS,
+      signal: AbortSignal.timeout(ARTICLE_FETCH_TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      throw new NewsFeedError(`Article returned HTTP ${response.status}`, response.status);
+    }
+
+    const contentType = (response.headers.get('content-type') ?? '').toLowerCase();
+    if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+      return { paragraphs: [] };
+    }
+
+    const html = await response.text();
+    const paragraphs = extractArticleParagraphs(html);
+    if (!shouldUseBrowserArticleFallback(paragraphs)) {
+      return { paragraphs };
+    }
+
+    if (!allowBrowserFallback) {
+      return { paragraphs: [] };
+    }
+  } catch (error) {
+    fetchError = error instanceof Error ? error : new Error('Failed to fetch article');
+  }
+
+  if (!allowBrowserFallback) {
+    if (fetchError) {
+      throw fetchError;
+    }
+    return { paragraphs: [] };
+  }
+
+  try {
+    const browserParagraphs = await extractArticleParagraphsWithBrowser(url);
+    if (browserParagraphs.length > 0) {
+      return { paragraphs: browserParagraphs };
+    }
+  } catch (browserError) {
+    if (fetchError) {
+      throw fetchError;
+    }
+    if (browserError instanceof Error) {
+      throw browserError;
+    }
+    throw new NewsFeedError('Failed to extract article content');
+  }
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
+  return { paragraphs: [] };
+}
+
+function getPrewarmCandidateUrls(feed: NewsFeedPayload) {
+  const urls: string[] = [];
+  const seen = new Set<string>();
+
+  for (const topic of feed.topics) {
+    for (const item of topic.items.slice(0, 2)) {
+      const url = item.url?.trim();
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      urls.push(url);
+      if (urls.length >= ARTICLE_PREWARM_LIMIT) {
+        return urls;
+      }
+    }
+  }
+
+  return urls;
+}
+
+async function prewarmSingleArticleContent(url: string) {
+  if (inflightArticlePrewarm.has(url)) {
+    return;
+  }
+
+  const cached = readArticleContentCache(url);
+  if (cached && isArticleCacheFresh(cached.cachedAt)) {
+    return;
+  }
+
+  inflightArticlePrewarm.add(url);
+  try {
+    const content = await fetchArticleContentFromOrigin(url, { allowBrowserFallback: false });
+    if (content.paragraphs.length > 0) {
+      await writeArticleContentCache(url, content);
+    }
+    await cleanupExpiredArticleCache();
+  } catch {
+    // ignore best-effort prewarm failures
+  } finally {
+    inflightArticlePrewarm.delete(url);
+  }
+}
+
+async function prewarmFeedArticleContents(feed: NewsFeedPayload) {
+  const urls = getPrewarmCandidateUrls(feed);
+  if (urls.length === 0) {
+    return;
+  }
+
+  for (let index = 0; index < urls.length; index += ARTICLE_PREWARM_CONCURRENCY) {
+    const batch = urls.slice(index, index + ARTICLE_PREWARM_CONCURRENCY);
+    await Promise.allSettled(batch.map((url) => prewarmSingleArticleContent(url)));
+  }
+}
+
+function triggerBackgroundArticleRefresh(url: string) {
+  void prewarmSingleArticleContent(url);
+}
+
+export async function fetchArticleContent(
+  url: string,
+  options: { forceRefresh?: boolean } = {},
+): Promise<ArticleContent> {
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(url);
@@ -1351,20 +1721,36 @@ export async function fetchArticleContent(url: string): Promise<ArticleContent> 
     return { paragraphs: [] };
   }
 
-  const response = await fetch(url, {
-    headers: ARTICLE_REQUEST_HEADERS,
-    signal: AbortSignal.timeout(ARTICLE_FETCH_TIMEOUT_MS),
-  });
-
-  if (!response.ok) {
-    throw new NewsFeedError(`Article returned HTTP ${response.status}`, response.status);
+  if (!options.forceRefresh) {
+    const cached = readArticleContentCache(url);
+    if (cached) {
+      if (isArticleCacheFresh(cached.cachedAt)) {
+        return { paragraphs: cached.paragraphs };
+      }
+      if (cached.paragraphs.length > 0) {
+        triggerBackgroundArticleRefresh(url);
+        return { paragraphs: cached.paragraphs };
+      }
+    }
   }
 
-  const contentType = (response.headers.get('content-type') ?? '').toLowerCase();
-  if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
-    return { paragraphs: [] };
+  const inflight = inflightArticleContent.get(url);
+  if (inflight && !options.forceRefresh) {
+    return inflight;
   }
 
-  const html = await response.text();
-  return { paragraphs: extractArticleParagraphs(html) };
+  const request = fetchArticleContentFromOrigin(url)
+    .then(async (content) => {
+      if (content.paragraphs.length > 0) {
+        await writeArticleContentCache(url, content);
+        await cleanupExpiredArticleCache();
+      }
+      return content;
+    })
+    .finally(() => {
+      inflightArticleContent.delete(url);
+    });
+
+  inflightArticleContent.set(url, request);
+  return request;
 }

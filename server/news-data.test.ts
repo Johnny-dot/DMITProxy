@@ -265,6 +265,34 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+function createMockPlaywright(articles: string[]) {
+  const leafLocator = {
+    allTextContents: vi.fn().mockResolvedValue(articles),
+  };
+  const candidateLocator = {
+    count: vi.fn().mockResolvedValue(1),
+    nth: vi.fn().mockReturnValue({
+      locator: vi.fn().mockReturnValue(leafLocator),
+    }),
+    allTextContents: vi.fn().mockResolvedValue(articles),
+  };
+
+  return {
+    launchMock: vi.fn().mockResolvedValue({
+      newContext: vi.fn().mockResolvedValue({
+        newPage: vi.fn().mockResolvedValue({
+          route: vi.fn().mockResolvedValue(undefined),
+          goto: vi.fn().mockResolvedValue(undefined),
+          waitForLoadState: vi.fn().mockResolvedValue(undefined),
+          locator: vi.fn().mockReturnValue(candidateLocator),
+          close: vi.fn().mockResolvedValue(undefined),
+        }),
+        close: vi.fn().mockResolvedValue(undefined),
+      }),
+    }),
+  };
+}
+
 describe('news data aggregation', () => {
   it('merges multiple sources, extracts covers and summaries, and serves from cache', async () => {
     const loaded = await loadNewsModules();
@@ -454,7 +482,7 @@ describe('news data aggregation', () => {
         cachePath,
         JSON.stringify(
           {
-            schemaVersion: 5,
+            schemaVersion: 6,
             provider: 'Curated multi-source feed',
             attributionUrl: null,
             cachedAt: staleCachedAt,
@@ -488,6 +516,172 @@ describe('news data aggregation', () => {
       expect(fetchMock).toHaveBeenCalled();
       await newsModule.warmNewsFeed();
     } finally {
+      loaded.cleanup();
+    }
+  });
+});
+
+describe('article content extraction', () => {
+  it('caches successful article content responses', async () => {
+    const { launchMock } = createMockPlaywright([]);
+
+    vi.doMock('playwright', () => ({
+      chromium: {
+        launch: launchMock,
+      },
+    }));
+
+    const loaded = await loadNewsModules();
+
+    try {
+      const { newsModule } = loaded;
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+        Promise.resolve(
+          new Response(
+            `
+              <article>
+                <p>This is the first cached article paragraph, and it is long enough to look like real body copy rather than a teaser from a card. It keeps going with extra detail about the product launch, the market response, and the sources behind the report so the extraction path can safely treat it as part of the full story.</p>
+                <p>This is the second cached article paragraph, with enough additional context to clear the extraction threshold and stay useful for the reader. It adds more specifics about why the company made the change, how customers reacted, and what analysts expect next over the coming weeks.</p>
+                <p>This is the third cached article paragraph, which makes the final stored body look complete and avoids browser fallback. It deliberately includes more narrative detail about pricing, distribution, and the editorial conclusion so the cached body comfortably exceeds the minimum character threshold.</p>
+              </article>
+            `,
+            {
+              status: 200,
+              headers: {
+                'content-type': 'text/html; charset=utf-8',
+              },
+            },
+          ),
+        ),
+      );
+
+      const first = await newsModule.fetchArticleContent('https://example.com/cached-story');
+      const second = await newsModule.fetchArticleContent('https://example.com/cached-story');
+
+      expect(first.paragraphs).toHaveLength(3);
+      expect(second.paragraphs).toEqual(first.paragraphs);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(launchMock).not.toHaveBeenCalled();
+    } finally {
+      vi.doUnmock('playwright');
+      loaded.cleanup();
+    }
+  });
+
+  it('filters boilerplate paragraphs from direct article HTML', async () => {
+    const { launchMock } = createMockPlaywright([]);
+
+    vi.doMock('playwright', () => ({
+      chromium: {
+        launch: launchMock,
+      },
+    }));
+
+    const loaded = await loadNewsModules();
+
+    try {
+      const { newsModule } = loaded;
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          `
+            <article>
+              <p>Posts from this topic will be added to your daily email digest and your homepage feed.</p>
+              <p>This is the first full article paragraph, and it contains enough words to clear the extraction threshold cleanly while still reading like an actual news story instead of a teaser sentence pulled from a card summary. It keeps going long enough to make the direct extraction path trustworthy.</p>
+              <p>If you buy something from a Verge link, Vox Media may earn a commission. See our ethics statement.</p>
+              <p>This is the second article paragraph, with enough detail to prove the normal fetch path still returns a readable body after we strip the promo and follow widgets. It deliberately adds more text so the combined article body comfortably exceeds the minimum character threshold.</p>
+              <p>This is the third article paragraph, which should remain after boilerplate removal and avoid browser fallback entirely. It also includes extra narrative detail about the product, the recommendation, and why the discount matters, purely to make the test body long enough to be treated as complete content.</p>
+              <p>Sign up for Verge Deals to get deals on products we’ve tested sent to your inbox weekly.</p>
+            </article>
+          `,
+          {
+            status: 200,
+            headers: {
+              'content-type': 'text/html; charset=utf-8',
+            },
+          },
+        ),
+      );
+
+      const result = await newsModule.fetchArticleContent('https://example.com/direct-story');
+
+      expect(result.paragraphs).toHaveLength(3);
+      expect(result.paragraphs[0]).toContain('first full article paragraph');
+      expect(result.paragraphs[2]).toContain('third article paragraph');
+      expect(launchMock).not.toHaveBeenCalled();
+    } finally {
+      vi.doUnmock('playwright');
+      loaded.cleanup();
+    }
+  });
+
+  it('falls back to the browser when direct fetch is blocked', async () => {
+    const { launchMock } = createMockPlaywright([
+      '彭博社报道表示，过去的几周里，中国出现了科技巨头和消费群众一同涌向AI智能体软件OpenClaw的空前盛况。',
+      '然而外国技术的迅速普及，引起了官员们的注意，据知情人士对彭博社透露，北京中央政府周三11日警告国有企业和机构不要在办公电脑上安装此软件。',
+      '中国正成为人工智能领域的全球领跑者之一，并大力推动人工智能融入经济各个层面，旨在变革各行各业乃至人们的日常生活。',
+    ]);
+
+    vi.doMock('playwright', () => ({
+      chromium: {
+        launch: launchMock,
+      },
+    }));
+
+    const loaded = await loadNewsModules();
+
+    try {
+      const { newsModule } = loaded;
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Access denied'));
+
+      const result = await newsModule.fetchArticleContent('https://www.rfi.fr/cn/story');
+
+      expect(result.paragraphs).toHaveLength(3);
+      expect(result.paragraphs[0]).toContain('OpenClaw');
+      expect(launchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.doUnmock('playwright');
+      loaded.cleanup();
+    }
+  });
+
+  it('falls back to the browser when fetch only extracts a teaser', async () => {
+    const { launchMock } = createMockPlaywright([
+      'Posts from this author will be added to your daily email digest and your homepage feed.',
+      'This is the first complete paragraph from the rendered article, and it should win over the teaser that came back from raw HTML.',
+      'This is the second complete paragraph, which proves the browser fallback can recover the rest of the article body.',
+      'This is the third paragraph, long enough to satisfy the quality threshold and avoid returning just a single intro line.',
+      'Sign up for Verge Deals to get deals on products we’ve tested sent to your inbox weekly.',
+    ]);
+
+    vi.doMock('playwright', () => ({
+      chromium: {
+        launch: launchMock,
+      },
+    }));
+
+    const loaded = await loadNewsModules();
+
+    try {
+      const { newsModule } = loaded;
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          '<article><p>This teaser paragraph is intentionally long enough to pass the basic filter, but it is still not the full story body that the reader expects to see.</p></article>',
+          {
+            status: 200,
+            headers: {
+              'content-type': 'text/html; charset=utf-8',
+            },
+          },
+        ),
+      );
+
+      const result = await newsModule.fetchArticleContent('https://example.com/story');
+
+      expect(result.paragraphs).toHaveLength(3);
+      expect(result.paragraphs[0]).toContain('first complete paragraph');
+      expect(launchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.doUnmock('playwright');
       loaded.cleanup();
     }
   });
