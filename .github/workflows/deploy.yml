@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Trust VPS host key
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy to production VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          APP_DIR: /home/ubuntu/apps/DMITProxy
+          BRANCH: main
+          NODE_VERSION: 24
+          PM2_NAME: dmit-proxy
+          HEALTHCHECK_URL: http://127.0.0.1:3001
+        run: |
+          ssh -p "${VPS_PORT:-22}" "${VPS_USER}@${VPS_HOST}" \
+            "APP_DIR='$APP_DIR' BRANCH='$BRANCH' NODE_VERSION='$NODE_VERSION' PM2_NAME='$PM2_NAME' HEALTHCHECK_URL='$HEALTHCHECK_URL' bash -s" \
+            < ./scripts/deploy/remote-deploy.sh

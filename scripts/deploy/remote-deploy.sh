@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+APP_DIR="${APP_DIR:-/home/ubuntu/apps/DMITProxy}"
+BRANCH="${BRANCH:-main}"
+NVM_DIR="${NVM_DIR:-/home/ubuntu/.nvm}"
+NODE_VERSION="${NODE_VERSION:-24}"
+PM2_NAME="${PM2_NAME:-dmit-proxy}"
+HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1:3001}"
+HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-30}"
+HEALTHCHECK_DELAY_SEC="${HEALTHCHECK_DELAY_SEC:-1}"
+PROTECTED_FILES=(
+  "server/app.ts"
+  "server/index.ts"
+)
+
+if [[ ! -d "$APP_DIR/.git" ]]; then
+  echo "[deploy] app dir is not a git repo: $APP_DIR" >&2
+  exit 1
+fi
+
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+  # shellcheck disable=SC1090
+  source "$NVM_DIR/nvm.sh"
+  nvm use "$NODE_VERSION" >/dev/null
+fi
+
+cd "$APP_DIR"
+
+STASH_NAME="autodeploy-protected-$(date +%Y%m%d-%H%M%S)"
+RESTORE_STASH=0
+
+cleanup() {
+  local exit_code=$?
+  if [[ $exit_code -ne 0 && $RESTORE_STASH -eq 1 ]]; then
+    echo "[deploy] deployment failed; protected-file stash kept for manual recovery: $STASH_NAME" >&2
+  fi
+}
+trap cleanup EXIT
+
+echo "[deploy] branch=$BRANCH repo=$(git rev-parse --show-toplevel)"
+echo "[deploy] head-before=$(git rev-parse --short HEAD)"
+
+stash_args=()
+for file in "${PROTECTED_FILES[@]}"; do
+  if [[ -e "$file" ]]; then
+    stash_args+=("$file")
+  fi
+done
+
+if [[ ${#stash_args[@]} -gt 0 ]]; then
+  git stash push -m "$STASH_NAME" -- "${stash_args[@]}" >/dev/null || true
+  if git stash list | grep -Fq "$STASH_NAME"; then
+    RESTORE_STASH=1
+    echo "[deploy] stashed protected local patches"
+  fi
+fi
+
+git fetch origin "$BRANCH"
+git pull --ff-only origin "$BRANCH"
+
+if [[ $RESTORE_STASH -eq 1 ]]; then
+  git stash pop --index >/dev/null
+  RESTORE_STASH=0
+  echo "[deploy] restored protected local patches"
+fi
+
+npm ci
+npm run build
+pm2 restart "$PM2_NAME" --update-env
+pm2 save
+
+healthcheck_ok=0
+for ((attempt = 1; attempt <= HEALTHCHECK_RETRIES; attempt++)); do
+  if curl -fsS "$HEALTHCHECK_URL" >/dev/null; then
+    healthcheck_ok=1
+    break
+  fi
+  sleep "$HEALTHCHECK_DELAY_SEC"
+done
+
+if [[ $healthcheck_ok -ne 1 ]]; then
+  echo "[deploy] healthcheck failed after ${HEALTHCHECK_RETRIES} attempts: $HEALTHCHECK_URL" >&2
+  exit 1
+fi
+
+echo "[deploy] head-after=$(git rev-parse --short HEAD)"
+echo "[deploy] healthcheck-ok=$HEALTHCHECK_URL"

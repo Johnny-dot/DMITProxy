@@ -218,6 +218,42 @@ pm2 startup systemd -u ubuntu --hp /home/ubuntu
 
 Run the command printed by PM2, then save again:
 
+执行 PM2 输出的命令后，再执行一次保存：
+
+```bash
+pm2 save
+```
+
+### 6. GitHub Actions auto deploy / GitHub Actions 自动部署
+
+The repository includes [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml), which deploys every push to `main`.
+
+仓库内置了 [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml)，每次 push 到 `main` 时都会自动部署。
+
+Required GitHub repository secrets:
+
+需要在 GitHub 仓库里配置以下 Secrets：
+
+- `VPS_HOST` - production VPS public IP or hostname
+- `VPS_USER` - SSH user, for example `ubuntu`
+- `VPS_SSH_PRIVATE_KEY` - private key matching the VPS authorized key
+- `VPS_PORT` - optional SSH port, defaults to `22`
+
+The workflow SSHes into the VPS and runs [`scripts/deploy/remote-deploy.sh`](./scripts/deploy/remote-deploy.sh), which:
+
+工作流会通过 SSH 登录 VPS 并执行 [`scripts/deploy/remote-deploy.sh`](./scripts/deploy/remote-deploy.sh)，它会：
+
+- stash the protected local production patches in `server/app.ts` and `server/index.ts`
+- `git pull --ff-only origin main`
+- run `npm ci`
+- run `npm run build`
+- restart `dmit-proxy` with PM2
+- run a local health check against `http://127.0.0.1:3001`
+
+If the server already contains extra uncommitted changes outside the protected files, clean them up before relying on auto deploy.
+
+如果服务器上还存在受保护文件以外的未提交修改，建议先清理，再依赖自动部署。
+
 执行 PM2 回显的那条命令后，再保存一次：
 
 ```bash
