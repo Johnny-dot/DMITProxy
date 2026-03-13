@@ -124,17 +124,20 @@ For the full list, see [`.env.example`](./.env.example).
 
 完整列表请查看 [`.env.example`](./.env.example)。
 
-| Variable / 变量               | Required / 必填 | Description / 说明                                                                                                           |
-| ----------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `SERVER_PORT`                 | No              | Local server listen port. Default is `3001`. / 本地服务监听端口，默认 `3001`。                                               |
-| `VITE_3XUI_SERVER`            | Yes             | Upstream 3X-UI server URL. / 上游 3X-UI 服务地址。                                                                           |
-| `VITE_3XUI_BASE_PATH`         | Yes             | 3X-UI panel base path. / 3X-UI 面板基础路径。                                                                                |
-| `VITE_SUB_URL`                | Yes             | Subscription host used by the portal and admin tools. / 用户门户和后台使用的订阅地址。                                       |
-| `XUI_ADMIN_USERNAME`          | Yes             | 3X-UI admin username. / 3X-UI 管理员用户名。                                                                                 |
-| `XUI_ADMIN_PASSWORD`          | Yes             | 3X-UI admin password. / 3X-UI 管理员密码。                                                                                   |
-| `XUI_AUTO_CREATE_ON_REGISTER` | No              | Auto-create a 3X-UI client after invite registration. / 邀请注册成功后自动创建 3X-UI 客户端。                                |
-| `COOKIE_SECURE`               | No              | Force secure cookies. In production, keep HTTPS and leave this enabled. / 是否强制安全 Cookie。生产环境建议配合 HTTPS 使用。 |
-| `DATA_DIR`                    | No              | Runtime data path. Defaults to `./data`. / 运行数据目录，默认 `./data`。                                                     |
+| Variable / 变量                             | Required / 必填 | Description / 说明                                                                                                                                                                                                                                |
+| ------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SERVER_PORT`                               | No              | Local server listen port. Default is `3001`. / 本地服务监听端口，默认 `3001`。                                                                                                                                                                    |
+| `VITE_3XUI_SERVER`                          | Yes             | Upstream 3X-UI server URL. / 上游 3X-UI 服务地址。                                                                                                                                                                                                |
+| `VITE_3XUI_BASE_PATH`                       | Yes             | 3X-UI panel base path. / 3X-UI 面板基础路径。                                                                                                                                                                                                     |
+| `VITE_SUB_URL`                              | Yes             | Subscription host used by the portal and admin tools. / 用户门户和后台使用的订阅地址。                                                                                                                                                            |
+| `VITE_SUB_URL_TEMPLATE`                     | No              | Explicit subscription URL template with `{subId}` placeholder. Use `http://` when accessing by bare IP to avoid TLS certificate errors. / 自定义订阅 URL 模板，含 `{subId}` 占位符。裸 IP 访问时使用 `http://` 以避免证书验证失败。               |
+| `XUI_ADMIN_USERNAME`                        | Yes             | 3X-UI admin username. / 3X-UI 管理员用户名。                                                                                                                                                                                                      |
+| `XUI_ADMIN_PASSWORD`                        | Yes             | 3X-UI admin password. / 3X-UI 管理员密码。                                                                                                                                                                                                        |
+| `XUI_AUTO_CREATE_ON_REGISTER`               | No              | Auto-create a 3X-UI client after invite registration. / 邀请注册成功后自动创建 3X-UI 客户端。                                                                                                                                                     |
+| `XRAY_BIN`                                  | No              | Path to the Xray binary when it is not in `PATH`. Example: `/usr/local/bin/xray`. / Xray 不在 PATH 时的二进制路径，例如 `/usr/local/bin/xray`。                                                                                                   |
+| `NODE_QUALITY_ALLOW_SERVER_EGRESS_FALLBACK` | No              | Set `true` to fall back to a direct server-egress probe when proxy-outbound fails. Disabled by default — leave it off so failures surface as errors. / 设为 `true` 时，代理探测失败后会降级为服务器出口探测。默认关闭，建议保持关闭以便错误可见。 |
+| `COOKIE_SECURE`                             | No              | Force secure cookies. In production, keep HTTPS and leave this enabled. / 是否强制安全 Cookie。生产环境建议配合 HTTPS 使用。                                                                                                                      |
+| `DATA_DIR`                                  | No              | Runtime data path. Defaults to `./data`. / 运行数据目录，默认 `./data`。                                                                                                                                                                          |
 
 ## Production Deployment / 生产部署
 
@@ -174,7 +177,31 @@ Important:
 - 当前生产流程不要使用 `npm ci --omit=dev`。
 - 现在的 `npm start` 依赖 `tsx`，而它目前在 `devDependencies` 中。
 
-### 3. Configure environment / 配置环境变量
+### 3. Install Xray (required for node quality probing) / 安装 Xray（节点质量检测必需）
+
+The node quality probe works by launching a temporary local Xray process on the **DMITProxy server** to connect through each proxy node and measure its real exit quality. Xray must be installed on the machine running DMITProxy — not on the 3X-UI/proxy server.
+
+节点质量检测的原理是在运行 **DMITProxy 的服务器**上启动一个临时 Xray 进程，通过代理节点发出请求，检测节点真实的出口质量。Xray 必须安装在运行 DMITProxy 的机器上，而不是 3X-UI / 代理服务器上。
+
+> **Typical split-deployment scenario / 典型分离部署场景**
+>
+> If DMITProxy runs on a separate VPS (e.g. Oracle Free Tier) while 3X-UI runs on a dedicated proxy server (e.g. DMIT), Xray is **not** present on the DMITProxy machine by default. Install it independently:
+>
+> 如果 DMITProxy 部署在独立 VPS（如 Oracle Free Tier），3X-UI 部署在专用代理服务器（如 DMIT），Xray 默认不存在于 DMITProxy 机器上，需要单独安装：
+
+```bash
+# Install Xray core only (no 3X-UI panel) / 仅安装 Xray 核心，不含 3X-UI 面板
+bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) install
+
+# Verify / 验证
+xray version
+```
+
+The installer places the binary at `/usr/local/bin/xray`, which DMITProxy detects automatically. If you install Xray elsewhere, set `XRAY_BIN` in `.env`.
+
+安装脚本会将二进制文件放在 `/usr/local/bin/xray`，DMITProxy 会自动找到它。如果安装到其他路径，在 `.env` 中设置 `XRAY_BIN`。
+
+### 4. Configure environment / 配置环境变量
 
 ```bash
 cp .env.example .env
@@ -193,7 +220,7 @@ For a real deployment, use HTTPS and keep secure cookies enabled.
 
 正式部署建议使用 HTTPS，并保持安全 Cookie 开启。
 
-### 4. Build and start / 构建并启动
+### 5. Build and start / 构建并启动
 
 ```bash
 npm run build
@@ -210,7 +237,7 @@ pm2 start ecosystem.config.cjs
 pm2 save
 ```
 
-### 5. Enable auto-start / 设置开机自启
+### 6. Enable auto-start / 设置开机自启
 
 ```bash
 pm2 startup systemd -u ubuntu --hp /home/ubuntu
@@ -224,7 +251,7 @@ Run the command printed by PM2, then save again:
 pm2 save
 ```
 
-### 6. GitHub Actions auto deploy / GitHub Actions 自动部署
+### 7. GitHub Actions auto deploy / GitHub Actions 自动部署
 
 The repository includes [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml), which deploys every push to `main`.
 
@@ -260,7 +287,7 @@ If the server already contains extra uncommitted changes outside the protected f
 pm2 save
 ```
 
-### 6. Reverse proxy / 反向代理
+### 8. Reverse proxy / 反向代理
 
 Nginx is the recommended front door for production.
 
@@ -313,8 +340,11 @@ pm2 restart dmit-proxy --update-env
 - Admin authentication comes from 3X-UI; local SQLite admin credentials are not used.
 - End-user sessions, invite codes, and settings are stored locally.
 - If you migrate the service, back up the `data/` directory first.
-- Proxy-quality checks now run through the actual node path by launching a temporary local `xray` client. Keep `xray` installed on the server running DMITProxy, or set `XRAY_BIN` when it lives outside `PATH`.
+- Node quality probing launches a temporary Xray process on the DMITProxy server to route test traffic through the proxy node. Xray must be installed on the DMITProxy host — not the 3X-UI server. See the [Install Xray](#3-install-xray-required-for-node-quality-probing--安装-xray节点质量检测必需) step above.
+- If `VITE_SUB_URL_TEMPLATE` points to an HTTPS endpoint using a bare IP address, TLS certificate validation will fail and the probe cannot resolve nodes. Use `http://` in that case.
 
 - 管理员认证来自 3X-UI，不使用本地 SQLite 管理员密码。
 - 普通用户会话、邀请码和设置保存在本地。
 - 迁移服务前，请优先备份 `data/` 目录。
+- 节点质量检测会在 DMITProxy 服务器上启动临时 Xray 进程，通过代理节点发出探测请求。Xray 必须安装在运行 DMITProxy 的主机上，而不是 3X-UI 服务器上。详见上方[安装 Xray](#3-install-xray-required-for-node-quality-probing--安装-xray节点质量检测必需) 步骤。
+- 如果 `VITE_SUB_URL_TEMPLATE` 使用 HTTPS 加裸 IP 地址，TLS 证书验证会失败，导致探测无法获取节点。此时应改用 `http://`。
