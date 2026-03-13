@@ -39,6 +39,8 @@ const xuiTarget = getXuiTarget();
 const skipTlsVerification = shouldSkipXuiTlsVerification();
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
+const ADMIN_VERIFY_CACHE_TTL_MS = 60_000; // cache positive results for 1 minute
+const adminVerifyCache = new Map<string, { ok: boolean; expiresAt: number }>();
 const XUI_NOT_CONFIGURED_ERROR =
   '3X-UI admin capability is not configured. Set VITE_3XUI_SERVER and VITE_3XUI_BASE_PATH in .env.';
 const configuredResetTtlSeconds = Number.parseInt(process.env.PASSWORD_RESET_TTL_SECONDS ?? '', 10);
@@ -394,6 +396,13 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const cookie = req.headers.cookie ?? '';
   if (!cookie) return res.status(401).json({ error: 'Unauthorized' });
 
+  const now = Date.now();
+  const cached = adminVerifyCache.get(cookie);
+  if (cached && cached.expiresAt > now) {
+    if (!cached.ok) return res.status(401).json({ error: 'Unauthorized' });
+    return next();
+  }
+
   const ok = await new Promise<boolean>((resolve) => {
     const requestFactory = getXuiRequestFactory(xuiTarget.protocol);
     const candidates = getXuiPathCandidates('/panel/api/server/status').map((candidate) =>
@@ -466,6 +475,7 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
     checkAttempt(candidates[0], MAX_REDIRECTS, 0);
   });
 
+  adminVerifyCache.set(cookie, { ok, expiresAt: now + ADMIN_VERIFY_CACHE_TTL_MS });
   if (!ok) return res.status(401).json({ error: 'Unauthorized' });
   next();
 }
@@ -603,11 +613,8 @@ router.post('/users/:id/password-reset', requireAdmin, (req, res) => {
 
   const tx = db.transaction(() => {
     db.prepare(
-      'DELETE FROM password_reset_tokens WHERE expires_at <= unixepoch() OR used_at IS NOT NULL',
-    ).run();
-    db.prepare('DELETE FROM password_reset_tokens WHERE user_id = ? AND used_at IS NULL').run(
-      user.id,
-    );
+      'DELETE FROM password_reset_tokens WHERE expires_at <= unixepoch() OR used_at IS NOT NULL OR (user_id = ? AND used_at IS NULL)',
+    ).run(user.id);
     db.prepare(
       'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)',
     ).run(user.id, hashToken(token), expiresAt);

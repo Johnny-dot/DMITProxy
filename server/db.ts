@@ -65,6 +65,8 @@ db.exec(`
     ON sessions(expires_at);
   CREATE INDEX IF NOT EXISTS idx_invite_codes_code
     ON invite_codes(code);
+  CREATE INDEX IF NOT EXISTS idx_users_sub_id
+    ON users(sub_id);
 
   CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
