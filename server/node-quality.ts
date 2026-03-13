@@ -1,6 +1,7 @@
 import { db } from './db.js';
 
 export type UnlockStatus = 'unknown' | 'supported' | 'limited' | 'blocked';
+export type NodeQualityProbeMode = 'server-egress' | 'proxy-outbound';
 export type NodeQualityProbeCode =
   | 'http_ok'
   | 'challenge'
@@ -47,6 +48,8 @@ export type NodeQualityServiceDetails = Partial<Record<UnlockServiceId, NodeQual
 
 export interface NodeQualityProfile {
   inboundId: number;
+  probeMode: NodeQualityProbeMode;
+  probeTarget: string;
   summary: string;
   fraudScore: number | null;
   netflixStatus: UnlockStatus;
@@ -111,6 +114,10 @@ function normalizeProbeCode(value: unknown): NodeQualityProbeCode {
   ].includes(normalized)
     ? normalized
     : 'unknown';
+}
+
+function normalizeProbeMode(value: unknown): NodeQualityProbeMode {
+  return value === 'proxy-outbound' ? 'proxy-outbound' : 'server-egress';
 }
 
 function normalizeServiceDetail(value: unknown): NodeQualityServiceDetail | null {
@@ -182,6 +189,8 @@ function buildStoredNodeQualityProfile(value: unknown): StoredNodeQualityProfile
   const input = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
   const updatedAtRaw = Number(input.updatedAt);
   return {
+    probeMode: normalizeProbeMode(input.probeMode),
+    probeTarget: normalizeText(input.probeTarget),
     summary: normalizeText(input.summary),
     fraudScore: normalizeFraudScore(input.fraudScore),
     netflixStatus: normalizeUnlockStatus(input.netflixStatus),
@@ -236,6 +245,8 @@ function writeStoredProfiles(profiles: StoredNodeQualityMap) {
 export function buildDefaultNodeQualityProfile(inboundId: number): NodeQualityProfile {
   return {
     inboundId,
+    probeMode: 'server-egress',
+    probeTarget: '',
     summary: '',
     fraudScore: null,
     netflixStatus: 'unknown',
@@ -299,6 +310,8 @@ export function getNodeQualityProfile(inboundId: number): NodeQualityProfile {
 export function saveNodeQualityProfile(profile: NodeQualityProfile): NodeQualityProfile {
   const stored = readStoredProfiles();
   stored[String(profile.inboundId)] = {
+    probeMode: normalizeProbeMode(profile.probeMode),
+    probeTarget: normalizeText(profile.probeTarget),
     summary: normalizeText(profile.summary),
     fraudScore: normalizeFraudScore(profile.fraudScore),
     netflixStatus: normalizeUnlockStatus(profile.netflixStatus),

@@ -1,11 +1,20 @@
+import { fetch as undiciFetch, ProxyAgent, type Dispatcher } from 'undici';
 import {
   saveNodeQualityProfile,
   type NodeQualityProfile,
   type NodeQualityEgressMeta,
   type NodeQualityProbeCode,
+  type NodeQualityProbeMode,
   type NodeQualityServiceDetail,
   type UnlockStatus,
 } from './node-quality.js';
+import { startXrayProxy } from './node-quality-xray-proxy.js';
+import {
+  fetchSubscriptionNodes,
+  pickProbeEndpointForInbound,
+  type ProxyProbeEndpoint,
+} from './subscription-probe-target.js';
+import { fetchXuiInbounds, parseInboundClients, type XuiInbound } from './xui-admin.js';
 
 interface IpApiResponse {
   status: 'success' | 'fail';
@@ -43,17 +52,27 @@ interface GenericServiceProbeConfig {
   blockedDetail: string;
 }
 
+interface ProbeRunContext {
+  dispatcher?: Dispatcher;
+  probeMode: NodeQualityProbeMode;
+  probeTarget: string;
+}
+
 const PROBE_TIMEOUT_MS = Math.max(
-  3000,
-  Math.min(20000, Number.parseInt(process.env.NODE_QUALITY_PROBE_TIMEOUT_MS ?? '8000', 10) || 8000),
+  3_000,
+  Math.min(
+    20_000,
+    Number.parseInt(process.env.NODE_QUALITY_PROBE_TIMEOUT_MS ?? '8000', 10) || 8_000,
+  ),
 );
 const BROWSER_LIKE_HEADERS = {
   'user-agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36 PrismNodeProbe/1.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36 PrismNodeProbe/2.0',
   accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
   'accept-language': 'en-US,en;q=0.9',
   'cache-control': 'no-cache',
 };
+const MAX_SUBSCRIPTION_LOOKUPS = 5;
 
 function clampScore(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
@@ -77,23 +96,28 @@ function buildServiceProbe(
   };
 }
 
-async function fetchWithTimeout(url: string, headers?: HeadersInit): Promise<Response> {
+async function fetchWithTimeout(url: string, headers?: HeadersInit, dispatcher?: Dispatcher) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   try {
-    return await fetch(url, {
+    return await undiciFetch(url, {
       redirect: 'manual',
       headers,
       signal: controller.signal,
+      dispatcher,
     });
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function fetchTextProbe(url: string, headers?: HeadersInit): Promise<ProbeHttpResult> {
+async function fetchTextProbe(
+  url: string,
+  headers?: HeadersInit,
+  dispatcher?: Dispatcher,
+): Promise<ProbeHttpResult> {
   try {
-    const res = await fetchWithTimeout(url, headers);
+    const res = await fetchWithTimeout(url, headers, dispatcher);
     const body = await res.text().catch(() => '');
     return {
       ok: true,
@@ -111,11 +135,12 @@ async function fetchTextProbe(url: string, headers?: HeadersInit): Promise<Probe
   }
 }
 
-async function fetchIpMeta(): Promise<IpApiResponse | null> {
+async function fetchIpMeta(dispatcher?: Dispatcher): Promise<IpApiResponse | null> {
   try {
     const res = await fetchWithTimeout(
       'http://ip-api.com/json/?fields=status,message,country,countryCode,regionName,city,isp,org,as,proxy,hosting,mobile,query',
       { accept: 'application/json' },
+      dispatcher,
     );
     if (!res.ok) return null;
     const data = (await res.json().catch(() => null)) as IpApiResponse | null;
@@ -166,13 +191,11 @@ function isRegionBlocked(body: string): boolean {
   );
 }
 
-async function probeGenericService({
-  serviceName,
-  url,
-  successDetail,
-  blockedDetail,
-}: GenericServiceProbeConfig): Promise<ServiceProbeResult> {
-  const probe = await fetchTextProbe(url, BROWSER_LIKE_HEADERS);
+async function probeGenericService(
+  { serviceName, url, successDetail, blockedDetail }: GenericServiceProbeConfig,
+  dispatcher?: Dispatcher,
+): Promise<ServiceProbeResult> {
+  const probe = await fetchTextProbe(url, BROWSER_LIKE_HEADERS, dispatcher);
   if (!probe.ok) {
     return {
       status: 'unknown',
@@ -212,11 +235,15 @@ async function probeGenericService({
   };
 }
 
-async function probeChatgpt(): Promise<ServiceProbeResult> {
-  const trace = await fetchTextProbe('https://chat.openai.com/cdn-cgi/trace', {
-    'user-agent': BROWSER_LIKE_HEADERS['user-agent'],
-    accept: 'text/plain,*/*',
-  });
+async function probeChatgpt(dispatcher?: Dispatcher): Promise<ServiceProbeResult> {
+  const trace = await fetchTextProbe(
+    'https://chat.openai.com/cdn-cgi/trace',
+    {
+      'user-agent': BROWSER_LIKE_HEADERS['user-agent'],
+      accept: 'text/plain,*/*',
+    },
+    dispatcher,
+  );
   if (!trace.ok || trace.status < 200 || trace.status >= 400) {
     return {
       status: 'unknown',
@@ -229,7 +256,7 @@ async function probeChatgpt(): Promise<ServiceProbeResult> {
     };
   }
 
-  const home = await fetchTextProbe('https://chatgpt.com/', BROWSER_LIKE_HEADERS);
+  const home = await fetchTextProbe('https://chatgpt.com/', BROWSER_LIKE_HEADERS, dispatcher);
   if (!home.ok) {
     return {
       status: 'unknown',
@@ -265,11 +292,15 @@ async function probeChatgpt(): Promise<ServiceProbeResult> {
   };
 }
 
-async function probeClaude(): Promise<ServiceProbeResult> {
-  const favicon = await fetchTextProbe('https://claude.ai/favicon.ico', {
-    'user-agent': BROWSER_LIKE_HEADERS['user-agent'],
-    accept: 'image/*,*/*',
-  });
+async function probeClaude(dispatcher?: Dispatcher): Promise<ServiceProbeResult> {
+  const favicon = await fetchTextProbe(
+    'https://claude.ai/favicon.ico',
+    {
+      'user-agent': BROWSER_LIKE_HEADERS['user-agent'],
+      accept: 'image/*,*/*',
+    },
+    dispatcher,
+  );
   if (!favicon.ok || favicon.status < 200 || favicon.status >= 400) {
     return {
       status: 'unknown',
@@ -282,7 +313,7 @@ async function probeClaude(): Promise<ServiceProbeResult> {
     };
   }
 
-  const login = await fetchTextProbe('https://claude.ai/login', BROWSER_LIKE_HEADERS);
+  const login = await fetchTextProbe('https://claude.ai/login', BROWSER_LIKE_HEADERS, dispatcher);
   if (!login.ok) {
     return {
       status: 'unknown',
@@ -333,10 +364,11 @@ async function probeClaude(): Promise<ServiceProbeResult> {
   };
 }
 
-async function probeNetflix(): Promise<ServiceProbeResult> {
+async function probeNetflix(dispatcher?: Dispatcher): Promise<ServiceProbeResult> {
   const probe = await fetchTextProbe(
     'https://www.netflix.com/title/81215567',
     BROWSER_LIKE_HEADERS,
+    dispatcher,
   );
   if (!probe.ok) {
     return {
@@ -396,67 +428,88 @@ async function probeNetflix(): Promise<ServiceProbeResult> {
   };
 }
 
-async function probeTiktok(): Promise<ServiceProbeResult> {
-  return probeGenericService({
-    serviceName: 'TikTok',
-    url: 'https://www.tiktok.com/',
-    successDetail: 'HTTP {status} from tiktok.com.',
-    blockedDetail: 'TikTok responded with a region restriction page.',
-  });
+async function probeTiktok(dispatcher?: Dispatcher): Promise<ServiceProbeResult> {
+  return probeGenericService(
+    {
+      serviceName: 'TikTok',
+      url: 'https://www.tiktok.com/',
+      successDetail: 'HTTP {status} from tiktok.com.',
+      blockedDetail: 'TikTok responded with a region restriction page.',
+    },
+    dispatcher,
+  );
 }
 
-async function probeInstagram(): Promise<ServiceProbeResult> {
-  return probeGenericService({
-    serviceName: 'Instagram',
-    url: 'https://www.instagram.com/accounts/login/',
-    successDetail: 'HTTP {status} from instagram.com/accounts/login/.',
-    blockedDetail: 'Instagram responded with a region restriction page.',
-  });
+async function probeInstagram(dispatcher?: Dispatcher): Promise<ServiceProbeResult> {
+  return probeGenericService(
+    {
+      serviceName: 'Instagram',
+      url: 'https://www.instagram.com/accounts/login/',
+      successDetail: 'HTTP {status} from instagram.com/accounts/login/.',
+      blockedDetail: 'Instagram responded with a region restriction page.',
+    },
+    dispatcher,
+  );
 }
 
-async function probeSpotify(): Promise<ServiceProbeResult> {
-  return probeGenericService({
-    serviceName: 'Spotify',
-    url: 'https://open.spotify.com/',
-    successDetail: 'HTTP {status} from open.spotify.com.',
-    blockedDetail: 'Spotify responded with a region restriction page.',
-  });
+async function probeSpotify(dispatcher?: Dispatcher): Promise<ServiceProbeResult> {
+  return probeGenericService(
+    {
+      serviceName: 'Spotify',
+      url: 'https://open.spotify.com/',
+      successDetail: 'HTTP {status} from open.spotify.com.',
+      blockedDetail: 'Spotify responded with a region restriction page.',
+    },
+    dispatcher,
+  );
 }
 
-async function probeYoutube(): Promise<ServiceProbeResult> {
-  return probeGenericService({
-    serviceName: 'YouTube',
-    url: 'https://www.youtube.com/',
-    successDetail: 'HTTP {status} from youtube.com.',
-    blockedDetail: 'YouTube responded with a region restriction page.',
-  });
+async function probeYoutube(dispatcher?: Dispatcher): Promise<ServiceProbeResult> {
+  return probeGenericService(
+    {
+      serviceName: 'YouTube',
+      url: 'https://www.youtube.com/',
+      successDetail: 'HTTP {status} from youtube.com.',
+      blockedDetail: 'YouTube responded with a region restriction page.',
+    },
+    dispatcher,
+  );
 }
 
-async function probeDisneyPlus(): Promise<ServiceProbeResult> {
-  return probeGenericService({
-    serviceName: 'Disney+',
-    url: 'https://www.disneyplus.com/',
-    successDetail: 'HTTP {status} from disneyplus.com.',
-    blockedDetail: 'Disney+ responded with a region restriction page.',
-  });
+async function probeDisneyPlus(dispatcher?: Dispatcher): Promise<ServiceProbeResult> {
+  return probeGenericService(
+    {
+      serviceName: 'Disney+',
+      url: 'https://www.disneyplus.com/',
+      successDetail: 'HTTP {status} from disneyplus.com.',
+      blockedDetail: 'Disney+ responded with a region restriction page.',
+    },
+    dispatcher,
+  );
 }
 
-async function probePrimeVideo(): Promise<ServiceProbeResult> {
-  return probeGenericService({
-    serviceName: 'Prime Video',
-    url: 'https://www.primevideo.com/',
-    successDetail: 'HTTP {status} from primevideo.com.',
-    blockedDetail: 'Prime Video responded with a region restriction page.',
-  });
+async function probePrimeVideo(dispatcher?: Dispatcher): Promise<ServiceProbeResult> {
+  return probeGenericService(
+    {
+      serviceName: 'Prime Video',
+      url: 'https://www.primevideo.com/',
+      successDetail: 'HTTP {status} from primevideo.com.',
+      blockedDetail: 'Prime Video responded with a region restriction page.',
+    },
+    dispatcher,
+  );
 }
 
-async function probeX(): Promise<ServiceProbeResult> {
-  return probeGenericService({
-    serviceName: 'X',
-    url: 'https://x.com/i/flow/login',
-    successDetail: 'HTTP {status} from x.com/i/flow/login.',
-    blockedDetail: 'X responded with a region restriction page.',
-  });
+async function probeX(dispatcher?: Dispatcher): Promise<ServiceProbeResult> {
+  return probeGenericService(
+    {
+      serviceName: 'X',
+      url: 'https://x.com/i/flow/login',
+      successDetail: 'HTTP {status} from x.com/i/flow/login.',
+      blockedDetail: 'X responded with a region restriction page.',
+    },
+    dispatcher,
+  );
 }
 
 function buildSummary(meta: IpApiResponse | null, fraudScore: number | null): string {
@@ -465,8 +518,8 @@ function buildSummary(meta: IpApiResponse | null, fraudScore: number | null): st
   }
 
   const location = [meta.countryCode, meta.regionName, meta.city].filter(Boolean).join(' / ');
-  const ip = meta.query ? ` · ${meta.query}` : '';
-  const fraud = fraudScore === null ? '' : ` · Risk ${fraudScore}`;
+  const ip = meta.query ? ` | ${meta.query}` : '';
+  const fraud = fraudScore === null ? '' : ` | Risk ${fraudScore}`;
   return `${location || 'Unknown region'}${ip}${fraud}`;
 }
 
@@ -488,6 +541,7 @@ function buildEgress(meta: IpApiResponse | null): NodeQualityEgressMeta | null {
 
 function buildNotes(
   meta: IpApiResponse | null,
+  probeContext: ProbeRunContext,
   chatgpt: ServiceProbeResult,
   claude: ServiceProbeResult,
   netflix: ServiceProbeResult,
@@ -500,7 +554,10 @@ function buildNotes(
   x: ServiceProbeResult,
 ): string {
   const lines = [
-    'Automated reachability probe from the server egress.',
+    probeContext.probeMode === 'proxy-outbound'
+      ? 'Automated reachability probe through the linked proxy node.'
+      : 'Automated reachability probe from the server egress.',
+    probeContext.probeTarget ? `Probe target: ${probeContext.probeTarget}` : '',
     meta
       ? `IP: ${meta.query ?? 'unknown'} | ISP: ${meta.isp ?? 'unknown'} | ASN: ${meta.as ?? 'unknown'}`
       : 'IP metadata: unavailable',
@@ -520,13 +577,101 @@ function buildNotes(
     `Disney+: ${disneyplus.detail}`,
     `Prime Video: ${primevideo.detail}`,
     `X: ${x.detail}`,
-  ];
+  ].filter(Boolean);
+
   return lines.join('\n');
 }
 
-export async function probeAndStoreNodeQualityProfile(
+function buildProbeTargetLabel(endpoint: ProxyProbeEndpoint) {
+  const label = endpoint.name || `${endpoint.address}:${endpoint.port}`;
+  return `${endpoint.protocol.toUpperCase()} | ${label} | ${endpoint.address}:${endpoint.port}`;
+}
+
+function collectCandidateSubIds(inbound: XuiInbound, preferredSubId?: string) {
+  const seen = new Set<string>();
+  const values: string[] = [];
+
+  const pushValue = (value: string | null | undefined) => {
+    const normalized = String(value ?? '').trim();
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    values.push(normalized);
+  };
+
+  pushValue(preferredSubId);
+
+  const now = Date.now();
+  for (const client of parseInboundClients(inbound.settings)) {
+    const enabled = client.enable !== false;
+    const expiryTime = Number(client.expiryTime ?? 0);
+    if (!enabled) continue;
+    if (Number.isFinite(expiryTime) && expiryTime > 0 && expiryTime < now) continue;
+    pushValue(String(client.subId ?? ''));
+    if (values.length >= MAX_SUBSCRIPTION_LOOKUPS) break;
+  }
+
+  return values;
+}
+
+async function resolveProxyProbeEndpoint(inboundId: number, preferredSubId?: string) {
+  const inbounds = await fetchXuiInbounds();
+  const inbound = inbounds.find((item) => item.id === inboundId);
+  if (!inbound) {
+    throw new Error(`Inbound ${inboundId} was not found in 3X-UI.`);
+  }
+
+  const subIds = collectCandidateSubIds(inbound, preferredSubId);
+  if (subIds.length === 0) {
+    throw new Error(
+      `Inbound ${inboundId} does not have a usable client subscription for proxy probing.`,
+    );
+  }
+
+  let lastError = '';
+  for (const subId of subIds) {
+    try {
+      const nodes = await fetchSubscriptionNodes(subId);
+      if (nodes.length === 0) {
+        lastError = `Subscription ${subId} did not return any supported nodes.`;
+        continue;
+      }
+
+      const endpoint = pickProbeEndpointForInbound(nodes, inbound);
+      if (!endpoint) {
+        lastError = `Subscription ${subId} did not expose a node that matches inbound ${inboundId}.`;
+        continue;
+      }
+
+      return { inbound, endpoint, subId };
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  throw new Error(lastError || `Unable to resolve a proxy probe target for inbound ${inboundId}.`);
+}
+
+async function closeDispatcher(dispatcher: Dispatcher | undefined) {
+  if (!dispatcher) return;
+  const candidate = dispatcher as Dispatcher & {
+    close?: () => Promise<void>;
+    destroy?: () => void;
+  };
+
+  if (typeof candidate.close === 'function') {
+    await candidate.close();
+    return;
+  }
+  if (typeof candidate.destroy === 'function') {
+    candidate.destroy();
+  }
+}
+
+async function runReachabilityProbe(
   inboundId: number,
+  probeContext: ProbeRunContext,
 ): Promise<NodeQualityProfile> {
+  const dispatcher = probeContext.dispatcher;
   const [
     meta,
     chatgpt,
@@ -540,22 +685,25 @@ export async function probeAndStoreNodeQualityProfile(
     primevideo,
     x,
   ] = await Promise.all([
-    fetchIpMeta(),
-    probeChatgpt(),
-    probeClaude(),
-    probeNetflix(),
-    probeTiktok(),
-    probeInstagram(),
-    probeSpotify(),
-    probeYoutube(),
-    probeDisneyPlus(),
-    probePrimeVideo(),
-    probeX(),
+    fetchIpMeta(dispatcher),
+    probeChatgpt(dispatcher),
+    probeClaude(dispatcher),
+    probeNetflix(dispatcher),
+    probeTiktok(dispatcher),
+    probeInstagram(dispatcher),
+    probeSpotify(dispatcher),
+    probeYoutube(dispatcher),
+    probeDisneyPlus(dispatcher),
+    probePrimeVideo(dispatcher),
+    probeX(dispatcher),
   ]);
 
   const fraudScore = estimateFraudScore(meta);
+
   return saveNodeQualityProfile({
     inboundId,
+    probeMode: probeContext.probeMode,
+    probeTarget: probeContext.probeTarget,
     summary: buildSummary(meta, fraudScore),
     fraudScore,
     netflixStatus: netflix.status,
@@ -570,6 +718,7 @@ export async function probeAndStoreNodeQualityProfile(
     xStatus: x.status,
     notes: buildNotes(
       meta,
+      probeContext,
       chatgpt,
       claude,
       netflix,
@@ -596,4 +745,45 @@ export async function probeAndStoreNodeQualityProfile(
     },
     updatedAt: Date.now(),
   });
+}
+
+function shouldAllowServerEgressFallback() {
+  return (
+    String(process.env.NODE_QUALITY_ALLOW_SERVER_EGRESS_FALLBACK ?? '')
+      .trim()
+      .toLowerCase() === 'true'
+  );
+}
+
+export async function probeAndStoreNodeQualityProfile(
+  inboundId: number,
+  options?: { preferredSubId?: string },
+): Promise<NodeQualityProfile> {
+  let runtime: Awaited<ReturnType<typeof startXrayProxy>> | null = null;
+  let dispatcher: ProxyAgent | undefined;
+
+  try {
+    const { endpoint } = await resolveProxyProbeEndpoint(inboundId, options?.preferredSubId);
+    runtime = await startXrayProxy(endpoint);
+    dispatcher = new ProxyAgent(runtime.proxyUrl);
+    return await runReachabilityProbe(inboundId, {
+      dispatcher,
+      probeMode: 'proxy-outbound',
+      probeTarget: buildProbeTargetLabel(endpoint),
+    });
+  } catch (error) {
+    if (!shouldAllowServerEgressFallback()) {
+      throw error;
+    }
+
+    return runReachabilityProbe(inboundId, {
+      probeMode: 'server-egress',
+      probeTarget: 'server-egress-fallback',
+    });
+  } finally {
+    await closeDispatcher(dispatcher);
+    if (runtime) {
+      await runtime.stop();
+    }
+  }
 }

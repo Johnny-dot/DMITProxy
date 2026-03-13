@@ -228,10 +228,20 @@ export function getNodeQualityOverviewLines(
   }
 
   const meta = profile.egress;
+  const isProxyProbe = profile.probeMode === 'proxy-outbound';
   return [
     isZh
-      ? '这是服务器出口的自动检测结果，仅供参考。'
-      : 'This is an automatic check from the server egress and is for reference only.',
+      ? isProxyProbe
+        ? '这是通过代理节点出口完成的自动检测结果，仅供参考。'
+        : '这是服务器出口的自动检测结果，仅供参考。'
+      : isProxyProbe
+        ? 'This is an automatic check through the proxy node egress and is for reference only.'
+        : 'This is an automatic check from the server egress and is for reference only.',
+    profile.probeTarget
+      ? isZh
+        ? `探测目标：${profile.probeTarget}`
+        : `Probe target: ${profile.probeTarget}`
+      : null,
     isZh
       ? `IP：${meta.ip || '未知'} · ISP：${meta.isp || '未知'} · ASN：${meta.asn || '未知'}`
       : `IP: ${meta.ip || 'unknown'} · ISP: ${meta.isp || 'unknown'} · ASN: ${meta.asn || 'unknown'}`,
@@ -263,7 +273,9 @@ export function getNodeQualityServiceHint(
     case 'challenge':
       return isZh ? '可以访问，但可能需要验证' : 'Reachable, but verification may be required';
     case 'region_block':
-      return isZh ? '服务器出口可能受地区限制' : 'Likely region-restricted on this server egress';
+      return isZh
+        ? '当前出口 IP 可能受地区限制'
+        : 'Likely region-restricted on the current exit IP';
     case 'unsupported_browser':
       return isZh ? '能打开，但结果还不够确定' : 'Reachable, but the result is still inconclusive';
     case 'probe_failed':
@@ -305,8 +317,8 @@ export function getNodeQualityServiceTooltip(
         : `${serviceLabel} is reachable, but it may ask for challenges, anti-bot checks, or manual verification.`;
     case 'region_block':
       return isZh
-        ? `${serviceLabel} 看起来受地区限制，服务器出口可能不在支持区域内。`
-        : `${serviceLabel} appears region-restricted, which usually means the server egress is outside the supported region.`;
+        ? `${serviceLabel} 看起来受地区限制，说明当前出口 IP 可能不在支持区域内。`
+        : `${serviceLabel} appears region-restricted, which usually means the current exit IP is outside the supported region.`;
     case 'unsupported_browser':
       return isZh
         ? `${serviceLabel} 能打开，但这次结果还不足以确认完整可用。`
@@ -357,8 +369,8 @@ export function getNodeQualityServiceNote(
         : `${serviceLabel}: Reachable, but it may require a challenge or extra verification.`;
     case 'region_block':
       return isZh
-        ? `${serviceLabel}：看起来受地区限制，服务器出口可能不在支持区域内。`
-        : `${serviceLabel}: It appears region-restricted on the server egress.`;
+        ? `${serviceLabel}：看起来受地区限制，当前出口 IP 可能不在支持区域内。`
+        : `${serviceLabel}: It appears region-restricted on the current exit IP.`;
     case 'unsupported_browser':
       return isZh
         ? `${serviceLabel}：能打开，但这次结果还不够确定。`

@@ -685,7 +685,9 @@ router.post('/portal/node-quality/refresh', async (req, res) => {
       return res.status(404).json({ error: 'Unable to resolve current node stats' });
     }
 
-    const nodeQuality = await probeAndStoreNodeQualityProfile(stats.inboundId);
+    const nodeQuality = await probeAndStoreNodeQualityProfile(stats.inboundId, {
+      preferredSubId: session.sub_id,
+    });
     return res.json({ ok: true, stats, nodeQuality });
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'Unknown error';

@@ -277,6 +277,7 @@ pm2 restart dmit-proxy --update-env
 - Admin authentication comes from 3X-UI; local SQLite admin credentials are not used.
 - End-user sessions, invite codes, and settings are stored locally.
 - If you migrate the service, back up the `data/` directory first.
+- Proxy-quality checks now run through the actual node path by launching a temporary local `xray` client. Keep `xray` installed on the server running DMITProxy, or set `XRAY_BIN` when it lives outside `PATH`.
 
 - 管理员认证来自 3X-UI，不使用本地 SQLite 管理员密码。
 - 普通用户会话、邀请码和设置保存在本地。

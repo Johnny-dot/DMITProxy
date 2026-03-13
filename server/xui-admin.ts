@@ -34,7 +34,11 @@ export interface XuiInbound {
   remark?: string;
   protocol: string;
   enable: boolean;
+  port?: number;
+  listen?: string;
   settings: string;
+  streamSettings?: string;
+  tag?: string;
   clientStats?: XuiClientStat[];
 }
 
@@ -556,6 +560,27 @@ export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientU
 
   const refreshed = await getStatsSnapshot(cookieHeader, true);
   return refreshed.snapshot.bySubId.get(normalizedSubId) ?? null;
+}
+
+export async function fetchXuiInbounds(): Promise<XuiInbound[]> {
+  const creds = getXuiCredentials();
+  if (!creds) {
+    throw new XuiAdminError('XUI admin credentials are missing in .env');
+  }
+
+  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
+  const response = await requestXuiJson<XuiInbound[]>(
+    '/panel/api/inbounds/list',
+    'GET',
+    null,
+    cookieHeader,
+  );
+
+  if (!response.success || !Array.isArray(response.obj)) {
+    throw new XuiAdminError(response.msg || 'Failed to fetch inbounds from 3X-UI');
+  }
+
+  return response.obj;
 }
 
 export async function fetchServerStatusForPortal(): Promise<XuiServerStatus | null> {

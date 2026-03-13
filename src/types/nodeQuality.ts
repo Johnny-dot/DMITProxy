@@ -1,4 +1,5 @@
 export type UnlockStatus = 'unknown' | 'supported' | 'limited' | 'blocked';
+export type NodeQualityProbeMode = 'server-egress' | 'proxy-outbound';
 export type UnlockServiceId =
   | 'netflix'
   | 'chatgpt'
@@ -46,6 +47,8 @@ export type NodeQualityServiceDetails = Partial<Record<UnlockServiceId, NodeQual
 
 export interface NodeQualityProfile {
   inboundId: number;
+  probeMode: NodeQualityProbeMode;
+  probeTarget: string;
   summary: string;
   fraudScore: number | null;
   netflixStatus: UnlockStatus;

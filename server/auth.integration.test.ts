@@ -39,6 +39,8 @@ async function createTestContext(options?: {
   };
   mockNodeQualityProfile?: {
     inboundId: number;
+    probeMode?: 'server-egress' | 'proxy-outbound';
+    probeTarget?: string;
     summary: string;
     fraudScore: number | null;
     netflixStatus: 'unknown' | 'supported' | 'limited' | 'blocked';
