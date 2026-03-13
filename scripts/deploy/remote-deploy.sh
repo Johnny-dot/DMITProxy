@@ -15,8 +15,17 @@ PROTECTED_FILES=(
   "server/index.ts"
 )
 
+log() {
+  echo "[deploy] $*"
+}
+
+section() {
+  echo
+  log "== $* =="
+}
+
 if [[ ! -d "$APP_DIR/.git" ]]; then
-  echo "[deploy] app dir is not a git repo: $APP_DIR" >&2
+  log "app dir is not a git repo: $APP_DIR" >&2
   exit 1
 fi
 
@@ -34,13 +43,14 @@ RESTORE_STASH=0
 cleanup() {
   local exit_code=$?
   if [[ $exit_code -ne 0 && $RESTORE_STASH -eq 1 ]]; then
-    echo "[deploy] deployment failed; protected-file stash kept for manual recovery: $STASH_NAME" >&2
+    log "deployment failed; protected-file stash kept for manual recovery: $STASH_NAME" >&2
   fi
 }
 trap cleanup EXIT
 
-echo "[deploy] branch=$BRANCH repo=$(git rev-parse --show-toplevel)"
-echo "[deploy] head-before=$(git rev-parse --short HEAD)"
+section "prepare"
+log "branch=$BRANCH repo=$(git rev-parse --show-toplevel)"
+log "head-before=$(git rev-parse --short HEAD)"
 
 stash_args=()
 for file in "${PROTECTED_FILES[@]}"; do
@@ -53,37 +63,44 @@ if [[ ${#stash_args[@]} -gt 0 ]]; then
   git stash push -m "$STASH_NAME" -- "${stash_args[@]}" >/dev/null || true
   if git stash list | grep -Fq "$STASH_NAME"; then
     RESTORE_STASH=1
-    echo "[deploy] stashed protected local patches"
+    log "stashed protected local patches"
   fi
 fi
 
+section "update"
 git fetch origin "$BRANCH"
 git pull --ff-only origin "$BRANCH"
 
 if [[ $RESTORE_STASH -eq 1 ]]; then
   git stash pop --index >/dev/null
   RESTORE_STASH=0
-  echo "[deploy] restored protected local patches"
+  log "restored protected local patches"
 fi
 
+section "build"
 npm ci
 npm run build
+
+section "restart"
 pm2 restart "$PM2_NAME" --update-env
 pm2 save
 
+section "healthcheck"
 healthcheck_ok=0
 for ((attempt = 1; attempt <= HEALTHCHECK_RETRIES; attempt++)); do
   if curl -fsS "$HEALTHCHECK_URL" >/dev/null; then
     healthcheck_ok=1
+    log "healthcheck succeeded on attempt=$attempt url=$HEALTHCHECK_URL"
     break
   fi
   sleep "$HEALTHCHECK_DELAY_SEC"
 done
 
 if [[ $healthcheck_ok -ne 1 ]]; then
-  echo "[deploy] healthcheck failed after ${HEALTHCHECK_RETRIES} attempts: $HEALTHCHECK_URL" >&2
+  log "healthcheck failed after ${HEALTHCHECK_RETRIES} attempts: $HEALTHCHECK_URL" >&2
   exit 1
 fi
 
-echo "[deploy] head-after=$(git rev-parse --short HEAD)"
-echo "[deploy] healthcheck-ok=$HEALTHCHECK_URL"
+section "done"
+log "head-after=$(git rev-parse --short HEAD)"
+log "healthcheck-ok=$HEALTHCHECK_URL"

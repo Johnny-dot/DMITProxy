@@ -44,4 +44,24 @@ jobs:
         run: |
           ssh -p "${VPS_PORT:-22}" "${VPS_USER}@${VPS_HOST}" \
             "APP_DIR='$APP_DIR' BRANCH='$BRANCH' NODE_VERSION='$NODE_VERSION' PM2_NAME='$PM2_NAME' HEALTHCHECK_URL='$HEALTHCHECK_URL' bash -s" \
-            < ./scripts/deploy/remote-deploy.sh
+            < ./scripts/deploy/remote-deploy.sh | tee deploy.log
+
+      - name: Publish deploy summary
+        if: always()
+        run: |
+          {
+            echo "## Deploy Summary"
+            echo
+            echo "- Repository: \`${{ github.repository }}\`"
+            echo "- Branch: \`${{ github.ref_name }}\`"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Actor: \`${{ github.actor }}\`"
+            echo "- VPS: \`${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PORT || '22' }}\`"
+            echo "- App dir: \`/home/ubuntu/apps/DMITProxy\`"
+            echo
+            echo "### Remote Output"
+            echo
+            echo '```text'
+            tail -n 80 deploy.log 2>/dev/null || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
