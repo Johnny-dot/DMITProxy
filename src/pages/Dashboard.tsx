@@ -152,7 +152,8 @@ export function Dashboard() {
       value: String(clients.length),
       icon: Users,
       trend: t('dashboard.inboundsTrend', { count: inbounds.length }),
-      color: 'emerald',
+      iconClass: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-500',
+      glowClass: 'bg-emerald-500/20',
     },
     {
       key: 'activeClients',
@@ -160,7 +161,8 @@ export function Dashboard() {
       value: String(activeClients.length),
       icon: Activity,
       trend: t('dashboard.trafficDetected'),
-      color: 'indigo',
+      iconClass: 'border-indigo-400/25 bg-indigo-500/10 text-indigo-500',
+      glowClass: 'bg-indigo-500/20',
     },
     {
       key: 'inboundTraffic',
@@ -168,7 +170,8 @@ export function Dashboard() {
       value: formatTraffic(totalInboundTraffic),
       icon: Zap,
       trend: t('dashboard.uploadDownload'),
-      color: 'amber',
+      iconClass: 'border-amber-400/25 bg-amber-500/10 text-amber-500',
+      glowClass: 'bg-amber-500/20',
     },
     {
       key: 'serverLoad',
@@ -178,28 +181,37 @@ export function Dashboard() {
       trend: serverStatus
         ? t('dashboard.cores', { count: serverStatus.cpuCores })
         : t('common.unavailable'),
-      color: 'rose',
+      iconClass: 'border-rose-400/25 bg-rose-500/10 text-rose-500',
+      glowClass: 'bg-rose-500/20',
     },
   ] as const;
 
   return (
     <div className="content-shell-wide w-full min-w-0 space-y-8 px-4 md:px-6 xl:px-8">
-      <section className="surface-card space-y-3 p-6 md:p-7">
+      <section className="surface-card relative overflow-hidden p-6 md:p-7">
+        <div className="pointer-events-none absolute right-[-5rem] top-[-4rem] h-32 w-32 rounded-full bg-[radial-gradient(circle,_rgba(111,154,255,0.3)_0%,_rgba(111,154,255,0)_72%)] blur-2xl" />
         <p className="section-kicker">{t('dashboard.title')}</p>
         <h1 className="text-3xl font-semibold tracking-tight">{t('dashboard.title')}</h1>
-        <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('dashboard.subtitle')}</p>
+        <p className="max-w-3xl text-sm leading-7 text-[var(--text-secondary)]">
+          {t('dashboard.subtitle')}
+        </p>
       </section>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.key}>
+          <Card key={stat.key} className="relative overflow-hidden">
+            <div
+              className={`pointer-events-none absolute inset-x-8 top-0 h-20 rounded-full blur-3xl ${stat.glowClass}`}
+            />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="flex items-center gap-1 text-sm font-medium text-zinc-400">
+              <CardTitle className="flex items-center gap-1 text-sm font-medium text-[var(--text-secondary)]">
                 <span>{stat.title}</span>
                 <InfoTooltip content={t(`dashboard.help.${stat.key}`)} />
               </CardTitle>
-              <div className="surface-panel flex h-10 w-10 items-center justify-center">
-                <stat.icon className="h-4 w-4 text-zinc-500" />
+              <div
+                className={`glass-pill flex h-10 w-10 items-center justify-center border ${stat.iconClass}`}
+              >
+                <stat.icon className="h-4 w-4" />
               </div>
             </CardHeader>
             <CardContent>
@@ -210,8 +222,8 @@ export function Dashboard() {
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="mt-2 flex items-center gap-1 text-xs text-zinc-500">
+                  <div className="text-3xl font-semibold tracking-tight">{stat.value}</div>
+                  <p className="mt-2 flex items-center gap-1 text-xs text-[var(--text-secondary)]">
                     <ArrowUpRight className="w-3 h-3" />
                     {stat.trend}
                   </p>
@@ -234,7 +246,7 @@ export function Dashboard() {
             {isLoading ? (
               <Skeleton className="w-full h-full" />
             ) : inboundTrafficData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-zinc-500 text-sm gap-2">
+              <div className="flex h-full items-center justify-center gap-2 text-sm text-[var(--text-secondary)]">
                 <ShieldCheck className="w-4 h-4" />
                 {t('dashboard.noInboundTrafficData')}
               </div>
@@ -243,24 +255,28 @@ export function Dashboard() {
                 <AreaChart data={inboundTrafficData}>
                   <defs>
                     <linearGradient id="colorDownload" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--success)" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="var(--success)" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="colorUpload" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="var(--accent)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--border-subtle)"
+                    vertical={false}
+                  />
                   <XAxis
                     dataKey="name"
-                    stroke="#71717a"
+                    stroke="var(--text-tertiary)"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    stroke="#71717a"
+                    stroke="var(--text-tertiary)"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
@@ -268,10 +284,11 @@ export function Dashboard() {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'var(--surface-card)',
+                      backgroundColor: 'var(--surface-card-strong)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: '18px',
                       boxShadow: 'var(--shadow-card)',
+                      backdropFilter: 'blur(20px) saturate(180%)',
                     }}
                     itemStyle={{ fontSize: '12px', color: 'var(--text-secondary)' }}
                     labelStyle={{ color: 'var(--text-primary)' }}
@@ -283,7 +300,7 @@ export function Dashboard() {
                   <Area
                     type="monotone"
                     dataKey="downloadMB"
-                    stroke="#10b981"
+                    stroke="var(--success)"
                     fillOpacity={1}
                     fill="url(#colorDownload)"
                     strokeWidth={2}
@@ -291,7 +308,7 @@ export function Dashboard() {
                   <Area
                     type="monotone"
                     dataKey="uploadMB"
-                    stroke="#6366f1"
+                    stroke="var(--accent)"
                     fillOpacity={1}
                     fill="url(#colorUpload)"
                     strokeWidth={2}

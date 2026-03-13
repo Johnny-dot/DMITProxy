@@ -53,7 +53,7 @@ export function ServerStatusCard({
   };
 
   const xrayIndicatorClass = !serverStatus
-    ? 'bg-zinc-500'
+    ? 'bg-[var(--text-tertiary)]'
     : serverStatus.xray.state === 'running'
       ? 'bg-emerald-500'
       : 'bg-red-500';
@@ -68,7 +68,7 @@ export function ServerStatusCard({
           </CardTitle>
           <CardDescription>{t('dashboard.realtimeResourceMonitoring')}</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="glass-pill flex items-center gap-2 px-3 py-2">
           <div
             className={cn(
               'h-2 w-2 rounded-full',
@@ -76,7 +76,7 @@ export function ServerStatusCard({
               xrayIndicatorClass,
             )}
           />
-          <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+          <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
             {t('dashboard.xray')}
           </span>
         </div>
@@ -96,9 +96,9 @@ export function ServerStatusCard({
           </div>
         ) : (
           <>
-            <div className="space-y-2">
+            <div className="surface-panel space-y-3 p-4">
               <div className="flex justify-between text-sm">
-                <div className="flex items-center gap-2 text-zinc-400">
+                <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                   <Cpu className="h-4 w-4" />
                   <span>{t('dashboard.cpuUsage')}</span>
                   <InfoTooltip content={t('dashboard.help.cpuUsage')} />
@@ -107,7 +107,7 @@ export function ServerStatusCard({
                   {serverStatus ? `${serverStatus.cpu.toFixed(1)}%` : '--'}
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-900">
+              <div className="glass-progress-track h-2 w-full overflow-hidden">
                 <div
                   className={cn(
                     'h-full rounded-full transition-all',
@@ -122,9 +122,9 @@ export function ServerStatusCard({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="surface-panel space-y-3 p-4">
               <div className="flex justify-between text-sm">
-                <div className="flex items-center gap-2 text-zinc-400">
+                <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                   <Database className="h-4 w-4" />
                   <span>{t('dashboard.ramUsage')}</span>
                   <InfoTooltip content={t('dashboard.help.ramUsage')} />
@@ -135,7 +135,7 @@ export function ServerStatusCard({
                     : '--'}
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-900">
+              <div className="glass-progress-track h-2 w-full overflow-hidden">
                 <div
                   className="h-full rounded-full bg-indigo-500 transition-all"
                   style={{
@@ -147,9 +147,9 @@ export function ServerStatusCard({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="surface-panel space-y-3 p-4">
               <div className="flex justify-between text-sm">
-                <div className="flex items-center gap-2 text-zinc-400">
+                <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                   <HardDrive className="h-4 w-4" />
                   <span>{t('dashboard.diskUsage')}</span>
                   <InfoTooltip content={t('dashboard.help.diskUsage')} />
@@ -160,9 +160,9 @@ export function ServerStatusCard({
                     : '--'}
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-900">
+              <div className="glass-progress-track h-2 w-full overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-zinc-500 transition-all"
+                  className="h-full rounded-full bg-[var(--text-tertiary)] transition-all"
                   style={{
                     width: serverStatus
                       ? `${usagePercent(serverStatus.disk.current, serverStatus.disk.total)}%`
@@ -172,9 +172,9 @@ export function ServerStatusCard({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+            <div className="grid grid-cols-2 gap-4 border-t border-[color:var(--border-subtle)] pt-4">
               <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
                   <span className="inline-flex items-center gap-1">
                     <span>{t('dashboard.networkSpeed')}</span>
                     <InfoTooltip content={t('dashboard.help.networkSpeed')} />
@@ -192,14 +192,14 @@ export function ServerStatusCard({
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
                   <span className="inline-flex items-center gap-1">
                     <span>{t('dashboard.uptime')}</span>
                     <InfoTooltip content={t('dashboard.help.uptime')} />
                   </span>
                 </p>
                 <div className="flex items-center gap-2 text-xs">
-                  <Clock className="h-3 w-3 text-zinc-400" />
+                  <Clock className="h-3 w-3 text-[var(--text-secondary)]" />
                   <span>{serverStatus ? formatUptime(serverStatus.uptime) : '--'}</span>
                 </div>
               </div>

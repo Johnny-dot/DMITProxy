@@ -99,18 +99,25 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       : t('nav.dashboard');
 
   return (
-    <aside className="surface-card flex h-[calc(100vh-2rem)] w-72 flex-col p-4">
-      <div className="surface-panel flex items-center gap-3 px-4 py-4">
-        <div className="surface-inline flex h-12 w-12 items-center justify-center">
-          <img src="/logo.svg" alt="Prism" className="h-7 w-7" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-base font-semibold text-zinc-50">Prism</p>
-          <p className="text-xs text-zinc-500">{subtitle}</p>
+    <aside className="surface-card flex h-[calc(100vh-2rem)] w-72 flex-col gap-5 p-4">
+      <div className="surface-panel relative overflow-hidden px-4 py-4">
+        <div className="absolute inset-x-6 top-0 h-px bg-white/25" />
+        <div className="flex items-center gap-3">
+          <div className="surface-inline flex h-12 w-12 items-center justify-center">
+            <img src="/logo.svg" alt="Prism" className="h-7 w-7" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-base font-semibold text-[var(--text-primary)]">Prism</p>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">{subtitle}</p>
+          </div>
         </div>
       </div>
 
-      <nav className="mt-5 flex-1 space-y-2 overflow-y-auto">
+      <div className="px-1">
+        <p className="section-kicker">{role === 'user' ? userCenterLabel : t('nav.dashboard')}</p>
+      </div>
+
+      <nav className="flex-1 space-y-2 overflow-y-auto">
         {role === 'user'
           ? userMenuItems.map((item) => (
               <NavLink
@@ -119,10 +126,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={onNavigate}
                 data-testid={item.testId}
                 className={cn(
-                  'flex items-center gap-3 rounded-[20px] px-4 py-3 text-sm font-medium transition-colors',
-                  item.active
-                    ? 'bg-[var(--surface-strong)] text-zinc-50'
-                    : 'text-zinc-400 hover:bg-[var(--surface-panel)] hover:text-zinc-50',
+                  'flex items-center gap-3 px-4 py-3 text-sm font-medium',
+                  item.active ? 'glass-nav-item-active' : 'glass-nav-item',
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -137,10 +142,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={onNavigate}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 rounded-[20px] px-4 py-3 text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-[var(--surface-strong)] text-zinc-50'
-                      : 'text-zinc-400 hover:bg-[var(--surface-panel)] hover:text-zinc-50',
+                    'flex items-center gap-3 px-4 py-3 text-sm font-medium',
+                    isActive ? 'glass-nav-item-active' : 'glass-nav-item',
                   )
                 }
               >
@@ -150,7 +153,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             ))}
       </nav>
 
-      <div className="soft-divider mt-5 border-t pt-5">
+      <div className="soft-divider border-t pt-5">
         <NavLink
           to="/profile"
           onClick={onNavigate}
@@ -163,23 +166,23 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         >
           <div
             className={cn(
-              'flex h-11 w-11 items-center justify-center rounded-full border text-sm font-semibold',
-              role === 'user'
-                ? getAvatarToneClasses(avatarStyle)
-                : 'border-[var(--border-subtle)] bg-[var(--accent-soft)] text-emerald-500',
+              'glass-pill flex h-11 w-11 items-center justify-center text-sm font-semibold',
+              role === 'user' ? getAvatarToneClasses(avatarStyle) : 'text-[var(--accent)]',
             )}
           >
             {initials}
           </div>
           <div className="min-w-0">
             <span
-              className="block truncate text-sm font-medium text-zinc-50"
+              className="block truncate text-sm font-medium text-[var(--text-primary)]"
               data-testid="sidebar-user-display-name"
             >
               {resolvedDisplayName}
             </span>
             {secondaryLabel && (
-              <span className="block truncate text-xs text-zinc-500">@{secondaryLabel}</span>
+              <span className="block truncate text-xs text-[var(--text-secondary)]">
+                @{secondaryLabel}
+              </span>
             )}
           </div>
         </NavLink>

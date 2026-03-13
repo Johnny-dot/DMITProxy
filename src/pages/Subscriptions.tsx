@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -150,72 +150,84 @@ export function SubscriptionsPage() {
     };
   }, [subId]);
 
-  const copyToClipboard = async (text: string, id: string) => {
-    if (!text) {
-      toast(t('subscriptions.validSubIdFirst'), 'info');
-      return;
-    }
-    await navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    toast(t('subscriptions.copiedToClipboard'), 'success');
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+  const copyToClipboard = useCallback(
+    async (text: string, id: string) => {
+      if (!text) {
+        toast(t('subscriptions.validSubIdFirst'), 'info');
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      toast(t('subscriptions.copiedToClipboard'), 'success');
+      setTimeout(() => setCopiedId(null), 2000);
+    },
+    [t, toast],
+  );
 
-  const openQr = async (text: string, label: string) => {
-    if (!text) {
-      toast(t('subscriptions.validSubIdFirst'), 'info');
-      return;
-    }
-    setQrOpen(true);
-    setQrText(text);
-    setQrLabel(label);
-    setQrImage('');
-    setQrError('');
-    setQrLoading(true);
+  const openQr = useCallback(
+    async (text: string, label: string) => {
+      if (!text) {
+        toast(t('subscriptions.validSubIdFirst'), 'info');
+        return;
+      }
+      setQrOpen(true);
+      setQrText(text);
+      setQrLabel(label);
+      setQrImage('');
+      setQrError('');
+      setQrLoading(true);
 
-    try {
-      const image = await QRCode.toDataURL(text, {
-        width: 360,
-        margin: 1,
-        errorCorrectionLevel: 'M',
-      });
-      setQrImage(image);
-    } catch {
-      setQrError(t('subscriptions.qrFailed'));
-    } finally {
-      setQrLoading(false);
-    }
-  };
+      try {
+        const image = await QRCode.toDataURL(text, {
+          width: 360,
+          margin: 1,
+          errorCorrectionLevel: 'M',
+        });
+        setQrImage(image);
+      } catch {
+        setQrError(t('subscriptions.qrFailed'));
+      } finally {
+        setQrLoading(false);
+      }
+    },
+    [t, toast],
+  );
 
-  const openLink = (url: string, label: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-    toast(t('subscriptions.opening', { label }), 'info');
-  };
+  const openLink = useCallback(
+    (url: string, label: string) => {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      toast(t('subscriptions.opening', { label }), 'info');
+    },
+    [t, toast],
+  );
 
-  // Generate QR codes for protocol cards whenever links change
+  // Generate QR codes for protocol cards whenever links change (debounced to avoid per-keystroke generation)
   useEffect(() => {
     const entries = Object.entries(generatedLinks).filter(([, url]) => Boolean(url));
     if (entries.length === 0) {
       setCardQrImages({});
       return;
     }
-    void Promise.all(
-      entries.map(async ([key, url]) => {
-        try {
-          const dataUrl = await QRCode.toDataURL(url, {
-            width: 200,
-            margin: 2,
-            errorCorrectionLevel: 'M',
-            color: { dark: '#000000', light: '#ffffff' },
-          });
-          return [key, dataUrl] as const;
-        } catch {
-          return [key, ''] as const;
-        }
-      }),
-    ).then((results) => {
-      setCardQrImages(Object.fromEntries(results));
-    });
+    const timer = setTimeout(() => {
+      void Promise.all(
+        entries.map(async ([key, url]) => {
+          try {
+            const dataUrl = await QRCode.toDataURL(url, {
+              width: 200,
+              margin: 2,
+              errorCorrectionLevel: 'M',
+              color: { dark: '#000000', light: '#ffffff' },
+            });
+            return [key, dataUrl] as const;
+          } catch {
+            return [key, ''] as const;
+          }
+        }),
+      ).then((results) => {
+        setCardQrImages(Object.fromEntries(results));
+      });
+    }, 400);
+    return () => clearTimeout(timer);
   }, [generatedLinks]);
 
   const activeLink = generatedLinks[activeSubTab as keyof typeof generatedLinks] ?? '';

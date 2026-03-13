@@ -19,35 +19,43 @@ function getCommunityPlatformPreset(platform: CommunityLink['platform']) {
   switch (platform) {
     case 'telegram':
       return {
-        badgeClassName: 'border-sky-500/25 bg-sky-500/10 text-sky-300',
-        cardClassName:
-          'border-sky-500/18 bg-[linear-gradient(135deg,rgba(14,165,233,0.08),rgba(255,255,255,0.02))]',
+        tone: 'telegram',
       };
     case 'whatsapp':
       return {
-        badgeClassName: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300',
-        cardClassName:
-          'border-emerald-500/18 bg-[linear-gradient(135deg,rgba(34,197,94,0.08),rgba(255,255,255,0.02))]',
+        tone: 'whatsapp',
       };
     case 'discord':
       return {
-        badgeClassName: 'border-indigo-500/25 bg-indigo-500/10 text-indigo-300',
-        cardClassName:
-          'border-indigo-500/18 bg-[linear-gradient(135deg,rgba(99,102,241,0.08),rgba(255,255,255,0.02))]',
+        tone: 'discord',
       };
     case 'wechat':
       return {
-        badgeClassName: 'border-lime-500/25 bg-lime-500/10 text-lime-300',
-        cardClassName:
-          'border-lime-500/18 bg-[linear-gradient(135deg,rgba(132,204,22,0.08),rgba(255,255,255,0.02))]',
+        tone: 'wechat',
       };
     default:
       return {
-        badgeClassName: 'border-zinc-500/25 bg-zinc-500/10 text-zinc-300',
-        cardClassName:
-          'border-[color:var(--border-subtle)] bg-[linear-gradient(135deg,rgba(113,113,122,0.08),rgba(255,255,255,0.02))]',
+        tone: 'neutral',
       };
   }
+}
+
+function getCommunityPlatformToneStyles(tone: string) {
+  const toneRgb = `var(--platform-${tone}-rgb)`;
+  const toneText = `var(--platform-${tone}-text)`;
+
+  return {
+    cardStyle: {
+      borderColor: `rgb(${toneRgb} / 0.18)`,
+      background: `linear-gradient(135deg, rgb(${toneRgb} / 0.09), transparent 32%), linear-gradient(135deg, var(--surface-card-strong), var(--surface-card))`,
+    } satisfies React.CSSProperties,
+    badgeStyle: {
+      borderColor: `rgb(${toneRgb} / 0.28)`,
+      background: `linear-gradient(180deg, rgb(${toneRgb} / 0.16), rgb(${toneRgb} / 0.07))`,
+      color: toneText,
+      boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.16)',
+    } satisfies React.CSSProperties,
+  };
 }
 
 function formatCommunityLinkPreview(value: string): string {
@@ -163,10 +171,10 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
       <section className="surface-card space-y-6 p-6 md:p-7" data-testid="portal-community-tab">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
-            <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
+            <h2 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">
               {isZh ? '暂时还没有开放的社群入口。' : 'No community links are available yet.'}
             </h2>
-            <p className="text-sm leading-7 text-zinc-400">
+            <p className="text-sm leading-7 text-[var(--text-secondary)]">
               {isZh ? '发布后会直接显示在这里。' : 'Published community links will appear here.'}
             </p>
           </div>
@@ -185,7 +193,8 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
             return (
               <article
                 key={platform.value}
-                className={cn('rounded-[24px] border border-dashed p-4', preset.cardClassName)}
+                className="surface-panel border-dashed p-4"
+                style={getCommunityPlatformToneStyles(preset.tone).cardStyle}
               >
                 <div className="flex items-start gap-3">
                   <CommunityPlatformIcon
@@ -194,17 +203,15 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
                   />
                   <div className="space-y-2">
                     <span
-                      className={cn(
-                        'inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium',
-                        preset.badgeClassName,
-                      )}
+                      className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"
+                      style={getCommunityPlatformToneStyles(preset.tone).badgeStyle}
                     >
                       {isZh ? platform.labelZh : platform.labelEn}
                     </span>
-                    <p className="text-sm font-medium text-zinc-100">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
                       {isZh ? '等待发布' : 'Pending'}
                     </p>
-                    <p className="text-sm leading-6 text-zinc-400">
+                    <p className="text-sm leading-6 text-[var(--text-secondary)]">
                       {isZh
                         ? '链接和二维码发布后会显示在这里。'
                         : 'Link and QR code will show here once published.'}
@@ -221,7 +228,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
 
   return (
     <section className="space-y-6" data-testid="portal-community-tab">
-      <p className="text-sm leading-7 text-zinc-400">
+      <p className="text-sm leading-7 text-[var(--text-secondary)]">
         {isZh
           ? `当前共有 ${visibleLinks.length} 个可加入的社群入口。`
           : `${visibleLinks.length} community link${visibleLinks.length > 1 ? 's are' : ' is'} available.`}
@@ -232,6 +239,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
           const qrValue = entry.qrContent.trim() || entry.url.trim();
           const hasQrImage = isCommunityQrImageSource(qrValue);
           const platformPreset = getCommunityPlatformPreset(entry.platform);
+          const platformTone = getCommunityPlatformToneStyles(platformPreset.tone);
           const platformLabel = getCommunityPlatformLabel(entry.platform, isZh);
           const title = getCommunityTitle(entry, isZh);
           const description = getCommunityDescription(entry, isZh, hasQrImage);
@@ -243,10 +251,8 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
           return (
             <article
               key={entry.id}
-              className={cn(
-                'overflow-hidden rounded-[28px] border p-5 shadow-[0_20px_60px_rgba(15,23,42,0.16)]',
-                platformPreset.cardClassName,
-              )}
+              className="surface-card overflow-hidden p-5"
+              style={platformTone.cardStyle}
             >
               <div
                 className={cn(
@@ -260,40 +266,45 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
                     <div className="min-w-0 space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <span
-                          className={cn(
-                            'inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium',
-                            platformPreset.badgeClassName,
-                          )}
+                          className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"
+                          style={platformTone.badgeStyle}
                         >
                           {platformLabel}
                         </span>
                         {hasQrImage ? (
-                          <span className="inline-flex items-center rounded-full border border-white/10 bg-black/10 px-3 py-1 text-xs text-zinc-300">
+                          <span className="glass-pill inline-flex items-center px-3 py-1 text-xs text-[var(--text-secondary)]">
                             {isZh ? '二维码图片' : 'QR image'}
                           </span>
                         ) : null}
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-lg font-semibold tracking-tight text-zinc-50">
+                        <h3 className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">
                           {title}
                         </h3>
                         {preview ? (
-                          <p className="truncate text-sm text-zinc-400" title={preview}>
+                          <p
+                            className="truncate text-sm text-[var(--text-secondary)]"
+                            title={preview}
+                          >
                             {preview}
                           </p>
                         ) : null}
-                        <p className="text-sm leading-7 text-zinc-300">{description}</p>
+                        <p className="text-sm leading-7 text-[var(--text-secondary)]">
+                          {description}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   {entry.url.trim() ? (
-                    <div className="rounded-[22px] border border-white/5 bg-black/10 px-4 py-3">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                    <div className="surface-panel px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
                         {isZh ? '加入链接' : 'Invite link'}
                       </p>
-                      <p className="mt-2 break-all text-sm leading-6 text-zinc-100">{entry.url}</p>
+                      <p className="mt-2 break-all text-sm leading-6 text-[var(--text-primary)]">
+                        {entry.url}
+                      </p>
                     </div>
                   ) : null}
 
@@ -314,7 +325,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-2 justify-center border-white/10 bg-black/10 hover:bg-black/20"
+                          className="justify-center gap-2"
                           onClick={() => handleCopy(copyValue, copyId)}
                         >
                           <Copy className="h-4 w-4" />
@@ -338,7 +349,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
                 {qrValue ? (
                   <button
                     type="button"
-                    className="group rounded-[24px] border border-white/5 bg-black/10 p-4 text-left transition hover:border-white/15 hover:bg-black/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)]"
+                    className="surface-panel group p-4 text-left transition hover:border-[color:var(--border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]"
                     onClick={() =>
                       setPreviewQr({
                         title,
@@ -348,20 +359,20 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
                     }
                     aria-label={isZh ? `查看 ${title} 的二维码大图` : `Preview ${title} QR code`}
                   >
-                    <p className="text-center text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                    <p className="text-center text-[11px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
                       {isZh ? '扫码加入' : 'Scan to join'}
                     </p>
-                    <div className="mt-3 flex min-h-[180px] items-center justify-center rounded-[20px] border border-white/5 bg-white/95 p-3">
+                    <div className="mt-3 flex min-h-[180px] items-center justify-center rounded-[20px] border border-[color:var(--border-subtle)] bg-white/95 p-3 shadow-[var(--shadow-soft)]">
                       {hasQrImage ? (
                         <CommunityQrImage src={qrValue} title={title} isZh={isZh} />
                       ) : (
                         <CommunityQr value={qrValue} isZh={isZh} />
                       )}
                     </div>
-                    <p className="mt-3 text-center text-xs leading-6 text-zinc-400">
+                    <p className="mt-3 text-center text-xs leading-6 text-[var(--text-secondary)]">
                       {getCommunityQrHint(entry, isZh, hasQrImage)}
                     </p>
-                    <p className="mt-1 flex items-center justify-center gap-1 text-[11px] text-zinc-500 transition-colors group-hover:text-zinc-300">
+                    <p className="mt-1 flex items-center justify-center gap-1 text-[11px] text-[var(--text-tertiary)] transition-colors group-hover:text-[var(--text-primary)]">
                       <ZoomIn className="h-3.5 w-3.5" />
                       {isZh ? '点击放大查看' : 'Click to enlarge'}
                     </p>
@@ -384,11 +395,13 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
           >
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
                   {isZh ? '二维码预览' : 'QR preview'}
                 </p>
-                <h3 className="text-lg font-semibold text-zinc-50">{previewQr.title}</h3>
-                <p className="text-sm text-zinc-400">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                  {previewQr.title}
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)]">
                   {previewQr.isImage
                     ? isZh
                       ? '这里显示原图，方便直接扫码。'
