@@ -36,6 +36,18 @@ interface CachedDownload {
   tagName: string;
 }
 
+type ManagedMirrorCacheState = 'fresh' | 'stale' | 'missing';
+
+interface ManagedMirrorStatusSnapshot {
+  cacheState: ManagedMirrorCacheState;
+  cachedAt: number | null;
+  fileName: string | null;
+  inflight: boolean;
+  platform: ClientDownloadPlatform;
+  supported: boolean;
+  tagName: string | null;
+}
+
 class ManagedMirrorError extends Error {
   status: number;
 
@@ -96,6 +108,43 @@ function pruneOlderCacheEntries(cacheKey: string, keepFilePath: string) {
     if (candidatePath === keepFilePath) continue;
     fs.rmSync(candidatePath, { force: true });
   }
+}
+
+function getManagedMirrorStatusSnapshot(
+  clientId: ClientDownloadId,
+  platform: ClientDownloadPlatform,
+): ManagedMirrorStatusSnapshot {
+  const supported = getMirrorTarget(clientId, platform) !== null;
+  if (!supported) {
+    return {
+      supported,
+      platform,
+      cacheState: 'missing',
+      inflight: false,
+      cachedAt: null,
+      fileName: null,
+      tagName: null,
+    };
+  }
+
+  const cacheKey = normalizeCacheKey(clientId, platform);
+  const cached = readCachedDownload(cacheKey);
+  const inflight = inflightDownloads.has(cacheKey);
+  const cacheState: ManagedMirrorCacheState = !cached
+    ? 'missing'
+    : isCacheFresh(cached)
+      ? 'fresh'
+      : 'stale';
+
+  return {
+    supported,
+    platform,
+    cacheState,
+    inflight,
+    cachedAt: cached?.cachedAt ?? null,
+    fileName: cached?.fileName ?? null,
+    tagName: cached?.tagName ?? null,
+  };
 }
 
 async function fetchLatestRelease(repo: string): Promise<GitHubReleasePayload> {
@@ -222,6 +271,23 @@ async function ensureCachedDownload(
   inflightDownloads.set(cacheKey, refreshPromise);
   return refreshPromise;
 }
+
+router.get('/:clientId/status', (req, res) => {
+  const clientId = String(req.params.clientId ?? '').trim();
+  const platform = String(req.query.platform ?? '')
+    .trim()
+    .toLowerCase();
+
+  if (!isClientDownloadId(clientId)) {
+    return res.status(404).json({ error: 'Unknown client download target.' });
+  }
+  if (!isClientDownloadPlatform(platform)) {
+    return res.status(400).json({ error: 'A valid platform query is required.' });
+  }
+
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json(getManagedMirrorStatusSnapshot(clientId, platform));
+});
 
 router.get('/:clientId', async (req, res) => {
   const clientId = String(req.params.clientId ?? '').trim();

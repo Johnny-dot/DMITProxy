@@ -32,11 +32,16 @@ import {
 import QRCode from 'qrcode';
 import { cn } from '@/src/utils/cn';
 import { getInbounds, Inbound } from '@/src/api/client';
+import { getManagedMirrorStatus } from '@/src/api/downloads';
 import { flattenInboundClients, formatExpiry, formatTraffic } from '@/src/utils/xuiClients';
 import { useI18n } from '@/src/context/I18nContext';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import { getClientDownloadLinks } from '@/src/utils/clientDownloads';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
+import {
+  getManagedMirrorFallbackToast,
+  getManagedMirrorStatusToast,
+} from '@/src/utils/managedMirrorStatus';
 
 const STORAGE_KEY = 'prism:last-sub-id';
 
@@ -204,11 +209,33 @@ export function SubscriptionsPage() {
   );
 
   const openLink = useCallback(
-    (url: string, label: string) => {
+    (
+      url: string,
+      label: string,
+      options?: {
+        kind?: 'official' | 'mirror';
+        managed?: boolean;
+        clientId?: Parameters<typeof getManagedMirrorStatus>[0];
+        platform?: Parameters<typeof getManagedMirrorStatus>[1];
+      },
+    ) => {
       window.open(url, '_blank', 'noopener,noreferrer');
-      toast(t('subscriptions.opening', { label }), 'info');
+
+      if (options?.kind === 'mirror' && options.managed && options.clientId && options.platform) {
+        void getManagedMirrorStatus(options.clientId, options.platform)
+          .then((status) => {
+            const hint = getManagedMirrorStatusToast(status, isZh);
+            toast(hint.message, hint.type);
+          })
+          .catch(() => {
+            const fallback = getManagedMirrorFallbackToast(isZh);
+            toast(fallback.message, fallback.type);
+          });
+      } else {
+        toast(t('subscriptions.opening', { label }), 'info');
+      }
     },
-    [t, toast],
+    [isZh, t, toast],
   );
 
   // Generate QR codes for protocol cards whenever links change (debounced to avoid per-keystroke generation)
@@ -517,8 +544,8 @@ export function SubscriptionsPage() {
         <p className="text-sm text-zinc-400">{t('subscriptions.subtitle')}</p>
         <p className="text-xs leading-6 text-zinc-500">
           {isZh
-            ? '“官方源”会打开 GitHub 或应用商店；“镜像下载”走当前站点 VPS 的缓存，适合官方源较慢时使用。'
-            : 'Official opens GitHub or the app store. Mirror serves the cached package from this VPS when official sources are slow.'}
+            ? '“官方源”会打开 GitHub 或应用商店；“镜像下载”走当前站点 VPS 的缓存。首次请求可能需要等待 VPS 从官方源拉取并准备缓存。'
+            : 'Official opens GitHub or the app store. Mirror serves the cached package from this VPS, and the first request may take longer while upstream is cached.'}
         </p>
         <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
           {[
@@ -591,14 +618,25 @@ export function SubscriptionsPage() {
                     disabled={!links.vps}
                     title={
                       links.vps
-                        ? isZh
-                          ? '通过当前站点 VPS 缓存分发'
-                          : 'Serve the cached package from this VPS'
+                        ? links.vpsManaged
+                          ? isZh
+                            ? '通过当前站点 VPS 缓存分发；首次请求可能需要等待官方包缓存完成'
+                            : 'Served through this VPS cache. The first request may wait while the official package is cached.'
+                          : isZh
+                            ? '打开已配置的镜像下载地址'
+                            : 'Open the configured mirror download URL'
                         : isZh
                           ? '当前平台暂不提供镜像下载'
                           : 'Mirror is not available for this platform'
                     }
-                    onClick={() => openLink(links.vps, `${client.name} Mirror`)}
+                    onClick={() =>
+                      void openLink(links.vps, `${client.name} Mirror`, {
+                        kind: 'mirror',
+                        managed: links.vpsManaged,
+                        clientId: client.id,
+                        platform: client.platform,
+                      })
+                    }
                   >
                     <ExternalLink className="w-4 h-4" />
                     {isZh ? '镜像下载' : 'Mirror'}

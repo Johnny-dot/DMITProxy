@@ -15,9 +15,16 @@ import {
 } from 'lucide-react';
 import { Button } from '@/src/components/ui/Button';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
+import { useToast } from '@/src/components/ui/Toast';
+import { getManagedMirrorStatus } from '@/src/api/downloads';
 import { useI18n } from '@/src/context/I18nContext';
 import { cn } from '@/src/utils/cn';
+import { buildClientImportUrl, isClientImportFormat } from '@/src/utils/clientImport';
 import { getClientDownloadLinks, type ClientDownloadPlatform } from '@/src/utils/clientDownloads';
+import {
+  getManagedMirrorFallbackToast,
+  getManagedMirrorStatusToast,
+} from '@/src/utils/managedMirrorStatus';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import type { ClientCard, PlatformKey, PortalTab, SetupFocus, SubscriptionFormat } from './types';
 import { COPY_RESET_DELAY_MS } from './types';
@@ -193,16 +200,6 @@ const CLIENT_META: Array<{
     descEn:
       'A first-tier sing-box option with faster DNS and protocol support for more advanced users.',
   },
-  {
-    id: 'hiddify',
-    name: 'Hiddify',
-    icon: Smartphone,
-    os: 'Windows / macOS',
-    platforms: ['windows', 'macos'],
-    recommendedFor: ['windows'],
-    descZh: '上手最快，支持 URL、剪贴板和二维码导入。',
-    descEn: 'Fastest to onboard with URL, clipboard, and QR import.',
-  },
 ];
 
 const DEFAULT_CLIENT_BY_PLATFORM: Record<GuidePlatform, ClientId> = {
@@ -232,6 +229,11 @@ const V2RAYN_WINDOWS_SCREENSHOTS = {
   chooseNode: '/guides/v2rayn/choose-node.jpg',
   systemProxy: '/guides/v2rayn/system-proxy.jpg',
 } as const;
+const V2RAYN_LINUX_GUIDE_SOURCE_URL = 'https://github.com/2dust/v2rayN/issues/6998';
+const V2RAYN_LINUX_SCREENSHOTS = {
+  subscriptionGroupSettings: '/guides/v2rayn/linux-subscription-group-settings.png',
+  serverList: '/guides/v2rayn/linux-server-list.png',
+} as const;
 
 const CLASH_VERGE_GUIDE_SOURCE_URL = 'https://clashvergerev.com/en/guide/profile';
 const CLASH_VERGE_SCREENSHOTS = {
@@ -259,17 +261,9 @@ const SHADOWROCKET_SCREENSHOTS = {
   autoUpdate: '/guides/shadowrocket/auto-update.png',
 } as const;
 
-const HIDDIFY_GUIDE_SOURCE_URL =
-  'https://hiddify.com/manager/installation-and-setup/How-to-use-HiddifyApp/';
-const HIDDIFY_SCREENSHOTS = {
-  openAddProfile: '/guides/hiddify/open-add-profile.png',
-  addFromClipboard: '/guides/hiddify/add-from-clipboard.png',
-  addManually: '/guides/hiddify/add-manually.png',
-  connectHome: '/guides/hiddify/connect-home.png',
-  updateProfile: '/guides/hiddify/update-profile.png',
-} as const;
-
 const FLCLASH_GUIDE_SOURCE_URL = 'https://help.jegovpn.com/en/tool/flclash';
+const FLCLASH_ANDROID_GUIDE_SOURCE_URL = 'https://flclash.men/guides/android/';
+const FLCLASH_MACOS_GUIDE_SOURCE_URL = 'https://flclash.men/guides/macos/';
 const FLCLASH_SCREENSHOTS = {
   newConfiguration: '/guides/flclash/new-configuration.png',
   url: '/guides/flclash/url.png',
@@ -277,14 +271,23 @@ const FLCLASH_SCREENSHOTS = {
   enableProxy: '/guides/flclash/enable-proxy.png',
   nodeSelection: '/guides/flclash/node-selection.png',
 } as const;
+const FLCLASH_ANDROID_SCREENSHOTS = {
+  import: '/guides/flclash/android-import.webp',
+  connect: '/guides/flclash/android-connect.webp',
+} as const;
+const FLCLASH_MACOS_SCREENSHOTS = {
+  main: '/guides/flclash/macos-main.webp',
+  config: '/guides/flclash/macos-config.webp',
+  chooseProxy: '/guides/flclash/macos-choose-proxy.webp',
+  startProxy: '/guides/flclash/macos-start-proxy.webp',
+} as const;
 
-const SPARKLE_GUIDE_SOURCE_URL = 'https://mihomoparty.net/tutorial/';
-const SPARKLE_SCREENSHOTS = {
-  start: '/guides/sparkle/start.webp',
-  addSubscription: '/guides/sparkle/add-subscription.webp',
-  subscription: '/guides/sparkle/subscription.webp',
-  proxies: '/guides/sparkle/proxies.webp',
-  systemProxy: '/guides/sparkle/system-proxy.webp',
+const SPARKLE_OFFICIAL_ISSUES_SOURCE_URL = 'https://github.com/xishang0128/sparkle/issues';
+const SPARKLE_WINDOWS_SCREENSHOTS = {
+  subscriptionManagement: '/guides/sparkle/windows-subscription-management.png',
+  importMenu: '/guides/sparkle/windows-import-menu.png',
+  remoteConfigUrl: '/guides/sparkle/windows-remote-config-url.png',
+  systemProxy: '/guides/sparkle/windows-system-proxy.png',
 } as const;
 
 const SURGE_GUIDE_SOURCE_URL = 'https://help.jegovpn.com/en/tool/surge';
@@ -358,16 +361,6 @@ const GUIDE_SCREENSHOT_HIGHLIGHTS: Record<string, GuideScreenshotHighlight[]> = 
   [CLASH_VERGE_SCREENSHOTS.systemProxy]: [
     { x: 35.5, y: 17, w: 30, h: 9 },
     { x: 74, y: 30.5, w: 20.5, h: 10 },
-  ],
-  [HIDDIFY_SCREENSHOTS.addFromClipboard]: [{ x: 18, y: 56, w: 31, h: 41 }],
-  [HIDDIFY_SCREENSHOTS.addManually]: [
-    { x: 1.5, y: 14, w: 97, h: 7.5 },
-    { x: 1.5, y: 23.5, w: 97, h: 7.5 },
-    { x: 84, y: 93, w: 14, h: 6.5 },
-  ],
-  [HIDDIFY_SCREENSHOTS.connectHome]: [
-    { x: 23, y: 13, w: 73, h: 11.5 },
-    { x: 42, y: 43, w: 26, h: 28.5 },
   ],
 };
 
@@ -938,15 +931,6 @@ function buildClientGuide(
     };
   }
 
-  const connectPermission =
-    platform === 'android' || platform === 'ios'
-      ? isZh
-        ? '允许 VPN'
-        : 'Allow VPN'
-      : isZh
-        ? '允许系统代理'
-        : 'Allow system proxy';
-
   return {
     recommendedFormat: 'universal',
     note,
@@ -954,59 +938,59 @@ function buildClientGuide(
       ? [
           createStep(
             'launch',
-            `先打开 ${platformLabel} 上的 Hiddify`,
-            '首页通常会直接看到导入入口。',
-            '欢迎页先初始化，再继续。',
+            `先打开 ${platformLabel} 上的客户端并找到导入入口`,
+            '导入入口通常会在首页、订阅页、配置页或者右上角加号附近。',
+            '第一次启动如果先弹初始化、权限或欢迎页，先完成它们再继续。',
             platformLabel,
-            ['首页', '添加配置', '导入入口'],
-            '打开客户端',
+            ['首页', '订阅 / 配置', '导入入口'],
+            '找到导入入口',
           ),
           createStep(
             'import',
-            '用 URL、剪贴板或二维码导入',
-            'Hiddify 三种方式都支持，但 URL 和剪贴板更稳。',
-            '二维码适合手机快速导入。',
+            '优先导入当前页面匹配好的订阅链接',
+            '如果客户端支持 URL 导入，就优先粘贴当前页面生成的订阅链接；支持一键导入时也可以直接唤起。',
+            '如果规则、节点或分组显示不完整，先回到这里确认订阅格式选对了。',
             'Import profile',
-            ['URL 导入', '剪贴板导入', '扫码导入'],
+            ['匹配的订阅格式', 'URL / 剪贴板 / 一键导入', '保存或更新配置'],
             '导入订阅',
           ),
           createStep(
             'connect',
-            '保存后选节点并连接',
-            '导入成功后先确认节点列表已刷新。',
-            '连接前记得允许系统权限。',
+            '保存后刷新配置、选择节点，再开启连接',
+            '先确认节点、策略组或配置资源已经加载出来，再打开系统代理、VPN 或连接开关。',
+            '如果导入成功但浏览器还是直连，通常就是这一步的系统权限还没放行。',
             'Connect',
-            ['刷新节点', '选择节点', connectPermission],
-            '开始连接',
+            ['刷新配置', '选择节点', '允许系统权限并连接'],
+            '连接并测试',
           ),
         ]
       : [
           createStep(
             'launch',
-            `Open Hiddify on ${platformLabel}`,
-            'The import entry is usually visible on the first screen.',
-            'Finish the welcome setup before importing.',
+            `Open the client on ${platformLabel} and find its import entry`,
+            'The import entry usually lives on the home screen, profiles page, config page, or behind a plus button.',
+            'If the app starts with a welcome flow, permissions, or initialization, finish that first.',
             platformLabel,
-            ['Home', 'Add profile', 'Import entry'],
-            'Open client',
+            ['Home', 'Profiles / Config', 'Import entry'],
+            'Find import entry',
           ),
           createStep(
             'import',
-            'Import by URL, clipboard, or QR',
-            'All three methods work, but URL and clipboard are usually the most reliable.',
-            'QR is convenient on mobile.',
+            'Import the matched subscription link first',
+            'If the client supports URL import, paste the matched subscription link from this page. If it supports one-click import, you can launch it directly from here instead.',
+            'If nodes, groups, or rules look incomplete afterward, the first thing to re-check is the selected format.',
             'Import profile',
-            ['Import URL', 'Read clipboard', 'Scan QR'],
-            'Import',
+            ['Matched format', 'URL / Clipboard / One-click import', 'Save or update profile'],
+            'Import subscription',
           ),
           createStep(
             'connect',
-            'Save, pick a node, and connect',
-            'Make sure the node list is refreshed first.',
-            'Remember to allow the required system permission.',
+            'Refresh, pick a node, then connect',
+            'Make sure profiles, nodes, or rule resources have loaded before enabling system proxy, VPN, or the main connect switch.',
+            'If import worked but traffic is still direct, the missing step is usually the system permission or proxy toggle.',
             'Connect',
-            ['Refresh nodes', 'Select node', connectPermission],
-            'Connect',
+            ['Refresh profile', 'Select node', 'Allow permission and connect'],
+            'Connect and test',
           ),
         ],
   };
@@ -1186,6 +1170,126 @@ function buildRealV2RayNGuide(isZh: boolean): ClientGuide {
             {
               src: V2RAYN_WINDOWS_SCREENSHOTS.systemProxy,
               alt: 'Enable auto configure system proxy in v2rayN',
+            },
+          ),
+        ],
+  };
+}
+
+function buildRealV2RayNLinuxGuide(isZh: boolean): ClientGuide {
+  return {
+    recommendedFormat: 'universal',
+    note: isZh
+      ? '这组步骤使用 v2rayN Linux 真实界面截图；公开资料只找到了订阅设置和节点列表，因此其余部分保留为文字提示。'
+      : 'These steps use real Linux v2rayN screenshots. Public source material only covered the subscription settings and node list, so the rest stays text-first.',
+    sourceLabel: isZh ? 'v2rayN 官方 Linux 截图来源' : 'Official v2rayN Linux screenshot source',
+    sourceUrl: V2RAYN_LINUX_GUIDE_SOURCE_URL,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先进入订阅分组设置',
+            '从顶部菜单打开 Subscription Group，进入订阅分组设置窗口。Linux 版导入订阅也是从这里开始。',
+            '如果你当前只看到托盘图标，先把主窗口重新展开，再进入这个设置页。',
+            '订阅分组设置',
+            ['打开 Subscription Group', '进入订阅设置窗口', '准备填写 URL'],
+            '打开设置',
+            {
+              src: V2RAYN_LINUX_SCREENSHOTS.subscriptionGroupSettings,
+              alt: 'v2rayN Linux 订阅分组设置窗口',
+            },
+          ),
+          createStep(
+            'import',
+            '填入订阅地址，必要时补 User Agent',
+            '把这里复制的订阅链接粘到 URL(optional)。如果你的订阅服务会按客户端返回不同内容，可以像截图一样在 User Agent 里填 V2ray 或服务端要求的值，然后点击 Confirm。',
+            '这是 Linux 版比较容易漏掉的差异项；有些服务端不给合适的 User Agent，就不会返回正确节点列表。',
+            '填写订阅',
+            ['粘贴订阅 URL', '按需填写 User Agent', '点击 Confirm'],
+            '保存订阅',
+            {
+              src: V2RAYN_LINUX_SCREENSHOTS.subscriptionGroupSettings,
+              alt: '在 v2rayN Linux 里填写订阅地址和 User Agent',
+            },
+          ),
+          createStep(
+            'connect',
+            '更新订阅并确认节点真正加载出来',
+            '回到主窗口后执行 Update subscriptions without proxy。刷新完成后，列表应像截图这样出现真实节点，而不是只得到一串 json 文件名。',
+            '如果刷新后内容仍然不对，先回头检查 URL、User Agent 和订阅格式，再重试更新。',
+            '节点列表',
+            ['更新订阅', '等待节点加载', '确认列表内容正常'],
+            '刷新订阅',
+            {
+              src: V2RAYN_LINUX_SCREENSHOTS.serverList,
+              alt: 'v2rayN Linux 节点列表',
+            },
+          ),
+          createStep(
+            'connect',
+            '选中节点，再启用 TUN 或系统代理',
+            '节点加载正常后，在列表里选一个节点作为当前连接，再根据你的桌面环境启用底部的 TUN 或系统代理相关开关。',
+            'Linux 上接管流量的方式会因桌面环境不同而略有差异；如果浏览器仍然直连，优先检查 TUN、系统代理和桌面网络设置。',
+            '开始连接',
+            ['选择节点', '启用 TUN 或系统代理', '回到浏览器测试'],
+            '连接并测试',
+            {
+              src: V2RAYN_LINUX_SCREENSHOTS.serverList,
+              alt: 'v2rayN Linux 选择节点后准备连接',
+            },
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Open subscription group settings first',
+            'Use the top Subscription Group menu to open the subscription settings window. On Linux, this is still where URL imports begin.',
+            'If the app is minimized to tray, bring the main window back before trying to open this page.',
+            'Subscription settings',
+            ['Open Subscription Group', 'Enter the settings window', 'Prepare the URL field'],
+            'Open settings',
+            {
+              src: V2RAYN_LINUX_SCREENSHOTS.subscriptionGroupSettings,
+              alt: 'v2rayN Linux subscription group settings window',
+            },
+          ),
+          createStep(
+            'import',
+            'Paste the subscription URL and add User Agent when needed',
+            'Paste the copied subscription link into URL (optional). If your provider changes the response by client, fill the User Agent field with V2ray or whatever value the provider expects, then confirm.',
+            'This is the Linux-specific detail most people miss. Some providers will not return the correct node list without a matching User Agent.',
+            'Fill subscription',
+            ['Paste the subscription URL', 'Fill User Agent if needed', 'Click Confirm'],
+            'Save subscription',
+            {
+              src: V2RAYN_LINUX_SCREENSHOTS.subscriptionGroupSettings,
+              alt: 'Fill subscription URL and User Agent in v2rayN Linux',
+            },
+          ),
+          createStep(
+            'connect',
+            'Refresh subscriptions and verify the node list',
+            'Go back to the main window and run Update subscriptions without proxy. After refresh, the list should look like the screenshot with real nodes loaded, not just JSON filenames.',
+            'If the result still looks wrong, re-check the URL, the User Agent, and the selected subscription format before retrying.',
+            'Node list',
+            ['Refresh subscriptions', 'Wait for nodes to load', 'Verify the list content'],
+            'Refresh nodes',
+            {
+              src: V2RAYN_LINUX_SCREENSHOTS.serverList,
+              alt: 'v2rayN Linux node list',
+            },
+          ),
+          createStep(
+            'connect',
+            'Choose a node, then enable TUN or system proxy',
+            'After the nodes are loaded correctly, select the node you want to use and then enable the bottom TUN or system-proxy related controls that fit your Linux desktop setup.',
+            'Traffic takeover differs a bit across Linux desktops. If the browser is still direct, check TUN, system proxy, and desktop network settings first.',
+            'Connect',
+            ['Choose a node', 'Enable TUN or system proxy', 'Test in the browser'],
+            'Connect and test',
+            {
+              src: V2RAYN_LINUX_SCREENSHOTS.serverList,
+              alt: 'Select a node and prepare to connect in v2rayN Linux',
             },
           ),
         ],
@@ -1612,156 +1716,6 @@ function buildRealShadowrocketGuide(isZh: boolean): ClientGuide {
   };
 }
 
-function buildRealHiddifyGuide(platformLabel: string, isZh: boolean): ClientGuide {
-  return {
-    recommendedFormat: 'universal',
-    note: isZh
-      ? `这组步骤来自 Hiddify 官方文档，${platformLabel} 上布局可能略有差异，但导入入口和顺序基本一致。`
-      : `These screenshots come from the official Hiddify docs. The ${platformLabel} layout may differ slightly, but the import flow is effectively the same.`,
-    sourceLabel: isZh ? 'Hiddify 官方教程' : 'Official Hiddify guide',
-    sourceUrl: HIDDIFY_GUIDE_SOURCE_URL,
-    steps: isZh
-      ? [
-          createStep(
-            'launch',
-            '先打开添加配置入口',
-            '进入 Hiddify 首页后，先点添加配置或加号，准备导入新订阅。',
-            '如果你是第一次打开，欢迎页先过一遍即可。',
-            '添加配置',
-            ['打开 Hiddify', '进入添加配置入口'],
-            '打开入口',
-            {
-              src: HIDDIFY_SCREENSHOTS.openAddProfile,
-              alt: 'Hiddify 打开添加配置入口',
-            },
-          ),
-          createStep(
-            'import',
-            '最快的方法是直接读剪贴板',
-            '如果你刚复制过订阅链接，直接用剪贴板导入会最快。',
-            '这是最省事的一种方式，适合大多数第一次接入的用户。',
-            '剪贴板导入',
-            ['复制订阅链接', '点击 Add from clipboard', '等待配置识别'],
-            '剪贴板导入',
-            {
-              src: HIDDIFY_SCREENSHOTS.addFromClipboard,
-              alt: 'Hiddify 从剪贴板导入',
-            },
-          ),
-          createStep(
-            'import',
-            '如果剪贴板不行，再手动粘贴 URL',
-            '也可以手动新增配置，把当前页面复制的订阅链接粘贴进去保存。',
-            '手动导入更适合排查链接有没有复制错。',
-            '手动导入',
-            ['选择手动新增', '粘贴订阅 URL', '保存配置'],
-            '手动导入',
-            {
-              src: HIDDIFY_SCREENSHOTS.addManually,
-              alt: 'Hiddify 手动粘贴订阅 URL',
-            },
-          ),
-          createStep(
-            'connect',
-            '导入完成后回首页直接连接',
-            '配置出现后，回到首页点连接按钮，开始使用当前节点。',
-            '如果你有多个配置，先确认当前激活的是刚导入的那一个。',
-            '连接首页',
-            ['回到首页', '确认当前配置', '点击连接'],
-            '开始连接',
-            {
-              src: HIDDIFY_SCREENSHOTS.connectHome,
-              alt: 'Hiddify 首页连接',
-            },
-          ),
-          createStep(
-            'connect',
-            '后续记得更新配置',
-            '如果后台给你换了节点或续费了套餐，记得在配置页手动更新一次。',
-            '更新不成功时，优先检查当前网络和订阅链接是否还有效。',
-            '更新配置',
-            ['打开配置详情', '执行更新', '确认节点已刷新'],
-            '刷新配置',
-            {
-              src: HIDDIFY_SCREENSHOTS.updateProfile,
-              alt: 'Hiddify 更新配置',
-            },
-          ),
-        ]
-      : [
-          createStep(
-            'launch',
-            'Open the add-profile entry first',
-            'After landing on the Hiddify home screen, open the add-profile or plus entry to start importing.',
-            'If this is your first launch, just finish the welcome screen first.',
-            'Add profile',
-            ['Open Hiddify', 'Enter the add-profile screen'],
-            'Open entry',
-            {
-              src: HIDDIFY_SCREENSHOTS.openAddProfile,
-              alt: 'Open add-profile entry in Hiddify',
-            },
-          ),
-          createStep(
-            'import',
-            'The fastest way is import from clipboard',
-            'If you just copied the subscription link, importing from clipboard is usually the quickest option.',
-            'This is the easiest path for most first-time setups.',
-            'Clipboard import',
-            [
-              'Copy the subscription link',
-              'Tap Add from clipboard',
-              'Wait for the profile to be recognized',
-            ],
-            'Import from clipboard',
-            {
-              src: HIDDIFY_SCREENSHOTS.addFromClipboard,
-              alt: 'Import from clipboard in Hiddify',
-            },
-          ),
-          createStep(
-            'import',
-            'Paste the URL manually if clipboard fails',
-            'You can also add a profile manually and paste the copied subscription URL.',
-            'Manual import is the better option when you want to verify the link itself.',
-            'Manual import',
-            ['Choose manual add', 'Paste the subscription URL', 'Save the profile'],
-            'Paste URL manually',
-            {
-              src: HIDDIFY_SCREENSHOTS.addManually,
-              alt: 'Paste subscription URL manually in Hiddify',
-            },
-          ),
-          createStep(
-            'connect',
-            'Return home and connect',
-            'Once the profile appears, go back to the home screen and connect with it.',
-            'If you have multiple profiles, make sure the newly imported one is active first.',
-            'Home connect',
-            ['Return to Home', 'Confirm the active profile', 'Tap Connect'],
-            'Connect',
-            {
-              src: HIDDIFY_SCREENSHOTS.connectHome,
-              alt: 'Connect from the Hiddify home screen',
-            },
-          ),
-          createStep(
-            'connect',
-            'Remember to refresh the profile later',
-            'If your nodes change or your plan is renewed, refresh the profile once from its detail page.',
-            'When refresh fails, check the current network and the subscription link first.',
-            'Update profile',
-            ['Open the profile details', 'Run update', 'Confirm the node list refreshed'],
-            'Refresh profile',
-            {
-              src: HIDDIFY_SCREENSHOTS.updateProfile,
-              alt: 'Refresh profile in Hiddify',
-            },
-          ),
-        ],
-  };
-}
-
 function buildRealFlClashGuide(platformLabel: string, isZh: boolean): ClientGuide {
   return {
     recommendedFormat: 'clash',
@@ -1908,149 +1862,447 @@ function buildRealFlClashGuide(platformLabel: string, isZh: boolean): ClientGuid
   };
 }
 
-function buildRealSparkleGuide(platformLabel: string, isZh: boolean): ClientGuide {
+function buildRealFlClashMacGuide(isZh: boolean): ClientGuide {
   return {
     recommendedFormat: 'clash',
     note: isZh
-      ? `这组截图来自 Mihomo Party 教程；Sparkle 和它属于近似分支，${platformLabel} 上的订阅与代理流程基本一致。`
-      : `These screenshots come from the Mihomo Party tutorial. Sparkle tracks a very similar desktop flow on ${platformLabel}, so the subscription and proxy steps still line up closely.`,
-    sourceLabel: isZh
-      ? 'Sparkle / Mihomo Party 教程来源'
-      : 'Sparkle / Mihomo Party tutorial source',
-    sourceUrl: SPARKLE_GUIDE_SOURCE_URL,
+      ? '这组步骤使用 macOS 平台上的 FlClash 真实界面截图，和当前平台的窗口样式一致。'
+      : 'These steps use real FlClash screenshots from the macOS flow, so the window chrome and layout match the platform.',
+    sourceLabel: isZh ? 'FlClash macOS 图文教程来源' : 'FlClash macOS tutorial source',
+    sourceUrl: FLCLASH_MACOS_GUIDE_SOURCE_URL,
     steps: isZh
       ? [
           createStep(
             'launch',
-            '先看主界面，确认订阅入口在哪',
-            '打开 Sparkle 后，先确认左侧导航和主界面都正常显示，订阅入口通常就在侧栏里。',
-            '如果刚安装完成，先把必要权限或管理员提示处理掉。',
+            '先打开 FlClash 主界面',
+            '确认客户端已经成功安装并能正常打开，后面的配置、节点选择和系统代理都会在这个界面完成。',
+            '如果第一次启动仍然被系统拦截，先在 macOS 的隐私与安全性里放行。',
             '主界面',
-            ['侧边栏', 'Profiles / Subscriptions', '系统权限'],
-            '打开主界面',
+            ['打开 FlClash', '确认仪表盘可见', '准备进入配置页面'],
+            '打开客户端',
             {
-              src: SPARKLE_SCREENSHOTS.start,
-              alt: 'Sparkle 主界面',
+              src: FLCLASH_MACOS_SCREENSHOTS.main,
+              alt: 'FlClash macOS 主界面',
             },
           ),
           createStep(
             'import',
-            '新建远程订阅',
-            '进入订阅页后，点击添加订阅或类似入口，准备导入新的远程配置。',
-            'Sparkle 的订阅入口名称可能略有变化，但都在订阅或配置区域。',
-            '新建订阅',
-            ['Subscriptions', 'Add subscription', 'Remote profile'],
-            '新建订阅',
+            '进入配置页，通过 URL 导入订阅',
+            '切到配置页后点击右下角加号，选择 URL 导入，再把当前页面复制的 Clash 订阅地址粘贴进去。',
+            '这里要用 Clash 格式的订阅，不要把 Universal 链接贴进来。',
+            '配置导入',
+            ['打开配置页', '点击加号', '选择 URL 并粘贴订阅'],
+            '导入订阅',
             {
-              src: SPARKLE_SCREENSHOTS.addSubscription,
-              alt: 'Sparkle 新建订阅',
-            },
-          ),
-          createStep(
-            'import',
-            '切到 Clash 格式并粘贴订阅链接',
-            '复制当前页面的 Clash 链接，再粘贴到 Sparkle 的订阅地址输入框里并保存。',
-            '如果导入后看不到策略组，先检查是不是导错了格式。',
-            '订阅地址',
-            ['Clash 格式', '粘贴 URL', '保存并刷新'],
-            '保存订阅',
-            {
-              src: SPARKLE_SCREENSHOTS.subscription,
-              alt: 'Sparkle 订阅管理界面',
+              src: FLCLASH_MACOS_SCREENSHOTS.config,
+              alt: 'FlClash macOS 通过 URL 导入配置',
             },
           ),
           createStep(
             'connect',
-            '切到 Proxies 选择节点或策略组',
-            '确认订阅刷新完成后，到 Proxies 页面里选中你想用的节点或自动选择组。',
-            '导入成功但没选节点时，流量通常还不会按预期走代理。',
-            '节点与策略组',
-            ['打开 Proxies', '选择节点', '确认当前组已切换'],
+            '先去代理页选一个节点',
+            '订阅加载完成后，切到代理页确认节点和策略组已经出来，再选中你要用的节点。',
+            '先把节点选好，再开系统代理，排错会简单很多。',
+            '节点选择',
+            ['打开代理页', '选择节点或策略组', '确认当前节点已切换'],
             '选择节点',
             {
-              src: SPARKLE_SCREENSHOTS.proxies,
-              alt: 'Sparkle 代理组和节点',
+              src: FLCLASH_MACOS_SCREENSHOTS.chooseProxy,
+              alt: 'FlClash macOS 节点选择界面',
             },
           ),
           createStep(
             'connect',
-            '最后开启系统代理',
-            '回到主界面，打开 System Proxy 或等价代理开关，让浏览器和系统流量接管到 Sparkle。',
-            'TUN 可以后面再研究，第一次先把 System Proxy 跑通就够了。',
-            '系统代理',
-            ['回到首页', '开启 System Proxy', '重新打开网页测试'],
+            '最后开启系统代理并点击运行',
+            '回到仪表盘后打开系统代理，再点击右下角运行按钮，让浏览器和系统流量真正经过 FlClash。',
+            '只导入订阅不打开系统代理时，浏览器不会真正走代理。',
+            '开始连接',
+            ['打开系统代理', '点击运行按钮', '回到浏览器测试'],
             '开始连接',
             {
-              src: SPARKLE_SCREENSHOTS.systemProxy,
-              alt: 'Sparkle 开启系统代理',
+              src: FLCLASH_MACOS_SCREENSHOTS.startProxy,
+              alt: 'FlClash macOS 开启系统代理与运行按钮',
             },
           ),
         ]
       : [
           createStep(
             'launch',
-            'Open the home screen and find the subscription entry',
-            'After Sparkle launches, confirm the sidebar and the subscription area are visible.',
-            'Handle any first-run permission or admin prompt before importing.',
-            'Home screen',
-            ['Sidebar', 'Profiles / Subscriptions', 'System permissions'],
-            'Open home',
+            'Open the FlClash main screen first',
+            'Make sure the app is installed correctly and opens to the dashboard before importing anything.',
+            'If macOS still blocks the app on first launch, allow it in Privacy & Security first.',
+            'Main screen',
+            ['Open FlClash', 'Confirm the dashboard is visible', 'Prepare to enter Config'],
+            'Open client',
             {
-              src: SPARKLE_SCREENSHOTS.start,
-              alt: 'Sparkle home screen',
+              src: FLCLASH_MACOS_SCREENSHOTS.main,
+              alt: 'FlClash macOS main screen',
             },
           ),
           createStep(
             'import',
-            'Create a new remote subscription',
-            'Open the subscription page and add a new remote profile.',
-            'The label may differ by build, but it stays in the subscriptions or profile area.',
-            'New subscription',
-            ['Subscriptions', 'Add subscription', 'Remote profile'],
-            'Create subscription',
+            'Go to Config and import by URL',
+            'Open the config page, click the plus button, choose URL import, and paste the Clash subscription link from this page.',
+            'Use the Clash-formatted link here, not the Universal link.',
+            'Config import',
+            ['Open Config', 'Click +', 'Choose URL and paste the subscription'],
+            'Import subscription',
             {
-              src: SPARKLE_SCREENSHOTS.addSubscription,
-              alt: 'Create subscription in Sparkle',
-            },
-          ),
-          createStep(
-            'import',
-            'Switch this page to Clash and paste the link',
-            'Copy the Clash subscription link from here, paste it into Sparkle, then save and refresh.',
-            'If policy groups are missing after import, check the format first.',
-            'Subscription URL',
-            ['Clash format', 'Paste URL', 'Save and refresh'],
-            'Save subscription',
-            {
-              src: SPARKLE_SCREENSHOTS.subscription,
-              alt: 'Sparkle subscription management screen',
+              src: FLCLASH_MACOS_SCREENSHOTS.config,
+              alt: 'FlClash macOS URL import flow',
             },
           ),
           createStep(
             'connect',
-            'Choose a node or policy group in Proxies',
-            'Once the subscription has refreshed, switch to Proxies and choose the node or group you want.',
-            'Importing successfully is not enough if no active group is selected.',
-            'Nodes and groups',
-            ['Open Proxies', 'Choose a node', 'Confirm the active group changed'],
+            'Choose a node on the Proxy page',
+            'After the subscription loads, switch to Proxy and select the node or policy group you want to use.',
+            'Selecting the node before enabling system proxy makes troubleshooting much easier.',
+            'Node selection',
+            ['Open Proxy', 'Choose a node or group', 'Confirm the active node changed'],
             'Select node',
             {
-              src: SPARKLE_SCREENSHOTS.proxies,
-              alt: 'Sparkle proxies and nodes',
+              src: FLCLASH_MACOS_SCREENSHOTS.chooseProxy,
+              alt: 'FlClash macOS node selection',
             },
+          ),
+          createStep(
+            'connect',
+            'Enable system proxy and click Run last',
+            'Return to the dashboard, enable System Proxy, then click the Run button so browser and system traffic actually go through FlClash.',
+            'Importing the subscription alone does not route traffic until proxy mode is enabled.',
+            'Connect',
+            ['Enable System Proxy', 'Click Run', 'Test again in the browser'],
+            'Connect',
+            {
+              src: FLCLASH_MACOS_SCREENSHOTS.startProxy,
+              alt: 'Enable system proxy and run FlClash on macOS',
+            },
+          ),
+        ],
+  };
+}
+
+function buildRealFlClashAndroidGuide(isZh: boolean): ClientGuide {
+  return {
+    recommendedFormat: 'clash',
+    note: isZh
+      ? '这组步骤使用 FlClash Android 教程里的真实真机截图，导入入口、节点选择和启动代理都和应用界面一致。'
+      : 'These steps use real FlClash Android screenshots, so the import entry, node selection, and connect flow match the app.',
+    sourceLabel: isZh ? 'FlClash Android 图文教程来源' : 'FlClash Android tutorial source',
+    sourceUrl: FLCLASH_ANDROID_GUIDE_SOURCE_URL,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先进入配置页，再点右下角加号',
+            '打开 FlClash 后先切到配置页，右下角加号就是新建或导入订阅的入口。',
+            '如果第一次启动先弹核心初始化或权限提示，先完成它们再继续导入。',
+            '配置入口',
+            ['打开配置页', '确认右下角加号可见', '准备新建订阅'],
+            '打开配置入口',
+            {
+              src: FLCLASH_ANDROID_SCREENSHOTS.import,
+              alt: 'FlClash Android 配置页和添加入口',
+            },
+          ),
+          createStep(
+            'import',
+            '选择 URL 导入，并粘贴 Clash 订阅链接',
+            '点加号后选择 URL，把当前页面复制的 Clash 订阅地址粘贴进去再提交。',
+            '这里要用 Clash 格式，不要把 Universal 链接直接贴到 FlClash 里。',
+            'URL 导入',
+            ['点击 URL', '粘贴 Clash 链接', '提交导入'],
+            '导入订阅',
+            {
+              src: FLCLASH_ANDROID_SCREENSHOTS.import,
+              alt: 'FlClash Android 通过 URL 导入订阅',
+            },
+          ),
+          createStep(
+            'connect',
+            '确认导入成功后，去代理页选节点',
+            '订阅导入完成后先确认配置已经出现，再切到代理页选择要用的节点或策略组。',
+            '先把节点选好，再启动代理，排错会更直接。',
+            '节点选择',
+            ['确认配置已出现', '切到代理页', '选择节点或策略组'],
+            '选择节点',
+            {
+              src: FLCLASH_ANDROID_SCREENSHOTS.connect,
+              alt: 'FlClash Android 配置已导入并进入代理页',
+            },
+          ),
+          createStep(
+            'connect',
+            '最后回到仪表盘启动代理',
+            '节点选好后回到仪表盘，点击右下角启动按钮；如果 Android 弹出 VPN 权限，也要一并放行。',
+            '只导入订阅不启动代理时，浏览器和系统流量不会真正走 FlClash。',
+            '开始连接',
+            ['回到仪表盘', '点击启动按钮', '允许 VPN 并回浏览器测试'],
+            '启动代理',
+            {
+              src: FLCLASH_ANDROID_SCREENSHOTS.connect,
+              alt: 'FlClash Android 启动代理并连接',
+            },
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Open Config first, then tap the plus button',
+            'After FlClash opens, switch to Config. The floating plus button is the entry for creating or importing a subscription.',
+            'If first launch still asks for core initialization or permissions, finish that before importing.',
+            'Config entry',
+            ['Open Config', 'Confirm the plus button is visible', 'Prepare to add a profile'],
+            'Open config entry',
+            {
+              src: FLCLASH_ANDROID_SCREENSHOTS.import,
+              alt: 'FlClash Android config page and add entry',
+            },
+          ),
+          createStep(
+            'import',
+            'Choose URL import and paste the Clash subscription link',
+            'Tap the plus button, choose URL, then paste the Clash-formatted subscription link from this page.',
+            'Use the Clash link here instead of the Universal link.',
+            'URL import',
+            ['Tap URL', 'Paste the Clash link', 'Submit import'],
+            'Import subscription',
+            {
+              src: FLCLASH_ANDROID_SCREENSHOTS.import,
+              alt: 'FlClash Android URL import flow',
+            },
+          ),
+          createStep(
+            'connect',
+            'Confirm the profile loaded, then choose a node on Proxy',
+            'After import finishes, make sure the profile appears, then switch to Proxy and select the node or policy group you want.',
+            'Choosing the node before starting the proxy makes troubleshooting much easier.',
+            'Node selection',
+            ['Confirm the profile is visible', 'Open Proxy', 'Choose a node or group'],
+            'Select node',
+            {
+              src: FLCLASH_ANDROID_SCREENSHOTS.connect,
+              alt: 'FlClash Android imported profile and proxy page',
+            },
+          ),
+          createStep(
+            'connect',
+            'Return to Dashboard and start the proxy last',
+            'Once the node is selected, go back to Dashboard and tap the start button. If Android shows a VPN permission prompt, allow it.',
+            'Importing the subscription alone does not route traffic until the proxy is actually started.',
+            'Connect',
+            ['Return to Dashboard', 'Tap the start button', 'Allow VPN and test again'],
+            'Start proxy',
+            {
+              src: FLCLASH_ANDROID_SCREENSHOTS.connect,
+              alt: 'Start the proxy in FlClash on Android',
+            },
+          ),
+        ],
+  };
+}
+
+function buildRealSparkleWindowsGuide(isZh: boolean): ClientGuide {
+  return {
+    recommendedFormat: 'clash',
+    note: isZh
+      ? '这组截图来自 Sparkle 官方仓库 issue 里的真实 Windows 界面。不同版本的按钮顺序可能略有变化，但“订阅管理 -> 导入 -> 远程配置 -> 开启系统代理”的路径是一致的。'
+      : 'These screenshots come from real Sparkle Windows builds posted in the official repository issues. Button order may shift by version, but the flow stays the same: subscription management, import, remote config, then system proxy.',
+    sourceLabel: isZh ? 'Sparkle 官方 issue 截图来源' : 'Sparkle official issue screenshot source',
+    sourceUrl: SPARKLE_OFFICIAL_ISSUES_SOURCE_URL,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先打开订阅管理',
+            '启动 Sparkle 后，先进入订阅管理页，确认左侧规则区和顶部导入入口都正常显示。',
+            '如果第一次启动先弹权限、证书或内核提示，先处理完再导入订阅。',
+            '订阅管理',
+            ['左侧规则页', '订阅卡片', '顶部导入按钮'],
+            '打开订阅页',
+            {
+              src: SPARKLE_WINDOWS_SCREENSHOTS.subscriptionManagement,
+              alt: 'Sparkle Windows 订阅管理界面',
+            },
+          ),
+          createStep(
+            'import',
+            '点导入，选择远程配置',
+            '在订阅管理右上角点击“导入”，再选择“导入远程配置”。',
+            '如果你看到加号按钮，也是在同一区域新建配置，不需要切到别的页面。',
+            '导入菜单',
+            ['导入', '导入远程配置', '新增配置'],
+            '打开远程导入',
+            {
+              src: SPARKLE_WINDOWS_SCREENSHOTS.importMenu,
+              alt: 'Sparkle Windows 导入远程配置菜单',
+            },
+          ),
+          createStep(
+            'import',
+            '粘贴当前页面的 Clash 链接并导入',
+            '把本页生成的 Clash 订阅链接粘贴到远程配置 URL 输入框里，保存后再手动刷新一次订阅。',
+            'Sparkle 走的是 Mihomo / Clash 配置，别切成 Sing-box 或 V2Ray 格式。',
+            '远程配置 URL',
+            ['Clash 格式', '粘贴 URL', 'Import / Refresh'],
+            '导入并刷新',
+            {
+              src: SPARKLE_WINDOWS_SCREENSHOTS.remoteConfigUrl,
+              alt: 'Sparkle Windows 远程配置 URL 输入框',
+            },
+          ),
+          createStep(
+            'connect',
+            '回到主界面并开启系统代理',
+            '订阅刷新完成后，回到规则主页，先打开 System Proxy；如果你更习惯全局接管，再决定要不要同时开虚拟网卡。',
+            '第一次测试先跑通系统代理就够了，确认节点和策略组正常后再研究其他模式。',
+            '系统代理',
+            ['回到规则页', '开启 System Proxy', '重新打开网页测试'],
+            '开始连接',
+            {
+              src: SPARKLE_WINDOWS_SCREENSHOTS.systemProxy,
+              alt: 'Sparkle Windows 系统代理开关',
+            },
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Open subscription management first',
+            'Launch Sparkle, then open the subscription management page and confirm the rule area plus the top import entry are visible.',
+            'If first-run prompts show up for permissions, certificates, or the core, clear those before importing.',
+            'Subscription management',
+            ['Rule area', 'Subscription card', 'Top import button'],
+            'Open subscriptions',
+            {
+              src: SPARKLE_WINDOWS_SCREENSHOTS.subscriptionManagement,
+              alt: 'Sparkle Windows subscription management',
+            },
+          ),
+          createStep(
+            'import',
+            'Open Import and choose remote config',
+            'Use the Import button in the top-right corner, then choose the remote-config entry.',
+            'If your build shows a plus button as well, it still creates the profile from the same area.',
+            'Import menu',
+            ['Import', 'Remote config', 'New profile'],
+            'Open remote import',
+            {
+              src: SPARKLE_WINDOWS_SCREENSHOTS.importMenu,
+              alt: 'Sparkle Windows remote import menu',
+            },
+          ),
+          createStep(
+            'import',
+            'Paste the Clash link from this page and import',
+            'Paste the Clash subscription link from this page into the remote-config URL field, then import and refresh the subscription once.',
+            'Sparkle expects a Mihomo / Clash profile here, so do not switch this page to Sing-box or V2Ray for this step.',
+            'Remote config URL',
+            ['Clash format', 'Paste URL', 'Import / Refresh'],
+            'Import and refresh',
+            {
+              src: SPARKLE_WINDOWS_SCREENSHOTS.remoteConfigUrl,
+              alt: 'Sparkle Windows remote config URL field',
+            },
+          ),
+          createStep(
+            'connect',
+            'Return home and enable system proxy',
+            'After the subscription refreshes, go back to the rule view and enable System Proxy. Turn on the virtual NIC only if you actually need full-device capture.',
+            'For the first test, system proxy is the cleanest path. Confirm the node or group works before enabling more advanced modes.',
+            'System proxy',
+            ['Return to rules', 'Enable System Proxy', 'Reload a page and test'],
+            'Connect',
+            {
+              src: SPARKLE_WINDOWS_SCREENSHOTS.systemProxy,
+              alt: 'Sparkle Windows system proxy toggle',
+            },
+          ),
+        ],
+  };
+}
+
+function buildTextOnlySparkleGuide(platformLabel: string, isZh: boolean): ClientGuide {
+  return {
+    recommendedFormat: 'clash',
+    note: isZh
+      ? `Sparkle 官方公开来源里暂时没有对齐 ${platformLabel} 的完整导入截图。为了避免继续混用 Windows 或其他客户端的界面，这里先只保留文字步骤。`
+      : `Sparkle does not currently have a complete public import screenshot set for ${platformLabel}. To avoid mixing in Windows or third-party client UI, this guide intentionally stays text-only for now.`,
+    steps: isZh
+      ? [
+          createStep(
+            'launch',
+            '先进入订阅或配置入口',
+            '打开 Sparkle 后，先去订阅、配置或 Profiles 区域，确认能看到导入入口。',
+            '不同版本的侧栏命名可能略有差异，但远程订阅入口通常都在这里。',
+            '订阅入口',
+            ['订阅', '配置', 'Profiles'],
+            '打开导入入口',
+          ),
+          createStep(
+            'import',
+            '选择远程配置并保持 Clash 格式',
+            '回到本页后保持 Clash 格式，再在 Sparkle 里选择按 URL 导入远程配置。',
+            '如果导入后看不到策略组，优先检查是不是用了别的格式。',
+            '远程导入',
+            ['Clash 格式', '远程配置', '粘贴 URL'],
+            '导入 Clash 配置',
+          ),
+          createStep(
+            'connect',
+            '刷新订阅后选择策略组',
+            '导入成功后先手动刷新一次订阅，再确认当前规则组或节点已经切到可用选项。',
+            '只导入不切换活动组时，流量通常不会按预期走代理。',
+            '策略组',
+            ['刷新订阅', '选择节点', '确认活动组'],
+            '确认节点',
+          ),
+          createStep(
+            'connect',
+            '最后开启系统代理',
+            '确认订阅已经拉取成功后，再打开 System Proxy；需要全局接管时再考虑虚拟网卡或 TUN。',
+            '第一次接入先跑通系统代理最稳，后面再按需求补其他模式。',
+            '连接开关',
+            ['System Proxy', '虚拟网卡 / TUN', '重新测试网络'],
+            '开始连接',
+          ),
+        ]
+      : [
+          createStep(
+            'launch',
+            'Open the subscription or profile area first',
+            'After Sparkle launches, go to the subscriptions, configs, or Profiles area and confirm the import entry is available.',
+            'The exact sidebar label may vary, but the remote-subscription entry normally stays there.',
+            'Subscription entry',
+            ['Subscriptions', 'Configs', 'Profiles'],
+            'Open import entry',
+          ),
+          createStep(
+            'import',
+            'Choose remote config and keep this page on Clash',
+            'Keep this portal page on the Clash format, then use Sparkle to import a remote config by URL.',
+            'If policy groups do not appear after import, the first thing to check is whether the wrong format was used.',
+            'Remote import',
+            ['Clash format', 'Remote config', 'Paste URL'],
+            'Import Clash profile',
+          ),
+          createStep(
+            'connect',
+            'Refresh the subscription and choose a group',
+            'Once the import succeeds, refresh the subscription manually and confirm the active node or policy group is usable.',
+            'Importing alone is not enough if no active group is selected afterwards.',
+            'Policy group',
+            ['Refresh subscription', 'Choose node', 'Confirm active group'],
+            'Confirm node',
           ),
           createStep(
             'connect',
             'Enable system proxy last',
-            'Return to the main page and turn on System Proxy so browser and system traffic actually route through Sparkle.',
-            'You can explore TUN later. System Proxy is the cleanest first test.',
-            'System proxy',
-            ['Return home', 'Enable System Proxy', 'Reload a page and test'],
+            'After the subscription is confirmed, enable System Proxy. Turn on the virtual NIC or TUN only if you actually need fuller traffic capture.',
+            'For the first test, system proxy is the safest path. Add other modes later if needed.',
+            'Connection toggle',
+            ['System Proxy', 'Virtual NIC / TUN', 'Retest network'],
             'Connect',
-            {
-              src: SPARKLE_SCREENSHOTS.systemProxy,
-              alt: 'Enable system proxy in Sparkle',
-            },
           ),
         ],
   };
@@ -2836,20 +3088,36 @@ function decorateGuideWithRealScreenshots(
   platform: GuidePlatform,
   isZh: boolean,
 ): ClientGuide {
-  if (clientId === 'flClash' && ['windows', 'macos', 'linux', 'android'].includes(platform)) {
+  if (clientId === 'flClash' && platform === 'macos') {
+    return buildRealFlClashMacGuide(isZh);
+  }
+
+  if (clientId === 'flClash' && platform === 'android') {
+    return buildRealFlClashAndroidGuide(isZh);
+  }
+
+  if (clientId === 'flClash' && ['windows', 'linux'].includes(platform)) {
     return buildRealFlClashGuide(getPlatformLabel(platform, isZh), isZh);
   }
 
-  if (clientId === 'v2rayN' && (platform === 'windows' || platform === 'linux')) {
+  if (clientId === 'v2rayN' && platform === 'windows') {
     return buildRealV2RayNGuide(isZh);
+  }
+
+  if (clientId === 'v2rayN' && platform === 'linux') {
+    return buildRealV2RayNLinuxGuide(isZh);
   }
 
   if (clientId === 'clashVerge' && (platform === 'windows' || platform === 'macos')) {
     return buildRealClashVergeGuide(getPlatformLabel(platform, isZh), isZh);
   }
 
-  if (clientId === 'sparkle' && ['windows', 'macos', 'linux'].includes(platform)) {
-    return buildRealSparkleGuide(getPlatformLabel(platform, isZh), isZh);
+  if (clientId === 'sparkle' && platform === 'windows') {
+    return buildRealSparkleWindowsGuide(isZh);
+  }
+
+  if (clientId === 'sparkle' && (platform === 'macos' || platform === 'linux')) {
+    return buildTextOnlySparkleGuide(getPlatformLabel(platform, isZh), isZh);
   }
 
   if (clientId === 'v2rayNG' && platform === 'android') {
@@ -2880,17 +3148,15 @@ function decorateGuideWithRealScreenshots(
     return buildRealClashBoxGuide(isZh);
   }
 
-  if (clientId === 'hiddify') {
-    return buildRealHiddifyGuide(getPlatformLabel(platform, isZh), isZh);
-  }
-
   return guide;
 }
 
 export function SubscriptionTab({ initialFocus = 'overview', subId }: SubscriptionTabProps) {
   const { language } = useI18n();
+  const { toast } = useToast();
   const isZh = language === 'zh-CN';
   const downloadsRef = useRef<HTMLElement>(null);
+  const importName = isZh ? '我的订阅' : 'My Subscription';
   const [activePlatform, setActivePlatform] = useState<GuidePlatform>(() =>
     detectInitialPlatform(),
   );
@@ -2960,6 +3226,12 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             client.id === 'clashMeta' ||
             client.id === 'sparkle' ||
             client.id === 'singBox');
+        const descriptionOverride =
+          client.id === 'singBox' && activePlatform === 'macos'
+            ? isZh
+              ? '更贴近 macOS 原生界面的 sing-box 客户端，页面里的导入步骤和应用界面更容易一一对照。'
+              : 'A native-feeling sing-box client for macOS with a guide that matches the app UI.'
+            : null;
         return {
           id: client.id,
           name:
@@ -2976,7 +3248,9 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
           os: client.os,
           platforms: client.platforms,
           recommendedFor: client.recommendedFor,
-          desc: useEnglishDescription ? client.descEn : isZh ? client.descZh : client.descEn,
+          desc:
+            descriptionOverride ??
+            (useEnglishDescription ? client.descEn : isZh ? client.descZh : client.descEn),
           links: getClientDownloadLinks(client.id, preferredPlatform),
         };
       }),
@@ -3025,11 +3299,46 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     isZh,
   );
   const activeSubUrl = subscriptionLinks[activeFormat];
+  const recommendedImportFormat = isClientImportFormat(guide.recommendedFormat)
+    ? guide.recommendedFormat
+    : null;
+  const recommendedImportUrl = recommendedImportFormat
+    ? subscriptionLinks[recommendedImportFormat]
+    : '';
+  const oneClickImportUrl = useMemo(
+    () =>
+      recommendedImportFormat
+        ? buildClientImportUrl({
+            clientId: activeClient.id,
+            platform: guidePlatform,
+            subscriptionUrl: recommendedImportUrl,
+            subscriptionName: importName,
+            format: recommendedImportFormat,
+          })
+        : null,
+    [activeClient.id, guidePlatform, importName, recommendedImportFormat, recommendedImportUrl],
+  );
+  const importUsesRecommendedFormat =
+    Boolean(oneClickImportUrl) && activeFormat !== guide.recommendedFormat;
   const activeFormatOption =
     formatOptions.find((item) => item.key === activeFormat) ?? formatOptions[0];
   const recommendedFormatOption =
     formatOptions.find((item) => item.key === guide.recommendedFormat) ?? formatOptions[0];
   const usesRealGuideScreenshots = guide.steps.some((step) => Boolean(step.screenshot));
+  const usesDesktopReferenceScreenshots =
+    activePlatform === 'macos' && usesRealGuideScreenshots && activeClient.id === 'clashVerge';
+  const usesTextOnlyGuide = !usesRealGuideScreenshots;
+  const guideDescription = usesDesktopReferenceScreenshots
+    ? isZh
+      ? `${activeClient.name} 当前展示的是桌面版参考截图，窗口样式可能和 macOS 实际界面略有差异，但导入顺序是一致的。`
+      : `${activeClient.name} is using desktop reference screenshots here. Some window chrome may differ on macOS, but the import flow is the same.`
+    : usesTextOnlyGuide
+      ? isZh
+        ? `下面整理了 ${activeClient.name} 在 ${guidePlatformLabel} 上的常见导入路径。当前没有展示该平台的真实截图，以免和其他系统或客户端界面混淆。`
+        : `These steps summarize the usual ${activeClient.name} import flow on ${guidePlatformLabel}. Matching platform screenshots are intentionally hidden here to avoid mixing in another OS or client UI.`
+      : isZh
+        ? `下面是 ${activeClient.name} 在 ${guidePlatformLabel} 上更接近真实界面的导入流程。`
+        : `These cards show a more realistic flow for ${activeClient.name} on ${guidePlatformLabel}.`;
 
   useEffect(() => {
     setActiveFormat(guide.recommendedFormat);
@@ -3061,11 +3370,43 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     });
   }, []);
 
-  const openDownload = useCallback((url: string, clientId?: ClientId) => {
+  const handleOneClickImport = useCallback((url: string) => {
     if (!url) return;
-    if (clientId) setActiveClientId(clientId);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.location.href = url;
   }, []);
+
+  const openDownload = useCallback(
+    (
+      url: string,
+      clientId?: ClientId,
+      options?: {
+        kind?: 'official' | 'mirror';
+        managed?: boolean;
+        platform?: ClientDownloadPlatform;
+      },
+    ) => {
+      if (!url) return;
+      if (clientId) setActiveClientId(clientId);
+      window.open(url, '_blank', 'noopener,noreferrer');
+
+      if (options?.kind === 'mirror' && clientId && options.platform) {
+        if (options.managed) {
+          void getManagedMirrorStatus(clientId, options.platform)
+            .then((status) => {
+              const hint = getManagedMirrorStatusToast(status, isZh);
+              toast(hint.message, hint.type);
+            })
+            .catch(() => {
+              const fallback = getManagedMirrorFallbackToast(isZh);
+              toast(fallback.message, fallback.type);
+            });
+        } else {
+          toast(isZh ? '正在打开镜像下载。' : 'Opening mirror download.', 'info');
+        }
+      }
+    },
+    [isZh, toast],
+  );
 
   return (
     <div className="space-y-6" data-testid="portal-setup-tab">
@@ -3140,6 +3481,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                     <div key={client.id} className="h-full">
                       <ClientCompactCard
                         client={client}
+                        activePlatform={activePlatform}
                         isZh={isZh}
                         isActive={client.id === activeClient.id}
                         onSelect={setActiveClientId}
@@ -3166,8 +3508,8 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             title={isZh ? '复制匹配好的订阅链接' : 'Copy the matched subscription link'}
             description={
               isZh
-                ? '下面这条链接会优先匹配当前客户端；如果你熟悉格式，也可以手动切换。'
-                : 'The link below is matched to the current client first, but you can still switch formats manually.'
+                ? '下面这条链接会优先匹配当前客户端；如果客户端支持，优先试一键导入，其次再用复制或二维码。'
+                : 'The link below is matched to the current client first. If the app supports it, start with one-click import before falling back to copy or QR.'
             }
           />
           <div className="flex flex-col gap-3 rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4 md:flex-row md:items-center md:justify-between">
@@ -3271,9 +3613,27 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   {activeSubUrl}
                 </p>
                 <div className="flex flex-wrap gap-2">
+                  {oneClickImportUrl ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => handleOneClickImport(oneClickImportUrl)}
+                      data-testid="portal-setup-one-click-import"
+                      title={
+                        isZh
+                          ? `唤起 ${activeClient.name} 并导入推荐的 ${recommendedFormatOption.label} 订阅`
+                          : `Open ${activeClient.name} and import the recommended ${recommendedFormatOption.label} link.`
+                      }
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      {isZh ? '一键导入' : 'One-click import'}
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant={oneClickImportUrl ? 'outline' : 'secondary'}
                     size="sm"
                     className="gap-2"
                     onClick={() => handleCopy(activeSubUrl, `active-${activeFormat}`)}
@@ -3304,6 +3664,17 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                     )}
                   </Button>
                 </div>
+                {oneClickImportUrl ? (
+                  <p className="text-xs leading-6 text-zinc-500">
+                    {importUsesRecommendedFormat
+                      ? isZh
+                        ? `一键导入会固定使用 ${activeClient.name} 推荐的 ${recommendedFormatOption.label} 格式，不受上方手动切换影响。`
+                        : `One-click import always uses the recommended ${recommendedFormatOption.label} link for ${activeClient.name}, even if you manually switched formats above.`
+                      : isZh
+                        ? `如果 ${activeClient.name} 已经安装，优先试一键导入。`
+                        : `If ${activeClient.name} is already installed, try one-click import first.`}
+                  </p>
+                ) : null}
                 {showQr ? <QrCodeCanvas url={activeSubUrl} isZh={isZh} /> : null}
               </>
             ) : (
@@ -3329,11 +3700,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             step={4}
             icon={Terminal}
             title={isZh ? '按步骤导入并连接' : 'Import and connect'}
-            description={
-              isZh
-                ? `下面是 ${activeClient.name} 在 ${guidePlatformLabel} 上更接近真实界面的导入流程。`
-                : `These cards show a more realistic flow for ${activeClient.name} on ${guidePlatformLabel}.`
-            }
+            description={guideDescription}
           />
           <div className="surface-panel rounded-[24px] p-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -3671,7 +4038,15 @@ function ClientHighlightCard({
   isZh: boolean;
   isActive: boolean;
   onSelect: (clientId: ClientId) => void;
-  onOpenDownload: (url: string, clientId?: ClientId) => void;
+  onOpenDownload: (
+    url: string,
+    clientId?: ClientId,
+    options?: {
+      kind?: 'official' | 'mirror';
+      managed?: boolean;
+      platform?: ClientDownloadPlatform;
+    },
+  ) => void;
 }) {
   return (
     <div
@@ -3730,7 +4105,12 @@ function ClientHighlightCard({
           variant="secondary"
           size="sm"
           className="gap-2"
-          onClick={() => onOpenDownload(client.links.github, client.id)}
+          onClick={() =>
+            onOpenDownload(client.links.github, client.id, {
+              kind: 'official',
+              platform: activePlatform,
+            })
+          }
           data-testid="portal-setup-download-primary"
           data-client-action="true"
           disabled={!client.links.github}
@@ -3743,7 +4123,12 @@ function ClientHighlightCard({
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={() => onOpenDownload(client.links.github, client.id)}
+          onClick={() =>
+            onOpenDownload(client.links.github, client.id, {
+              kind: 'official',
+              platform: activePlatform,
+            })
+          }
           data-client-action="true"
           disabled={!client.links.github}
         >
@@ -3755,7 +4140,26 @@ function ClientHighlightCard({
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={() => onOpenDownload(client.links.vps, client.id)}
+          title={
+            client.links.vps
+              ? client.links.vpsManaged
+                ? isZh
+                  ? '通过当前站点 VPS 缓存分发；首次请求可能需要等待官方包缓存完成'
+                  : 'Served through this VPS cache. The first request may wait while the official package is cached.'
+                : isZh
+                  ? '打开已配置的镜像下载地址'
+                  : 'Open the configured mirror download URL'
+              : isZh
+                ? '当前平台暂不提供镜像下载'
+                : 'Mirror is not available for this platform'
+          }
+          onClick={() =>
+            onOpenDownload(client.links.vps, client.id, {
+              kind: 'mirror',
+              managed: client.links.vpsManaged,
+              platform: activePlatform,
+            })
+          }
           data-client-action="true"
           disabled={!client.links.vps}
         >
@@ -3769,16 +4173,26 @@ function ClientHighlightCard({
 
 function ClientCompactCard({
   client,
+  activePlatform,
   isZh,
   isActive,
   onSelect,
   onOpenDownload,
 }: {
   client: ClientCard;
+  activePlatform: GuidePlatform;
   isZh: boolean;
   isActive: boolean;
   onSelect: (clientId: ClientId) => void;
-  onOpenDownload: (url: string, clientId?: ClientId) => void;
+  onOpenDownload: (
+    url: string,
+    clientId?: ClientId,
+    options?: {
+      kind?: 'official' | 'mirror';
+      managed?: boolean;
+      platform?: ClientDownloadPlatform;
+    },
+  ) => void;
 }) {
   return (
     <div
@@ -3826,7 +4240,12 @@ function ClientCompactCard({
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={() => onOpenDownload(client.links.github, client.id)}
+          onClick={() =>
+            onOpenDownload(client.links.github, client.id, {
+              kind: 'official',
+              platform: activePlatform,
+            })
+          }
           data-client-action="true"
           disabled={!client.links.github}
         >
@@ -3838,7 +4257,26 @@ function ClientCompactCard({
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={() => onOpenDownload(client.links.vps, client.id)}
+          title={
+            client.links.vps
+              ? client.links.vpsManaged
+                ? isZh
+                  ? '通过当前站点 VPS 缓存分发；首次请求可能需要等待官方包缓存完成'
+                  : 'Served through this VPS cache. The first request may wait while the official package is cached.'
+                : isZh
+                  ? '打开已配置的镜像下载地址'
+                  : 'Open the configured mirror download URL'
+              : isZh
+                ? '当前平台暂不提供镜像下载'
+                : 'Mirror is not available for this platform'
+          }
+          onClick={() =>
+            onOpenDownload(client.links.vps, client.id, {
+              kind: 'mirror',
+              managed: client.links.vpsManaged,
+              platform: activePlatform,
+            })
+          }
           data-client-action="true"
           disabled={!client.links.vps}
         >

@@ -9,8 +9,7 @@ export type ClientDownloadId =
   | 'exclave'
   | 'clashMeta'
   | 'sparkle'
-  | 'singBox'
-  | 'hiddify';
+  | 'singBox';
 export type ClientDownloadPlatform =
   | 'windows'
   | 'macos'
@@ -22,6 +21,7 @@ export type ClientDownloadPlatform =
 export interface ClientDownloadLinks {
   github: string;
   vps: string;
+  vpsManaged: boolean;
 }
 
 const OFFICIAL_DOWNLOADS: Record<ClientDownloadId, string> = {
@@ -36,7 +36,6 @@ const OFFICIAL_DOWNLOADS: Record<ClientDownloadId, string> = {
   clashMeta: 'https://github.com/MetaCubeX/ClashMetaForAndroid/releases/latest',
   sparkle: 'https://github.com/xishang0128/mihomo-party/releases/latest',
   singBox: 'https://sing-box.sagernet.org/zh/clients/android/',
-  hiddify: 'https://github.com/hiddify/hiddify-app/releases/latest',
 };
 
 const PLATFORM_OFFICIAL_DOWNLOADS: Partial<
@@ -50,45 +49,100 @@ const PLATFORM_OFFICIAL_DOWNLOADS: Partial<
   },
 };
 
+const CLIENT_URL_OVERRIDE_ENV: Partial<Record<ClientDownloadId, string>> = {
+  v2rayNG: 'VITE_CLIENT_DOWNLOAD_VPS_V2RAYNG_URL',
+  surge: 'VITE_CLIENT_DOWNLOAD_VPS_SURGE_URL',
+  shadowrocket: 'VITE_CLIENT_DOWNLOAD_VPS_SHADOWROCKET_URL',
+  clashBox: 'VITE_CLIENT_DOWNLOAD_VPS_CLASHBOX_URL',
+  exclave: 'VITE_CLIENT_DOWNLOAD_VPS_EXCLAVE_URL',
+  clashMeta: 'VITE_CLIENT_DOWNLOAD_VPS_CLASH_META_URL',
+} as const;
+
+const LEGACY_SHARED_URL_OVERRIDE_ENV: Partial<Record<ClientDownloadId, string>> = {
+  v2rayN: 'VITE_CLIENT_DOWNLOAD_VPS_V2RAYN_URL',
+  clashVerge: 'VITE_CLIENT_DOWNLOAD_VPS_CLASH_VERGE_URL',
+  flClash: 'VITE_CLIENT_DOWNLOAD_VPS_FLCLASH_URL',
+  sparkle: 'VITE_CLIENT_DOWNLOAD_VPS_SPARKLE_URL',
+  singBox: 'VITE_CLIENT_DOWNLOAD_VPS_SING_BOX_URL',
+} as const;
+
+const PLATFORM_URL_OVERRIDE_ENV: Partial<
+  Record<ClientDownloadId, Partial<Record<ClientDownloadPlatform, string>>>
+> = {
+  v2rayN: {
+    windows: 'VITE_CLIENT_DOWNLOAD_VPS_V2RAYN_WINDOWS_URL',
+    linux: 'VITE_CLIENT_DOWNLOAD_VPS_V2RAYN_LINUX_URL',
+  },
+  clashVerge: {
+    windows: 'VITE_CLIENT_DOWNLOAD_VPS_CLASH_VERGE_WINDOWS_URL',
+    macos: 'VITE_CLIENT_DOWNLOAD_VPS_CLASH_VERGE_MACOS_URL',
+    linux: 'VITE_CLIENT_DOWNLOAD_VPS_CLASH_VERGE_LINUX_URL',
+  },
+  flClash: {
+    windows: 'VITE_CLIENT_DOWNLOAD_VPS_FLCLASH_WINDOWS_URL',
+    macos: 'VITE_CLIENT_DOWNLOAD_VPS_FLCLASH_MACOS_URL',
+    linux: 'VITE_CLIENT_DOWNLOAD_VPS_FLCLASH_LINUX_URL',
+    android: 'VITE_CLIENT_DOWNLOAD_VPS_FLCLASH_ANDROID_URL',
+  },
+  sparkle: {
+    windows: 'VITE_CLIENT_DOWNLOAD_VPS_SPARKLE_WINDOWS_URL',
+    macos: 'VITE_CLIENT_DOWNLOAD_VPS_SPARKLE_MACOS_URL',
+    linux: 'VITE_CLIENT_DOWNLOAD_VPS_SPARKLE_LINUX_URL',
+  },
+  singBox: {
+    android: 'VITE_CLIENT_DOWNLOAD_VPS_SING_BOX_ANDROID_URL',
+    macos: 'VITE_CLIENT_DOWNLOAD_VPS_SING_BOX_MACOS_URL',
+    linux: 'VITE_CLIENT_DOWNLOAD_VPS_SING_BOX_LINUX_URL',
+  },
+} as const;
+
 const MANAGED_MIRROR_SUPPORTED_PLATFORMS: Record<ClientDownloadId, ClientDownloadPlatform[]> = {
-  v2rayN: ['windows'],
+  v2rayN: [],
   v2rayNG: ['android'],
   surge: [],
   shadowrocket: [],
-  clashBox: [],
-  clashVerge: ['windows', 'macos'],
+  clashBox: ['harmonyos'],
+  clashVerge: [],
   flClash: [],
   exclave: [],
-  clashMeta: [],
+  clashMeta: ['android'],
   sparkle: [],
-  singBox: [],
-  hiddify: ['windows', 'macos', 'android'],
+  singBox: ['android', 'macos'],
 };
 
 const DEFAULT_VPS_FILES: Partial<
   Record<ClientDownloadId, Partial<Record<ClientDownloadPlatform, string>>>
 > = {
-  v2rayN: {
-    windows: 'v2rayN-windows-64.zip',
-  },
+  v2rayN: {},
   v2rayNG: {
     android: 'v2rayNG-universal.apk',
   },
   surge: {},
+  clashVerge: {},
+  clashBox: {
+    harmonyos: 'clashbox-harmonyos-next.hap',
+  },
+  flClash: {},
+  exclave: {},
+  clashMeta: {
+    android: 'clash-meta-universal.apk',
+  },
+  sparkle: {},
+  singBox: {
+    android: 'singbox-android-universal.apk',
+    macos: 'singbox-macos-universal.pkg',
+  },
+};
+
+const LEGACY_DEFAULT_VPS_FILES: Partial<
+  Record<ClientDownloadId, Partial<Record<ClientDownloadPlatform, string>>>
+> = {
+  v2rayN: {
+    windows: 'v2rayN-windows-64.zip',
+  },
   clashVerge: {
     windows: 'clash-verge-x64-setup.exe',
     macos: 'clash-verge-x64.dmg',
-  },
-  clashBox: {},
-  flClash: {},
-  exclave: {},
-  clashMeta: {},
-  sparkle: {},
-  singBox: {},
-  hiddify: {
-    windows: 'hiddify-windows-x64.exe',
-    macos: 'hiddify-macos.dmg',
-    android: 'hiddify-android-universal.apk',
   },
 };
 
@@ -111,29 +165,31 @@ function buildManagedMirrorPath(id: ClientDownloadId, platform: ClientDownloadPl
   return `/local/downloads/${id}?${query.toString()}`;
 }
 
-function resolveVpsDownload(id: ClientDownloadId, platform: ClientDownloadPlatform): string {
-  const explicit = {
-    v2rayN: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_V2RAYN_URL),
-    v2rayNG: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_V2RAYNG_URL),
-    surge: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SURGE_URL),
-    shadowrocket: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SHADOWROCKET_URL),
-    clashBox: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_CLASHBOX_URL),
-    clashVerge: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_CLASH_VERGE_URL),
-    flClash: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_FLCLASH_URL),
-    exclave: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_EXCLAVE_URL),
-    clashMeta: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_CLASH_META_URL),
-    sparkle: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SPARKLE_URL),
-    singBox: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_SING_BOX_URL),
-    hiddify: normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_HIDDIFY_URL),
-  } satisfies Record<ClientDownloadId, string>;
+function readEnvByName(name: string | undefined): string {
+  if (!name) return '';
+  return normalizeUrl(import.meta.env[name as keyof ImportMetaEnv] as string | undefined);
+}
 
-  if (explicit[id]) return explicit[id];
+function resolveVpsDownload(
+  id: ClientDownloadId,
+  platform: ClientDownloadPlatform,
+): { url: string; managed: boolean } {
+  const explicitPlatform = readEnvByName(PLATFORM_URL_OVERRIDE_ENV[id]?.[platform]);
+  if (explicitPlatform) return { url: explicitPlatform, managed: false };
+
+  const explicitClient = readEnvByName(CLIENT_URL_OVERRIDE_ENV[id]);
+  if (explicitClient) return { url: explicitClient, managed: false };
+
+  const legacyShared = readEnvByName(LEGACY_SHARED_URL_OVERRIDE_ENV[id]);
+  if (legacyShared) return { url: legacyShared, managed: false };
 
   const base = normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_BASE_URL);
-  const defaultFile = DEFAULT_VPS_FILES[id]?.[platform];
-  if (base && defaultFile) return joinUrl(base, defaultFile);
+  const defaultFile = DEFAULT_VPS_FILES[id]?.[platform] ?? LEGACY_DEFAULT_VPS_FILES[id]?.[platform];
+  if (base && defaultFile) return { url: joinUrl(base, defaultFile), managed: false };
 
-  return supportsManagedMirror(id, platform) ? buildManagedMirrorPath(id, platform) : '';
+  return supportsManagedMirror(id, platform)
+    ? { url: buildManagedMirrorPath(id, platform), managed: true }
+    : { url: '', managed: false };
 }
 
 function resolveOfficialDownload(id: ClientDownloadId, platform: ClientDownloadPlatform): string {
@@ -144,8 +200,10 @@ export function getClientDownloadLinks(
   id: ClientDownloadId,
   platform: ClientDownloadPlatform = 'windows',
 ): ClientDownloadLinks {
+  const vps = resolveVpsDownload(id, platform);
   return {
     github: resolveOfficialDownload(id, platform),
-    vps: resolveVpsDownload(id, platform),
+    vps: vps.url,
+    vpsManaged: vps.managed,
   };
 }

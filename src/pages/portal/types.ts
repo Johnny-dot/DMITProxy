@@ -67,8 +67,7 @@ export interface ClientCard {
     | 'exclave'
     | 'clashMeta'
     | 'sparkle'
-    | 'singBox'
-    | 'hiddify';
+    | 'singBox';
   name: string;
   os: string;
   icon: typeof Monitor;

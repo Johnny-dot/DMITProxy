@@ -9,8 +9,7 @@ export type ClientDownloadId =
   | 'exclave'
   | 'clashMeta'
   | 'sparkle'
-  | 'singBox'
-  | 'hiddify';
+  | 'singBox';
 export type ClientDownloadPlatform =
   | 'windows'
   | 'macos'
@@ -39,12 +38,7 @@ const MIRROR_TARGETS: Record<
   ClientDownloadId,
   Partial<Record<ClientDownloadPlatform, MirrorTarget>>
 > = {
-  v2rayN: {
-    windows: {
-      repo: '2dust/v2rayN',
-      matchers: [/^v2rayN-windows-64\.zip$/i, /^v2rayN-windows-64(?:-desktop)?\.zip$/i],
-    },
-  },
+  v2rayN: {},
   v2rayNG: {
     android: {
       repo: '2dust/v2rayNG',
@@ -53,34 +47,30 @@ const MIRROR_TARGETS: Record<
   },
   surge: {},
   shadowrocket: {},
-  clashBox: {},
-  clashVerge: {
-    windows: {
-      repo: 'clash-verge-rev/clash-verge-rev',
-      matchers: [/x64-setup\.exe$/i],
-    },
-    macos: {
-      repo: 'clash-verge-rev/clash-verge-rev',
-      matchers: [/x64\.dmg$/i],
+  clashBox: {
+    harmonyos: {
+      repo: 'xiaobaigroup/ClashBox',
+      matchers: [/^ClashNEXT-LTS-[0-9A-Za-z._-]+\.hap$/i],
     },
   },
+  clashVerge: {},
   flClash: {},
   exclave: {},
-  clashMeta: {},
+  clashMeta: {
+    android: {
+      repo: 'MetaCubeX/ClashMetaForAndroid',
+      matchers: [/meta-universal-release\.apk$/i],
+    },
+  },
   sparkle: {},
-  singBox: {},
-  hiddify: {
-    windows: {
-      repo: 'hiddify/hiddify-app',
-      matchers: [/Windows-Setup-x64\.exe$/i],
+  singBox: {
+    android: {
+      repo: 'SagerNet/sing-box',
+      matchers: [/^SFA-[0-9A-Za-z._-]+-universal\.apk$/i],
     },
     macos: {
-      repo: 'hiddify/hiddify-app',
-      matchers: [/MacOS\.dmg$/i],
-    },
-    android: {
-      repo: 'hiddify/hiddify-app',
-      matchers: [/Android-universal\.apk$/i],
+      repo: 'SagerNet/sing-box',
+      matchers: [/^SFM-[0-9A-Za-z._-]+-Universal\.pkg$/i],
     },
   },
 };
@@ -97,8 +87,7 @@ export function isClientDownloadId(value: string): value is ClientDownloadId {
     value === 'exclave' ||
     value === 'clashMeta' ||
     value === 'sparkle' ||
-    value === 'singBox' ||
-    value === 'hiddify'
+    value === 'singBox'
   );
 }
 
