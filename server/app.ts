@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import path from 'node:path';
 import fs from 'node:fs';
 import authRouter from './routes/auth.js';
@@ -107,7 +107,7 @@ export function createApp() {
     keyGenerator: (req) => {
       const cookie = req.headers.cookie ?? '';
       const match = cookie.match(/pd_session=([^;]+)/);
-      return match ? match[1] : (req.ip ?? 'unknown');
+      return match ? match[1] : ipKeyGenerator(req.ip ?? 'unknown');
     },
     message: { error: 'Too many refresh requests. Please wait a moment.' },
   });
