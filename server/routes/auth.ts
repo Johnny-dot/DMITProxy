@@ -75,21 +75,14 @@ const findActiveResetTokenStmt = db.prepare(`
   LIMIT 1
 `);
 
-const claimInviteCodeStmt = db.prepare(`
-  UPDATE invite_codes
-  SET used_at = unixepoch()
-  WHERE code = ?
-    AND used_at IS NULL
-    AND (expires_at IS NULL OR expires_at > unixepoch())
-`);
+class InviteCodeUnavailableError extends Error {
+  constructor() {
+    super('Invalid or expired invite code');
+    this.name = 'InviteCodeUnavailableError';
+  }
+}
 
-const releaseInviteCodeStmt = db.prepare(`
-  UPDATE invite_codes
-  SET used_by = NULL, used_at = NULL
-  WHERE code = ?
-    AND used_by IS NULL
-`);
-
+// Consume the invite and create the local user atomically to avoid stranded invite rows.
 const createRegisteredUserTx = db.transaction(
   (username: string, hash: string, salt: string, inviteCode: string) => {
     const result = db
@@ -100,16 +93,17 @@ const createRegisteredUserTx = db.transaction(
       .prepare(
         `
         UPDATE invite_codes
-        SET used_by = ?, used_at = COALESCE(used_at, unixepoch())
+        SET used_by = ?, used_at = unixepoch()
         WHERE code = ?
-          AND used_at IS NOT NULL
           AND used_by IS NULL
+          AND used_at IS NULL
+          AND (expires_at IS NULL OR expires_at > unixepoch())
       `,
       )
       .run(userId, inviteCode) as any;
 
     if (inviteUpdate.changes !== 1) {
-      throw new Error('Failed to bind invite code to local user');
+      throw new InviteCodeUnavailableError();
     }
 
     return userId;
@@ -132,6 +126,10 @@ const attachProvisionedSubIdStmt = db.prepare(`
 
 function isUniqueUsernameConstraintError(error: unknown): boolean {
   return error instanceof Error && /UNIQUE constraint failed: users\.username/i.test(error.message);
+}
+
+function isInviteCodeUnavailableError(error: unknown): boolean {
+  return error instanceof InviteCodeUnavailableError;
 }
 
 function getUserSession(token: string | undefined): UserSessionRow | null {
@@ -194,20 +192,17 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Username already taken' });
   }
 
-  const inviteClaim = claimInviteCodeStmt.run(inviteCode) as any;
-  if (inviteClaim.changes !== 1) {
-    return res.status(400).json({ error: 'Invalid or expired invite code' });
-  }
-
   const { hash, salt } = hashPassword(password);
 
   let userId: number;
   try {
     userId = createRegisteredUserTx(username, hash, salt, inviteCode);
   } catch (error) {
-    releaseInviteCodeStmt.run(inviteCode);
     if (isUniqueUsernameConstraintError(error)) {
       return res.status(400).json({ error: 'Username already taken' });
+    }
+    if (isInviteCodeUnavailableError(error)) {
+      return res.status(400).json({ error: error.message });
     }
     return res.status(500).json({ error: 'Failed to create local user account' });
   }
