@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { db, hashPassword, verifyPassword, generateToken, hashToken } from '../db.js';
 import {
-  autoProvisionClientForRegisteredUser,
+  cleanupProvisionedClient,
   fetchClientStatsBySubId,
   fetchServerStatusForPortal,
+  provisionClientForRegisteredUser,
+  type AutoProvisionedClient,
   XuiAdminError,
 } from '../xui-admin.js';
 import { getNodeQualityProfile } from '../node-quality.js';
@@ -73,6 +75,63 @@ const findActiveResetTokenStmt = db.prepare(`
   LIMIT 1
 `);
 
+class InviteCodeUnavailableError extends Error {
+  constructor() {
+    super('Invalid or expired invite code');
+    this.name = 'InviteCodeUnavailableError';
+  }
+}
+
+// Consume the invite and create the local user atomically to avoid stranded invite rows.
+const createRegisteredUserTx = db.transaction(
+  (username: string, hash: string, salt: string, inviteCode: string) => {
+    const result = db
+      .prepare('INSERT INTO users (username, password_hash, salt, sub_id) VALUES (?, ?, ?, ?)')
+      .run(username, hash, salt, null) as any;
+    const userId = Number(result.lastInsertRowid);
+    const inviteUpdate = db
+      .prepare(
+        `
+        UPDATE invite_codes
+        SET used_by = ?, used_at = unixepoch()
+        WHERE code = ?
+          AND used_by IS NULL
+          AND used_at IS NULL
+          AND (expires_at IS NULL OR expires_at > unixepoch())
+      `,
+      )
+      .run(userId, inviteCode) as any;
+
+    if (inviteUpdate.changes !== 1) {
+      throw new InviteCodeUnavailableError();
+    }
+
+    return userId;
+  },
+);
+
+const rollbackRegisteredUserTx = db.transaction((userId: number, inviteCode: string) => {
+  db.prepare(
+    'UPDATE invite_codes SET used_by = NULL, used_at = NULL WHERE code = ? AND used_by = ?',
+  ).run(inviteCode, userId);
+  db.prepare('DELETE FROM users WHERE id = ? AND role = ?').run(userId, 'user');
+});
+
+const attachProvisionedSubIdStmt = db.prepare(`
+  UPDATE users
+  SET sub_id = ?
+  WHERE id = ?
+    AND role = 'user'
+`);
+
+function isUniqueUsernameConstraintError(error: unknown): boolean {
+  return error instanceof Error && /UNIQUE constraint failed: users\.username/i.test(error.message);
+}
+
+function isInviteCodeUnavailableError(error: unknown): boolean {
+  return error instanceof InviteCodeUnavailableError;
+}
+
 function getUserSession(token: string | undefined): UserSessionRow | null {
   if (!token) return null;
   const sessionTokenHash = hashToken(token);
@@ -128,46 +187,60 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'username >= 3 chars, password >= 6 chars' });
   }
 
-  const invite = db
-    .prepare(
-      'SELECT * FROM invite_codes WHERE code = ? AND used_by IS NULL AND (expires_at IS NULL OR expires_at > unixepoch())',
-    )
-    .get(inviteCode) as any;
-
-  if (!invite) {
-    return res.status(400).json({ error: 'Invalid or expired invite code' });
-  }
-
   const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
   if (existing) {
     return res.status(400).json({ error: 'Username already taken' });
   }
 
-  let subId: string | null = null;
-  try {
-    subId = await autoProvisionClientForRegisteredUser(username);
-  } catch (error) {
-    const message =
-      error instanceof XuiAdminError ? error.message : 'Failed to auto-create 3X-UI client';
-    return res.status(502).json({ error: message });
-  }
-
   const { hash, salt } = hashPassword(password);
 
+  let userId: number;
   try {
-    const result = db
-      .prepare('INSERT INTO users (username, password_hash, salt, sub_id) VALUES (?, ?, ?, ?)')
-      .run(username, hash, salt, subId) as any;
-
-    db.prepare('UPDATE invite_codes SET used_by = ?, used_at = unixepoch() WHERE id = ?').run(
-      result.lastInsertRowid,
-      invite.id,
-    );
-  } catch {
+    userId = createRegisteredUserTx(username, hash, salt, inviteCode);
+  } catch (error) {
+    if (isUniqueUsernameConstraintError(error)) {
+      return res.status(400).json({ error: 'Username already taken' });
+    }
+    if (isInviteCodeUnavailableError(error)) {
+      return res.status(400).json({ error: error.message });
+    }
     return res.status(500).json({ error: 'Failed to create local user account' });
   }
 
-  return res.json({ ok: true, subId });
+  let provisionedClient: AutoProvisionedClient | null = null;
+  try {
+    provisionedClient = await provisionClientForRegisteredUser(username);
+    if (provisionedClient?.subId) {
+      const attachResult = attachProvisionedSubIdStmt.run(provisionedClient.subId, userId) as any;
+      if (attachResult.changes !== 1) {
+        throw new Error('Failed to attach provisioned 3X-UI client to local user');
+      }
+    }
+  } catch (error) {
+    if (provisionedClient) {
+      try {
+        await cleanupProvisionedClient(provisionedClient);
+      } catch (cleanupError) {
+        console.warn(
+          '[Prism] Failed to clean up provisioned 3X-UI client after register error:',
+          cleanupError,
+        );
+      }
+    }
+
+    rollbackRegisteredUserTx(userId, inviteCode);
+
+    const message =
+      error instanceof XuiAdminError
+        ? error.message
+        : provisionedClient
+          ? 'Failed to finalize local user after provisioning 3X-UI client'
+          : 'Failed to auto-create 3X-UI client';
+    const status = error instanceof XuiAdminError ? 502 : 500;
+    return res.status(status).json({ error: message });
+  }
+
+  return res.json({ ok: true, subId: provisionedClient?.subId ?? null });
 });
 
 router.post('/login', (req, res) => {

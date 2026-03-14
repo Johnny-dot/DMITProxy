@@ -6,11 +6,23 @@ import BetterSqlite3 from 'better-sqlite3';
 import type Database from 'better-sqlite3';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+interface MockProvisionedClient {
+  inboundId: number;
+  protocol: string;
+  email: string;
+  clientId: string;
+  subId: string;
+}
+
 interface TestContext {
   app: Express;
   db: Database;
   hashToken: (token: string) => string;
   cleanup: () => void;
+  mocks: {
+    provisionClientForRegisteredUser?: ReturnType<typeof vi.fn>;
+    cleanupProvisionedClient?: ReturnType<typeof vi.fn>;
+  };
 }
 
 const TEST_ENV_KEYS = [
@@ -69,6 +81,10 @@ async function createTestContext(options?: {
     udpCount: number;
     netIO: { up: number; down: number };
     netTraffic: { sent: number; recv: number };
+  };
+  mockAutoProvision?: {
+    implementation?: (username: string) => Promise<MockProvisionedClient | null>;
+    cleanupImplementation?: (client: MockProvisionedClient) => Promise<void>;
   };
 }): Promise<TestContext> {
   const previousEnv = new Map<string, string | undefined>();
@@ -154,13 +170,34 @@ async function createTestContext(options?: {
 
   vi.doUnmock('./xui-admin.js');
   vi.doUnmock('./node-quality-probe.js');
-  if (options?.mockClientStats || options?.mockServerStatus) {
+  const xuiMocks: TestContext['mocks'] = {};
+  if (options?.mockClientStats || options?.mockServerStatus || options?.mockAutoProvision) {
     const mockClientStats = options.mockClientStats;
     const mockServerStatus = options.mockServerStatus;
+    const provisionClientForRegisteredUser = options.mockAutoProvision
+      ? vi.fn(options.mockAutoProvision.implementation)
+      : undefined;
+    const cleanupProvisionedClient = options.mockAutoProvision
+      ? vi.fn(options.mockAutoProvision.cleanupImplementation ?? (async () => {}))
+      : undefined;
+
+    xuiMocks.provisionClientForRegisteredUser = provisionClientForRegisteredUser;
+    xuiMocks.cleanupProvisionedClient = cleanupProvisionedClient;
+
     vi.doMock('./xui-admin.js', async () => {
       const actual = await vi.importActual<typeof import('./xui-admin.js')>('./xui-admin.js');
       return {
         ...actual,
+        ...(provisionClientForRegisteredUser
+          ? {
+              provisionClientForRegisteredUser,
+              autoProvisionClientForRegisteredUser: vi.fn(async (username: string) => {
+                const provisionedClient = await provisionClientForRegisteredUser(username);
+                return provisionedClient?.subId ?? null;
+              }),
+              cleanupProvisionedClient,
+            }
+          : {}),
         ...(mockClientStats
           ? {
               fetchClientStatsBySubId: vi.fn(async () => mockClientStats),
@@ -219,6 +256,7 @@ async function createTestContext(options?: {
     db: dbModule.db as Database,
     hashToken: dbModule.hashToken,
     cleanup,
+    mocks: xuiMocks,
   };
 }
 
@@ -708,6 +746,127 @@ describe.sequential('Auth Rate Limit Integration', () => {
     });
     expect(third.status).toBe(429);
     expect(third.body.error).toContain('Too many auth attempts');
+  });
+});
+
+describe.sequential('Register Provisioning Integration', () => {
+  it('claims an invite atomically when concurrent registrations race on the same code', async () => {
+    const provisionSpy = vi.fn(async (username: string) => {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      return {
+        inboundId: 1,
+        protocol: 'vless',
+        email: `${username}@example.test`,
+        clientId: `client-${username}`,
+        subId: `sub-${username}`,
+      };
+    });
+
+    const context = await createTestContext({
+      mockAutoProvision: {
+        implementation: provisionSpy,
+      },
+    });
+
+    try {
+      context.db.prepare('INSERT INTO invite_codes (code) VALUES (?)').run('invite-race');
+
+      const [first, second] = await Promise.all([
+        request(context.app).post('/local/auth/register').send({
+          username: 'race-alice',
+          password: 'secret123',
+          inviteCode: 'invite-race',
+        }),
+        request(context.app).post('/local/auth/register').send({
+          username: 'race-bob',
+          password: 'secret123',
+          inviteCode: 'invite-race',
+        }),
+      ]);
+
+      expect([first.status, second.status].sort((a, b) => a - b)).toEqual([200, 400]);
+      expect(
+        [first.body.error, second.body.error].filter((value): value is string => Boolean(value)),
+      ).toContain('Invalid or expired invite code');
+      expect(context.mocks.provisionClientForRegisteredUser).toHaveBeenCalledTimes(1);
+
+      const users = context.db
+        .prepare('SELECT username, sub_id FROM users ORDER BY id')
+        .all() as Array<{ username: string; sub_id: string | null }>;
+      expect(users).toHaveLength(1);
+      expect(users[0].sub_id).toMatch(/^sub-/);
+
+      const invite = context.db
+        .prepare('SELECT used_by, used_at FROM invite_codes WHERE code = ?')
+        .get('invite-race') as { used_by: number | null; used_at: number | null } | undefined;
+      expect(invite?.used_by).toBeTypeOf('number');
+      expect(invite?.used_at).toBeTypeOf('number');
+    } finally {
+      context.cleanup();
+    }
+  });
+
+  it('rolls back the claimed invite and local user when upstream provisioning fails', async () => {
+    const provisionSpy = vi.fn(async () => {
+      const actual = await vi.importActual<typeof import('./xui-admin.js')>('./xui-admin.js');
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      throw new actual.XuiAdminError('Upstream provisioning failed');
+    });
+
+    const context = await createTestContext({
+      mockAutoProvision: {
+        implementation: provisionSpy,
+      },
+    });
+
+    try {
+      context.db.prepare('INSERT INTO invite_codes (code) VALUES (?)').run('invite-upstream-fail');
+
+      const registerRes = await request(context.app).post('/local/auth/register').send({
+        username: 'upstream-fail-user',
+        password: 'secret123',
+        inviteCode: 'invite-upstream-fail',
+      });
+
+      expect(registerRes.status).toBe(502);
+      expect(registerRes.body.error).toBe('Upstream provisioning failed');
+      expect(context.mocks.provisionClientForRegisteredUser).toHaveBeenCalledTimes(1);
+
+      const userCount = context.db
+        .prepare('SELECT COUNT(*) as count FROM users WHERE username = ?')
+        .get('upstream-fail-user') as { count: number };
+      expect(userCount.count).toBe(0);
+
+      const invite = context.db
+        .prepare('SELECT used_by, used_at FROM invite_codes WHERE code = ?')
+        .get('invite-upstream-fail') as
+        | { used_by: number | null; used_at: number | null }
+        | undefined;
+      expect(invite).toEqual({
+        used_by: null,
+        used_at: null,
+      });
+    } finally {
+      context.cleanup();
+    }
+  });
+});
+
+describe.sequential('Refresh Limiter Configuration', () => {
+  it('does not emit the express-rate-limit IPv6 fallback warning during app creation', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const context = await createTestContext();
+
+    try {
+      const loggedErrors = errorSpy.mock.calls
+        .flat()
+        .map((entry) => String(entry))
+        .join('\n');
+      expect(loggedErrors).not.toContain('ERR_ERL_KEY_GEN_IPV6');
+    } finally {
+      errorSpy.mockRestore();
+      context.cleanup();
+    }
   });
 });
 

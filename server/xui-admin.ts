@@ -68,6 +68,14 @@ export interface XuiServerStatus {
   netTraffic: { sent: number; recv: number };
 }
 
+export interface AutoProvisionedClient {
+  inboundId: number;
+  protocol: string;
+  email: string;
+  clientId: string;
+  subId: string;
+}
+
 interface XuiRequestResult {
   status: number;
   body: string;
@@ -459,6 +467,17 @@ export function createUniqueEmail(username: string, existingEmails: Set<string>)
   return `${username}_${randomBytes(2).toString('hex')}`;
 }
 
+function getProvisionedClientId(protocol: string, client: Record<string, unknown>): string {
+  const lowerProtocol = protocol.toLowerCase();
+  if (lowerProtocol === 'trojan') {
+    return String(client.password ?? '');
+  }
+  if (lowerProtocol === 'shadowsocks') {
+    return String(client.email ?? '');
+  }
+  return String(client.id ?? '');
+}
+
 async function loginWithServiceAccount(username: string, password: string): Promise<string> {
   const form = new URLSearchParams({ username, password }).toString();
   const response = await requestXui(
@@ -489,9 +508,9 @@ async function loginWithServiceAccount(username: string, password: string): Prom
   return cookieHeader;
 }
 
-export async function autoProvisionClientForRegisteredUser(
+export async function provisionClientForRegisteredUser(
   username: string,
-): Promise<string | null> {
+): Promise<AutoProvisionedClient | null> {
   const serviceAccount = ensureConfiguredServiceAccount();
   if (!serviceAccount) return null;
 
@@ -518,7 +537,13 @@ export async function autoProvisionClientForRegisteredUser(
       .filter(Boolean),
   );
   const email = createUniqueEmail(username, existingEmails);
-  const client = buildClientPayload(inbound.protocol, email);
+  const client = buildClientPayload(inbound.protocol, email) as Record<string, unknown>;
+  const clientId = getProvisionedClientId(inbound.protocol, client);
+  if (!clientId) {
+    throw new XuiAdminError(
+      `Failed to resolve a cleanup identifier for ${inbound.protocol} client`,
+    );
+  }
 
   const addResp = await requestXuiJson<null>(
     '/panel/api/inbounds/addClient',
@@ -535,7 +560,41 @@ export async function autoProvisionClientForRegisteredUser(
   }
 
   invalidateStatsSnapshotCache();
-  return String(client.subId ?? '');
+  return {
+    inboundId: inbound.id,
+    protocol: inbound.protocol,
+    email,
+    clientId,
+    subId: String(client.subId ?? ''),
+  };
+}
+
+export async function cleanupProvisionedClient(client: AutoProvisionedClient): Promise<void> {
+  const creds = getXuiCredentials();
+  if (!creds) {
+    throw new XuiAdminError('XUI admin credentials are missing in .env');
+  }
+
+  const cookieHeader = await loginWithServiceAccount(creds.username, creds.password);
+  const deleteResp = await requestXuiJson<null>(
+    `/panel/api/inbounds/${client.inboundId}/delClient/${encodeURIComponent(client.clientId)}`,
+    'POST',
+    null,
+    cookieHeader,
+  );
+
+  if (!deleteResp.success) {
+    throw new XuiAdminError(deleteResp.msg || 'Failed to delete client in 3X-UI');
+  }
+
+  invalidateStatsSnapshotCache();
+}
+
+export async function autoProvisionClientForRegisteredUser(
+  username: string,
+): Promise<string | null> {
+  const provisionedClient = await provisionClientForRegisteredUser(username);
+  return provisionedClient?.subId ?? null;
 }
 
 export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientUsage | null> {
