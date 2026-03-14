@@ -58,14 +58,6 @@ const CLIENT_URL_OVERRIDE_ENV: Partial<Record<ClientDownloadId, string>> = {
   clashMeta: 'VITE_CLIENT_DOWNLOAD_VPS_CLASH_META_URL',
 } as const;
 
-const LEGACY_SHARED_URL_OVERRIDE_ENV: Partial<Record<ClientDownloadId, string>> = {
-  v2rayN: 'VITE_CLIENT_DOWNLOAD_VPS_V2RAYN_URL',
-  clashVerge: 'VITE_CLIENT_DOWNLOAD_VPS_CLASH_VERGE_URL',
-  flClash: 'VITE_CLIENT_DOWNLOAD_VPS_FLCLASH_URL',
-  sparkle: 'VITE_CLIENT_DOWNLOAD_VPS_SPARKLE_URL',
-  singBox: 'VITE_CLIENT_DOWNLOAD_VPS_SING_BOX_URL',
-} as const;
-
 const PLATFORM_URL_OVERRIDE_ENV: Partial<
   Record<ClientDownloadId, Partial<Record<ClientDownloadPlatform, string>>>
 > = {
@@ -134,18 +126,6 @@ const DEFAULT_VPS_FILES: Partial<
   },
 };
 
-const LEGACY_DEFAULT_VPS_FILES: Partial<
-  Record<ClientDownloadId, Partial<Record<ClientDownloadPlatform, string>>>
-> = {
-  v2rayN: {
-    windows: 'v2rayN-windows-64.zip',
-  },
-  clashVerge: {
-    windows: 'clash-verge-x64-setup.exe',
-    macos: 'clash-verge-x64.dmg',
-  },
-};
-
 function normalizeUrl(url: string | undefined): string {
   return typeof url === 'string' ? url.trim() : '';
 }
@@ -180,11 +160,8 @@ function resolveVpsDownload(
   const explicitClient = readEnvByName(CLIENT_URL_OVERRIDE_ENV[id]);
   if (explicitClient) return { url: explicitClient, managed: false };
 
-  const legacyShared = readEnvByName(LEGACY_SHARED_URL_OVERRIDE_ENV[id]);
-  if (legacyShared) return { url: legacyShared, managed: false };
-
   const base = normalizeUrl(import.meta.env.VITE_CLIENT_DOWNLOAD_VPS_BASE_URL);
-  const defaultFile = DEFAULT_VPS_FILES[id]?.[platform] ?? LEGACY_DEFAULT_VPS_FILES[id]?.[platform];
+  const defaultFile = DEFAULT_VPS_FILES[id]?.[platform];
   if (base && defaultFile) return { url: joinUrl(base, defaultFile), managed: false };
 
   return supportsManagedMirror(id, platform)
