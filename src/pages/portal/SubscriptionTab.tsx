@@ -13,18 +13,14 @@ import {
   Smartphone,
   Terminal,
 } from 'lucide-react';
+import { MirrorDownloadDialog } from '@/src/components/downloads/MirrorDownloadDialog';
 import { Button } from '@/src/components/ui/Button';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 import { useToast } from '@/src/components/ui/Toast';
-import { getManagedMirrorStatus } from '@/src/api/downloads';
 import { useI18n } from '@/src/context/I18nContext';
 import { cn } from '@/src/utils/cn';
 import { buildClientImportUrl, isClientImportFormat } from '@/src/utils/clientImport';
 import { getClientDownloadLinks, type ClientDownloadPlatform } from '@/src/utils/clientDownloads';
-import {
-  getManagedMirrorFallbackToast,
-  getManagedMirrorStatusToast,
-} from '@/src/utils/managedMirrorStatus';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import type { ClientCard, PlatformKey, PortalTab, SetupFocus, SubscriptionFormat } from './types';
 import { COPY_RESET_DELAY_MS } from './types';
@@ -32,6 +28,14 @@ import { COPY_RESET_DELAY_MS } from './types';
 type GuidePlatform = Exclude<PlatformKey, 'all'>;
 type ClientId = ClientCard['id'];
 type GuideTone = 'launch' | 'import' | 'connect';
+
+interface MirrorDialogState {
+  url: string;
+  clientName: string;
+  clientId: ClientId;
+  platform: ClientDownloadPlatform;
+  managed: boolean;
+}
 
 interface GuideScreenshotHighlight {
   x: number;
@@ -3169,6 +3173,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
   const [hasCopied, setHasCopied] = useState(false);
   const [hasMarkedConnected, setHasMarkedConnected] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [mirrorDialog, setMirrorDialog] = useState<MirrorDialogState | null>(null);
 
   const subscriptionLinks = useMemo(
     () => ({
@@ -3387,25 +3392,20 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     ) => {
       if (!url) return;
       if (clientId) setActiveClientId(clientId);
-      window.open(url, '_blank', 'noopener,noreferrer');
-
       if (options?.kind === 'mirror' && clientId && options.platform) {
-        if (options.managed) {
-          void getManagedMirrorStatus(clientId, options.platform)
-            .then((status) => {
-              const hint = getManagedMirrorStatusToast(status, isZh);
-              toast(hint.message, hint.type);
-            })
-            .catch(() => {
-              const fallback = getManagedMirrorFallbackToast(isZh);
-              toast(fallback.message, fallback.type);
-            });
-        } else {
-          toast(isZh ? '正在打开镜像下载。' : 'Opening mirror download.', 'info');
-        }
+        setMirrorDialog({
+          url,
+          clientName: clients.find((item) => item.id === clientId)?.name ?? clientId,
+          clientId,
+          platform: options.platform,
+          managed: options.managed ?? false,
+        });
+        return;
       }
+
+      window.open(url, '_blank', 'noopener,noreferrer');
     },
-    [isZh, toast],
+    [clients],
   );
 
   return (
@@ -3786,6 +3786,17 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
           </Button>
         </section>
       </section>
+
+      <MirrorDownloadDialog
+        open={Boolean(mirrorDialog)}
+        url={mirrorDialog?.url ?? ''}
+        clientName={mirrorDialog?.clientName ?? ''}
+        clientId={mirrorDialog?.clientId}
+        platform={mirrorDialog?.platform ?? 'windows'}
+        managed={mirrorDialog?.managed ?? false}
+        isZh={isZh}
+        onClose={() => setMirrorDialog(null)}
+      />
     </div>
   );
 }

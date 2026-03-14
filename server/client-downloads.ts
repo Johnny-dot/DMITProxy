@@ -38,7 +38,16 @@ const MIRROR_TARGETS: Record<
   ClientDownloadId,
   Partial<Record<ClientDownloadPlatform, MirrorTarget>>
 > = {
-  v2rayN: {},
+  v2rayN: {
+    windows: {
+      repo: '2dust/v2rayN',
+      matchers: [/^v2rayN-windows-64-desktop\.zip$/i, /^v2rayN-windows-64\.zip$/i],
+    },
+    linux: {
+      repo: '2dust/v2rayN',
+      matchers: [/^v2rayN-linux-64\.zip$/i, /^v2rayN-linux-64\.deb$/i],
+    },
+  },
   v2rayNG: {
     android: {
       repo: '2dust/v2rayNG',
@@ -53,8 +62,61 @@ const MIRROR_TARGETS: Record<
       matchers: [/^ClashNEXT-LTS-[0-9A-Za-z._-]+\.hap$/i],
     },
   },
-  clashVerge: {},
-  flClash: {},
+  clashVerge: {
+    windows: {
+      repo: 'clash-verge-rev/clash-verge-rev',
+      matchers: [
+        /^Clash\.Verge_[0-9A-Za-z._-]+_x64-setup\.exe$/i,
+        /^Clash\.Verge_[0-9A-Za-z._-]+_x64_fixed_webview2-setup\.exe$/i,
+      ],
+    },
+    macos: {
+      repo: 'clash-verge-rev/clash-verge-rev',
+      matchers: [
+        /^Clash\.Verge_[0-9A-Za-z._-]+_x64\.dmg$/i,
+        /^Clash\.Verge_[0-9A-Za-z._-]+_aarch64\.dmg$/i,
+      ],
+    },
+    linux: {
+      repo: 'clash-verge-rev/clash-verge-rev',
+      matchers: [
+        /^Clash\.Verge_x64\.app\.tar\.gz$/i,
+        /^Clash\.Verge_[0-9A-Za-z._-]+_amd64\.deb$/i,
+        /^Clash\.Verge-[0-9A-Za-z._-]+\.x86_64\.rpm$/i,
+      ],
+    },
+  },
+  flClash: {
+    windows: {
+      repo: 'chen08209/FlClash',
+      matchers: [
+        /^FlClash-[0-9A-Za-z._-]+-windows-amd64-setup\.exe$/i,
+        /^FlClash-[0-9A-Za-z._-]+-windows-amd64\.zip$/i,
+      ],
+    },
+    macos: {
+      repo: 'chen08209/FlClash',
+      matchers: [
+        /^FlClash-[0-9A-Za-z._-]+-macos-amd64\.dmg$/i,
+        /^FlClash-[0-9A-Za-z._-]+-macos-arm64\.dmg$/i,
+      ],
+    },
+    linux: {
+      repo: 'chen08209/FlClash',
+      matchers: [
+        /^FlClash-[0-9A-Za-z._-]+-linux-amd64\.AppImage$/i,
+        /^FlClash-[0-9A-Za-z._-]+-linux-amd64\.deb$/i,
+        /^FlClash-[0-9A-Za-z._-]+-linux-amd64\.rpm$/i,
+      ],
+    },
+    android: {
+      repo: 'chen08209/FlClash',
+      matchers: [
+        /^FlClash-[0-9A-Za-z._-]+-android-arm64-v8a\.apk$/i,
+        /^FlClash-[0-9A-Za-z._-]+-android-armeabi-v7a\.apk$/i,
+      ],
+    },
+  },
   exclave: {},
   clashMeta: {
     android: {
@@ -62,7 +124,30 @@ const MIRROR_TARGETS: Record<
       matchers: [/meta-universal-release\.apk$/i],
     },
   },
-  sparkle: {},
+  sparkle: {
+    windows: {
+      repo: 'xishang0128/mihomo-party',
+      matchers: [
+        /^sparkle-windows-[0-9A-Za-z._-]+-x64-setup\.exe$/i,
+        /^sparkle-windows-[0-9A-Za-z._-]+-x64-portable\.7z$/i,
+      ],
+    },
+    macos: {
+      repo: 'xishang0128/mihomo-party',
+      matchers: [
+        /^sparkle-macos-[0-9A-Za-z._-]+-x64\.pkg$/i,
+        /^sparkle-macos-[0-9A-Za-z._-]+-arm64\.pkg$/i,
+      ],
+    },
+    linux: {
+      repo: 'xishang0128/mihomo-party',
+      matchers: [
+        /^sparkle-linux-[0-9A-Za-z._-]+-amd64\.deb$/i,
+        /^sparkle-linux-[0-9A-Za-z._-]+-x86_64\.rpm$/i,
+        /^sparkle-linux-[0-9A-Za-z._-]+-x64\.pkg\.tar\.xz$/i,
+      ],
+    },
+  },
   singBox: {
     android: {
       repo: 'SagerNet/sing-box',

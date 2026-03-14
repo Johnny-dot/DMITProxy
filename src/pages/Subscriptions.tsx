@@ -11,6 +11,7 @@ import { Input } from '@/src/components/ui/Input';
 import { Badge } from '@/src/components/ui/Badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/src/components/ui/Tabs';
 import { Skeleton } from '@/src/components/ui/Skeleton';
+import { MirrorDownloadDialog } from '@/src/components/downloads/MirrorDownloadDialog';
 import { useToast } from '@/src/components/ui/Toast';
 import {
   Copy,
@@ -32,18 +33,25 @@ import {
 import QRCode from 'qrcode';
 import { cn } from '@/src/utils/cn';
 import { getInbounds, Inbound } from '@/src/api/client';
-import { getManagedMirrorStatus } from '@/src/api/downloads';
 import { flattenInboundClients, formatExpiry, formatTraffic } from '@/src/utils/xuiClients';
 import { useI18n } from '@/src/context/I18nContext';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
-import { getClientDownloadLinks } from '@/src/utils/clientDownloads';
-import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 import {
-  getManagedMirrorFallbackToast,
-  getManagedMirrorStatusToast,
-} from '@/src/utils/managedMirrorStatus';
+  getClientDownloadLinks,
+  type ClientDownloadId,
+  type ClientDownloadPlatform,
+} from '@/src/utils/clientDownloads';
+import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 
 const STORAGE_KEY = 'prism:last-sub-id';
+
+interface MirrorDialogState {
+  url: string;
+  clientName: string;
+  clientId: ClientDownloadId;
+  platform: ClientDownloadPlatform;
+  managed: boolean;
+}
 
 export function SubscriptionsPage() {
   const { toast } = useToast();
@@ -64,6 +72,7 @@ export function SubscriptionsPage() {
   const [qrImage, setQrImage] = useState('');
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState('');
+  const [mirrorDialog, setMirrorDialog] = useState<MirrorDialogState | null>(null);
 
   // Pre-rendered QR images for the protocol share cards
   const [cardQrImages, setCardQrImages] = useState<Record<string, string>>({});
@@ -209,33 +218,11 @@ export function SubscriptionsPage() {
   );
 
   const openLink = useCallback(
-    (
-      url: string,
-      label: string,
-      options?: {
-        kind?: 'official' | 'mirror';
-        managed?: boolean;
-        clientId?: Parameters<typeof getManagedMirrorStatus>[0];
-        platform?: Parameters<typeof getManagedMirrorStatus>[1];
-      },
-    ) => {
+    (url: string, label: string) => {
       window.open(url, '_blank', 'noopener,noreferrer');
-
-      if (options?.kind === 'mirror' && options.managed && options.clientId && options.platform) {
-        void getManagedMirrorStatus(options.clientId, options.platform)
-          .then((status) => {
-            const hint = getManagedMirrorStatusToast(status, isZh);
-            toast(hint.message, hint.type);
-          })
-          .catch(() => {
-            const fallback = getManagedMirrorFallbackToast(isZh);
-            toast(fallback.message, fallback.type);
-          });
-      } else {
-        toast(t('subscriptions.opening', { label }), 'info');
-      }
+      toast(t('subscriptions.opening', { label }), 'info');
     },
-    [isZh, t, toast],
+    [t, toast],
   );
 
   // Generate QR codes for protocol cards whenever links change (debounced to avoid per-keystroke generation)
@@ -630,11 +617,12 @@ export function SubscriptionsPage() {
                           : 'Mirror is not available for this platform'
                     }
                     onClick={() =>
-                      void openLink(links.vps, `${client.name} Mirror`, {
-                        kind: 'mirror',
-                        managed: links.vpsManaged,
+                      setMirrorDialog({
+                        url: links.vps,
+                        clientName: client.name,
                         clientId: client.id,
                         platform: client.platform,
+                        managed: links.vpsManaged,
                       })
                     }
                   >
@@ -823,6 +811,17 @@ export function SubscriptionsPage() {
           </Card>
         </div>
       )}
+
+      <MirrorDownloadDialog
+        open={Boolean(mirrorDialog)}
+        url={mirrorDialog?.url ?? ''}
+        clientName={mirrorDialog?.clientName ?? ''}
+        clientId={mirrorDialog?.clientId}
+        platform={mirrorDialog?.platform ?? 'windows'}
+        managed={mirrorDialog?.managed ?? false}
+        isZh={isZh}
+        onClose={() => setMirrorDialog(null)}
+      />
     </div>
   );
 }

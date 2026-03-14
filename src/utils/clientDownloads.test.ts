@@ -33,12 +33,47 @@ describe('getClientDownloadLinks', () => {
     );
 
     expect(getClientDownloadLinks('flClash', 'windows')).toMatchObject({
-      vps: '',
-      vpsManaged: false,
+      vps: '/local/downloads/flClash?platform=windows',
+      vpsManaged: true,
     });
     expect(getClientDownloadLinks('flClash', 'android')).toMatchObject({
-      vps: '',
-      vpsManaged: false,
+      vps: '/local/downloads/flClash?platform=android',
+      vpsManaged: true,
+    });
+  });
+
+  it('falls back to managed mirrors for supported desktop clients', () => {
+    expect(getClientDownloadLinks('v2rayN', 'windows')).toMatchObject({
+      vps: '/local/downloads/v2rayN?platform=windows',
+      vpsManaged: true,
+    });
+    expect(getClientDownloadLinks('v2rayN', 'linux')).toMatchObject({
+      vps: '/local/downloads/v2rayN?platform=linux',
+      vpsManaged: true,
+    });
+    expect(getClientDownloadLinks('clashVerge', 'windows')).toMatchObject({
+      vps: '/local/downloads/clashVerge?platform=windows',
+      vpsManaged: true,
+    });
+    expect(getClientDownloadLinks('clashVerge', 'macos')).toMatchObject({
+      vps: '/local/downloads/clashVerge?platform=macos',
+      vpsManaged: true,
+    });
+    expect(getClientDownloadLinks('flClash', 'linux')).toMatchObject({
+      vps: '/local/downloads/flClash?platform=linux',
+      vpsManaged: true,
+    });
+    expect(getClientDownloadLinks('sparkle', 'windows')).toMatchObject({
+      vps: '/local/downloads/sparkle?platform=windows',
+      vpsManaged: true,
+    });
+    expect(getClientDownloadLinks('sparkle', 'macos')).toMatchObject({
+      vps: '/local/downloads/sparkle?platform=macos',
+      vpsManaged: true,
+    });
+    expect(getClientDownloadLinks('sparkle', 'linux')).toMatchObject({
+      vps: '/local/downloads/sparkle?platform=linux',
+      vpsManaged: true,
     });
   });
 

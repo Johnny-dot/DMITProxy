@@ -89,16 +89,16 @@ const PLATFORM_URL_OVERRIDE_ENV: Partial<
 } as const;
 
 const MANAGED_MIRROR_SUPPORTED_PLATFORMS: Record<ClientDownloadId, ClientDownloadPlatform[]> = {
-  v2rayN: [],
+  v2rayN: ['windows', 'linux'],
   v2rayNG: ['android'],
   surge: [],
   shadowrocket: [],
   clashBox: ['harmonyos'],
-  clashVerge: [],
-  flClash: [],
+  clashVerge: ['windows', 'macos', 'linux'],
+  flClash: ['windows', 'macos', 'linux', 'android'],
   exclave: [],
   clashMeta: ['android'],
-  sparkle: [],
+  sparkle: ['windows', 'macos', 'linux'],
   singBox: ['android', 'macos'],
 };
 
