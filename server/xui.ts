@@ -104,5 +104,6 @@ function parseBooleanEnv(raw: string | undefined, fallback: boolean): boolean {
 }
 
 export function shouldSkipXuiTlsVerification(): boolean {
+  if (process.env.NODE_ENV === 'production') return false;
   return parseBooleanEnv(process.env.XUI_TLS_INSECURE_SKIP_VERIFY, false);
 }

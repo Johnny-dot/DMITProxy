@@ -46,6 +46,18 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       exclude: ['**/node_modules/**', '**/dist/**', '**/.tmp/**', '**/.claude/**', '**/.codex/**'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'html'],
+        exclude: [
+          'node_modules/',
+          'dist/',
+          '**/*.config.*',
+          '**/*.test.*',
+          '**/*.spec.*',
+          'scripts/',
+        ],
+      },
     },
   };
 });

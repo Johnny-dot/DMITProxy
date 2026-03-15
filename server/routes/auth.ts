@@ -44,13 +44,13 @@ const SESSION_COOKIE_SECURE =
       : process.env.NODE_ENV === 'production';
 const SESSION_COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: 'lax' as const,
+  sameSite: 'strict' as const,
   secure: SESSION_COOKIE_SECURE,
   maxAge: SESSION_TTL * 1000,
 };
 const SESSION_COOKIE_CLEAR_OPTIONS = {
   httpOnly: true,
-  sameSite: 'lax' as const,
+  sameSite: 'strict' as const,
   secure: SESSION_COOKIE_SECURE,
 };
 
@@ -282,8 +282,8 @@ router.post('/logout', (req, res) => {
   return res.json({ ok: true });
 });
 
-router.get('/password-reset/verify', (req, res) => {
-  const token = String(req.query?.token ?? '').trim();
+router.post('/password-reset/verify', (req, res) => {
+  const token = String(req.body?.token ?? '').trim();
   if (!token) {
     return res.status(400).json({ error: 'Reset token is required' });
   }

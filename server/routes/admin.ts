@@ -39,7 +39,7 @@ const xuiTarget = getXuiTarget();
 const skipTlsVerification = shouldSkipXuiTlsVerification();
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
-const ADMIN_VERIFY_CACHE_TTL_MS = 60_000; // cache positive results for 1 minute
+const ADMIN_VERIFY_CACHE_TTL_MS = 10_000; // cache positive results for 10 seconds
 const adminVerifyCache = new Map<string, { ok: boolean; expiresAt: number }>();
 const XUI_NOT_CONFIGURED_ERROR =
   '3X-UI admin capability is not configured. Set VITE_3XUI_SERVER and VITE_3XUI_BASE_PATH in .env.';
@@ -179,60 +179,89 @@ function getSettings(): AppSettings {
   return result;
 }
 
+interface AnnouncementUpdate {
+  nextText: string | undefined;
+  nextCreatedAt: number | null;
+  nextHistory: AnnouncementHistoryEntry[] | null;
+}
+
+function computeAnnouncementUpdate(
+  partial: Partial<AppSettings>,
+  currentText: string,
+  currentCreatedAt: number,
+  currentHistoryRaw: string | undefined,
+  nowMs: number,
+): AnnouncementUpdate {
+  const nextText =
+    partial.announcementText !== undefined ? String(partial.announcementText).trim() : undefined;
+
+  const nextCreatedAt =
+    nextText === undefined
+      ? null
+      : !nextText
+        ? null
+        : nextText === currentText
+          ? currentCreatedAt
+          : nowMs;
+
+  const nextHistory =
+    nextText !== undefined
+      ? (() => {
+          const existingHistory = parseAnnouncementHistory(currentHistoryRaw);
+          const seededHistory = currentText
+            ? ensureAnnouncementHistoryEntry(existingHistory, currentText, currentCreatedAt)
+            : existingHistory;
+          if (!nextText || nextText === currentText) return seededHistory;
+          return appendAnnouncementHistoryEntry(seededHistory, nextText, nowMs);
+        })()
+      : null;
+
+  return { nextText, nextCreatedAt, nextHistory };
+}
+
+function readCurrentAnnouncementState(updatedAtSeconds: number): {
+  currentText: string;
+  currentCreatedAt: number;
+  currentHistoryRaw: string | undefined;
+} {
+  const announcementRow = db
+    .prepare('SELECT value, updated_at FROM app_settings WHERE key = ?')
+    .get('announcementText') as { value: string; updated_at: number } | undefined;
+  const createdAtRow = db
+    .prepare('SELECT value FROM app_settings WHERE key = ?')
+    .get(ANNOUNCEMENT_CURRENT_CREATED_AT_KEY) as { value: string } | undefined;
+  const historyRow = db
+    .prepare('SELECT value FROM app_settings WHERE key = ?')
+    .get(ANNOUNCEMENT_HISTORY_KEY) as { value: string } | undefined;
+
+  const currentText = announcementRow?.value?.trim() ?? '';
+  const parsed = Number.parseInt(createdAtRow?.value ?? '', 10);
+  const currentCreatedAt =
+    Number.isFinite(parsed) && parsed > 0
+      ? parsed
+      : (announcementRow?.updated_at ?? updatedAtSeconds) * 1000;
+
+  return { currentText, currentCreatedAt, currentHistoryRaw: historyRow?.value };
+}
+
 function updateSettings(partial: Partial<AppSettings>): AppSettings {
   const entries = Object.entries(partial) as Array<
     [keyof AppSettings, AppSettings[keyof AppSettings]]
   >;
   if (entries.length === 0) return getSettings();
+
   const updatedAtMs = Date.now();
   const updatedAtSeconds = Math.floor(updatedAtMs / 1000);
 
-  const currentAnnouncementRow = db
-    .prepare('SELECT value, updated_at FROM app_settings WHERE key = ?')
-    .get('announcementText') as { value: string; updated_at: number } | undefined;
-  const currentAnnouncementText = currentAnnouncementRow?.value?.trim() ?? '';
-  const currentAnnouncementCreatedAtRow = db
-    .prepare('SELECT value FROM app_settings WHERE key = ?')
-    .get(ANNOUNCEMENT_CURRENT_CREATED_AT_KEY) as { value: string } | undefined;
-  const parsedCurrentAnnouncementCreatedAt = Number.parseInt(
-    currentAnnouncementCreatedAtRow?.value ?? '',
-    10,
+  const { currentText, currentCreatedAt, currentHistoryRaw } =
+    readCurrentAnnouncementState(updatedAtSeconds);
+  const { nextText, nextCreatedAt, nextHistory } = computeAnnouncementUpdate(
+    partial,
+    currentText,
+    currentCreatedAt,
+    currentHistoryRaw,
+    updatedAtMs,
   );
-  const currentAnnouncementCreatedAt =
-    Number.isFinite(parsedCurrentAnnouncementCreatedAt) && parsedCurrentAnnouncementCreatedAt > 0
-      ? parsedCurrentAnnouncementCreatedAt
-      : (currentAnnouncementRow?.updated_at ?? updatedAtSeconds) * 1000;
-  const currentAnnouncementHistoryRow = db
-    .prepare('SELECT value FROM app_settings WHERE key = ?')
-    .get(ANNOUNCEMENT_HISTORY_KEY) as { value: string } | undefined;
-  const nextAnnouncementText =
-    partial.announcementText !== undefined ? String(partial.announcementText).trim() : undefined;
-  const nextAnnouncementCreatedAt =
-    nextAnnouncementText === undefined
-      ? null
-      : !nextAnnouncementText
-        ? null
-        : nextAnnouncementText === currentAnnouncementText
-          ? currentAnnouncementCreatedAt
-          : updatedAtMs;
-  const nextAnnouncementHistory =
-    nextAnnouncementText !== undefined
-      ? (() => {
-          const existingHistory = parseAnnouncementHistory(currentAnnouncementHistoryRow?.value);
-          const seededHistory = currentAnnouncementText
-            ? ensureAnnouncementHistoryEntry(
-                existingHistory,
-                currentAnnouncementText,
-                currentAnnouncementCreatedAt,
-              )
-            : existingHistory;
-          if (!nextAnnouncementText || nextAnnouncementText === currentAnnouncementText) {
-            return seededHistory;
-          }
-
-          return appendAnnouncementHistoryEntry(seededHistory, nextAnnouncementText, updatedAtMs);
-        })()
-      : null;
 
   const stmt = db.prepare(`
     INSERT INTO app_settings (key, value, updated_at)
@@ -243,10 +272,8 @@ function updateSettings(partial: Partial<AppSettings>): AppSettings {
   const tx = db.transaction(() => {
     for (const [key, value] of entries) {
       const storedUpdatedAtSeconds =
-        key === 'announcementText' &&
-        nextAnnouncementText !== undefined &&
-        nextAnnouncementCreatedAt
-          ? Math.floor(nextAnnouncementCreatedAt / 1000)
+        key === 'announcementText' && nextText !== undefined && nextCreatedAt
+          ? Math.floor(nextCreatedAt / 1000)
           : updatedAtSeconds;
       const stored =
         key === 'announcementActive'
@@ -259,11 +286,11 @@ function updateSettings(partial: Partial<AppSettings>): AppSettings {
       stmt.run(key, stored, storedUpdatedAtSeconds);
     }
 
-    if (nextAnnouncementHistory !== null) {
-      stmt.run(ANNOUNCEMENT_HISTORY_KEY, JSON.stringify(nextAnnouncementHistory), updatedAtSeconds);
+    if (nextHistory !== null) {
+      stmt.run(ANNOUNCEMENT_HISTORY_KEY, JSON.stringify(nextHistory), updatedAtSeconds);
       stmt.run(
         ANNOUNCEMENT_CURRENT_CREATED_AT_KEY,
-        nextAnnouncementCreatedAt ? String(nextAnnouncementCreatedAt) : '',
+        nextCreatedAt ? String(nextCreatedAt) : '',
         updatedAtSeconds,
       );
     }

@@ -37,8 +37,11 @@ export function UserResetPasswordPage() {
     setStatus('checking');
     setError('');
 
-    fetch(`/local/auth/password-reset/verify?token=${encodeURIComponent(token)}`, {
+    fetch('/local/auth/password-reset/verify', {
+      method: 'POST',
       credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
     })
       .then(async (res) => {
         const data = await res.json().catch(() => null);
