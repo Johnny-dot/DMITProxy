@@ -14,13 +14,12 @@ import { Skeleton } from '@/src/components/ui/Skeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { useToast } from '@/src/components/ui/Toast';
 import { Activity, RefreshCw, XCircle, Users as UsersIcon, Copy } from 'lucide-react';
-import { getInbounds, Inbound } from '@/src/api/client';
+import { getInbounds, getOnlineClients, Inbound } from '@/src/api/client';
 import { cn } from '@/src/utils/cn';
 import {
   flattenInboundClients,
   formatExpiry,
   formatTraffic,
-  getClientStatus,
 } from '@/src/utils/xuiClients';
 import { useI18n } from '@/src/context/I18nContext';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
@@ -33,14 +32,19 @@ interface OnlineUsersPageProps {
 export function OnlineUsersPage({ embedded = false }: OnlineUsersPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
+  const [onlineEmailSet, setOnlineEmailSet] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { t } = useI18n();
 
   const load = async (showSuccess = false) => {
     setIsLoading(true);
     try {
-      const data = await getInbounds();
+      const [data, onlineList] = await Promise.all([
+        getInbounds(),
+        getOnlineClients().catch(() => null),
+      ]);
       setInbounds(data);
+      setOnlineEmailSet(new Set((onlineList ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean)));
       if (showSuccess) toast(t('online.listUpdated'), 'success');
     } catch {
       toast(t('online.failedLoad'), 'error');
@@ -55,10 +59,12 @@ export function OnlineUsersPage({ embedded = false }: OnlineUsersPageProps) {
 
   const activeClients = useMemo(() => {
     return flattenInboundClients(inbounds)
-      .filter((client) => getClientStatus(client) === 'active')
-      .filter((client) => client.up + client.down > 0)
+      .filter((client) => {
+        const email = client.email.trim().toLowerCase();
+        return email ? onlineEmailSet.has(email) : false;
+      })
       .sort((a, b) => b.up + b.down - (a.up + a.down));
-  }, [inbounds]);
+  }, [inbounds, onlineEmailSet]);
 
   const copyLink = async (subId: string) => {
     if (!subId) {

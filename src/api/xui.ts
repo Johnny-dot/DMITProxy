@@ -209,6 +209,14 @@ export function getInboundLastOnline(options?: RequestInit) {
   });
 }
 
+export function getOnlineClients(options?: RequestInit) {
+  return apiFetch<string[]>('/panel/api/inbounds/onlines', {
+    method: 'POST',
+    headers: xuiPostHeaders(),
+    ...options,
+  });
+}
+
 export async function getInboundClientIps(email: string, options?: RequestInit) {
   const normalizedEmail = email.trim();
   if (!normalizedEmail) {

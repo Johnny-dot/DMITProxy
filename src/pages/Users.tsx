@@ -36,6 +36,7 @@ import {
   getInboundClientIps,
   getInboundLastOnline,
   getInbounds,
+  getOnlineClients,
   Inbound,
   resetInboundClientTraffic,
   updateInboundClient,
@@ -57,8 +58,9 @@ interface UsersPageProps {
   onOpenAccounts?: () => void;
 }
 
-function isOnlineClient(user: XuiClientRow) {
-  return getClientStatus(user) === 'active' && user.up + user.down > 0;
+function isOnlineClient(user: XuiClientRow, onlineEmails: Set<string>) {
+  const email = user.email.trim().toLowerCase();
+  return email ? onlineEmails.has(email) : false;
 }
 
 const BYTES_PER_GB = 1024 ** 3;
@@ -157,16 +159,19 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
   const [isSavingClient, setIsSavingClient] = useState(false);
   const [isResettingTraffic, setIsResettingTraffic] = useState(false);
   const [lastOnlineByEmail, setLastOnlineByEmail] = useState<Record<string, number>>({});
+  const [onlineEmailSet, setOnlineEmailSet] = useState<Set<string>>(new Set());
 
   const load = async () => {
     setIsLoading(true);
     try {
-      const [data, lastOnline] = await Promise.all([
+      const [data, lastOnline, onlineList] = await Promise.all([
         getInbounds(),
         getInboundLastOnline().catch(() => null),
+        getOnlineClients().catch(() => null),
       ]);
       setInbounds(data);
       setLastOnlineByEmail(lastOnline ?? {});
+      setOnlineEmailSet(new Set((onlineList ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean)));
     } catch {
       toast(t('users.failedLoad'), 'error');
     } finally {
@@ -197,7 +202,10 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
     return flattenInboundClients(inbounds).sort((a, b) => b.up + b.down - (a.up + a.down));
   }, [inbounds]);
 
-  const activeUsersCount = useMemo(() => users.filter(isOnlineClient).length, [users]);
+  const activeUsersCount = useMemo(
+    () => users.filter((u) => isOnlineClient(u, onlineEmailSet)).length,
+    [users, onlineEmailSet],
+  );
 
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -461,8 +469,8 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
   const onlineColumnLabel = language === 'zh-CN' ? '在线' : 'Online';
   const onlineHelpText =
     language === 'zh-CN'
-      ? '根据账号状态为可用且累计流量大于 0 推断为在线。'
-      : 'Inferred as online when the client is active and cumulative traffic is greater than 0.';
+      ? '来自 3X-UI 的实时在线状态，表示当前有活跃连接。'
+      : 'Real-time online status from 3X-UI, indicating an active connection right now.';
   const statusHelpText =
     language === 'zh-CN'
       ? '这里表示这条订阅本身是否可用，例如启用中、已停用或已过期；和“在线”不是一回事。'
@@ -607,7 +615,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                 {filteredUsers.map((user) => {
                   const trafficUsed = user.up + user.down;
                   const usagePercent = user.totalGB > 0 ? (trafficUsed / user.totalGB) * 100 : 0;
-                  const online = isOnlineClient(user);
+                  const online = isOnlineClient(user, onlineEmailSet);
                   const status = getClientStatus(user);
 
                   return (
