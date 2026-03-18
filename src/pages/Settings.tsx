@@ -13,6 +13,7 @@ import {
   Save,
   Shield,
   ShieldAlert,
+  Trash2,
 } from 'lucide-react';
 import {
   Card,
@@ -48,6 +49,9 @@ import { type CommunityLink } from '@/src/types/communityLink';
 import { SharedResourceEditor } from '@/src/pages/settings/SharedResourceEditor';
 import { CommunityLinkEditor } from '@/src/pages/settings/CommunityLinkEditor';
 
+const TEXTAREA_CLASS_NAME =
+  'min-h-[150px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 text-sm text-[var(--text-primary)] shadow-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2';
+
 const DEFAULT_SETTINGS: AdminSettings = {
   siteName: 'Prism Admin',
   publicUrl: '',
@@ -79,7 +83,6 @@ function resolveSectionFromHash(hash: string): SettingsSection {
 
   return 'general';
 }
-
 
 function OverviewTile({
   icon: Icon,

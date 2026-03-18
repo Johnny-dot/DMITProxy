@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Badge } from '@/src/components/ui/Badge';
 import { Button } from '@/src/components/ui/Button';
@@ -41,6 +41,7 @@ interface CommunityLinkEditorCopy {
 }
 
 interface Props {
+  key?: React.Key;
   entry: CommunityLink;
   isZh: boolean;
   copy: CommunityLinkEditorCopy;

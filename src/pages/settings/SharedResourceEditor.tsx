@@ -1,3 +1,4 @@
+import React from 'react';
 import { Trash2 } from 'lucide-react';
 import { Badge } from '@/src/components/ui/Badge';
 import { Button } from '@/src/components/ui/Button';
@@ -47,6 +48,7 @@ interface SharedResourceEditorCopy {
 }
 
 interface Props {
+  key?: React.Key;
   resource: SharedResource;
   isZh: boolean;
   copy: SharedResourceEditorCopy;
@@ -264,7 +266,9 @@ export function SharedResourceEditor({ resource, isZh, copy, onUpdate, onRemove 
               <textarea
                 className={cn(TEXTAREA_CLASS_NAME, 'min-h-[132px]')}
                 placeholder={
-                  isZh ? '例如：加入后联系管理员确认。' : 'Example: Contact the admin after joining.'
+                  isZh
+                    ? '例如：加入后联系管理员确认。'
+                    : 'Example: Contact the admin after joining.'
                 }
                 value={inviteFields.note}
                 onChange={(event) =>
