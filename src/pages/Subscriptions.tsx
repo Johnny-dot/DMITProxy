@@ -472,6 +472,7 @@ export function SubscriptionsPage() {
               color: 'text-amber-500',
               bg: 'bg-amber-500/10',
               link: generatedLinks.clash,
+              qrLink: buildSubscriptionQrUrl(subId, 'clash'),
             },
           ].map((proto) => (
             <Card key={proto.name} className="overflow-hidden">
@@ -498,7 +499,9 @@ export function SubscriptionsPage() {
                 <div className="p-6 flex flex-col items-center justify-center bg-zinc-900/20">
                   <button
                     type="button"
-                    onClick={() => openQr(proto.link, proto.name)}
+                    onClick={() =>
+                      openQr('qrLink' in proto ? proto.qrLink : proto.link, proto.name)
+                    }
                     className="w-36 h-36 rounded-xl flex items-center justify-center relative group cursor-pointer transition-opacity hover:opacity-80"
                     title={t('subscriptions.showQr')}
                   >
