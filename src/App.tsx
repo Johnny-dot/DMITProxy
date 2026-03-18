@@ -1,5 +1,18 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useSearchParams,
+} from 'react-router-dom';
+
+function InviteRedirect() {
+  const [params] = useSearchParams();
+  const code = params.get('code') ?? '';
+  return <Navigate to={`/register?invite=${encodeURIComponent(code)}`} replace />;
+}
 import { ToastProvider } from './components/ui/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -75,6 +88,8 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/user/login" element={<Navigate to="/login" replace />} />
                 <Route path="/register" element={<UserRegisterPage />} />
+                {/* Friendly invite link: /invite?code=xxx → /register?invite=xxx */}
+                <Route path="/invite" element={<InviteRedirect />} />
                 <Route path="/reset-password" element={<UserResetPasswordPage />} />
                 {/* Legacy portal redirect */}
                 <Route path="/portal" element={<Navigate to="/my-subscription" replace />} />
