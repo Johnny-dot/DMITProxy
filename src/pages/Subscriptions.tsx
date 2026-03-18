@@ -35,7 +35,7 @@ import { cn } from '@/src/utils/cn';
 import { getInbounds, Inbound } from '@/src/api/client';
 import { flattenInboundClients, formatExpiry, formatTraffic } from '@/src/utils/xuiClients';
 import { useI18n } from '@/src/context/I18nContext';
-import { buildSubscriptionUrl } from '@/src/utils/subscription';
+import { buildSubscriptionUrl, buildSubscriptionQrUrl } from '@/src/utils/subscription';
 import {
   getClientDownloadLinks,
   type ClientDownloadId,
@@ -236,7 +236,10 @@ export function SubscriptionsPage() {
       void Promise.all(
         entries.map(async ([key, url]) => {
           try {
-            const dataUrl = await QRCode.toDataURL(url, {
+            const qrUrl =
+              buildSubscriptionQrUrl(subId, key as Parameters<typeof buildSubscriptionQrUrl>[1]) ||
+              url;
+            const dataUrl = await QRCode.toDataURL(qrUrl, {
               width: 200,
               margin: 2,
               errorCorrectionLevel: 'M',

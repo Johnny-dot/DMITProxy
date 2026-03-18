@@ -41,6 +41,20 @@ function buildUpstreamSubUrl(subId: string): string {
   return '';
 }
 
+/**
+ * Build a deep-link URL for QR code scanning.
+ * Clash clients (FlClash, Clash Verge, etc.) require the clash:// scheme
+ * so they can recognise the QR code as a subscription import.
+ */
+export function buildSubscriptionQrUrl(subId: string, format: SubscriptionFormat): string {
+  const httpUrl = buildSubscriptionUrl(subId, format);
+  if (!httpUrl) return '';
+  if (format === 'clash') {
+    return `clash://install-config?url=${encodeURIComponent(httpUrl)}`;
+  }
+  return httpUrl;
+}
+
 export function buildSubscriptionUrl(
   subId: string,
   format: SubscriptionFormat = 'universal',
