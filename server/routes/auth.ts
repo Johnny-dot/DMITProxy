@@ -44,13 +44,13 @@ const SESSION_COOKIE_SECURE =
       : process.env.NODE_ENV === 'production';
 const SESSION_COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: 'strict' as const,
+  sameSite: 'lax' as const,
   secure: SESSION_COOKIE_SECURE,
   maxAge: SESSION_TTL * 1000,
 };
 const SESSION_COOKIE_CLEAR_OPTIONS = {
   httpOnly: true,
-  sameSite: 'strict' as const,
+  sameSite: 'lax' as const,
   secure: SESSION_COOKIE_SECURE,
 };
 
