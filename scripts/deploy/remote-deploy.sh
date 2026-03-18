@@ -7,6 +7,8 @@ BRANCH="${BRANCH:-main}"
 NVM_DIR="${NVM_DIR:-/home/ubuntu/.nvm}"
 NODE_VERSION="${NODE_VERSION:-24}"
 PM2_NAME="${PM2_NAME:-dmit-proxy}"
+PM2_HOME="${PM2_HOME:-/home/ubuntu/.pm2}"
+export PM2_HOME
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1:3001}"
 HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-30}"
 HEALTHCHECK_DELAY_SEC="${HEALTHCHECK_DELAY_SEC:-1}"
@@ -84,6 +86,20 @@ npm run build
 section "restart"
 pm2 restart "$PM2_NAME" --update-env
 pm2 save
+
+# Verify the process actually restarted (uptime must be fresh)
+sleep 3
+PM2_UPTIME=$(pm2 jlist 2>/dev/null | node -e "
+  const list = JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+  const app = list.find(p => p.name === '${PM2_NAME}');
+  process.stdout.write(app ? String(app.pm2_env.pm_uptime ?? 0) : '0');
+")
+PM2_UPTIME_AGO=$(( $(date +%s%3N) - PM2_UPTIME ))
+if [[ $PM2_UPTIME_AGO -gt 15000 ]]; then
+  log "pm2 restart did not take effect (uptime=${PM2_UPTIME_AGO}ms ago), aborting" >&2
+  exit 1
+fi
+log "pm2 restarted ok (uptime=${PM2_UPTIME_AGO}ms ago)"
 
 section "healthcheck"
 healthcheck_ok=0
