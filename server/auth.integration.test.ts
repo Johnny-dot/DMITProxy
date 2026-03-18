@@ -341,8 +341,8 @@ describe.sequential('Local Auth Integration', () => {
       .run(user!.id, context.hashToken(resetToken), expiresAt);
 
     const verifyRes = await request(context.app)
-      .get('/local/auth/password-reset/verify')
-      .query({ token: resetToken });
+      .post('/local/auth/password-reset/verify')
+      .send({ token: resetToken });
     expect(verifyRes.status).toBe(200);
     expect(verifyRes.body.ok).toBe(true);
     expect(verifyRes.body.username).toBe('alice');
