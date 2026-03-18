@@ -70,6 +70,7 @@ export function createApp() {
   const authRateLimitMax = toBoundedPositiveInt(process.env.AUTH_RATE_LIMIT_MAX, 20, 1, 10_000);
 
   app.disable('x-powered-by');
+  app.set('trust proxy', 1);
   app.use(compression());
   app.use(
     helmet({
