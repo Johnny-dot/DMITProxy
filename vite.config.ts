@@ -42,6 +42,10 @@ export default defineConfig(({ mode }) => {
           target: localBackend,
           changeOrigin: true,
         },
+        '/sub': {
+          target: localBackend,
+          changeOrigin: true,
+        },
       },
     },
     test: {

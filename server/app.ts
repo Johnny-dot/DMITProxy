@@ -16,6 +16,11 @@ import {
   getXuiTarget,
   resolveXuiRedirectPath,
 } from './xui.js';
+import { parseSubscriptionNodes } from './subscription-probe-target.js';
+import { buildSubscriptionPayload } from './subscription-builder.js';
+import { convertToClashYaml } from './clash-converter.js';
+import { convertToSingboxJson } from './singbox-converter.js';
+import { convertToSurgeConfig } from './surge-converter.js';
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
@@ -144,6 +149,83 @@ export function createApp() {
   app.use('/local/auth/portal/node-quality/refresh', refreshLimiter);
   app.use('/local/auth', authRouter);
   app.use('/local/admin', adminRouter);
+
+  // Subscription format conversion: fetch from upstream, convert to Clash YAML etc.
+  const subLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: 'Too many subscription requests. Please wait a moment.',
+  });
+  app.get('/sub/:subId', subLimiter, async (req, res) => {
+    const { subId } = req.params;
+    const flag = String(req.query.flag ?? '').toLowerCase();
+
+    if (!subId) {
+      res.status(400).send('Missing subscription ID.');
+      return;
+    }
+
+    try {
+      // Build protocol links directly from 3X-UI admin API (bypasses broken sub endpoint)
+      const payload = await buildSubscriptionPayload(subId);
+
+      if (flag === 'clash') {
+        const nodes = parseSubscriptionNodes(payload);
+        const yaml = convertToClashYaml(nodes);
+        if (!yaml) {
+          res.status(502).send('No valid proxy nodes found.');
+          return;
+        }
+        res
+          .set('Content-Type', 'text/yaml; charset=utf-8')
+          .set('Content-Disposition', 'attachment; filename="clash-config.yaml"')
+          .send(yaml);
+        return;
+      }
+
+      if (flag === 'sing-box') {
+        const nodes = parseSubscriptionNodes(payload);
+        const json = convertToSingboxJson(nodes);
+        if (!json) {
+          res.status(502).send('No valid proxy nodes found.');
+          return;
+        }
+        res
+          .set('Content-Type', 'application/json; charset=utf-8')
+          .set('Content-Disposition', 'attachment; filename="sing-box-config.json"')
+          .send(json);
+        return;
+      }
+
+      if (flag === 'surge') {
+        const nodes = parseSubscriptionNodes(payload);
+        const config = convertToSurgeConfig(nodes);
+        if (!config) {
+          res
+            .status(502)
+            .send(
+              'No compatible proxy nodes found. Note: Surge does not support VLESS or Reality.',
+            );
+          return;
+        }
+        res
+          .set('Content-Type', 'text/plain; charset=utf-8')
+          .set('Content-Disposition', 'attachment; filename="surge.conf"')
+          .send(config);
+        return;
+      }
+
+      // For other formats (v2ray, universal, etc.), return base64-encoded payload
+      const base64Payload = Buffer.from(payload).toString('base64');
+      res.set('Content-Type', 'text/plain; charset=utf-8').send(base64Payload);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[Prism] Subscription build failed for ${subId}: ${message}`);
+      res.status(502).send('Failed to build subscription.');
+    }
+  });
 
   // Proxy /api/* -> 3X-UI (used in both development and production)
   const xuiTarget = getXuiTarget();

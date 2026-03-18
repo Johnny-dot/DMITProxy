@@ -1,3 +1,4 @@
+import { Agent } from 'undici';
 import type { XuiInbound } from './xui-admin.js';
 
 export type ProxyProbeProtocol = 'vless' | 'vmess' | 'trojan' | 'shadowsocks';
@@ -33,6 +34,15 @@ export interface ProxyProbeEndpoint {
 
 const SUPPORTED_URI_PREFIXES = ['vless://', 'vmess://', 'trojan://', 'ss://'] as const;
 const SUBSCRIPTION_FETCH_TIMEOUT_MS = 10_000;
+
+function shouldSkipSubTlsVerification(): boolean {
+  const value = String(process.env.XUI_TLS_INSECURE_SKIP_VERIFY ?? '')
+    .trim()
+    .toLowerCase();
+  return value === '1' || value === 'true' || value === 'yes';
+}
+
+const insecureDispatcher = new Agent({ connect: { rejectUnauthorized: false } });
 
 function normalizeBase64(value: string) {
   const trimmed = value.trim().replace(/\s+/g, '');
@@ -97,7 +107,20 @@ function buildSubscriptionUrl(subId: string, format: 'universal' = 'universal') 
   return url;
 }
 
-export async function fetchSubscriptionPayload(subId: string) {
+export interface SubscriptionPayloadResult {
+  text: string;
+  userinfo: string;
+}
+
+export async function fetchSubscriptionPayload(subId: string): Promise<string>;
+export async function fetchSubscriptionPayload(
+  subId: string,
+  options: { includeHeaders: true },
+): Promise<SubscriptionPayloadResult>;
+export async function fetchSubscriptionPayload(
+  subId: string,
+  options?: { includeHeaders?: boolean },
+): Promise<string | SubscriptionPayloadResult> {
   const url = buildSubscriptionUrl(subId, 'universal');
   if (!url) {
     throw new Error(
@@ -108,14 +131,25 @@ export async function fetchSubscriptionPayload(subId: string) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SUBSCRIPTION_FETCH_TIMEOUT_MS);
   try {
-    const response = await fetch(url, {
+    const fetchOptions: RequestInit & { dispatcher?: Agent } = {
       headers: { accept: 'text/plain,*/*' },
       signal: controller.signal,
-    });
+    };
+    if (url.startsWith('https:') && shouldSkipSubTlsVerification()) {
+      fetchOptions.dispatcher = insecureDispatcher;
+    }
+    const response = await fetch(url, fetchOptions);
     if (!response.ok) {
       throw new Error(`Subscription endpoint returned HTTP ${response.status}.`);
     }
-    return await response.text();
+    const text = await response.text();
+    if (options?.includeHeaders) {
+      return {
+        text,
+        userinfo: response.headers.get('subscription-userinfo') ?? '',
+      };
+    }
+    return text;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('Subscription request timed out.');

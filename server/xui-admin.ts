@@ -99,7 +99,7 @@ export function getCookieHeader(setCookies: string[]): string {
   return setCookies.map((cookie) => cookie.split(';')[0]).join('; ');
 }
 
-function getXuiCredentials(): { username: string; password: string } | null {
+export function getXuiCredentials(): { username: string; password: string } | null {
   const username = process.env.XUI_ADMIN_USERNAME ?? '';
   const password = process.env.XUI_ADMIN_PASSWORD ?? '';
   if (!username || !password) return null;
@@ -506,6 +506,24 @@ async function loginWithServiceAccount(username: string, password: string): Prom
   if (!cookieHeader)
     throw new XuiAdminError('3X-UI login succeeded but no session cookie was returned');
   return cookieHeader;
+}
+
+export async function loginAndListInbounds(
+  username: string,
+  password: string,
+): Promise<XuiInbound[]> {
+  // Reuse the cached session cookie instead of logging in on every request
+  const cookieHeader = await getStatsCookieHeader(username, password);
+  const listResp = await requestXuiJson<XuiInbound[]>(
+    '/panel/api/inbounds/list',
+    'GET',
+    null,
+    cookieHeader,
+  );
+  if (!listResp.success || !Array.isArray(listResp.obj)) {
+    throw new XuiAdminError(listResp.msg || 'Failed to fetch inbounds from 3X-UI');
+  }
+  return listResp.obj;
 }
 
 export async function provisionClientForRegisteredUser(
