@@ -142,11 +142,11 @@ function getUserSession(token: string | undefined): UserSessionRow | null {
       SELECT s.user_id, u.username, u.role, u.sub_id, u.created_at, u.display_name, u.avatar_style
       FROM sessions s
       JOIN users u ON u.id = s.user_id
-      WHERE (s.token = ? OR s.token = ?) AND s.expires_at > unixepoch()
+      WHERE s.token = ? AND s.expires_at > unixepoch()
       LIMIT 1
     `,
     )
-    .get(sessionTokenHash, token) as UserSessionRow | undefined;
+    .get(sessionTokenHash) as UserSessionRow | undefined;
 
   return session ?? null;
 }
@@ -276,7 +276,7 @@ router.post('/login', (req, res) => {
 router.post('/logout', (req, res) => {
   const token = req.cookies?.[SESSION_COOKIE_NAME];
   if (token) {
-    db.prepare('DELETE FROM sessions WHERE token = ? OR token = ?').run(hashToken(token), token);
+    db.prepare('DELETE FROM sessions WHERE token = ?').run(hashToken(token));
   }
   res.clearCookie(SESSION_COOKIE_NAME, SESSION_COOKIE_CLEAR_OPTIONS);
   return res.json({ ok: true });

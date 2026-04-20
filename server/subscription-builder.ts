@@ -27,7 +27,9 @@ function parseStreamSettings(raw: string | undefined): StreamSettings {
   if (!raw) return {};
   try {
     return JSON.parse(raw) as StreamSettings;
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[subscription-builder] failed to parse streamSettings JSON: ${message}`);
     return {};
   }
 }

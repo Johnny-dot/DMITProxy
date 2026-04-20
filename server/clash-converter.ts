@@ -160,7 +160,7 @@ function yamlValue(value: unknown, indent: number): string {
       value === 'null' ||
       /^\d+$/.test(value) ||
       /[:{}\[\],&*?|>!%#@`"']/.test(value) ||
-      value.includes('\n')
+      /[\r\n\t]/.test(value)
     ) {
       return JSON.stringify(value);
     }

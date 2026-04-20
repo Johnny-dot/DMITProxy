@@ -68,7 +68,9 @@ export function parseStoredCommunityLinks(value: string | undefined): CommunityL
 
   try {
     return sanitizeCommunityLinksInput(JSON.parse(value));
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[community-links] failed to parse stored JSON: ${message}`);
     return [];
   }
 }

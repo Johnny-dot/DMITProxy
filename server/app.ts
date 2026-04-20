@@ -118,6 +118,17 @@ export function createApp() {
     message: { error: 'Too many refresh requests. Please wait a moment.' },
   });
 
+  // Admin endpoints: caps abuse without disrupting normal dashboard polling.
+  // Each admin verify hits the upstream 3X-UI panel (cached for 10s),
+  // so this also protects the upstream from credential-spray attempts.
+  const adminLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 240,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many admin requests. Please wait a moment.' },
+  });
+
   // Cookie parser (manual, no deps)
   app.use((req, _res, next) => {
     const raw = req.headers.cookie ?? '';
@@ -149,7 +160,7 @@ export function createApp() {
   app.use('/local/auth/portal/news/refresh', refreshLimiter);
   app.use('/local/auth/portal/node-quality/refresh', refreshLimiter);
   app.use('/local/auth', authRouter);
-  app.use('/local/admin', adminRouter);
+  app.use('/local/admin', adminLimiter, adminRouter);
 
   // Subscription format conversion: fetch from upstream, convert to Clash YAML etc.
   const subLimiter = rateLimit({

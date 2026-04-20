@@ -11,6 +11,19 @@ function escapeValue(value: string): string {
   return value;
 }
 
+// Surge config is line-based with comma-separated params. A node name containing
+// a newline, comma, or '=' would break out of its line and inject arbitrary
+// directives into the rendered config. Strip those characters defensively even
+// though names normally come from 3X-UI admins.
+function sanitizeNodeName(value: string): string {
+  return (
+    value
+      .replace(/[\r\n,=]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim() || 'proxy'
+  );
+}
+
 function buildProxyLine(node: ProxyProbeEndpoint): string | null {
   switch (node.protocol) {
     case 'vmess':
@@ -55,7 +68,7 @@ function buildVmessLine(node: ProxyProbeEndpoint): string {
   appendTransportParams(params, node);
   params.push('udp-relay=true');
 
-  return `${node.name} = vmess, ${node.address}, ${node.port}, ${params.join(', ')}`;
+  return `${sanitizeNodeName(node.name)} = vmess, ${node.address}, ${node.port}, ${params.join(', ')}`;
 }
 
 function buildTrojanLine(node: ProxyProbeEndpoint): string {
@@ -67,7 +80,7 @@ function buildTrojanLine(node: ProxyProbeEndpoint): string {
   appendTransportParams(params, node);
   params.push('udp-relay=true');
 
-  return `${node.name} = trojan, ${node.address}, ${node.port}, ${params.join(', ')}`;
+  return `${sanitizeNodeName(node.name)} = trojan, ${node.address}, ${node.port}, ${params.join(', ')}`;
 }
 
 function buildShadowsocksLine(node: ProxyProbeEndpoint): string {
@@ -78,14 +91,16 @@ function buildShadowsocksLine(node: ProxyProbeEndpoint): string {
 
   params.push('udp-relay=true');
 
-  return `${node.name} = ss, ${node.address}, ${node.port}, ${params.join(', ')}`;
+  return `${sanitizeNodeName(node.name)} = ss, ${node.address}, ${node.port}, ${params.join(', ')}`;
 }
 
 export function convertToSurgeConfig(nodes: ProxyProbeEndpoint[]): string {
   const proxyLines = nodes.map(buildProxyLine).filter((line): line is string => line !== null);
   if (proxyLines.length === 0) return '';
 
-  const proxyNames = nodes.filter((n) => n.protocol !== 'vless').map((n) => n.name);
+  const proxyNames = nodes
+    .filter((n) => n.protocol !== 'vless')
+    .map((n) => sanitizeNodeName(n.name));
 
   const lines: string[] = [
     '#!MANAGED-CONFIG',

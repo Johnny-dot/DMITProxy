@@ -545,8 +545,12 @@ router.post('/invite', requireAdmin, (req, res) => {
 
 // DELETE /local/admin/invite/:id — delete unused invite code
 router.delete('/invite/:id', requireAdmin, (req, res) => {
-  db.prepare('DELETE FROM invite_codes WHERE id = ? AND used_by IS NULL').run(req.params.id);
-  res.json({ ok: true });
+  const id = Number.parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid invite id' });
+  }
+  db.prepare('DELETE FROM invite_codes WHERE id = ? AND used_by IS NULL').run(id);
+  return res.json({ ok: true });
 });
 
 // GET /local/admin/users — list non-admin users (most recent first, max 500)
@@ -562,11 +566,14 @@ router.get('/users', requireAdmin, (_req, res) => {
 });
 
 router.delete('/users/:id', requireAdmin, (req, res) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid user id' });
+  }
+
   const user = db
     .prepare('SELECT id, username, sub_id FROM users WHERE id = ? AND role = ?')
-    .get(req.params.id, 'user') as
-    | { id: number; username: string; sub_id: string | null }
-    | undefined;
+    .get(id, 'user') as { id: number; username: string; sub_id: string | null } | undefined;
 
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
@@ -614,19 +621,27 @@ router.get('/profile', requireAdmin, (_req, res) => {
 
 // PATCH /local/admin/users/:id — assign subId to a user
 router.patch('/users/:id', requireAdmin, (req, res) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid user id' });
+  }
   const { subId } = req.body ?? {};
   db.prepare('UPDATE users SET sub_id = ? WHERE id = ? AND role = ?').run(
     subId ?? null,
-    req.params.id,
+    id,
     'user',
   );
-  res.json({ ok: true });
+  return res.json({ ok: true });
 });
 
 router.post('/users/:id/password-reset', requireAdmin, (req, res) => {
+  const id = Number.parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid user id' });
+  }
   const user = db
     .prepare('SELECT id, username FROM users WHERE id = ? AND role = ?')
-    .get(req.params.id, 'user') as { id: number; username: string } | undefined;
+    .get(id, 'user') as { id: number; username: string } | undefined;
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }

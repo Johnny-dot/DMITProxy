@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
@@ -9,6 +10,37 @@ import type { ProxyProbeEndpoint } from './subscription-probe-target.js';
 const XRAY_VALIDATE_TIMEOUT_MS = 3_000;
 const XRAY_BOOT_TIMEOUT_MS = 6_000;
 const XRAY_STOP_TIMEOUT_MS = 2_000;
+const XRAY_FORCE_KILL_GRACE_MS = 200;
+
+interface ActiveRuntime {
+  child: ChildProcessWithoutNullStreams;
+  runtimeDir: string;
+}
+
+// Tracks live xray children so process-exit can sweep orphans if a probe
+// crashes mid-flight or the parent dies before stop() is called.
+const activeRuntimes = new Set<ActiveRuntime>();
+let exitHooksInstalled = false;
+
+function installExitHooks() {
+  if (exitHooksInstalled) return;
+  exitHooksInstalled = true;
+  process.on('exit', () => {
+    for (const entry of activeRuntimes) {
+      try {
+        if (entry.child.exitCode === null) entry.child.kill('SIGKILL');
+      } catch {
+        // best-effort during process exit
+      }
+      try {
+        rmSync(entry.runtimeDir, { recursive: true, force: true });
+      } catch {
+        // best-effort during process exit
+      }
+    }
+    activeRuntimes.clear();
+  });
+}
 
 export interface XrayProxyRuntime {
   proxyUrl: string;
@@ -299,18 +331,43 @@ function waitForProxyPort(port: number, child: ChildProcessWithoutNullStreams) {
 async function stopChildProcess(child: ChildProcessWithoutNullStreams) {
   if (child.exitCode !== null) return;
 
-  child.kill('SIGTERM');
-  const deadline = Date.now() + XRAY_STOP_TIMEOUT_MS;
-  while (child.exitCode === null && Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
+  await new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(killTimer);
+      child.removeListener('exit', onExit);
+      resolve();
+    };
 
-  if (child.exitCode === null) {
-    child.kill('SIGKILL');
-  }
+    const onExit = () => finish();
+    child.once('exit', onExit);
+
+    const killTimer = setTimeout(() => {
+      if (child.exitCode === null) {
+        try {
+          child.kill('SIGKILL');
+        } catch {
+          // ignore — best-effort
+        }
+        // Give the OS a moment to reap the process before resolving.
+        setTimeout(finish, XRAY_FORCE_KILL_GRACE_MS);
+        return;
+      }
+      finish();
+    }, XRAY_STOP_TIMEOUT_MS);
+
+    try {
+      child.kill('SIGTERM');
+    } catch {
+      finish();
+    }
+  });
 }
 
 export async function startXrayProxy(endpoint: ProxyProbeEndpoint): Promise<XrayProxyRuntime> {
+  installExitHooks();
   const executable = resolveXrayExecutable();
   const localProxyPort = await reservePort();
   const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'prism-node-quality-'));
@@ -326,10 +383,20 @@ export async function startXrayProxy(endpoint: ProxyProbeEndpoint): Promise<Xray
     windowsHide: true,
   });
 
+  const entry: ActiveRuntime = { child, runtimeDir };
+  activeRuntimes.add(entry);
+
+  // Auto-deregister on natural child exit so the exit-sweep doesn't
+  // double-kill or attempt to clean an already-removed temp dir.
+  child.once('exit', () => {
+    activeRuntimes.delete(entry);
+  });
+
   try {
     await waitForProxyPort(localProxyPort, child);
   } catch (error) {
     await stopChildProcess(child);
+    activeRuntimes.delete(entry);
     await fs.rm(runtimeDir, { recursive: true, force: true });
     throw error;
   }
@@ -338,6 +405,7 @@ export async function startXrayProxy(endpoint: ProxyProbeEndpoint): Promise<Xray
     proxyUrl: `http://127.0.0.1:${localProxyPort}`,
     stop: async () => {
       await stopChildProcess(child);
+      activeRuntimes.delete(entry);
       await fs.rm(runtimeDir, { recursive: true, force: true });
     },
   };

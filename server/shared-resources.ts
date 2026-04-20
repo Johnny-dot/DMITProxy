@@ -73,7 +73,9 @@ export function parseStoredSharedResources(value: string | undefined): SharedRes
 
   try {
     return sanitizeSharedResourcesInput(JSON.parse(value));
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[shared-resources] failed to parse stored JSON: ${message}`);
     return [];
   }
 }

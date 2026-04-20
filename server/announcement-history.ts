@@ -82,7 +82,9 @@ export function parseAnnouncementHistory(raw: string | undefined): AnnouncementH
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
     return dedupeAndSort(parsed.map(normalizeEntry).filter(Boolean) as AnnouncementHistoryEntry[]);
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[announcement-history] failed to parse stored JSON: ${message}`);
     return [];
   }
 }
