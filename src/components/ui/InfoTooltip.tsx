@@ -79,7 +79,7 @@ export function InfoTooltip({ content, className }: InfoTooltipProps) {
           <span
             id={tooltipId}
             role="tooltip"
-            className="pointer-events-none fixed left-0 top-0 z-[1000] w-56 -translate-x-1/2 -translate-y-[calc(100%+8px)] rounded-[18px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-3 py-2.5 text-[11px] leading-relaxed text-zinc-300 shadow-[var(--shadow-soft)]"
+            className="pointer-events-none fixed left-0 top-0 z-[1000] w-56 -translate-x-1/2 -translate-y-[calc(100%+8px)] rounded-[18px] border border-[color:var(--border-subtle)] bg-[var(--surface-card-strong)] px-3 py-2.5 text-[11px] leading-relaxed text-zinc-300 shadow-[var(--shadow-soft)] backdrop-blur-md"
             style={{ top: position.top, left: position.left }}
           >
             {content}

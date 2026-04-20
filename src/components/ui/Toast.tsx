@@ -112,13 +112,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.18 } }}
               className={cn(
-                'pointer-events-auto flex w-full items-center gap-3 rounded-[22px] border px-4 py-3 shadow-[var(--shadow-card)] sm:min-w-[300px] sm:max-w-md',
+                'pointer-events-auto flex w-full items-center gap-3 rounded-[22px] border px-4 py-3 shadow-[var(--shadow-card)] backdrop-blur-xl sm:min-w-[300px] sm:max-w-md',
                 t.type === 'success' &&
                   'border-transparent bg-[var(--success-soft)] text-[var(--success)]',
                 t.type === 'error' &&
                   'border-transparent bg-[var(--danger-soft)] text-[var(--danger)]',
                 t.type === 'info' &&
-                  'border-[color:var(--border-subtle)] bg-[var(--surface-card)] text-[var(--text-primary)]',
+                  'border-[color:var(--border-subtle)] bg-[var(--surface-card-strong)] text-[var(--text-primary)]',
               )}
             >
               {t.type === 'success' && <CheckCircle2 className="h-5 w-5" aria-hidden="true" />}
