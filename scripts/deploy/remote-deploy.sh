@@ -9,6 +9,7 @@ NODE_VERSION="${NODE_VERSION:-24}"
 PM2_NAME="${PM2_NAME:-dmit-proxy}"
 PM2_HOME="${PM2_HOME:-/home/ubuntu/.pm2}"
 export PM2_HOME
+PM2_BIN="${PM2_BIN:-}"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1:3001}"
 HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-30}"
 HEALTHCHECK_DELAY_SEC="${HEALTHCHECK_DELAY_SEC:-1}"
@@ -35,6 +36,15 @@ if [[ -s "$NVM_DIR/nvm.sh" ]]; then
   # shellcheck disable=SC1090
   source "$NVM_DIR/nvm.sh"
   nvm use "$NODE_VERSION" >/dev/null
+fi
+
+if [[ -z "$PM2_BIN" ]]; then
+  PM2_BIN="$(command -v pm2 || true)"
+fi
+
+if [[ -z "$PM2_BIN" ]]; then
+  log "pm2 binary not found in PATH after nvm setup" >&2
+  exit 1
 fi
 
 cd "$APP_DIR"
@@ -84,12 +94,22 @@ npm ci
 npm run build
 
 section "restart"
-pm2 restart "$PM2_NAME" --update-env
-pm2 save
+# Restart from the ecosystem file under a scrubbed environment so the
+# caller's SSH/session variables do not leak into the app process.
+env -i \
+  HOME="${HOME:-/home/ubuntu}" \
+  USER="${USER:-ubuntu}" \
+  LOGNAME="${LOGNAME:-ubuntu}" \
+  SHELL="${SHELL:-/bin/bash}" \
+  LANG="${LANG:-C.UTF-8}" \
+  PATH="$PATH" \
+  PM2_HOME="$PM2_HOME" \
+  "$PM2_BIN" restart ecosystem.config.cjs --only "$PM2_NAME" --update-env
+"$PM2_BIN" save
 
 # Verify the process actually restarted (uptime must be fresh)
 sleep 3
-PM2_UPTIME=$(pm2 jlist 2>/dev/null | node -e "
+PM2_UPTIME=$("$PM2_BIN" jlist 2>/dev/null | node -e "
   const list = JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
   const app = list.find(p => p.name === '${PM2_NAME}');
   process.stdout.write(app ? String(app.pm2_env.pm_uptime ?? 0) : '0');
