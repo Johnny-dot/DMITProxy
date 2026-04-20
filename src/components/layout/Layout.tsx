@@ -49,8 +49,15 @@ export function Layout() {
                 exit={{ x: -24, opacity: 0 }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
                 className="fixed inset-y-4 left-4 z-[70] w-[300px] md:hidden"
+                style={{
+                  paddingTop: 'env(safe-area-inset-top)',
+                  paddingBottom: 'env(safe-area-inset-bottom)',
+                }}
               >
-                <Sidebar onNavigate={() => setIsMobileMenuOpen(false)} />
+                <Sidebar
+                  onNavigate={() => setIsMobileMenuOpen(false)}
+                  onClose={() => setIsMobileMenuOpen(false)}
+                />
               </motion.div>
             </>
           )}

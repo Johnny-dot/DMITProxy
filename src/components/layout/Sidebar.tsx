@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   TrendingUp,
   Users,
+  X,
 } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
@@ -18,7 +19,14 @@ import { useAuth } from '@/src/context/AuthContext';
 import { getAvatarInitials, getAvatarToneClasses } from '@/src/utils/userProfile';
 import { resolveUserPortalSection } from '@/src/pages/portal/types';
 
-export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+export function Sidebar({
+  onNavigate,
+  onClose,
+}: {
+  onNavigate?: () => void;
+  /** Show a close X button at the top-right (mobile drawer mode). */
+  onClose?: () => void;
+}) {
   const location = useLocation();
   const { t, language } = useI18n();
   const { role, username, displayName, avatarStyle } = useAuth();
@@ -106,10 +114,20 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <div className="surface-inline flex h-12 w-12 items-center justify-center">
             <img src="/logo.svg" alt="Prism" className="h-7 w-7" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-base font-semibold text-[var(--text-primary)]">Prism</p>
             <p className="mt-1 text-xs text-[var(--text-secondary)]">{subtitle}</p>
           </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={isZh ? '关闭菜单' : 'Close menu'}
+              className="-mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-panel)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
 

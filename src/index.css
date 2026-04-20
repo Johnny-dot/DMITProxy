@@ -175,6 +175,16 @@
   html {
     min-height: 100%;
     background: linear-gradient(180deg, var(--page-bg-deep), var(--page-bg));
+    /* Disable iOS Safari pull-to-refresh and bounce overscroll. */
+    overscroll-behavior: none;
+    /* Don't let iOS auto-zoom focused inputs (still allow user pinch). */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Suppress the half-second flash iOS Safari paints over tapped controls;
+     we provide our own :active / focus styles. */
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {

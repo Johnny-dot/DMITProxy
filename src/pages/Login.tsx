@@ -128,6 +128,9 @@ export function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
               className="h-12"
               required
               minLength={3}
@@ -162,7 +165,7 @@ export function LoginPage() {
                       : 'Show password'
                 }
                 aria-pressed={showPassword}
-                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-500 transition-colors hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+                className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-zinc-500 transition-colors hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" aria-hidden="true" />

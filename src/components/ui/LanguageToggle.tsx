@@ -27,7 +27,7 @@ export function LanguageToggle({
         type="button"
         variant={language === 'zh-CN' ? 'secondary' : 'ghost'}
         size="sm"
-        className={cn('h-8 min-w-11 px-3', compact && 'px-2.5')}
+        className={cn('h-8 min-w-11 whitespace-nowrap px-3', compact && 'px-2.5')}
         onClick={() => setLanguage('zh-CN')}
         data-testid={`${testIdPrefix}-zh`}
       >
@@ -37,7 +37,7 @@ export function LanguageToggle({
         type="button"
         variant={language === 'en-US' ? 'secondary' : 'ghost'}
         size="sm"
-        className={cn('h-8 min-w-11 px-3', compact && 'px-2.5')}
+        className={cn('h-8 min-w-11 whitespace-nowrap px-3', compact && 'px-2.5')}
         onClick={() => setLanguage('en-US')}
         data-testid={`${testIdPrefix}-en`}
       >

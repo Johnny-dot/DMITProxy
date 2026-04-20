@@ -95,7 +95,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       <div
-        className="pointer-events-none fixed bottom-6 right-6 z-[110] flex flex-col gap-3"
+        className="pointer-events-none fixed inset-x-4 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-[110] flex flex-col gap-3 sm:inset-x-auto sm:bottom-6 sm:right-6"
         aria-live="polite"
         aria-atomic="false"
       >
@@ -112,7 +112,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.18 } }}
               className={cn(
-                'pointer-events-auto flex min-w-[300px] items-center gap-3 rounded-[22px] border px-4 py-3 shadow-[var(--shadow-card)]',
+                'pointer-events-auto flex w-full items-center gap-3 rounded-[22px] border px-4 py-3 shadow-[var(--shadow-card)] sm:min-w-[300px] sm:max-w-md',
                 t.type === 'success' &&
                   'border-transparent bg-[var(--success-soft)] text-[var(--success)]',
                 t.type === 'error' &&

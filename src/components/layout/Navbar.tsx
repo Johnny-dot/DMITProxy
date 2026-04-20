@@ -467,7 +467,7 @@ export function Navbar() {
       <Button
         variant={location.pathname === '/profile' ? 'secondary' : 'outline'}
         size="sm"
-        className="hidden gap-2 sm:flex"
+        className="hidden gap-2 whitespace-nowrap lg:flex"
         onClick={() => navigate('/profile')}
       >
         <User className="h-4 w-4" />
@@ -476,15 +476,16 @@ export function Navbar() {
       <Button
         variant={location.pathname === '/profile' ? 'secondary' : 'outline'}
         size="icon"
-        className="sm:hidden"
+        className="lg:hidden"
         onClick={() => navigate('/profile')}
+        aria-label={t('nav.profile')}
       >
         <User className="h-4 w-4" />
       </Button>
       <Button
         variant="outline"
         size="sm"
-        className="hidden gap-2 sm:flex"
+        className="hidden gap-2 whitespace-nowrap lg:flex"
         onClick={handleLogout}
         disabled={isLoggingOut}
         data-testid="navbar-signout"
@@ -495,10 +496,11 @@ export function Navbar() {
       <Button
         variant="outline"
         size="icon"
-        className="sm:hidden"
+        className="lg:hidden"
         onClick={handleLogout}
         disabled={isLoggingOut}
         title={t('portal.signOut')}
+        aria-label={t('portal.signOut')}
         data-testid="navbar-signout-mobile"
       >
         <LogOut className="h-4 w-4" />
