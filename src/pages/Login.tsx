@@ -118,7 +118,11 @@ export function LoginPage() {
           )}
 
           <div className="space-y-3">
+            <label htmlFor="login-username" className="sr-only">
+              {t('login.username')}
+            </label>
             <Input
+              id="login-username"
               type="text"
               placeholder={t('login.username')}
               value={username}
@@ -126,10 +130,15 @@ export function LoginPage() {
               autoComplete="username"
               className="h-12"
               required
+              minLength={3}
               data-testid="login-username"
             />
+            <label htmlFor="login-password" className="sr-only">
+              {t('login.password')}
+            </label>
             <div className="relative">
               <Input
+                id="login-password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder={t('login.password')}
                 value={password}
@@ -137,20 +146,38 @@ export function LoginPage() {
                 autoComplete="current-password"
                 className="h-12 pr-12"
                 required
+                minLength={6}
                 data-testid="login-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
+                aria-label={
+                  showPassword
+                    ? isZh
+                      ? '隐藏密码'
+                      : 'Hide password'
+                    : isZh
+                      ? '显示密码'
+                      : 'Show password'
+                }
+                aria-pressed={showPassword}
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-500 transition-colors hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
               </button>
             </div>
           </div>
 
           {error && (
-            <p className="rounded-[18px] border border-[var(--danger-soft-strong)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-red-500">
+            <p
+              role="alert"
+              className="rounded-[18px] border border-[var(--danger-soft-strong)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-red-500"
+            >
               {error}
             </p>
           )}
@@ -158,7 +185,7 @@ export function LoginPage() {
           <Button
             type="submit"
             className="h-12 w-full gap-2"
-            disabled={isLoading}
+            disabled={isLoading || username.trim().length < 3 || password.length < 6}
             data-testid="login-submit"
           >
             {isLoading ? (

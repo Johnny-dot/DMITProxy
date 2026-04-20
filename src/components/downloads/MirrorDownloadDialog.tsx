@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Copy, Download, ExternalLink, RefreshCw, X } from 'lucide-react';
 import { getManagedMirrorStatus, type ManagedMirrorStatus } from '@/src/api/downloads';
 import { Badge } from '@/src/components/ui/Badge';
@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/src/components/ui/Card';
 import { Input } from '@/src/components/ui/Input';
+import { Modal } from '@/src/components/ui/Modal';
 import { useToast } from '@/src/components/ui/Toast';
 import type { ClientDownloadId, ClientDownloadPlatform } from '@/src/utils/clientDownloads';
 import {
@@ -104,6 +105,8 @@ export function MirrorDownloadDialog({
   onClose,
 }: MirrorDownloadDialogProps) {
   const { toast } = useToast();
+  const titleId = useId();
+  const descId = useId();
   const [status, setStatus] = useState<ManagedMirrorStatus | null>(null);
   const [statusError, setStatusError] = useState('');
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
@@ -142,15 +145,6 @@ export function MirrorDownloadDialog({
     void loadStatus();
   }, [loadStatus, open]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose, open]);
-
   const handleCopy = useCallback(async () => {
     if (!resolvedUrl) return;
     await navigator.clipboard.writeText(resolvedUrl);
@@ -188,19 +182,14 @@ export function MirrorDownloadDialog({
       : 'This mirror uses a configured download URL and will open in a new tab.';
 
   return (
-    <div
-      className="fixed inset-0 z-[105] flex items-center justify-center bg-[var(--overlay)] p-4"
-      onClick={onClose}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') onClose();
-      }}
+    <Modal
+      open={open}
+      onClose={onClose}
+      labelledBy={titleId}
+      describedBy={descId}
+      panelClassName="w-full max-w-xl"
     >
-      <Card
-        className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden"
-        onClick={(event) => event.stopPropagation()}
-      >
+      <Card className="flex max-h-[90vh] w-full flex-col overflow-hidden">
         <CardHeader className="space-y-3 p-4 pb-3 sm:p-7 sm:pb-3">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-3">
@@ -218,19 +207,25 @@ export function MirrorDownloadDialog({
                 <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
               </div>
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Download className="h-4 w-4 text-[var(--accent)]" />
+                <CardTitle id={titleId} className="flex items-center gap-2">
+                  <Download className="h-4 w-4 text-[var(--accent)]" aria-hidden="true" />
                   {isZh ? `${clientName} 镜像下载` : `${clientName} mirror download`}
                 </CardTitle>
-                <CardDescription className="mt-2">
+                <CardDescription id={descId} className="mt-2">
                   {isZh
                     ? '先确认当前镜像状态，再开始下载，会比直接跳转更可控。'
                     : 'Check the mirror state first, then start the download when you are ready.'}
                 </CardDescription>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onClose}>
-              <X className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={onClose}
+              aria-label={isZh ? '关闭对话框' : 'Close dialog'}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </CardHeader>
@@ -311,6 +306,6 @@ export function MirrorDownloadDialog({
           </div>
         </CardFooter>
       </Card>
-    </div>
+    </Modal>
   );
 }

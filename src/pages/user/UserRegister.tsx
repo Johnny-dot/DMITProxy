@@ -83,7 +83,11 @@ export function UserRegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-3">
+            <label htmlFor="register-invite" className="sr-only">
+              {t('userAuth.inviteCode')}
+            </label>
             <Input
+              id="register-invite"
               type="text"
               placeholder={t('userAuth.inviteCode')}
               value={inviteCode}
@@ -92,7 +96,11 @@ export function UserRegisterPage() {
               className="h-12 font-mono"
               data-testid="register-invite"
             />
+            <label htmlFor="register-username" className="sr-only">
+              {t('userAuth.usernameHint')}
+            </label>
             <Input
+              id="register-username"
               type="text"
               placeholder={t('userAuth.usernameHint')}
               value={username}
@@ -100,10 +108,15 @@ export function UserRegisterPage() {
               autoComplete="username"
               className="h-12"
               required
+              minLength={3}
               data-testid="register-username"
             />
+            <label htmlFor="register-password" className="sr-only">
+              {t('userAuth.passwordHint')}
+            </label>
             <div className="relative">
               <Input
+                id="register-password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder={t('userAuth.passwordHint')}
                 value={password}
@@ -111,20 +124,38 @@ export function UserRegisterPage() {
                 autoComplete="new-password"
                 className="h-12 pr-12"
                 required
+                minLength={6}
                 data-testid="register-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
+                aria-label={
+                  showPassword
+                    ? isZh
+                      ? '隐藏密码'
+                      : 'Hide password'
+                    : isZh
+                      ? '显示密码'
+                      : 'Show password'
+                }
+                aria-pressed={showPassword}
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-500 transition-colors hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
               </button>
             </div>
           </div>
 
           {error && (
-            <p className="rounded-[18px] border border-[var(--danger-soft-strong)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-red-500">
+            <p
+              role="alert"
+              className="rounded-[18px] border border-[var(--danger-soft-strong)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-red-500"
+            >
               {error}
             </p>
           )}
@@ -132,7 +163,12 @@ export function UserRegisterPage() {
           <Button
             type="submit"
             className="h-12 w-full gap-2"
-            disabled={isLoading}
+            disabled={
+              isLoading ||
+              inviteCode.trim().length === 0 ||
+              username.trim().length < 3 ||
+              password.length < 6
+            }
             data-testid="register-submit"
           >
             {isLoading ? (

@@ -61,8 +61,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionHint = null;
     }
 
-    // Try local user session first, but skip the request when there's no session cookie at all.
-    if (sessionHint?.hasUserSessionCookie ?? true) {
+    // Try local user session first, but skip the request unless the cookie
+    // is actually present. The session-hint endpoint reports cookie presence
+    // without dereferencing the session, so a failed hint means we keep silent
+    // (avoids browser console noise from expected 401s on logged-out devices).
+    if (sessionHint?.hasUserSessionCookie === true) {
       try {
         const res = await fetch('/local/auth/me', { credentials: 'include' });
         if (res.ok) {
@@ -84,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
-    const shouldProbeAdminSession = sessionHint?.hasAdminCookie ?? true;
+    const shouldProbeAdminSession = sessionHint?.hasAdminCookie === true;
 
     if (!shouldProbeAdminSession) {
       clearAuthState();

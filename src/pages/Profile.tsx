@@ -215,12 +215,15 @@ function UserProfileView() {
           </div>
 
           <div className="grid gap-2">
-            <label className="text-sm font-medium">{isZh ? '显示名称' : 'Display name'}</label>
+            <label htmlFor="user-display-name" className="text-sm font-medium">
+              {isZh ? '显示名称' : 'Display name'}
+            </label>
             <div className="flex items-center gap-1 text-xs text-zinc-500">
               <span>{isZh ? '显示名称说明' : 'Display name note'}</span>
               <InfoTooltip content={displayNameHelpText} />
             </div>
             <Input
+              id="user-display-name"
               value={displayNameInput}
               placeholder={username ?? ''}
               onChange={(event) => setDisplayNameInput(event.target.value)}
@@ -248,32 +251,37 @@ function UserProfileView() {
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {USER_AVATAR_STYLE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={cn(
-                    'rounded-[20px] border p-3 text-left transition-colors',
-                    selectedAvatarStyle === option.value
-                      ? 'border-emerald-500/40 bg-emerald-500/10'
-                      : 'border-white/10 bg-zinc-950/40 hover:bg-zinc-800/60',
-                  )}
-                  onClick={() => setSelectedAvatarStyle(option.value)}
-                  disabled={isLoadingProfile}
-                >
-                  <div
+              {USER_AVATAR_STYLE_OPTIONS.map((option) => {
+                const optionLabel = isZh ? option.labelZh : option.labelEn;
+                const isActive = selectedAvatarStyle === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-label={isZh ? `头像配色 ${optionLabel}` : `Avatar color ${optionLabel}`}
+                    aria-pressed={isActive}
                     className={cn(
-                      'flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold',
-                      getAvatarToneClasses(option.value),
+                      'rounded-[20px] border p-3 text-left transition-colors',
+                      isActive
+                        ? 'border-emerald-500/40 bg-emerald-500/10'
+                        : 'border-white/10 bg-zinc-950/40 hover:bg-zinc-800/60',
                     )}
+                    onClick={() => setSelectedAvatarStyle(option.value)}
+                    disabled={isLoadingProfile}
                   >
-                    {getAvatarInitials(resolvedPreviewName)}
-                  </div>
-                  <p className="mt-3 text-sm font-medium text-zinc-50">
-                    {isZh ? option.labelZh : option.labelEn}
-                  </p>
-                </button>
-              ))}
+                    <div
+                      aria-hidden="true"
+                      className={cn(
+                        'flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold',
+                        getAvatarToneClasses(option.value),
+                      )}
+                    >
+                      {getAvatarInitials(resolvedPreviewName)}
+                    </div>
+                    <p className="mt-3 text-sm font-medium text-zinc-50">{optionLabel}</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -416,8 +424,11 @@ function AdminProfileView() {
           </div>
 
           <div className="grid gap-2">
-            <label className="text-sm font-medium">{t('profile.displayName')}</label>
+            <label htmlFor="admin-display-name" className="text-sm font-medium">
+              {t('profile.displayName')}
+            </label>
             <Input
+              id="admin-display-name"
               value={displayNameInput}
               placeholder={profile?.username || ''}
               onChange={(event) => setDisplayNameInput(event.target.value)}

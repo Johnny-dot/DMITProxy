@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Menu } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
@@ -8,6 +8,16 @@ import { Button } from '../ui/Button';
 
 export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const reducedMotion = useReducedMotion();
+
+  const outletMotion = reducedMotion
+    ? { initial: false, animate: { opacity: 1 }, exit: { opacity: 1 } }
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -4, transition: { duration: 0.12, ease: 'easeIn' } },
+      };
 
   return (
     <div className="relative h-svh min-h-screen overflow-hidden text-[var(--text-primary)]">
@@ -69,13 +79,15 @@ export function Layout() {
               </header>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-            >
-              <Outlet />
-            </motion.div>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={location.pathname + location.search}
+                {...outletMotion}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
           </main>
         </div>
       </div>

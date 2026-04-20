@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Clock3, ExternalLink, Loader2, X } from 'lucide-react';
 import { Button } from '@/src/components/ui/Button';
@@ -63,21 +63,59 @@ interface NewsDetailModalProps {
 }
 
 export function NewsDetailModal({ note, locale, isZh, onClose }: NewsDetailModalProps) {
+  const titleId = useId();
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!note) return undefined;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    previousFocusRef.current = (document.activeElement as HTMLElement | null) ?? null;
+
+    const focusableSelector =
+      'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const moveFocusInside = () => {
+      const first = panelRef.current?.querySelector<HTMLElement>(focusableSelector);
+      (first ?? panelRef.current)?.focus({ preventScroll: true });
+    };
+    // Defer one frame so the panel and its content have mounted.
+    const focusHandle = window.setTimeout(moveFocusInside, 0);
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab' || !panelRef.current) return;
+      const focusables: HTMLElement[] = (
+        Array.from(panelRef.current.querySelectorAll(focusableSelector)) as HTMLElement[]
+      ).filter((el) => el.offsetParent !== null);
+      if (focusables.length === 0) {
+        event.preventDefault();
+        panelRef.current.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (event.shiftKey && (active === first || !panelRef.current.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
 
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
+      window.clearTimeout(focusHandle);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
+      previousFocusRef.current?.focus({ preventScroll: true });
     };
   }, [note, onClose]);
 
@@ -98,12 +136,17 @@ export function NewsDetailModal({ note, locale, isZh, onClose }: NewsDetailModal
             className="fixed inset-0 z-[95] bg-[color:var(--overlay)] backdrop-blur-sm"
           />
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
             initial={{ opacity: 0, y: 20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={onClose}
-            className="fixed inset-0 z-[100] p-3 sm:p-6 xl:p-10"
+            className="fixed inset-0 z-[100] p-3 sm:p-6 xl:p-10 focus:outline-none"
           >
             <div className="flex h-full items-stretch justify-center">
               <DetailSurface
@@ -112,6 +155,7 @@ export function NewsDetailModal({ note, locale, isZh, onClose }: NewsDetailModal
                 isZh={isZh}
                 onClose={onClose}
                 prefersExpandedSurface={prefersExpandedSurface}
+                titleId={titleId}
               />
             </div>
           </motion.div>
@@ -127,12 +171,14 @@ function DetailSurface({
   isZh,
   onClose,
   prefersExpandedSurface,
+  titleId,
 }: {
   note: NewsNoteView;
   locale: string;
   isZh: boolean;
   onClose: () => void;
   prefersExpandedSurface: boolean;
+  titleId: string;
 }) {
   const tone = TOPIC_TONES[note.topic.id];
   const publishedLabel = formatNewsDateTime(note.headline.publishedAt, locale);
@@ -219,7 +265,10 @@ function DetailSurface({
               )}
             >
               <div className="space-y-4 border-b border-[color:color-mix(in_srgb,var(--border-strong)_40%,var(--border-subtle)_60%)] pb-5 sm:pb-6">
-                <h2 className="max-w-[20ch] break-words text-[1.72rem] font-semibold leading-[1.01] tracking-[-0.055em] text-[var(--text-primary)] sm:text-[2.3rem] lg:text-[2.7rem]">
+                <h2
+                  id={titleId}
+                  className="max-w-[20ch] break-words text-[1.72rem] font-semibold leading-[1.01] tracking-[-0.055em] text-[var(--text-primary)] sm:text-[2.3rem] lg:text-[2.7rem]"
+                >
                   {note.title}
                 </h2>
 
