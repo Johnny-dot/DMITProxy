@@ -27,9 +27,7 @@ export function LoginPage() {
     }
     navigate('/my-subscription', { replace: true });
   };
-  const adminLoginUnavailableMessage = isZh
-    ? '面板登录尚未配置完成，请先在服务器 .env 中补齐 3X-UI 参数。'
-    : t('login.adminLoginUnavailable');
+  const adminLoginUnavailableMessage = t('login.adminLoginUnavailable');
 
   useEffect(() => {
     if (isChecking || !isAuthenticated) return;

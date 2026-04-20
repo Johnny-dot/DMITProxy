@@ -35,16 +35,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.colorScheme = theme;
-  }, [theme]);
-
-  useEffect(() => {
     if (typeof window === 'undefined') return;
     if (hasStoredPreference) {
       window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-      return;
+    } else {
+      window.localStorage.removeItem(THEME_STORAGE_KEY);
     }
+  }, [theme, hasStoredPreference]);
 
-    window.localStorage.removeItem(THEME_STORAGE_KEY);
+  useEffect(() => {
+    if (typeof window === 'undefined' || hasStoredPreference) return;
+
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (event: MediaQueryListEvent) => {
       setTheme(event.matches ? 'dark' : 'light');
@@ -52,7 +53,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     media.addEventListener('change', handleChange);
     return () => media.removeEventListener('change', handleChange);
-  }, [hasStoredPreference, theme]);
+  }, [hasStoredPreference]);
 
   const setThemeWithPreference = useCallback((nextTheme: Theme) => {
     setHasStoredPreference(true);

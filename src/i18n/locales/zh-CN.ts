@@ -58,6 +58,7 @@ export const zhCN = {
     signIn: '登录',
     signingIn: '登录中...',
     loginFailed: '登录失败',
+    adminLoginUnavailable: '面板登录尚未配置完成，请先在服务器 .env 中补齐 3X-UI 参数。',
     footer: 'Prism · 你的专属通道',
   },
   dashboard: {
