@@ -23,14 +23,5 @@ jobs:
       - name: Install
         run: npm install
 
-      - name: Test
-        run: npm run test
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Build
-        run: npm run build
+      - name: Verify (test + lint + typecheck + build)
+        run: npm run ci:verify

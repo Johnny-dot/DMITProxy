@@ -167,15 +167,15 @@ git checkout main
 npm ci
 ```
 
-Important:
+Notes:
 
 注意：
 
-- Do not use `npm ci --omit=dev` for the current production flow.
-- The `npm start` command uses `tsx`, which is currently installed from `devDependencies`.
+- `tsx` is in `dependencies` because `npm start` uses it at runtime; `npm ci --omit=dev` will work, but you will need a separate build step (e.g. `npm install` + `npm run build`) before deploying.
+- `vite` is build-time only (`devDependencies`).
 
-- 当前生产流程不要使用 `npm ci --omit=dev`。
-- 现在的 `npm start` 依赖 `tsx`，而它目前在 `devDependencies` 中。
+- `tsx` 在 `dependencies` 中，因为 `npm start` 在运行时依赖它；`npm ci --omit=dev` 可以正常运行，但部署前需要单独执行构建（例如 `npm install` + `npm run build`）。
+- `vite` 只在构建阶段使用，放在 `devDependencies`。
 
 ### 3. Install Xray (required for node quality probing) / 安装 Xray（节点质量检测必需）
 

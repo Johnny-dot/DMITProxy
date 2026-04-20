@@ -46,8 +46,8 @@
     "react-router-dom": "^7.13.1",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.5.0",
-    "undici": "^7.24.0",
-    "vite": "^6.2.0"
+    "tsx": "^4.21.0",
+    "undici": "^7.24.0"
   },
   "optionalDependencies": {
     "@tailwindcss/oxide-win32-x64-msvc": "^4.2.1"
@@ -67,7 +67,6 @@
     "prettier": "^3.5.3",
     "supertest": "^7.2.2",
     "tailwindcss": "^4.1.14",
-    "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vitest": "^3.1.1",

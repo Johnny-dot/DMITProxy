@@ -1,11 +1,16 @@
 /** @type {import('pm2').StartOptions} */
+const path = require('node:path');
+
+const projectRoot = __dirname;
+const logsDir = path.join(projectRoot, 'logs');
+
 module.exports = {
   apps: [
     {
       name: 'dmit-proxy',
       script: 'node',
       args: '--import tsx/esm server/index.ts',
-      cwd: './',
+      cwd: projectRoot,
       instances: 1,
       exec_mode: 'fork',
 
@@ -23,8 +28,8 @@ module.exports = {
       restart_delay: 2000,
 
       // Logs (logrotate handles rotation via `pm2 install pm2-logrotate`)
-      out_file: './logs/out.log',
-      error_file: './logs/error.log',
+      out_file: path.join(logsDir, 'out.log'),
+      error_file: path.join(logsDir, 'error.log'),
       merge_logs: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
 
