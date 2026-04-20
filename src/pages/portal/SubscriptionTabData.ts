@@ -74,13 +74,14 @@ export const CLIENT_META: Array<{
   },
   {
     id: 'clashVerge',
-    name: 'Clash Verge',
+    name: 'Clash Verge Rev',
     icon: Monitor,
     os: 'Windows / macOS / Linux',
     platforms: ['windows', 'macos', 'linux'],
     recommendedFor: ['macos'],
-    descZh: '适合需要规则组和策略控制的用户。',
-    descEn: 'Best when you want rules, groups, and policy control.',
+    descZh: '社区维护的 Mihomo 桌面 GUI（原 Clash Verge 已归档），适合需要规则组和策略控制的用户。',
+    descEn:
+      'Community-maintained Mihomo desktop GUI (continuation of the archived Clash Verge). Best when you want rules, groups, and policy control.',
   },
   {
     id: 'v2rayNG',
@@ -119,7 +120,7 @@ export const CLIENT_META: Array<{
     os: 'Windows / macOS / Linux / Android',
     platforms: ['windows', 'macos', 'linux', 'android'],
     recommendedFor: ['android'],
-    descZh: 'Mihomo 绯讳笅鏇寸幇浠ｇ殑涓€绫诲鎴风锛岄€傚悎瑙勫垯缁勩€佸垎娴佸拰鏃ュ父浣跨敤銆?',
+    descZh: 'Mihomo 系下更现代的一类客户端，适合规则组、分流和日常使用。',
     descEn: 'A more modern first-tier Mihomo client for rule groups, routing, and everyday use.',
   },
   {
@@ -129,8 +130,10 @@ export const CLIENT_META: Array<{
     os: 'Android',
     platforms: ['android'],
     recommendedFor: [],
-    descZh: '偏轻量的 Android 客户端，适合单节点和想要快速导入的用户。',
-    descEn: 'Android client focused on quick imports and lighter setups.',
+    descZh:
+      '偏轻量的 Android 客户端，适合单节点和想要快速导入的用户。注意：2026/09 起 Google 限制认证 Android 设备侧载,可能影响安装。',
+    descEn:
+      'Android client focused on quick imports and lighter setups. Note: from Sept 2026, Google restricts sideloading on certified Android devices — installation may be blocked.',
   },
   {
     id: 'clashMeta',
@@ -139,7 +142,7 @@ export const CLIENT_META: Array<{
     os: 'Android',
     platforms: ['android'],
     recommendedFor: [],
-    descZh: 'MetaCubeX 瀹樻柟 Android 瀹㈡埛绔紝閫傚悎瑕佹洿瀹屾暣 Mihomo 鍔熻兘鐨勭敤鎴枫€?',
+    descZh: 'MetaCubeX 官方 Android 客户端，适合想要更完整 Mihomo 功能的用户。',
     descEn: 'The official MetaCubeX Android client when you want fuller Mihomo controls.',
   },
   {
@@ -160,7 +163,7 @@ export const CLIENT_META: Array<{
     os: 'Windows / macOS / Linux',
     platforms: ['windows', 'macos', 'linux'],
     recommendedFor: [],
-    descZh: '杈冩柊鐨?Mihomo 妗岄潰 GUI锛屾洿鍋忓悜鐜颁唬鍖栫殑绛栫暐缁勫拰绐楀彛浣撻獙銆?',
+    descZh: '较新的 Mihomo 桌面 GUI，更偏向现代化的策略组和窗口体验。',
     descEn: 'A newer Mihomo desktop GUI with a more modern rule-group experience.',
   },
   {
@@ -171,9 +174,9 @@ export const CLIENT_META: Array<{
     platforms: ['android', 'macos', 'linux', 'ios'],
     recommendedFor: [],
     descZh:
-      'sing-box 绯讳竴绫婚€夋嫨锛孌NS 鍜屽崗璁窡杩涙洿蹇紝浣嗘洿閫傚悎鎰挎剰鐮旂┒閰嶇疆鐨勭敤鎴枫€?',
+      'sing-box 系一类选择，DNS 和协议跟进更快，适合愿意研究配置的用户。注意：iOS / macOS 的 App Store 版本目前停留在旧版无法更新，要拿到最新协议支持需走 TestFlight。',
     descEn:
-      'A first-tier sing-box option with faster DNS and protocol support for more advanced users.',
+      'A first-tier sing-box option with faster DNS and protocol support for more advanced users. Note: the iOS / macOS App Store builds are currently frozen on an older version — install via TestFlight for the latest protocols.',
   },
 ];
 
@@ -190,7 +193,7 @@ export const PLATFORM_CLIENT_ORDER: Record<GuidePlatform, ClientId[]> = {
   windows: ['flClash', 'v2rayN', 'sparkle'],
   macos: ['flClash', 'sparkle', 'singBox'],
   linux: ['flClash', 'v2rayN', 'sparkle', 'singBox'],
-  android: ['flClash', 'exclave', 'clashMeta', 'singBox', 'v2rayNG'],
+  android: ['flClash', 'clashMeta', 'singBox', 'v2rayNG', 'exclave'],
   ios: ['shadowrocket', 'surge', 'singBox'],
   harmonyos: ['clashBox'],
 };
