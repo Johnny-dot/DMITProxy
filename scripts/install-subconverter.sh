@@ -109,6 +109,14 @@ sed -i.bak \
   -e '/^\[advanced\]/,/^\[/ {
         s/^[[:space:]]*cache_config[[:space:]]*=.*/cache_config = 0/
       }' \
+  -e '/^\[common\]/,/^\[/ {
+        s/^[[:space:]]*enable_insert[[:space:]]*=.*/enable_insert = false/
+        s/^[[:space:]]*insert_url[[:space:]]*=.*/insert_url = []/
+      }' \
+  -e '/^\[node_pref\]/,/^\[/ {
+        s/^[[:space:]]*clash_proxies_style[[:space:]]*=.*/clash_proxies_style = "block"/
+        s/^[[:space:]]*clash_proxy_groups_style[[:space:]]*=.*/clash_proxy_groups_style = "block"/
+      }' \
   "$PREF_FILE"
 rm -f "$PREF_FILE.bak"
 
@@ -133,6 +141,8 @@ listen_line="$(awk '/^\[server\]/{p=1; next} p && /^\[/{p=0} p && /^[[:space:]]*
 port_line="$(awk '/^\[server\]/{p=1; next} p && /^\[/{p=0} p && /^[[:space:]]*port[[:space:]]*=/{print; exit}' "$PREF_FILE")"
 default_external_line="$(grep -m1 '^[[:space:]]*default_external_config[[:space:]]*=' "$PREF_FILE" || true)"
 cache_config_line="$(awk '/^\[advanced\]/{p=1; next} p && /^\[/{p=0} p && /^[[:space:]]*cache_config[[:space:]]*=/{print; exit}' "$PREF_FILE")"
+enable_insert_line="$(awk '/^\[common\]/{p=1; next} p && /^\[/{p=0} p && /^[[:space:]]*enable_insert[[:space:]]*=/{print; exit}' "$PREF_FILE")"
+proxies_style_line="$(awk '/^\[node_pref\]/{p=1; next} p && /^\[/{p=0} p && /^[[:space:]]*clash_proxies_style[[:space:]]*=/{print; exit}' "$PREF_FILE")"
 
 if ! echo "$listen_line" | grep -q '"127.0.0.1"'; then
   log "pref.toml [server].listen was not patched to 127.0.0.1 (got: $listen_line); aborting" >&2
@@ -148,6 +158,14 @@ if ! echo "$default_external_line" | grep -qF "$LOCAL_TEMPLATE_URL"; then
 fi
 if ! echo "$cache_config_line" | grep -q '0'; then
   log "pref.toml [advanced].cache_config was not patched to 0 (got: $cache_config_line); aborting" >&2
+  exit 1
+fi
+if ! echo "$enable_insert_line" | grep -q 'false'; then
+  log "pref.toml [common].enable_insert was not patched to false (got: $enable_insert_line); aborting" >&2
+  exit 1
+fi
+if ! echo "$proxies_style_line" | grep -q '"block"'; then
+  log "pref.toml [node_pref].clash_proxies_style was not patched to block (got: $proxies_style_line); aborting" >&2
   exit 1
 fi
 
@@ -209,5 +227,7 @@ log "installed Aethersailor/SubConverter-Extended ${SUBCONVERTER_VERSION} at $IN
 log "  listen:                   $listen_line"
 log "  port:                     $port_line"
 log "  cache_config:             $cache_config_line"
+log "  enable_insert:            $enable_insert_line"
+log "  clash_proxies_style:      $proxies_style_line"
 log "  default_external_config:  $default_external_line"
 log "  emptied snippets:         groups.toml, rulesets.toml"

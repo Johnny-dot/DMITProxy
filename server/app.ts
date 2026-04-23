@@ -224,7 +224,17 @@ export function createApp() {
       res.status(404).send('Not found');
       return;
     }
-    res.set('Content-Type', 'text/plain; charset=utf-8').sendFile(filePath);
+    // Read + send explicitly as text/plain. Otherwise res.sendFile() may pick
+    // up application/toml from the .toml extension via mime sniffing, which
+    // some subconverter builds reject when fetching an external config URL.
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      res.set('Content-Type', 'text/plain; charset=utf-8').send(content);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[Prism] /sub/_template/${name} read failed: ${message}`);
+      res.status(500).send('Failed to read template');
+    }
   });
 
   const FORMAT_FLAG_MAP: Record<string, SubFormat> = {
