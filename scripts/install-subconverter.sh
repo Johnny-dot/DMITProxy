@@ -105,10 +105,26 @@ sed -i.bak \
   "$PREF_FILE"
 rm -f "$PREF_FILE.bak"
 
+# Override the fork's bundled `default_external_config` to point at our local
+# minimal template. Aethersailor ships pref.toml with this key hardcoded to
+# their own remote ACL4SSR-style template (Custom_Clash.ini). Even when the
+# /sub call passes ?config=our_url, the rendered output still leaks the
+# default's group structure ("节点选择" / "国外媒体" / regional groups), so
+# we need to flip the default itself rather than rely on URL-param override.
+LOCAL_TEMPLATE_URL="${LOCAL_TEMPLATE_URL:-http://127.0.0.1:3001/sub/_template/dmit-default.ini}"
+# Only escape chars with special meaning in sed REPLACEMENT (& and \) plus the
+# delimiter we chose (|). NOT `/` — `|` is the delimiter, so `/` is literal.
+ESCAPED_TEMPLATE_URL="$(printf '%s' "$LOCAL_TEMPLATE_URL" | sed -e 's/[\\&|]/\\&/g')"
+sed -i.bak \
+  -e "s|^[[:space:]]*default_external_config[[:space:]]*=.*|default_external_config = \"${ESCAPED_TEMPLATE_URL}\"|" \
+  "$PREF_FILE"
+rm -f "$PREF_FILE.bak"
+
 # Verify the patch landed. If the upstream pref.example.toml ever changes its
 # section layout we want a loud failure here, not a silently-public sidecar.
 listen_line="$(awk '/^\[server\]/{p=1; next} p && /^\[/{p=0} p && /^[[:space:]]*listen[[:space:]]*=/{print; exit}' "$PREF_FILE")"
 port_line="$(awk '/^\[server\]/{p=1; next} p && /^\[/{p=0} p && /^[[:space:]]*port[[:space:]]*=/{print; exit}' "$PREF_FILE")"
+default_external_line="$(grep -m1 '^[[:space:]]*default_external_config[[:space:]]*=' "$PREF_FILE" || true)"
 
 if ! echo "$listen_line" | grep -q '"127.0.0.1"'; then
   log "pref.toml [server].listen was not patched to 127.0.0.1 (got: $listen_line); aborting" >&2
@@ -118,9 +134,14 @@ if ! echo "$port_line" | grep -q '25500'; then
   log "pref.toml [server].port was not patched to 25500 (got: $port_line); aborting" >&2
   exit 1
 fi
+if ! echo "$default_external_line" | grep -qF "$LOCAL_TEMPLATE_URL"; then
+  log "pref.toml default_external_config was not patched to $LOCAL_TEMPLATE_URL (got: $default_external_line); aborting" >&2
+  exit 1
+fi
 
 echo "$SUBCONVERTER_VERSION" > "$VERSION_MARKER"
 
 log "installed Aethersailor/SubConverter-Extended ${SUBCONVERTER_VERSION} at $INSTALL_DIR"
-log "  listen: $listen_line"
-log "  port:   $port_line"
+log "  listen:                   $listen_line"
+log "  port:                     $port_line"
+log "  default_external_config:  $default_external_line"
