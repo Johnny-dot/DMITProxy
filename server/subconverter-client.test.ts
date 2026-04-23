@@ -64,6 +64,7 @@ const ENV_KEYS = [
   'SUBCONVERTER_CONFIG_CLASH',
   'SUBCONVERTER_CONFIG_SINGBOX',
   'SUBCONVERTER_CONFIG_SURGE',
+  'SERVER_PORT',
 ] as const;
 
 describe('subconverter-client', () => {
@@ -88,7 +89,8 @@ describe('subconverter-client', () => {
     previousEnv.clear();
   });
 
-  it('builds the correct request for clash with the default ACL4SSR config', async () => {
+  it('builds the correct request for clash with our local default template', async () => {
+    process.env.SERVER_PORT = '4321';
     stub.setResponder(() => ({ status: 200, body: 'proxies:\n  - {}\n' }));
 
     const result = await renderSubscription({
@@ -104,7 +106,9 @@ describe('subconverter-client', () => {
     const query = stub.requests[0].parsedQuery;
     expect(query.get('target')).toBe('clash');
     expect(query.get('url')).toBe('http://127.0.0.1:3001/sub/_raw/abc');
-    expect(query.get('config')).toContain('ACL4SSR_Online_Full.ini');
+    expect(query.get('config')).toBe('http://127.0.0.1:4321/sub/_template/dmit-default.ini');
+    expect(query.get('emoji')).toBe('false');
+    expect(query.get('new_name')).toBe('true');
   });
 
   it('passes ver=4 for surge and exposes surge.conf filename', async () => {

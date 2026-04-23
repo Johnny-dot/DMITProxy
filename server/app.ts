@@ -198,6 +198,35 @@ export function createApp() {
     }
   });
 
+  // Loopback-only template endpoint. Subconverter fetches our minimal Clash
+  // template from here (default: dmit-default.ini) instead of pulling a
+  // community template (e.g. ACL4SSR_Online_Full) — that one assumes nodes
+  // carry region tags in their names and would route most traffic to empty
+  // regional sub-groups when our nodes (named after 3X-UI client emails)
+  // don't match its filters. Templates live under server/templates/.
+  const TEMPLATE_DIR = path.resolve('./server/templates');
+  app.get('/sub/_template/:name', (req, res) => {
+    const remoteIp = req.ip ?? '';
+    const isLoopback =
+      remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1';
+    if (!isLoopback) {
+      res.status(404).send('Not found');
+      return;
+    }
+    const { name } = req.params;
+    // Reject anything that isn't a plain ini filename to prevent path traversal.
+    if (!/^[a-zA-Z0-9_-]+\.ini$/.test(name)) {
+      res.status(400).send('Invalid template name');
+      return;
+    }
+    const filePath = path.join(TEMPLATE_DIR, name);
+    if (!fs.existsSync(filePath)) {
+      res.status(404).send('Not found');
+      return;
+    }
+    res.set('Content-Type', 'text/plain; charset=utf-8').sendFile(filePath);
+  });
+
   const FORMAT_FLAG_MAP: Record<string, SubFormat> = {
     clash: 'clash',
     'sing-box': 'singbox',

@@ -4,12 +4,16 @@
  * Subconverter (Aethersailor/SubConverter-Extended, a community fork built on
  * tindy2013/subconverter that integrates the mihomo parsing kernel) runs as a
  * separate pm2 process on 127.0.0.1:25500 and converts a v2ray-format
- * subscription into Clash YAML / sing-box JSON / Surge config, applying a
- * community-vetted rule template (ACL4SSR Online_Full by default) so generated
- * configs ship with proper LAN/CN bypass instead of a single MATCH-all-to-PROXY
- * rule. We need this fork (not mainline tindy2013) because mainline rejects
- * VLESS + Reality nodes — the dominant protocol from 3X-UI panels — with
- * "No nodes were found!".
+ * subscription into Clash YAML / sing-box JSON / Surge config, applying our
+ * own minimal template (server/templates/dmit-default.ini, served loopback-only
+ * at /sub/_template/dmit-default.ini). The template ships a single PROXY group
+ * containing all nodes plus Loyalsoldier rule lists for LAN/CN bypass — we
+ * deliberately avoid community templates like ACL4SSR_Online_Full because they
+ * assume nodes carry region tags in their names, which ours don't.
+ *
+ * We need this fork (not mainline tindy2013) because mainline rejects VLESS +
+ * Reality nodes — the dominant protocol from 3X-UI panels — with "No nodes
+ * were found!".
  *
  * The Node app exposes /sub/_raw/:subId (loopback only) for subconverter to
  * fetch the raw base64 payload from. We just call subconverter and stream the
@@ -17,8 +21,7 @@
  */
 
 const DEFAULT_SUBCONVERTER_URL = 'http://127.0.0.1:25500';
-const DEFAULT_CONFIG_URL =
-  'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Full.ini';
+const DEFAULT_TEMPLATE_PATH = '/sub/_template/dmit-default.ini';
 const REQUEST_TIMEOUT_MS = 30_000;
 
 export type SubFormat = 'clash' | 'singbox' | 'surge';
@@ -64,10 +67,6 @@ const FORMAT_DESCRIPTORS: Record<SubFormat, FormatDescriptor> = {
     configEnvKey: 'SUBCONVERTER_CONFIG_SINGBOX',
   },
   surge: {
-    // Surge uses target=surge with a ver=4 hint encoded as part of the target value;
-    // subconverter's URL parser splits on `&` inside the target string the same way
-    // it would treat it as a top-level query param, so we keep it as a single token here
-    // and let URLSearchParams encode it for us.
     target: 'surge',
     contentType: 'text/plain; charset=utf-8',
     filename: 'surge.conf',
@@ -75,12 +74,17 @@ const FORMAT_DESCRIPTORS: Record<SubFormat, FormatDescriptor> = {
   },
 };
 
+function defaultLocalTemplateUrl(): string {
+  const port = process.env.SERVER_PORT ?? '3001';
+  return `http://127.0.0.1:${port}${DEFAULT_TEMPLATE_PATH}`;
+}
+
 function resolveConfigUrl(format: SubFormat): string {
   const perFormat = process.env[FORMAT_DESCRIPTORS[format].configEnvKey];
   if (perFormat && perFormat.trim()) return perFormat.trim();
   const fallback = process.env.SUBCONVERTER_CONFIG_URL;
   if (fallback && fallback.trim()) return fallback.trim();
-  return DEFAULT_CONFIG_URL;
+  return defaultLocalTemplateUrl();
 }
 
 function resolveBaseUrl(): string {
@@ -95,6 +99,12 @@ export async function renderSubscription(opts: SubconvertOptions): Promise<Subco
     target: descriptor.target,
     url: opts.rawSourceUrl,
     config: resolveConfigUrl(opts.format),
+    // Disable subconverter's auto-emoji renaming. Otherwise it tries to guess
+    // a country flag from the node name and frequently mislabels nodes as 🇨🇳
+    // when the name is ambiguous (e.g. just an email).
+    emoji: 'false',
+    // Use mihomo-style field names (proxy-groups, etc.) in Clash output.
+    new_name: 'true',
   });
   if (opts.format === 'surge') params.set('ver', '4');
 
