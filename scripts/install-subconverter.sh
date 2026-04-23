@@ -139,9 +139,41 @@ if ! echo "$default_external_line" | grep -qF "$LOCAL_TEMPLATE_URL"; then
   exit 1
 fi
 
+# Empty the fork's bundled default group / ruleset snippets. pref.toml's
+# [[custom_groups]] and [[rulesets]] arrays unconditionally `import` these
+# files at startup, and the fork merges their contents into every conversion
+# result on top of whatever the external config defines. Without this, the
+# rendered Clash YAML always carries the bundled "🔰 节点选择 / 🎥 NETFLIX /
+# 🌍 国外媒体 / ..." groups and the regional sub-groups that don't match our
+# email-style node names — which silently routes traffic through empty
+# groups, falling back to DIRECT.
+SNIPPETS_DIR="$INSTALL_DIR/base/snippets"
+for snip in groups.toml rulesets.toml; do
+  target="$SNIPPETS_DIR/$snip"
+  if [[ -f "$target" ]]; then
+    cat > "$target" <<'SNIPPET_EOF'
+# Intentionally emptied by scripts/install-subconverter.sh.
+# DMITProxy supplies all proxy groups and rulesets via its external config
+# (see default_external_config in pref.toml).
+SNIPPET_EOF
+  else
+    log "expected snippet $target after extraction; aborting" >&2
+    exit 1
+  fi
+done
+
+# Verify nothing in the now-emptied snippets still defines a TOML array entry.
+for snip in groups.toml rulesets.toml; do
+  if grep -qE '^[[:space:]]*\[\[' "$SNIPPETS_DIR/$snip"; then
+    log "snippet $snip still contains [[...]] entries after wipe; aborting" >&2
+    exit 1
+  fi
+done
+
 echo "$SUBCONVERTER_VERSION" > "$VERSION_MARKER"
 
 log "installed Aethersailor/SubConverter-Extended ${SUBCONVERTER_VERSION} at $INSTALL_DIR"
 log "  listen:                   $listen_line"
 log "  port:                     $port_line"
 log "  default_external_config:  $default_external_line"
+log "  emptied snippets:         groups.toml, rulesets.toml"
