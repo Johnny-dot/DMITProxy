@@ -40,10 +40,18 @@ module.exports = {
     },
     {
       // Subscription format converter sidecar (Clash / sing-box / Surge).
-      // Installed by scripts/install-subconverter.sh; binds to 127.0.0.1:25500.
+      // Aethersailor/SubConverter-Extended is a community fork built on top of
+      // tindy2013/subconverter that integrates the mihomo parsing kernel. We
+      // use the bundled start.sh as the entrypoint because the binary is
+      // dynamically linked against the package's own ld-linux loader and
+      // libmihomo, so direct exec of ./subconverter would fail.
+      //
+      // Installed by scripts/install-subconverter.sh. Pref binds to
+      // 127.0.0.1:25500 — installer aborts if that bind cannot be enforced.
       name: 'dmit-subconverter',
-      script: path.join(subconverterDir, 'subconverter'),
+      script: path.join(subconverterDir, 'start.sh'),
       cwd: subconverterDir,
+      interpreter: 'none',
       instances: 1,
       exec_mode: 'fork',
 

@@ -95,10 +95,11 @@ bash scripts/install-subconverter.sh
 npm run build
 
 section "restart"
-# Restart from the ecosystem file under a scrubbed environment so the
-# caller's SSH/session variables do not leak into the app process.
-# Restarts every app in the ecosystem (dmit-proxy + dmit-subconverter sidecar)
-# and starts any that aren't yet running.
+# Use `pm2 start` (not `restart`) so the ecosystem file is the source of truth:
+#   - registers any newly-added apps (e.g. dmit-subconverter)
+#   - restarts existing apps with the latest config from the file
+# Run under a scrubbed environment so the caller's SSH/session variables do
+# not leak into the app process.
 env -i \
   HOME="${HOME:-/home/ubuntu}" \
   USER="${USER:-ubuntu}" \
@@ -107,7 +108,7 @@ env -i \
   LANG="${LANG:-C.UTF-8}" \
   PATH="$PATH" \
   PM2_HOME="$PM2_HOME" \
-  "$PM2_BIN" restart ecosystem.config.cjs --update-env
+  "$PM2_BIN" start ecosystem.config.cjs --update-env
 "$PM2_BIN" save
 
 # Verify the process actually restarted (uptime must be fresh)

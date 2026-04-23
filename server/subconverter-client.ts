@@ -1,11 +1,15 @@
 /**
  * Thin client for the local subconverter sidecar.
  *
- * Subconverter (https://github.com/tindy2013/subconverter) runs as a separate
- * pm2 process on 127.0.0.1:25500 and converts a v2ray-format subscription
- * into Clash YAML / sing-box JSON / Surge config, applying a community-vetted
- * rule template (ACL4SSR Online_Full by default) so generated configs ship
- * with proper LAN/CN bypass instead of a single MATCH-all-to-PROXY rule.
+ * Subconverter (Aethersailor/SubConverter-Extended, a community fork built on
+ * tindy2013/subconverter that integrates the mihomo parsing kernel) runs as a
+ * separate pm2 process on 127.0.0.1:25500 and converts a v2ray-format
+ * subscription into Clash YAML / sing-box JSON / Surge config, applying a
+ * community-vetted rule template (ACL4SSR Online_Full by default) so generated
+ * configs ship with proper LAN/CN bypass instead of a single MATCH-all-to-PROXY
+ * rule. We need this fork (not mainline tindy2013) because mainline rejects
+ * VLESS + Reality nodes — the dominant protocol from 3X-UI panels — with
+ * "No nodes were found!".
  *
  * The Node app exposes /sub/_raw/:subId (loopback only) for subconverter to
  * fetch the raw base64 payload from. We just call subconverter and stream the
