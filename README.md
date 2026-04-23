@@ -233,9 +233,14 @@ Or use PM2 with the included config:
 
 ```bash
 npm run build
+bash scripts/install-subconverter.sh   # one-time, downloads the subconverter sidecar
 pm2 start ecosystem.config.cjs
 pm2 save
 ```
+
+The PM2 ecosystem manages two processes: `dmit-proxy` (the Node app on `:3001`) and `dmit-subconverter` (the [tindy2013/subconverter](https://github.com/tindy2013/subconverter) sidecar bound to `127.0.0.1:25500`). The sidecar is what renders Clash YAML / sing-box JSON / Surge config from the upstream subscription, with a community-vetted rule template (ACL4SSR Online_Full by default). On first run, `bash scripts/install-subconverter.sh` downloads the pinned binary into `vendor/subconverter/`; the deploy script (step 7) calls it on every deploy and is idempotent.
+
+PM2 同时管理两个进程：`dmit-proxy`（Node 服务，监听 `:3001`）和 `dmit-subconverter`（[tindy2013/subconverter](https://github.com/tindy2013/subconverter) 边车，绑定在 `127.0.0.1:25500`）。后者负责把上游订阅渲染成 Clash YAML / sing-box JSON / Surge 配置，并默认套用 ACL4SSR Online_Full 这一社区主流规则模板。首次部署需手动执行 `bash scripts/install-subconverter.sh` 下载二进制到 `vendor/subconverter/`，后续每次部署由脚本自动复用。
 
 ### 6. Enable auto-start / 设置开机自启
 
@@ -273,8 +278,9 @@ The workflow SSHes into the VPS and runs [`scripts/deploy/remote-deploy.sh`](./s
 - stash the protected local production patches in `server/app.ts` and `server/index.ts`
 - `git pull --ff-only origin main`
 - run `npm ci`
+- run `bash scripts/install-subconverter.sh` (idempotent; no-op when already installed)
 - run `npm run build`
-- restart `dmit-proxy` with PM2
+- restart all PM2 apps in the ecosystem (`dmit-proxy` + `dmit-subconverter`)
 - run a local health check against `http://127.0.0.1:3001`
 
 If the server already contains extra uncommitted changes outside the protected files, clean them up before relying on auto deploy.

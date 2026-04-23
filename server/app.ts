@@ -16,11 +16,8 @@ import {
   getXuiTarget,
   resolveXuiRedirectPath,
 } from './xui.js';
-import { parseSubscriptionNodes } from './subscription-probe-target.js';
 import { buildSubscriptionPayload } from './subscription-builder.js';
-import { convertToClashYaml } from './clash-converter.js';
-import { convertToSingboxJson } from './singbox-converter.js';
-import { convertToSurgeConfig } from './surge-converter.js';
+import { renderSubscription, SubconverterError, type SubFormat } from './subconverter-client.js';
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
@@ -170,6 +167,43 @@ export function createApp() {
     legacyHeaders: false,
     message: 'Too many subscription requests. Please wait a moment.',
   });
+
+  // Loopback-only raw payload endpoint. Subconverter (running on 127.0.0.1:25500)
+  // calls this to fetch the source v2ray-format subscription. Public callers get
+  // 404 — `app.set('trust proxy', 1)` above means req.ip is the real client IP
+  // via X-Forwarded-For when behind nginx, so non-loopback addresses won't match.
+  // Skips subLimiter so localhost calls don't compete with public traffic for the
+  // shared bucket.
+  app.get('/sub/_raw/:subId', async (req, res) => {
+    const remoteIp = req.ip ?? '';
+    const isLoopback =
+      remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1';
+    if (!isLoopback) {
+      res.status(404).send('Not found');
+      return;
+    }
+    const { subId } = req.params;
+    if (!subId) {
+      res.status(400).send('Missing subscription ID.');
+      return;
+    }
+    try {
+      const payload = await buildSubscriptionPayload(subId);
+      const base64Payload = Buffer.from(payload).toString('base64');
+      res.set('Content-Type', 'text/plain; charset=utf-8').send(base64Payload);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[Prism] /sub/_raw build failed for ${subId}: ${message}`);
+      res.status(502).send('Failed to build subscription.');
+    }
+  });
+
+  const FORMAT_FLAG_MAP: Record<string, SubFormat> = {
+    clash: 'clash',
+    'sing-box': 'singbox',
+    surge: 'surge',
+  };
+
   app.get('/sub/:subId', subLimiter, async (req, res) => {
     const { subId } = req.params;
     const flag = String(req.query.flag ?? '').toLowerCase();
@@ -179,57 +213,32 @@ export function createApp() {
       return;
     }
 
+    const format = FORMAT_FLAG_MAP[flag];
+    if (format) {
+      const port = process.env.SERVER_PORT ?? '3001';
+      const rawSourceUrl = `http://127.0.0.1:${port}/sub/_raw/${encodeURIComponent(subId)}`;
+      try {
+        const result = await renderSubscription({ format, rawSourceUrl });
+        res
+          .set('Content-Type', result.contentType)
+          .set('Content-Disposition', `attachment; filename="${result.filename}"`)
+          .send(result.body);
+      } catch (error) {
+        if (error instanceof SubconverterError) {
+          console.error(`[Prism] subconverter ${format} failed for ${subId}: ${error.message}`);
+          res.status(502).send('Subscription conversion failed.');
+          return;
+        }
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[Prism] /sub/${subId}?flag=${flag} unexpected error: ${message}`);
+        res.status(502).send('Failed to build subscription.');
+      }
+      return;
+    }
+
+    // Fallback for v2ray / universal clients: base64-encoded protocol links.
     try {
-      // Build protocol links directly from 3X-UI admin API (bypasses broken sub endpoint)
       const payload = await buildSubscriptionPayload(subId);
-
-      if (flag === 'clash') {
-        const nodes = parseSubscriptionNodes(payload);
-        const yaml = convertToClashYaml(nodes);
-        if (!yaml) {
-          res.status(502).send('No valid proxy nodes found.');
-          return;
-        }
-        res
-          .set('Content-Type', 'text/yaml; charset=utf-8')
-          .set('Content-Disposition', 'attachment; filename="clash-config.yaml"')
-          .send(yaml);
-        return;
-      }
-
-      if (flag === 'sing-box') {
-        const nodes = parseSubscriptionNodes(payload);
-        const json = convertToSingboxJson(nodes);
-        if (!json) {
-          res.status(502).send('No valid proxy nodes found.');
-          return;
-        }
-        res
-          .set('Content-Type', 'application/json; charset=utf-8')
-          .set('Content-Disposition', 'attachment; filename="sing-box-config.json"')
-          .send(json);
-        return;
-      }
-
-      if (flag === 'surge') {
-        const nodes = parseSubscriptionNodes(payload);
-        const config = convertToSurgeConfig(nodes);
-        if (!config) {
-          res
-            .status(502)
-            .send(
-              'No compatible proxy nodes found. Note: Surge does not support VLESS or Reality.',
-            );
-          return;
-        }
-        res
-          .set('Content-Type', 'text/plain; charset=utf-8')
-          .set('Content-Disposition', 'attachment; filename="surge.conf"')
-          .send(config);
-        return;
-      }
-
-      // For other formats (v2ray, universal, etc.), return base64-encoded payload
       const base64Payload = Buffer.from(payload).toString('base64');
       res.set('Content-Type', 'text/plain; charset=utf-8').send(base64Payload);
     } catch (error) {
