@@ -105,9 +105,6 @@ export async function renderSubscription(opts: SubconvertOptions): Promise<Subco
     emoji: 'false',
     // Use mihomo-style field names (proxy-groups, etc.) in Clash output.
     new_name: 'true',
-    // Keep subconverter in proxy-provider mode only. Without this it prepends
-    // a legacy expanded Clash block before the provider-backed output.
-    expand: 'false',
   });
   if (opts.format === 'surge') params.set('ver', '4');
 
