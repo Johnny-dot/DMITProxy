@@ -50,41 +50,45 @@ detect_asset() {
 ASSET="${SUBCONVERTER_ASSET:-$(detect_asset)}"
 DOWNLOAD_URL="https://github.com/Aethersailor/SubConverter-Extended/releases/download/${SUBCONVERTER_VERSION}/${ASSET}"
 
-if [[ -x "$INSTALL_DIR/start.sh" && -f "$VERSION_MARKER" ]]; then
+skip_download=0
+if [[ -x "$INSTALL_DIR/start.sh" && -f "$INSTALL_DIR/subconverter" && -f "$PREF_EXAMPLE" && -f "$VERSION_MARKER" ]]; then
   current="$(cat "$VERSION_MARKER" 2>/dev/null || true)"
   if [[ "$current" == "$SUBCONVERTER_VERSION" ]]; then
-    log "already installed at $SUBCONVERTER_VERSION; skipping download"
-    exit 0
+    log "already installed at $SUBCONVERTER_VERSION; skipping download and reconciling pref.toml"
+    skip_download=1
+  else
+    log "found $current, replacing with $SUBCONVERTER_VERSION"
   fi
-  log "found $current, replacing with $SUBCONVERTER_VERSION"
 fi
 
 mkdir -p "$INSTALL_DIR"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-log "downloading $DOWNLOAD_URL"
-curl -fSL --retry 3 --retry-delay 2 -o "$TMP_DIR/$ASSET" "$DOWNLOAD_URL"
+if [[ "$skip_download" -eq 0 ]]; then
+  log "downloading $DOWNLOAD_URL"
+  curl -fSL --retry 3 --retry-delay 2 -o "$TMP_DIR/$ASSET" "$DOWNLOAD_URL"
 
-log "extracting"
-tar -xzf "$TMP_DIR/$ASSET" -C "$TMP_DIR"
+  log "extracting"
+  tar -xzf "$TMP_DIR/$ASSET" -C "$TMP_DIR"
 
-# Release tarballs ship as a top-level "SubConverter-Extended/" directory.
-SRC_DIR="$TMP_DIR/SubConverter-Extended"
-if [[ ! -d "$SRC_DIR" ]]; then
-  log "expected $SRC_DIR after extraction; aborting" >&2
-  exit 1
-fi
+  # Release tarballs ship as a top-level "SubConverter-Extended/" directory.
+  SRC_DIR="$TMP_DIR/SubConverter-Extended"
+  if [[ ! -d "$SRC_DIR" ]]; then
+    log "expected $SRC_DIR after extraction; aborting" >&2
+    exit 1
+  fi
 
-# Wipe install dir contents before laying down the new tree. Keep the dir
-# itself so the .gitignore that pins this path stays in place.
-find "$INSTALL_DIR" -mindepth 1 -maxdepth 1 ! -name '.installed-version' -exec rm -rf {} +
+  # Wipe install dir contents before laying down the new tree. Keep the dir
+  # itself so the .gitignore that pins this path stays in place.
+  find "$INSTALL_DIR" -mindepth 1 -maxdepth 1 ! -name '.installed-version' -exec rm -rf {} +
 
-cp -a "$SRC_DIR/." "$INSTALL_DIR/"
+  cp -a "$SRC_DIR/." "$INSTALL_DIR/"
 
-if [[ ! -x "$INSTALL_DIR/start.sh" || ! -f "$INSTALL_DIR/subconverter" ]]; then
-  log "expected start.sh and subconverter binary after extraction; aborting" >&2
-  exit 1
+  if [[ ! -x "$INSTALL_DIR/start.sh" || ! -f "$INSTALL_DIR/subconverter" ]]; then
+    log "expected start.sh and subconverter binary after extraction; aborting" >&2
+    exit 1
+  fi
 fi
 
 # Generate pref.toml from the example and force a localhost bind.
@@ -102,6 +106,9 @@ sed -i.bak \
         s/^[[:space:]]*listen[[:space:]]*=.*/listen = "127.0.0.1"/
         s/^[[:space:]]*port[[:space:]]*=.*/port = 25500/
       }' \
+  -e '/^\[advanced\]/,/^\[/ {
+        s/^[[:space:]]*cache_config[[:space:]]*=.*/cache_config = 0/
+      }' \
   "$PREF_FILE"
 rm -f "$PREF_FILE.bak"
 
@@ -111,7 +118,7 @@ rm -f "$PREF_FILE.bak"
 # /sub call passes ?config=our_url, the rendered output still leaks the
 # default's group structure ("节点选择" / "国外媒体" / regional groups), so
 # we need to flip the default itself rather than rely on URL-param override.
-LOCAL_TEMPLATE_URL="${LOCAL_TEMPLATE_URL:-http://127.0.0.1:3001/sub/_template/dmit-default.ini}"
+LOCAL_TEMPLATE_URL="${LOCAL_TEMPLATE_URL:-http://127.0.0.1:3001/sub/_template/dmit-default.toml}"
 # Only escape chars with special meaning in sed REPLACEMENT (& and \) plus the
 # delimiter we chose (|). NOT `/` — `|` is the delimiter, so `/` is literal.
 ESCAPED_TEMPLATE_URL="$(printf '%s' "$LOCAL_TEMPLATE_URL" | sed -e 's/[\\&|]/\\&/g')"
@@ -125,6 +132,7 @@ rm -f "$PREF_FILE.bak"
 listen_line="$(awk '/^\[server\]/{p=1; next} p && /^\[/{p=0} p && /^[[:space:]]*listen[[:space:]]*=/{print; exit}' "$PREF_FILE")"
 port_line="$(awk '/^\[server\]/{p=1; next} p && /^\[/{p=0} p && /^[[:space:]]*port[[:space:]]*=/{print; exit}' "$PREF_FILE")"
 default_external_line="$(grep -m1 '^[[:space:]]*default_external_config[[:space:]]*=' "$PREF_FILE" || true)"
+cache_config_line="$(awk '/^\[advanced\]/{p=1; next} p && /^\[/{p=0} p && /^[[:space:]]*cache_config[[:space:]]*=/{print; exit}' "$PREF_FILE")"
 
 if ! echo "$listen_line" | grep -q '"127.0.0.1"'; then
   log "pref.toml [server].listen was not patched to 127.0.0.1 (got: $listen_line); aborting" >&2
@@ -136,6 +144,10 @@ if ! echo "$port_line" | grep -q '25500'; then
 fi
 if ! echo "$default_external_line" | grep -qF "$LOCAL_TEMPLATE_URL"; then
   log "pref.toml default_external_config was not patched to $LOCAL_TEMPLATE_URL (got: $default_external_line); aborting" >&2
+  exit 1
+fi
+if ! echo "$cache_config_line" | grep -q '0'; then
+  log "pref.toml [advanced].cache_config was not patched to 0 (got: $cache_config_line); aborting" >&2
   exit 1
 fi
 
@@ -151,18 +163,39 @@ SNIPPETS_DIR="$INSTALL_DIR/base/snippets"
 for snip in groups.toml rulesets.toml; do
   target="$SNIPPETS_DIR/$snip"
   if [[ -f "$target" ]]; then
-    cat > "$target" <<'SNIPPET_EOF'
+    case "$snip" in
+      groups.toml)
+        cat > "$target" <<'SNIPPET_EOF'
 # Intentionally emptied by scripts/install-subconverter.sh.
 # DMITProxy supplies all proxy groups and rulesets via its external config
 # (see default_external_config in pref.toml).
+custom_groups = []
 SNIPPET_EOF
+        ;;
+      rulesets.toml)
+        cat > "$target" <<'SNIPPET_EOF'
+# Intentionally emptied by scripts/install-subconverter.sh.
+# DMITProxy supplies all proxy groups and rulesets via its external config
+# (see default_external_config in pref.toml).
+rulesets = []
+SNIPPET_EOF
+        ;;
+    esac
   else
     log "expected snippet $target after extraction; aborting" >&2
     exit 1
   fi
 done
 
-# Verify nothing in the now-emptied snippets still defines a TOML array entry.
+# Verify the snippets now expose an empty array and no array-of-table entries.
+if ! grep -qE '^[[:space:]]*custom_groups[[:space:]]*=[[:space:]]*\[[[:space:]]*\][[:space:]]*$' "$SNIPPETS_DIR/groups.toml"; then
+  log "groups.toml does not define an empty custom_groups array after wipe; aborting" >&2
+  exit 1
+fi
+if ! grep -qE '^[[:space:]]*rulesets[[:space:]]*=[[:space:]]*\[[[:space:]]*\][[:space:]]*$' "$SNIPPETS_DIR/rulesets.toml"; then
+  log "rulesets.toml does not define an empty rulesets array after wipe; aborting" >&2
+  exit 1
+fi
 for snip in groups.toml rulesets.toml; do
   if grep -qE '^[[:space:]]*\[\[' "$SNIPPETS_DIR/$snip"; then
     log "snippet $snip still contains [[...]] entries after wipe; aborting" >&2
@@ -175,5 +208,6 @@ echo "$SUBCONVERTER_VERSION" > "$VERSION_MARKER"
 log "installed Aethersailor/SubConverter-Extended ${SUBCONVERTER_VERSION} at $INSTALL_DIR"
 log "  listen:                   $listen_line"
 log "  port:                     $port_line"
+log "  cache_config:             $cache_config_line"
 log "  default_external_config:  $default_external_line"
 log "  emptied snippets:         groups.toml, rulesets.toml"

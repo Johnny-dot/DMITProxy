@@ -199,7 +199,7 @@ export function createApp() {
   });
 
   // Loopback-only template endpoint. Subconverter fetches our minimal Clash
-  // template from here (default: dmit-default.ini) instead of pulling a
+  // template from here (default: dmit-default.toml) instead of pulling a
   // community template (e.g. ACL4SSR_Online_Full) — that one assumes nodes
   // carry region tags in their names and would route most traffic to empty
   // regional sub-groups when our nodes (named after 3X-UI client emails)
@@ -214,8 +214,8 @@ export function createApp() {
       return;
     }
     const { name } = req.params;
-    // Reject anything that isn't a plain ini filename to prevent path traversal.
-    if (!/^[a-zA-Z0-9_-]+\.ini$/.test(name)) {
+    // Reject anything that isn't a plain ini/toml filename to prevent path traversal.
+    if (!/^[a-zA-Z0-9_-]+\.(ini|toml)$/.test(name)) {
       res.status(400).send('Invalid template name');
       return;
     }

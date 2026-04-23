@@ -1,0 +1,88 @@
+version = 1
+
+# DMITProxy minimal subconverter template.
+#
+# Why this exists: community templates like ACL4SSR_Online_Full assume nodes
+# carry region tags in their names (HK01, US-LA, SG-2, etc.) and split them
+# into many regional/media sub-groups. Our nodes are named after the 3X-UI
+# client email, so those filters produce empty groups and mihomo silently
+# falls back to DIRECT.
+#
+# This template keeps a single PROXY group containing every node, an `auto`
+# url-test sibling for users who want latency-based selection, and a small
+# ruleset stack for LAN/CN bypass plus ad blocking.
+
+[custom]
+enable_rule_generator = true
+overwrite_original_rules = true
+add_emoji = false
+remove_old_emoji = true
+clash_rule_base = "base/all_base.tpl"
+
+[[custom_groups]]
+name = "PROXY"
+type = "select"
+rule = ["[]auto", "[]DIRECT", ".*"]
+
+[[custom_groups]]
+name = "auto"
+type = "url-test"
+rule = [".*"]
+url = "http://www.gstatic.com/generate_204"
+interval = 300
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "[]DOMAIN-SUFFIX,local"
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "[]DOMAIN-SUFFIX,localhost"
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "[]IP-CIDR,127.0.0.0/8,no-resolve"
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "[]IP-CIDR,10.0.0.0/8,no-resolve"
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "[]IP-CIDR,172.16.0.0/12,no-resolve"
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "[]IP-CIDR,192.168.0.0/16,no-resolve"
+
+[[rulesets]]
+group = "REJECT"
+ruleset = "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt"
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/private.txt"
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt"
+
+[[rulesets]]
+group = "PROXY"
+ruleset = "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt"
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/cncidr.txt"
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/lancidr.txt"
+
+[[rulesets]]
+group = "DIRECT"
+ruleset = "[]GEOIP,CN"
+
+[[rulesets]]
+group = "PROXY"
+ruleset = "[]FINAL"

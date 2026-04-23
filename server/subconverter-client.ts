@@ -5,8 +5,8 @@
  * tindy2013/subconverter that integrates the mihomo parsing kernel) runs as a
  * separate pm2 process on 127.0.0.1:25500 and converts a v2ray-format
  * subscription into Clash YAML / sing-box JSON / Surge config, applying our
- * own minimal template (server/templates/dmit-default.ini, served loopback-only
- * at /sub/_template/dmit-default.ini). The template ships a single PROXY group
+ * own minimal template (server/templates/dmit-default.toml, served loopback-only
+ * at /sub/_template/dmit-default.toml). The template ships a single PROXY group
  * containing all nodes plus Loyalsoldier rule lists for LAN/CN bypass — we
  * deliberately avoid community templates like ACL4SSR_Online_Full because they
  * assume nodes carry region tags in their names, which ours don't.
@@ -21,7 +21,7 @@
  */
 
 const DEFAULT_SUBCONVERTER_URL = 'http://127.0.0.1:25500';
-const DEFAULT_TEMPLATE_PATH = '/sub/_template/dmit-default.ini';
+const DEFAULT_TEMPLATE_PATH = '/sub/_template/dmit-default.toml';
 const REQUEST_TIMEOUT_MS = 30_000;
 
 export type SubFormat = 'clash' | 'singbox' | 'surge';
@@ -105,6 +105,9 @@ export async function renderSubscription(opts: SubconvertOptions): Promise<Subco
     emoji: 'false',
     // Use mihomo-style field names (proxy-groups, etc.) in Clash output.
     new_name: 'true',
+    // Keep subconverter in proxy-provider mode only. Without this it prepends
+    // a legacy expanded Clash block before the provider-backed output.
+    expand: 'false',
   });
   if (opts.format === 'surge') params.set('ver', '4');
 

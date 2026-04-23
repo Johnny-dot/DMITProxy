@@ -106,9 +106,10 @@ describe('subconverter-client', () => {
     const query = stub.requests[0].parsedQuery;
     expect(query.get('target')).toBe('clash');
     expect(query.get('url')).toBe('http://127.0.0.1:3001/sub/_raw/abc');
-    expect(query.get('config')).toBe('http://127.0.0.1:4321/sub/_template/dmit-default.ini');
+    expect(query.get('config')).toBe('http://127.0.0.1:4321/sub/_template/dmit-default.toml');
     expect(query.get('emoji')).toBe('false');
     expect(query.get('new_name')).toBe('true');
+    expect(query.get('expand')).toBe('false');
   });
 
   it('passes ver=4 for surge and exposes surge.conf filename', async () => {
@@ -139,8 +140,8 @@ describe('subconverter-client', () => {
   });
 
   it('respects per-format SUBCONVERTER_CONFIG_* env override', async () => {
-    process.env.SUBCONVERTER_CONFIG_URL = 'https://example.com/global.ini';
-    process.env.SUBCONVERTER_CONFIG_CLASH = 'https://example.com/clash-only.ini';
+    process.env.SUBCONVERTER_CONFIG_URL = 'https://example.com/global.toml';
+    process.env.SUBCONVERTER_CONFIG_CLASH = 'https://example.com/clash-only.toml';
     stub.setResponder(() => ({ status: 200, body: 'proxies: []\n' }));
 
     await renderSubscription({
@@ -152,8 +153,8 @@ describe('subconverter-client', () => {
       rawSourceUrl: 'http://127.0.0.1:3001/sub/_raw/abc',
     });
 
-    expect(stub.requests[0].parsedQuery.get('config')).toBe('https://example.com/clash-only.ini');
-    expect(stub.requests[1].parsedQuery.get('config')).toBe('https://example.com/global.ini');
+    expect(stub.requests[0].parsedQuery.get('config')).toBe('https://example.com/clash-only.toml');
+    expect(stub.requests[1].parsedQuery.get('config')).toBe('https://example.com/global.toml');
   });
 
   it('throws SubconverterError on non-2xx responses with status and snippet', async () => {
