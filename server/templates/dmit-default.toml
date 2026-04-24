@@ -8,9 +8,10 @@ version = 1
 # client email, so those filters produce empty groups and mihomo silently
 # falls back to DIRECT.
 #
-# This template keeps a single PROXY group containing every node, an `auto`
-# url-test sibling for users who want latency-based selection, and a small
-# ruleset stack for LAN/CN bypass plus ad blocking.
+# This template keeps a single PROXY group containing every node plus a small
+# ruleset stack for LAN/CN bypass and ad blocking. The extra url-test/auto group
+# is intentionally omitted while DMITProxy commonly serves one node per user; it
+# only adds UI noise until there are multiple candidate nodes.
 
 [custom]
 enable_rule_generator = true
@@ -22,14 +23,7 @@ clash_rule_base = "base/all_base.tpl"
 [[custom_groups]]
 name = "PROXY"
 type = "select"
-rule = ["[]auto", "[]DIRECT", ".*"]
-
-[[custom_groups]]
-name = "auto"
-type = "url-test"
-rule = [".*"]
-url = "http://www.gstatic.com/generate_204"
-interval = 300
+rule = ["[]DIRECT", ".*"]
 
 [[rulesets]]
 group = "DIRECT"

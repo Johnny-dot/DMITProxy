@@ -20,23 +20,17 @@ proxy-groups:
   - name: PROXY
     type: select
     proxies:
-      - auto
       - DIRECT
-      - user@example.com
-  - name: auto
-    type: url-test
-    proxies:
       - user@example.com
 rules:
   - MATCH,PROXY
 `;
 
     expect(parseProxyNames(yaml)).toEqual(['user@example.com']);
-    expect(parseProxyGroups(yaml).get('PROXY')).toEqual(['auto', 'DIRECT', 'user@example.com']);
+    expect(parseProxyGroups(yaml).get('PROXY')).toEqual(['DIRECT', 'user@example.com']);
 
     const summary = summarizeClashYaml(yaml);
     expect(summary.proxyGroupNodeMembers).toEqual(['user@example.com']);
-    expect(summary.autoGroupNodeMembers).toEqual(['user@example.com']);
     expect(validateClashSummary(summary)).toEqual([]);
   });
 
@@ -45,14 +39,12 @@ rules:
 proxies:
   - {name: user@example.com, type: vless, server: example.com}
 proxy-groups:
-  - {name: PROXY, type: select, proxies: [auto, DIRECT, user@example.com]}
-  - {name: auto, type: url-test, proxies: [user@example.com]}
+  - {name: PROXY, type: select, proxies: [DIRECT, user@example.com]}
 `;
 
     const summary = summarizeClashYaml(yaml);
     expect(summary.proxyNames).toEqual(['user@example.com']);
     expect(summary.proxyGroupNodeMembers).toEqual(['user@example.com']);
-    expect(summary.autoGroupNodeMembers).toEqual(['user@example.com']);
   });
 
   it('accepts public provider-style Clash output', () => {
@@ -70,13 +62,7 @@ proxy-groups:
       - Provider_A023C2
     filter: .*
     proxies:
-      - auto
       - DIRECT
-  - name: auto
-    type: url-test
-    use:
-      - Provider_A023C2
-    filter: .*
 `;
 
     expect(parseProxyProviders(yaml).get('Provider_A023C2')).toEqual({
@@ -85,7 +71,6 @@ proxy-groups:
 
     const summary = summarizeClashYaml(yaml);
     expect(summary.proxyGroupProviders).toEqual(['Provider_A023C2']);
-    expect(summary.autoGroupProviders).toEqual(['Provider_A023C2']);
     expect(validateClashSummary(summary)).toEqual([]);
   });
 
@@ -101,12 +86,7 @@ proxy-groups:
     use:
       - Provider_A023C2
     proxies:
-      - auto
       - DIRECT
-  - name: auto
-    type: url-test
-    use:
-      - Provider_A023C2
 `;
 
     expect(validateClashSummary(summarizeClashYaml(yaml))).toEqual([

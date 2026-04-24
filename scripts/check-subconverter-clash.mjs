@@ -205,8 +205,8 @@ export function summarizeClashYaml(text) {
   const providerNames = new Set(providers.keys());
   const proxyNameSet = new Set(proxyNames);
   const proxyGroupNodeMembers = proxyGroupMembers.filter((name) => proxyNameSet.has(name));
-  const autoGroupNodeMembers = autoGroupMembers.filter((name) => proxyNameSet.has(name));
   const proxyGroupProviders = proxyGroup.use.filter((name) => providerNames.has(name));
+  const autoGroupNodeMembers = autoGroupMembers.filter((name) => proxyNameSet.has(name));
   const autoGroupProviders = autoGroup.use.filter((name) => providerNames.has(name));
   const providerEntries = Array.from(providers.entries()).map(([name, provider]) => ({
     name,
@@ -249,14 +249,9 @@ function buildReport(summary) {
 
 export function validateClashSummary(summary) {
   const errors = [];
-  const hasInlineNodes =
-    summary.proxyNames.length > 0 &&
-    summary.proxyGroupNodeMembers.length > 0 &&
-    summary.autoGroupNodeMembers.length > 0;
+  const hasInlineNodes = summary.proxyNames.length > 0 && summary.proxyGroupNodeMembers.length > 0;
   const hasProviderNodes =
-    summary.providerEntries.length > 0 &&
-    summary.proxyGroupProviders.length > 0 &&
-    summary.autoGroupProviders.length > 0;
+    summary.providerEntries.length > 0 && summary.proxyGroupProviders.length > 0;
 
   if (hasInlineNodes) return errors;
 
@@ -286,16 +281,6 @@ export function validateClashSummary(summary) {
   if (summary.proxyGroupProviders.length === 0) {
     errors.push('The PROXY group does not use any defined proxy-provider.');
   }
-  if (summary.autoGroupMembers.length === 0) {
-    errors.push('The auto group is missing or has no proxies list.');
-  }
-  if (summary.autoGroupNodeMembers.length === 0) {
-    errors.push('The auto group does not include any top-level node names.');
-  }
-  if (summary.autoGroupProviders.length === 0) {
-    errors.push('The auto group does not use any defined proxy-provider.');
-  }
-
   return errors;
 }
 
