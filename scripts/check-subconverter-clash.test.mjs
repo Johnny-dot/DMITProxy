@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseProxyGroups,
   parseProxyNames,
+  parseProxyProviders,
   summarizeClashYaml,
   validateClashSummary,
 } from './check-subconverter-clash.mjs';
@@ -54,28 +55,62 @@ proxy-groups:
     expect(summary.autoGroupNodeMembers).toEqual(['user@example.com']);
   });
 
-  it('flags the exact provider-only failure mode', () => {
+  it('accepts public provider-style Clash output', () => {
     const yaml = `
 proxy-providers:
-  nodes:
+  Provider_A023C2:
     type: http
+    url: https://sub.example.com/sub/abc
+    interval: 3600
+    path: ./providers/Provider_A023C2.yaml
 proxy-groups:
   - name: PROXY
     type: select
+    use:
+      - Provider_A023C2
+    filter: .*
     proxies:
       - auto
       - DIRECT
   - name: auto
     type: url-test
     use:
-      - nodes
+      - Provider_A023C2
+    filter: .*
+`;
+
+    expect(parseProxyProviders(yaml).get('Provider_A023C2')).toEqual({
+      url: 'https://sub.example.com/sub/abc',
+    });
+
+    const summary = summarizeClashYaml(yaml);
+    expect(summary.proxyGroupProviders).toEqual(['Provider_A023C2']);
+    expect(summary.autoGroupProviders).toEqual(['Provider_A023C2']);
+    expect(validateClashSummary(summary)).toEqual([]);
+  });
+
+  it('flags the client-unusable loopback provider failure mode', () => {
+    const yaml = `
+proxy-providers:
+  Provider_A023C2:
+    type: http
+    url: http://127.0.0.1:3001/sub/_raw/abc
+proxy-groups:
+  - name: PROXY
+    type: select
+    use:
+      - Provider_A023C2
+    proxies:
+      - auto
+      - DIRECT
+  - name: auto
+    type: url-test
+    use:
+      - Provider_A023C2
 `;
 
     expect(validateClashSummary(summarizeClashYaml(yaml))).toEqual([
-      'No inline nodes were found in the top-level proxies section.',
-      'The PROXY group does not include any top-level node names.',
-      'The auto group is missing or has no proxies list.',
-      'The auto group does not include any top-level node names.',
+      'Provider Provider_A023C2 uses a client-unusable URL: http://127.0.0.1:3001/sub/_raw/abc',
     ]);
   });
 });

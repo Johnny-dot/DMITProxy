@@ -75,53 +75,76 @@ export function parseProxyNames(text) {
 }
 
 export function parseProxyGroups(text) {
+  const groupDetails = parseProxyGroupDetails(text);
+  return new Map(
+    Array.from(groupDetails.entries()).map(([name, details]) => [name, details.proxies]),
+  );
+}
+
+export function parseProxyGroupDetails(text) {
   const lines = getTopLevelSectionLines(text, 'proxy-groups');
   const groups = new Map();
   let currentName = '';
-  let readingMembers = false;
+  let readingList = '';
 
   for (const line of lines) {
     const flowLine = line.trim();
     if (flowLine.startsWith('- {') || flowLine.startsWith('-{')) {
       const name = parseFlowValue(flowLine, 'name');
-      const members = parseInlineList(parseFlowValue(flowLine, 'proxies'));
-      if (name) groups.set(name, members);
+      const proxies = parseInlineList(parseFlowValue(flowLine, 'proxies'));
+      const use = parseInlineList(parseFlowValue(flowLine, 'use'));
+      if (name) groups.set(name, { proxies, use });
       currentName = '';
-      readingMembers = false;
+      readingList = '';
       continue;
     }
 
     const groupMatch = line.match(/^\s*-\s+name:\s*(.+?)\s*$/);
     if (groupMatch) {
       currentName = stripQuotes(groupMatch[1]);
-      groups.set(currentName, []);
-      readingMembers = false;
+      groups.set(currentName, { proxies: [], use: [] });
+      readingList = '';
       continue;
     }
 
     const inlineMembersMatch = line.match(/^\s+proxies:\s*(\[.*\])\s*$/);
     if (inlineMembersMatch && currentName) {
-      groups.set(currentName, parseInlineList(inlineMembersMatch[1]));
-      readingMembers = false;
+      const details = groups.get(currentName) ?? { proxies: [], use: [] };
+      groups.set(currentName, { ...details, proxies: parseInlineList(inlineMembersMatch[1]) });
+      readingList = '';
       continue;
     }
 
     if (/^\s+proxies:\s*$/.test(line) && currentName) {
-      readingMembers = true;
+      readingList = 'proxies';
       continue;
     }
 
-    if (readingMembers && currentName) {
+    const inlineUseMatch = line.match(/^\s+use:\s*(\[.*\])\s*$/);
+    if (inlineUseMatch && currentName) {
+      const details = groups.get(currentName) ?? { proxies: [], use: [] };
+      groups.set(currentName, { ...details, use: parseInlineList(inlineUseMatch[1]) });
+      readingList = '';
+      continue;
+    }
+
+    if (/^\s+use:\s*$/.test(line) && currentName) {
+      readingList = 'use';
+      continue;
+    }
+
+    if (readingList && currentName) {
       const memberMatch = line.match(/^\s*-\s*(.+?)\s*$/);
       if (memberMatch) {
-        const members = groups.get(currentName) ?? [];
-        members.push(stripQuotes(memberMatch[1]));
-        groups.set(currentName, members);
+        const details = groups.get(currentName) ?? { proxies: [], use: [] };
+        const values = details[readingList] ?? [];
+        values.push(stripQuotes(memberMatch[1]));
+        groups.set(currentName, { ...details, [readingList]: values });
         continue;
       }
 
       if (/^\s+\S/.test(line)) {
-        readingMembers = false;
+        readingList = '';
       }
     }
   }
@@ -129,22 +152,77 @@ export function parseProxyGroups(text) {
   return groups;
 }
 
+export function parseProxyProviders(text) {
+  const lines = getTopLevelSectionLines(text, 'proxy-providers');
+  const providers = new Map();
+  let currentName = '';
+
+  for (const line of lines) {
+    const providerMatch = line.match(/^\s{2}([A-Za-z0-9_.-]+):\s*$/);
+    if (providerMatch) {
+      currentName = providerMatch[1];
+      providers.set(currentName, { url: '' });
+      continue;
+    }
+
+    if (currentName) {
+      const urlMatch = line.match(/^\s+url:\s*(.+?)\s*$/);
+      if (urlMatch) {
+        providers.set(currentName, { url: stripQuotes(urlMatch[1]) });
+      }
+    }
+  }
+
+  return providers;
+}
+
+function isClientUnusableProviderUrl(value) {
+  if (!value) return true;
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return true;
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  return (
+    hostname === '127.0.0.1' ||
+    hostname === 'localhost' ||
+    hostname === '::1' ||
+    parsed.pathname.includes('/sub/_raw/')
+  );
+}
+
 export function summarizeClashYaml(text) {
   const proxyNames = parseProxyNames(text);
-  const groups = parseProxyGroups(text);
-  const proxyGroupMembers = groups.get('PROXY') ?? [];
-  const autoGroupMembers = groups.get('auto') ?? [];
+  const groupDetails = parseProxyGroupDetails(text);
+  const providers = parseProxyProviders(text);
+  const proxyGroup = groupDetails.get('PROXY') ?? { proxies: [], use: [] };
+  const autoGroup = groupDetails.get('auto') ?? { proxies: [], use: [] };
+  const proxyGroupMembers = proxyGroup.proxies;
+  const autoGroupMembers = autoGroup.proxies;
+  const providerNames = new Set(providers.keys());
   const proxyNameSet = new Set(proxyNames);
   const proxyGroupNodeMembers = proxyGroupMembers.filter((name) => proxyNameSet.has(name));
   const autoGroupNodeMembers = autoGroupMembers.filter((name) => proxyNameSet.has(name));
+  const proxyGroupProviders = proxyGroup.use.filter((name) => providerNames.has(name));
+  const autoGroupProviders = autoGroup.use.filter((name) => providerNames.has(name));
+  const providerEntries = Array.from(providers.entries()).map(([name, provider]) => ({
+    name,
+    url: provider.url,
+  }));
 
   return {
     proxyNames,
-    groupNames: Array.from(groups.keys()),
+    providerEntries,
+    groupNames: Array.from(groupDetails.keys()),
     proxyGroupMembers,
     autoGroupMembers,
     proxyGroupNodeMembers,
     autoGroupNodeMembers,
+    proxyGroupProviders,
+    autoGroupProviders,
   };
 }
 
@@ -159,17 +237,45 @@ function buildReport(summary) {
     `proxies count: ${summary.proxyNames.length}`,
     `proxy names: ${previewList(summary.proxyNames)}`,
     `proxy-groups: ${previewList(summary.groupNames)}`,
+    `proxy-providers: ${previewList(summary.providerEntries.map((provider) => provider.name))}`,
+    `provider urls: ${previewList(summary.providerEntries.map((provider) => provider.url))}`,
     `PROXY members: ${previewList(summary.proxyGroupMembers)}`,
     `PROXY node members: ${previewList(summary.proxyGroupNodeMembers)}`,
+    `PROXY providers: ${previewList(summary.proxyGroupProviders)}`,
     `auto node members: ${previewList(summary.autoGroupNodeMembers)}`,
+    `auto providers: ${previewList(summary.autoGroupProviders)}`,
   ].join('\n');
 }
 
 export function validateClashSummary(summary) {
   const errors = [];
+  const hasInlineNodes =
+    summary.proxyNames.length > 0 &&
+    summary.proxyGroupNodeMembers.length > 0 &&
+    summary.autoGroupNodeMembers.length > 0;
+  const hasProviderNodes =
+    summary.providerEntries.length > 0 &&
+    summary.proxyGroupProviders.length > 0 &&
+    summary.autoGroupProviders.length > 0;
+
+  if (hasInlineNodes) return errors;
+
+  if (hasProviderNodes) {
+    for (const provider of summary.providerEntries) {
+      if (isClientUnusableProviderUrl(provider.url)) {
+        errors.push(
+          `Provider ${provider.name} uses a client-unusable URL: ${provider.url || '(empty)'}`,
+        );
+      }
+    }
+    return errors;
+  }
 
   if (summary.proxyNames.length === 0) {
     errors.push('No inline nodes were found in the top-level proxies section.');
+  }
+  if (summary.providerEntries.length === 0) {
+    errors.push('No proxy-provider entries were found.');
   }
   if (summary.proxyGroupMembers.length === 0) {
     errors.push('The PROXY group is missing or has no proxies list.');
@@ -177,11 +283,17 @@ export function validateClashSummary(summary) {
   if (summary.proxyGroupNodeMembers.length === 0) {
     errors.push('The PROXY group does not include any top-level node names.');
   }
+  if (summary.proxyGroupProviders.length === 0) {
+    errors.push('The PROXY group does not use any defined proxy-provider.');
+  }
   if (summary.autoGroupMembers.length === 0) {
     errors.push('The auto group is missing or has no proxies list.');
   }
   if (summary.autoGroupNodeMembers.length === 0) {
     errors.push('The auto group does not include any top-level node names.');
+  }
+  if (summary.autoGroupProviders.length === 0) {
+    errors.push('The auto group does not use any defined proxy-provider.');
   }
 
   return errors;
@@ -226,7 +338,9 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('[check-subconverter-clash] OK: nodes are inline and referenced by PROXY/auto.');
+  console.log(
+    '[check-subconverter-clash] OK: nodes are inline or reachable through public providers.',
+  );
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -289,8 +289,10 @@ After deploy, validate a Clash subscription on the VPS before testing a GUI clie
 npm run sub:check -- <subscription-id>
 ```
 
-The check fails if the generated YAML has no inline `proxies` entries, or if the
-`PROXY` / `auto` groups do not reference those node names.
+The check fails if the generated YAML has neither inline `proxies` entries nor
+public `proxy-providers` used by the `PROXY` / `auto` groups. Provider URLs that
+point at `127.0.0.1`, `localhost`, or `/sub/_raw/*` are treated as invalid
+because GUI clients would try to fetch them from the user's own machine.
 
 To make deployment fail fast on the Linux box, set `SUBCONVERTER_SMOKE_SUB_ID`
 as a GitHub Actions repository secret. The deploy workflow passes it into the

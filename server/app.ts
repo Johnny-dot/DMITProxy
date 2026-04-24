@@ -18,6 +18,7 @@ import {
 } from './xui.js';
 import { buildSubscriptionPayload } from './subscription-builder.js';
 import { renderSubscription, SubconverterError, type SubFormat } from './subconverter-client.js';
+import { buildPublicSubscriptionSourceUrl } from './subscription-source-url.js';
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
@@ -254,8 +255,14 @@ export function createApp() {
 
     const format = FORMAT_FLAG_MAP[flag];
     if (format) {
-      const port = process.env.SERVER_PORT ?? '3001';
-      const rawSourceUrl = `http://127.0.0.1:${port}/sub/_raw/${encodeURIComponent(subId)}`;
+      const rawSourceUrl = buildPublicSubscriptionSourceUrl(subId);
+      if (!rawSourceUrl) {
+        console.error(
+          `[Prism] cannot convert ${format} for ${subId}: VITE_SUB_URL or VITE_SUB_URL_TEMPLATE is not configured`,
+        );
+        res.status(502).send('Subscription conversion failed.');
+        return;
+      }
       try {
         const result = await renderSubscription({ format, rawSourceUrl });
         res

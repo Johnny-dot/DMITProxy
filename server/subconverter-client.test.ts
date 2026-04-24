@@ -95,7 +95,7 @@ describe('subconverter-client', () => {
 
     const result = await renderSubscription({
       format: 'clash',
-      rawSourceUrl: 'http://127.0.0.1:3001/sub/_raw/abc',
+      rawSourceUrl: 'https://sub.example.com/sub/abc',
     });
 
     expect(result.contentType).toBe('text/yaml; charset=utf-8');
@@ -105,7 +105,7 @@ describe('subconverter-client', () => {
     expect(stub.requests).toHaveLength(1);
     const query = stub.requests[0].parsedQuery;
     expect(query.get('target')).toBe('clash');
-    expect(query.get('url')).toBe('http://127.0.0.1:3001/sub/_raw/abc');
+    expect(query.get('url')).toBe('https://sub.example.com/sub/abc');
     expect(query.get('config')).toBe('http://127.0.0.1:4321/sub/_template/dmit-default.toml');
     expect(query.get('emoji')).toBe('false');
     expect(query.get('new_name')).toBe('true');
