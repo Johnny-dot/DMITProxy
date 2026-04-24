@@ -109,7 +109,7 @@ describe('subconverter-client', () => {
     expect(query.get('config')).toBe('http://127.0.0.1:4321/sub/_template/dmit-default.toml');
     expect(query.get('emoji')).toBe('false');
     expect(query.get('new_name')).toBe('true');
-    expect(query.get('expand')).toBeNull();
+    expect(query.get('expand')).toBe('true');
   });
 
   it('passes ver=4 for surge and exposes surge.conf filename', async () => {

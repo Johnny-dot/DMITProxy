@@ -238,9 +238,9 @@ pm2 start ecosystem.config.cjs
 pm2 save
 ```
 
-The PM2 ecosystem manages two processes: `dmit-proxy` (the Node app on `:3001`) and `dmit-subconverter` (the [Aethersailor/SubConverter-Extended](https://github.com/Aethersailor/SubConverter-Extended) sidecar bound to `127.0.0.1:25500`). The sidecar is what renders Clash YAML / sing-box JSON / Surge config from the upstream subscription, with a community-vetted rule template (ACL4SSR Online_Full by default). We use this fork (not the upstream `tindy2013/subconverter`) because it integrates the mihomo (Clash.Meta) parsing kernel and properly handles VLESS + Reality nodes, which mainline rejects with "No nodes were found!". On first run, `bash scripts/install-subconverter.sh` downloads the pinned binary into `vendor/subconverter/`; the deploy script (step 7) calls it on every deploy and is idempotent.
+The PM2 ecosystem manages two processes: `dmit-proxy` (the Node app on `:3001`) and `dmit-subconverter` (the [Aethersailor/SubConverter-Extended](https://github.com/Aethersailor/SubConverter-Extended) sidecar bound to `127.0.0.1:25500`). The sidecar renders Clash YAML / sing-box JSON / Surge config from the upstream subscription with DMITProxy's local minimal template (`server/templates/dmit-default.toml`): one `PROXY` select group, one `auto` url-test group, LAN/CN bypass rules, and `FINAL` to `PROXY`. We use this fork (not the upstream `tindy2013/subconverter`) because it integrates the mihomo (Clash.Meta) parsing kernel and properly handles VLESS + Reality nodes, which mainline rejects with "No nodes were found!". On first run, `bash scripts/install-subconverter.sh` downloads the pinned binary into `vendor/subconverter/`; the deploy script (step 7) calls it on every deploy and is idempotent.
 
-PM2 同时管理两个进程：`dmit-proxy`（Node 服务，监听 `:3001`）和 `dmit-subconverter`（[Aethersailor/SubConverter-Extended](https://github.com/Aethersailor/SubConverter-Extended) 边车，绑定在 `127.0.0.1:25500`）。后者负责把上游订阅渲染成 Clash YAML / sing-box JSON / Surge 配置，并默认套用 ACL4SSR Online_Full 这一社区主流规则模板。之所以用这个 fork 而不是 `tindy2013/subconverter` 主线，是因为它内置 mihomo（Clash.Meta）解析内核，能正确处理 VLESS + Reality 节点；主线对此直接报 "No nodes were found!"。首次部署需手动执行 `bash scripts/install-subconverter.sh` 下载二进制到 `vendor/subconverter/`，后续每次部署由脚本自动复用。
+PM2 同时管理两个进程：`dmit-proxy`（Node 服务，监听 `:3001`）和 `dmit-subconverter`（[Aethersailor/SubConverter-Extended](https://github.com/Aethersailor/SubConverter-Extended) 边车，绑定在 `127.0.0.1:25500`）。后者负责把上游订阅渲染成 Clash YAML / sing-box JSON / Surge 配置，并套用 DMITProxy 本地极简模板（`server/templates/dmit-default.toml`）：一个 `PROXY` 手动选择组、一个 `auto` 延迟测试组、LAN/CN 直连规则，以及 `FINAL` 走 `PROXY`。之所以用这个 fork 而不是 `tindy2013/subconverter` 主线，是因为它内置 mihomo（Clash.Meta）解析内核，能正确处理 VLESS + Reality 节点；主线对此直接报 "No nodes were found!"。首次部署需手动执行 `bash scripts/install-subconverter.sh` 下载二进制到 `vendor/subconverter/`，后续每次部署由脚本自动复用。
 
 ### 6. Enable auto-start / 设置开机自启
 
@@ -282,6 +282,20 @@ The workflow SSHes into the VPS and runs [`scripts/deploy/remote-deploy.sh`](./s
 - run `npm run build`
 - restart all PM2 apps in the ecosystem (`dmit-proxy` + `dmit-subconverter`)
 - run a local health check against `http://127.0.0.1:3001`
+
+After deploy, validate a Clash subscription on the VPS before testing a GUI client:
+
+```bash
+npm run sub:check -- <subscription-id>
+```
+
+The check fails if the generated YAML has no inline `proxies` entries, or if the
+`PROXY` / `auto` groups do not reference those node names.
+
+To make deployment fail fast on the Linux box, set `SUBCONVERTER_SMOKE_SUB_ID`
+as a GitHub Actions repository secret. The deploy workflow passes it into the
+Linux deploy script, which runs the same check against `http://127.0.0.1:3001`
+after PM2 restart and healthcheck.
 
 If the server already contains extra uncommitted changes outside the protected files, clean them up before relying on auto deploy.
 

@@ -41,9 +41,11 @@ jobs:
           NODE_VERSION: 24
           PM2_NAME: dmit-proxy
           HEALTHCHECK_URL: http://127.0.0.1:3001
+          SUBCONVERTER_SMOKE_SUB_ID: ${{ secrets.SUBCONVERTER_SMOKE_SUB_ID }}
+          SUBCONVERTER_SMOKE_BASE_URL: http://127.0.0.1:3001
         run: |
           ssh -p "${VPS_PORT:-22}" "${VPS_USER}@${VPS_HOST}" \
-            "APP_DIR='$APP_DIR' BRANCH='$BRANCH' NODE_VERSION='$NODE_VERSION' PM2_NAME='$PM2_NAME' HEALTHCHECK_URL='$HEALTHCHECK_URL' bash -s" \
+            "APP_DIR='$APP_DIR' BRANCH='$BRANCH' NODE_VERSION='$NODE_VERSION' PM2_NAME='$PM2_NAME' HEALTHCHECK_URL='$HEALTHCHECK_URL' SUBCONVERTER_SMOKE_SUB_ID='$SUBCONVERTER_SMOKE_SUB_ID' SUBCONVERTER_SMOKE_BASE_URL='$SUBCONVERTER_SMOKE_BASE_URL' bash -s" \
             < ./scripts/deploy/remote-deploy.sh | tee deploy.log
 
       - name: Publish deploy summary

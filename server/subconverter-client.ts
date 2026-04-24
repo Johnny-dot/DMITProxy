@@ -105,6 +105,10 @@ export async function renderSubscription(opts: SubconvertOptions): Promise<Subco
     emoji: 'false',
     // Use mihomo-style field names (proxy-groups, etc.) in Clash output.
     new_name: 'true',
+    // Aethersailor's fork is proxy-provider first by default. For GUI clients
+    // like Mihomo Party, force inline nodes so PROXY/auto show the actual node
+    // names instead of only auto/DIRECT with an unfetched provider behind them.
+    expand: 'true',
   });
   if (opts.format === 'surge') params.set('ver', '4');
 

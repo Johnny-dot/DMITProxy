@@ -17,6 +17,7 @@
     "pw:flow:local:headed": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/playwright/run-invite-onboarding.ps1 -Headed",
     "preview": "vite preview",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "sub:check": "node scripts/check-subconverter-clash.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --max-warnings=0",

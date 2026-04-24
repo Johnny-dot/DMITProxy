@@ -13,6 +13,7 @@ PM2_BIN="${PM2_BIN:-}"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1:3001}"
 HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-30}"
 HEALTHCHECK_DELAY_SEC="${HEALTHCHECK_DELAY_SEC:-1}"
+SUBCONVERTER_SMOKE_BASE_URL="${SUBCONVERTER_SMOKE_BASE_URL:-http://127.0.0.1:3001}"
 PROTECTED_FILES=(
   "server/app.ts"
   "server/index.ts"
@@ -139,6 +140,13 @@ done
 if [[ $healthcheck_ok -ne 1 ]]; then
   log "healthcheck failed after ${HEALTHCHECK_RETRIES} attempts: $HEALTHCHECK_URL" >&2
   exit 1
+fi
+
+section "subconverter smoke"
+if [[ -n "${SUBCONVERTER_SMOKE_SUB_ID:-}" ]]; then
+  npm run sub:check -- "$SUBCONVERTER_SMOKE_SUB_ID" "$SUBCONVERTER_SMOKE_BASE_URL"
+else
+  log "skipped; set SUBCONVERTER_SMOKE_SUB_ID to validate a real Clash subscription"
 fi
 
 section "done"
