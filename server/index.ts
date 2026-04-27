@@ -3,12 +3,10 @@ import './logger.js';
 import { createServer } from 'node:http';
 import { createApp } from './app.js';
 import { db } from './db.js';
-import { startNewsFeedBackgroundRefresh } from './news-data.js';
 
 const PORT = parseInt(process.env.SERVER_PORT ?? '3001');
 const app = createApp();
 const server = createServer(app);
-const stopNewsFeedBackgroundRefresh = startNewsFeedBackgroundRefresh();
 
 // Periodic cleanup of expired sessions and password reset tokens (every hour)
 const CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
@@ -41,7 +39,6 @@ server.listen(PORT, () => {
 function shutdown(signal: string) {
   console.log(`[Prism] ${signal} received, shutting down gracefully...`);
   clearInterval(cleanupTimer);
-  stopNewsFeedBackgroundRefresh();
   server.close(() => {
     console.log('[Prism] HTTP server closed');
     db.close();

@@ -154,8 +154,6 @@ export function createApp() {
   app.use('/local/auth/login', authLimiter);
   app.use('/local/auth/register', authLimiter);
   app.use('/local/auth/password-reset', authLimiter);
-  app.use('/local/auth/portal/market/refresh', refreshLimiter);
-  app.use('/local/auth/portal/news/refresh', refreshLimiter);
   app.use('/local/auth/portal/node-quality/refresh', refreshLimiter);
   app.use('/local/auth', authRouter);
   app.use('/local/admin', adminLimiter, adminRouter);

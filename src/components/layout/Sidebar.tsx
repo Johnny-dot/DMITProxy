@@ -5,11 +5,9 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Link as LinkIcon,
-  Newspaper,
   Server,
   Settings,
   ShieldCheck,
-  TrendingUp,
   Users,
   X,
 } from 'lucide-react';
@@ -34,8 +32,6 @@ export function Sidebar({
 
   const userCenterLabel = isZh ? '用户中心' : 'User Center';
   const overviewLabel = isZh ? '概览' : 'Overview';
-  const marketLabel = isZh ? '市场' : 'Markets';
-  const newsLabel = isZh ? '资讯' : 'News';
   const setupLabel = isZh ? '使用订阅' : 'Set up';
   const helpLabel = isZh ? '帮助' : 'Help';
   const activeUserSection = resolveUserPortalSection(
@@ -67,20 +63,6 @@ export function Sidebar({
       testId: 'sidebar-user-setup',
     },
     {
-      icon: TrendingUp,
-      label: marketLabel,
-      to: '/my-subscription?section=market',
-      active: location.pathname === '/my-subscription' && activeUserSection === 'market',
-      testId: 'sidebar-user-market',
-    },
-    {
-      icon: Newspaper,
-      label: newsLabel,
-      to: '/my-subscription?section=news',
-      active: location.pathname === '/my-subscription' && activeUserSection === 'news',
-      testId: 'sidebar-user-news',
-    },
-    {
       icon: LifeBuoy,
       label: helpLabel,
       to: '/my-subscription?section=help',
@@ -95,15 +77,11 @@ export function Sidebar({
     role === 'user' && username && username !== resolvedDisplayName ? username : '';
   const subtitle =
     role === 'user'
-      ? activeUserSection === 'market'
-        ? marketLabel
-        : activeUserSection === 'news'
-          ? newsLabel
-          : activeUserSection === 'setup'
-            ? setupLabel
-            : activeUserSection === 'help'
-              ? helpLabel
-              : overviewLabel
+      ? activeUserSection === 'setup'
+        ? setupLabel
+        : activeUserSection === 'help'
+          ? helpLabel
+          : overviewLabel
       : t('nav.dashboard');
 
   return (

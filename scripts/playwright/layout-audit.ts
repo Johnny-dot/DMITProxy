@@ -37,10 +37,6 @@ interface ShellMetrics {
   mainWidth: number | null;
   leftDelta: number | null;
   rightDelta: number | null;
-  marketLeadLeft: number | null;
-  marketLeadRight: number | null;
-  detailLeftWidth: number | null;
-  detailRightWidth: number | null;
 }
 
 interface AuditResult {
@@ -63,7 +59,6 @@ const AUDIT_VIEWPORTS: AuditViewport[] = [
 
 const AUDIT_PAGES = [
   { name: 'overview', path: '/my-subscription', testId: 'my-subscription-page' },
-  { name: 'market', path: '/my-subscription?section=market', testId: 'portal-market-tab' },
   { name: 'setup', path: '/my-subscription?section=setup', testId: 'portal-setup-tab' },
 ] as const;
 
@@ -193,12 +188,6 @@ async function collectShellMetrics(page: Page): Promise<ShellMetrics> {
   return page.evaluate(() => {
     const headerCard = document.querySelector('.content-shell-wide > header.surface-card');
     const mainShell = document.querySelector('[data-testid="my-subscription-page"]');
-    const marketLead = document.querySelector('[data-testid="portal-market-tab"] > section');
-    const detailGrid = document.querySelector('[data-testid="portal-market-tab"] .grid.gap-4');
-    const detailChildren =
-      detailGrid instanceof HTMLElement ? Array.from(detailGrid.children).slice(0, 2) : [];
-    const detailLeft = detailChildren[0] ?? null;
-    const detailRight = detailChildren[1] ?? null;
 
     const headerRect =
       headerCard instanceof HTMLElement
@@ -227,39 +216,6 @@ async function collectShellMetrics(page: Page): Promise<ShellMetrics> {
             };
           })()
         : null;
-    const marketRect =
-      marketLead instanceof HTMLElement
-        ? (() => {
-            const rect = marketLead.getBoundingClientRect();
-            return {
-              left: Math.round(rect.left * 100) / 100,
-              right: Math.round(rect.right * 100) / 100,
-              width: Math.round(rect.width * 100) / 100,
-            };
-          })()
-        : null;
-    const detailLeftRect =
-      detailLeft instanceof HTMLElement
-        ? (() => {
-            const rect = detailLeft.getBoundingClientRect();
-            return {
-              left: Math.round(rect.left * 100) / 100,
-              right: Math.round(rect.right * 100) / 100,
-              width: Math.round(rect.width * 100) / 100,
-            };
-          })()
-        : null;
-    const detailRightRect =
-      detailRight instanceof HTMLElement
-        ? (() => {
-            const rect = detailRight.getBoundingClientRect();
-            return {
-              left: Math.round(rect.left * 100) / 100,
-              right: Math.round(rect.right * 100) / 100,
-              width: Math.round(rect.width * 100) / 100,
-            };
-          })()
-        : null;
     const overflow = Math.max(
       document.documentElement.scrollWidth - window.innerWidth,
       document.body ? document.body.scrollWidth - window.innerWidth : 0,
@@ -283,10 +239,6 @@ async function collectShellMetrics(page: Page): Promise<ShellMetrics> {
         headerRect && mainRect
           ? Math.round(Math.abs(headerRect.right - mainRect.right) * 100) / 100
           : null,
-      marketLeadLeft: marketRect?.left ?? null,
-      marketLeadRight: marketRect?.right ?? null,
-      detailLeftWidth: detailLeftRect?.width ?? null,
-      detailRightWidth: detailRightRect?.width ?? null,
     };
   });
 }
@@ -329,10 +281,6 @@ async function auditPageAtViewport(
       screenshot,
       metrics,
       status: 'passed',
-      note:
-        auditPage.name === 'market' && metrics.detailLeftWidth && metrics.detailRightWidth
-          ? `detail split ${metrics.detailLeftWidth}px / ${metrics.detailRightWidth}px`
-          : undefined,
     };
   } catch (error) {
     return {

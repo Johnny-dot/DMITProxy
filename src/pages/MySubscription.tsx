@@ -4,8 +4,6 @@ import { ApiError, refreshCurrentNodeQuality } from '@/src/api/client';
 import type { ServerStatus } from '@/src/api/xui';
 import { HelpTab } from '@/src/pages/portal/HelpTab';
 import { HomeTab } from '@/src/pages/portal/HomeTab';
-import { MarketTab } from '@/src/pages/portal/MarketTab';
-import { NewsTab } from '@/src/pages/portal/NewsTab';
 import { SubscriptionTab } from '@/src/pages/portal/SubscriptionTab';
 import { Button } from '@/src/components/ui/Button';
 import { useToast } from '@/src/components/ui/Toast';
@@ -44,7 +42,6 @@ export function MySubscriptionPage() {
   );
   const activeTab = sectionState.tab;
   const setupFocus = sectionState.setupFocus;
-  const [hasVisitedNewsTab, setHasVisitedNewsTab] = useState(() => activeTab === 'news');
 
   const setSection = useCallback(
     (tab: PortalTab) => {
@@ -112,12 +109,6 @@ export function MySubscriptionPage() {
   useEffect(() => {
     void loadContext();
   }, [loadContext]);
-
-  useEffect(() => {
-    if (activeTab === 'news') {
-      setHasVisitedNewsTab(true);
-    }
-  }, [activeTab]);
 
   const loadStats = useCallback(async () => {
     setClientStats('loading');
@@ -193,26 +184,6 @@ export function MySubscriptionPage() {
       };
     }
 
-    if (activeTab === 'market') {
-      return {
-        kicker: isZh ? '市场' : 'Markets',
-        title: isZh ? '只看今天的重要行情。' : 'Catch today’s key market moves.',
-        description: isZh
-          ? '重点标的、价格变化和走势细节单独放在一页里，更方便看盘。'
-          : 'Key assets, price changes, and chart details now live on their own page for faster scanning.',
-      };
-    }
-
-    if (activeTab === 'news') {
-      return {
-        kicker: isZh ? '资讯' : 'News',
-        title: isZh ? '按主题看最新资讯。' : 'Browse the latest headlines by topic.',
-        description: isZh
-          ? '把市场、宏观、科技和 AI 访谈拆成独立资讯页，不再和行情挤在同一屏。'
-          : 'Markets, macro, technology, and AI coverage now have a dedicated page instead of sharing the market view.',
-      };
-    }
-
     if (activeTab === 'setup') {
       return {
         kicker: isZh ? '使用订阅' : 'Set up',
@@ -271,10 +242,7 @@ export function MySubscriptionPage() {
       className={cn('content-shell-wide flex flex-col gap-4 px-4 py-2 md:px-6 xl:px-8')}
       data-testid="my-subscription-page"
     >
-      {activeTab === 'market' ||
-      activeTab === 'news' ||
-      activeTab === 'home' ||
-      activeTab === 'help' ? null : (
+      {activeTab === 'home' || activeTab === 'help' ? null : (
         <section className="surface-card space-y-3 p-6 md:p-7">
           <p className="section-kicker">{sectionMeta.kicker}</p>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
@@ -302,9 +270,7 @@ export function MySubscriptionPage() {
           onNavigate={navigate}
           showMessagesCard
         />
-      ) : activeTab === 'market' ? (
-        <MarketTab />
-      ) : activeTab === 'news' ? null : activeTab === 'help' ? (
+      ) : activeTab === 'help' ? (
         <HelpTab
           portalSettings={context.settings}
           communityLinks={context.settings.communityLinks}
@@ -318,15 +284,6 @@ export function MySubscriptionPage() {
           onSetSection={setSection}
         />
       )}
-
-      {hasVisitedNewsTab ? (
-        <div
-          className={cn(activeTab === 'news' ? 'block' : 'hidden')}
-          aria-hidden={activeTab !== 'news'}
-        >
-          <NewsTab isActive={activeTab === 'news'} />
-        </div>
-      ) : null}
     </div>
   );
 }

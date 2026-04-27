@@ -26,7 +26,6 @@ This project combines the admin console and end-user portal into one deployable 
 - Invite-based user registration / 邀请码注册用户体系
 - Local user portal with subscription tools / 本地用户门户与订阅工具
 - Shared resources and community entry management / 共享资源与社群入口管理
-- Market data and news modules / 市场数据与资讯模块
 - SQLite-backed sessions, settings, and invite data / 基于 SQLite 的会话、设置和邀请码数据
 
 ## Tech Stack / 技术栈
