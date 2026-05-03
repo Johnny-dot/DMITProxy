@@ -349,7 +349,7 @@ export const enUS = {
     help: {
       subId: 'Unique identifier used to generate subscription links for one client.',
       links:
-        'Different output formats for the same subscription source (Universal/Clash/V2Ray/Singbox).',
+        'Different output formats for the same subscription source (Shadowrocket / V2Ray, Clash, Sing-box, Surge).',
       clientStats: 'Client details resolved from current inbound data by matching subId.',
       statTrafficUsed: 'Cumulative traffic already used by this client.',
       statTrafficLimit: 'Configured total traffic quota for this client (unlimited if empty/0).',
@@ -366,7 +366,7 @@ export const enUS = {
       linux2: 'Import Clash subscription URL.',
       linux3: 'Refresh the profile, choose a policy group, and enable system proxy.',
       ios1: 'Open Shadowrocket and add a subscription profile.',
-      ios2: 'Paste Universal subscription URL.',
+      ios2: 'Paste the Shadowrocket / V2Ray subscription URL.',
       ios3: 'Refresh and select a node.',
       android1:
         'Install one of the supported Android clients: FlClash, Exclave, Clash Meta, Sing-box, or v2rayNG.',

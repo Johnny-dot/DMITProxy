@@ -339,7 +339,7 @@ export const zhCN = {
     tip: '提示：快速上手建议先复制 {name} 链接。',
     help: {
       subId: '用于给单个客户端生成订阅链接的唯一标识。',
-      links: '同一订阅源的不同输出格式（Universal/Clash/V2Ray/Singbox）。',
+      links: '同一订阅源的不同输出格式（Shadowrocket / V2Ray、Clash、Sing-box、Surge）。',
       clientStats: '通过匹配 subId，从当前入站数据解析出的客户端详情。',
       statTrafficUsed: '该客户端当前累计已使用的流量。',
       statTrafficLimit: '该客户端配置的总流量上限（空或 0 视为不限）。',
@@ -356,7 +356,7 @@ export const zhCN = {
       linux2: '导入 Clash 订阅链接。',
       linux3: '刷新配置后选择策略组并开启系统代理。',
       ios1: '打开 Shadowrocket 并添加订阅配置。',
-      ios2: '粘贴 Universal 订阅链接。',
+      ios2: '粘贴 Shadowrocket / V2Ray 订阅链接。',
       ios3: '刷新后选择节点。',
       android1: '安装 FlClash、Exclave、Clash Meta、Sing-box 或 v2rayNG 之一。',
       android2: '粘贴匹配好的订阅链接。',

@@ -69,6 +69,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [hasCopied, setHasCopied] = useState(false);
   const [hasMarkedConnected, setHasMarkedConnected] = useState(false);
+  const [showQuickQr, setShowQuickQr] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [mirrorDialog, setMirrorDialog] = useState<MirrorDialogState | null>(null);
 
@@ -88,8 +89,10 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     () => [
       {
         key: 'universal' as const,
-        label: 'Universal',
-        desc: isZh ? '适合大多数客户端' : 'Works with most clients',
+        label: 'Shadowrocket / V2Ray',
+        desc: isZh
+          ? '原始协议订阅，适合 Shadowrocket、v2rayN、v2rayNG'
+          : 'Raw protocol links for Shadowrocket, v2rayN, and v2rayNG',
       },
       {
         key: 'clash' as const,
@@ -307,10 +310,97 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
 
   return (
     <div className="space-y-6" data-testid="portal-setup-tab">
+      <section className="surface-card space-y-4 p-6 md:p-7" data-testid="portal-setup-quick">
+        <StepHeader
+          step={1}
+          icon={LinkIcon}
+          title={isZh ? '快速接入' : 'Quick setup'}
+          description={
+            isZh
+              ? '已经装好客户端的话，直接复制推荐订阅或扫二维码即可；下面仍然保留完整下载和导入步骤。'
+              : 'If your client is already installed, copy the recommended link or scan the QR code. Full download and import steps remain below.'
+          }
+        />
+        <div className="surface-panel space-y-4 rounded-[28px] p-4 md:p-5">
+          {hasSubscription ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-300">
+                  {activeClient.name}
+                </span>
+                <span className="rounded-full border border-[color:var(--border-subtle)] bg-black/10 px-2.5 py-1 text-[11px] text-zinc-300">
+                  {recommendedFormatOption.label}
+                </span>
+              </div>
+              <p className="break-all rounded-[20px] border border-[color:var(--border-subtle)] bg-black/10 px-4 py-3 font-mono text-xs leading-6 text-zinc-300">
+                {recommendedImportUrl}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {oneClickImportUrl ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => handleOneClickImport(oneClickImportUrl)}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    {isZh ? '一键导入' : 'One-click import'}
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  variant={oneClickImportUrl ? 'outline' : 'secondary'}
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => handleCopy(recommendedImportUrl, 'quick-recommended')}
+                >
+                  <Copy className="h-4 w-4" />
+                  {copiedKey === 'quick-recommended'
+                    ? isZh
+                      ? '已复制'
+                      : 'Copied'
+                    : isZh
+                      ? '复制推荐订阅'
+                      : 'Copy recommended link'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setShowQuickQr((current) => !current)}
+                >
+                  <QrCode className="h-4 w-4" />
+                  {showQuickQr
+                    ? isZh
+                      ? '隐藏二维码'
+                      : 'Hide QR'
+                    : isZh
+                      ? '显示二维码'
+                      : 'Show QR'}
+                  {showQuickQr ? (
+                    <ChevronUp className="h-3 w-3" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+              {showQuickQr ? <QrCodeCanvas url={recommendedImportUrl} isZh={isZh} /> : null}
+            </>
+          ) : (
+            <div className="rounded-[20px] border border-dashed border-amber-500/30 bg-amber-500/5 px-4 py-5 text-sm leading-7 text-zinc-300">
+              {isZh
+                ? '订阅还在准备中。你可以先下载客户端，稍后回来复制推荐订阅。'
+                : 'Your subscription is still being prepared. You can download the client first and come back for the recommended link later.'}
+            </div>
+          )}
+        </div>
+      </section>
       <section className="space-y-6">
         <section className="surface-card space-y-5 p-6 md:p-7" data-testid="portal-setup-platforms">
           <StepHeader
-            step={1}
+            step={2}
             icon={Monitor}
             title={isZh ? '先选你的设备平台' : 'Start with your device'}
             description={
@@ -350,7 +440,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
           data-testid="portal-setup-clients"
         >
           <StepHeader
-            step={2}
+            step={3}
             icon={Download}
             title={isZh ? '下载推荐客户端' : 'Download a recommended client'}
             description={
@@ -400,7 +490,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
 
         <section className="surface-card space-y-5 p-6 md:p-7" data-testid="portal-setup-link">
           <StepHeader
-            step={3}
+            step={4}
             icon={LinkIcon}
             title={isZh ? '复制匹配好的订阅链接' : 'Copy the matched subscription link'}
             description={
@@ -572,13 +662,6 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                         : `If ${activeClient.name} is already installed, try one-click import first.`}
                   </p>
                 ) : null}
-                {activeClient.id === 'shadowrocket' ? (
-                  <p className="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-xs leading-6 text-amber-100">
-                    {isZh
-                      ? 'Shadowrocket 不会自动采用订阅响应头里的标题。新增 Subscribe 时请在“备注”里填写 PrismProxy，否则它会把订阅 ID 当成本地名称。'
-                      : 'Shadowrocket does not automatically use the profile title header. When adding Subscribe, set Remark to PrismProxy, otherwise it may use the subscription ID as the local name.'}
-                  </p>
-                ) : null}
                 {showQr ? <QrCodeCanvas url={activeSubUrl} isZh={isZh} /> : null}
               </>
             ) : (
@@ -601,7 +684,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
 
         <section className="surface-card space-y-5 p-6 md:p-7" data-testid="portal-setup-guide">
           <StepHeader
-            step={4}
+            step={5}
             icon={Terminal}
             title={isZh ? '按步骤导入并连接' : 'Import and connect'}
             description={guideDescription}
@@ -622,7 +705,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">
                     {formatOptions.find((item) => item.key === guide.recommendedFormat)?.label ??
-                      'Universal'}
+                      'Shadowrocket / V2Ray'}
                   </span>
                   <span className="text-xs text-zinc-400">{guide.note}</span>
                   {guide.sourceUrl ? (
