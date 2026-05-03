@@ -14,8 +14,15 @@ import { Input } from '@/src/components/ui/Input';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { useToast } from '@/src/components/ui/Toast';
-import { Plus, Search, Edit2, Trash2, Power, PowerOff, ShieldCheck } from 'lucide-react';
-import { getInbounds, deleteInbound, toggleInbound, Inbound } from '@/src/api/client';
+import { Plus, Search, Edit2, Trash2, Power, PowerOff, ShieldCheck, X } from 'lucide-react';
+import {
+  getInbounds,
+  deleteInbound,
+  toggleInbound,
+  updateInbound,
+  type Inbound,
+  type TrafficResetPeriod,
+} from '@/src/api/client';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
@@ -24,8 +31,19 @@ export function InboundsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingInbound, setEditingInbound] = useState<Inbound | null>(null);
+  const [editTrafficReset, setEditTrafficReset] = useState<TrafficResetPeriod>('never');
+  const [isSavingInbound, setIsSavingInbound] = useState(false);
   const { toast } = useToast();
   const { t } = useI18n();
+
+  const trafficResetOptions: Array<{ value: TrafficResetPeriod; label: string }> = [
+    { value: 'never', label: t('inbounds.trafficResetNever') },
+    { value: 'hourly', label: t('inbounds.trafficResetHourly') },
+    { value: 'daily', label: t('inbounds.trafficResetDaily') },
+    { value: 'weekly', label: t('inbounds.trafficResetWeekly') },
+    { value: 'monthly', label: t('inbounds.trafficResetMonthly') },
+  ];
 
   useEffect(() => {
     getInbounds()
@@ -39,6 +57,11 @@ export function InboundsPage() {
     const gb = bytes / (1024 * 1024 * 1024);
     if (gb >= 1024) return `${(gb / 1024).toFixed(2)} TB`;
     return `${gb.toFixed(2)} GB`;
+  };
+
+  const formatExpiry = (expiryTime: number) => {
+    if (!Number.isFinite(expiryTime) || expiryTime <= 0) return t('inbounds.neverExpires');
+    return new Date(expiryTime).toLocaleString();
   };
 
   const getProtocolColor = (protocol: string) => {
@@ -72,18 +95,48 @@ export function InboundsPage() {
     }
   };
 
-  const handleToggle = async (id: number, remark: string, enable: boolean) => {
+  const getTrafficResetLabel = (value: TrafficResetPeriod | undefined) => {
+    const normalized = value ?? 'never';
+    return trafficResetOptions.find((option) => option.value === normalized)?.label ?? normalized;
+  };
+
+  const handleToggle = async (inbound: Inbound, enable: boolean) => {
     try {
-      await toggleInbound(id, enable);
-      setInbounds((prev) => prev.map((item) => (item.id === id ? { ...item, enable } : item)));
-      toast(`${enable ? t('common.enabled') : t('common.disabled')}: ${remark}`, 'success');
+      await toggleInbound(inbound, enable);
+      setInbounds((prev) =>
+        prev.map((item) => (item.id === inbound.id ? { ...item, enable } : item)),
+      );
+      toast(`${enable ? t('common.enabled') : t('common.disabled')}: ${inbound.remark}`, 'success');
     } catch {
       toast(t('inbounds.toggleFailed'), 'error');
     }
   };
 
-  const handleAction = (action: string, remark: string) => {
-    toast(t('inbounds.actionNotReady', { action, remark }), 'info');
+  const openEditInbound = (inbound: Inbound) => {
+    setEditingInbound(inbound);
+    setEditTrafficReset(inbound.trafficReset ?? 'never');
+  };
+
+  const saveInboundEdits = async () => {
+    if (!editingInbound) return;
+
+    setIsSavingInbound(true);
+    try {
+      await updateInbound(editingInbound, { trafficReset: editTrafficReset });
+      setInbounds((prev) =>
+        prev.map((item) =>
+          item.id === editingInbound.id ? { ...item, trafficReset: editTrafficReset } : item,
+        ),
+      );
+      toast(t('inbounds.editSaved', { remark: editingInbound.remark }), 'success');
+      setEditingInbound(null);
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : '';
+      const base = t('inbounds.editFailed', { remark: editingInbound.remark });
+      toast(raw ? `${base}: ${raw}` : base, 'error');
+    } finally {
+      setIsSavingInbound(false);
+    }
   };
 
   return (
@@ -149,6 +202,12 @@ export function InboundsPage() {
                       <InfoTooltip content={t('inbounds.help.clients')} />
                     </span>
                   </TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    <span className="inline-flex items-center gap-1">
+                      <span>{t('inbounds.trafficReset')}</span>
+                      <InfoTooltip content={t('inbounds.help.trafficReset')} />
+                    </span>
+                  </TableHead>
                   <TableHead>{t('inbounds.status')}</TableHead>
                   <TableHead className="text-right">{t('inbounds.actions')}</TableHead>
                 </TableRow>
@@ -196,6 +255,11 @@ export function InboundsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">{clientCount}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge variant="secondary">
+                          {getTrafficResetLabel(inbound.trafficReset)}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={inbound.enable ? 'success' : 'secondary'}>
                           {inbound.enable ? t('common.enabled') : t('common.disabled')}
@@ -207,9 +271,7 @@ export function InboundsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() =>
-                              handleToggle(inbound.id, inbound.remark, !inbound.enable)
-                            }
+                            onClick={() => handleToggle(inbound, !inbound.enable)}
                           >
                             {inbound.enable ? (
                               <PowerOff className="w-3.5 h-3.5 text-zinc-500" />
@@ -221,7 +283,7 @@ export function InboundsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => handleAction(t('nodes.edit'), inbound.remark)}
+                            onClick={() => openEditInbound(inbound)}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </Button>
@@ -261,6 +323,113 @@ export function InboundsPage() {
       <div className="bg-zinc-900/30 border border-white/5 rounded-lg p-4 text-sm text-zinc-500">
         <p>{t('inbounds.note')}</p>
       </div>
+
+      {editingInbound && (
+        <div
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
+          onClick={() => (isSavingInbound ? undefined : setEditingInbound(null))}
+        >
+          <div
+            className="surface-card w-full max-w-lg"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border-subtle)] px-5 py-4">
+              <div className="space-y-1">
+                <p className="font-semibold text-[var(--text-primary)]">
+                  {t('inbounds.editInbound')}
+                </p>
+                <p className="text-sm text-[var(--text-secondary)]">{editingInbound.remark}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => (isSavingInbound ? undefined : setEditingInbound(null))}
+                className="text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+                disabled={isSavingInbound}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-5 px-5 py-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                    {t('inbounds.remark')}
+                  </label>
+                  <Input value={editingInbound.remark} readOnly disabled />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                    {t('inbounds.protocol')}
+                  </label>
+                  <Input value={editingInbound.protocol.toUpperCase()} readOnly disabled />
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  {t('inbounds.trafficPolicy')}
+                </p>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                      {t('inbounds.totalTraffic')}
+                    </label>
+                    <Input value={formatTraffic(editingInbound.total)} readOnly disabled />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                      <span>{t('inbounds.trafficReset')}</span>
+                      <InfoTooltip content={t('inbounds.help.trafficReset')} />
+                    </label>
+                    <select
+                      value={editTrafficReset}
+                      onChange={(event) =>
+                        setEditTrafficReset(event.target.value as TrafficResetPeriod)
+                      }
+                      disabled={isSavingInbound}
+                      className="flex h-11 w-full rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none ring-offset-zinc-950 transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {trafficResetOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                      {t('inbounds.expiryTime')}
+                    </label>
+                    <Input value={formatExpiry(editingInbound.expiryTime)} readOnly disabled />
+                  </div>
+                </div>
+
+                <p className="text-xs leading-5 text-[var(--text-secondary)]">
+                  {t('inbounds.trafficResetHint')}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-[color:var(--border-subtle)] px-5 py-4">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setEditingInbound(null)}
+                disabled={isSavingInbound}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button type="button" onClick={saveInboundEdits} disabled={isSavingInbound}>
+                {isSavingInbound ? t('common.saving') : t('common.save')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

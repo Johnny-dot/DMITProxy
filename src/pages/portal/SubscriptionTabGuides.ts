@@ -1248,10 +1248,10 @@ export function buildRealShadowrocketGuide(isZh: boolean): ClientGuide {
           createStep(
             'import',
             '先用右上角加号添加订阅',
-            '在 Shadowrocket 首页点右上角加号，类型选 Subscribe，再把当前页面复制的订阅链接填进 URL。',
-            '名称可以随便写，但 URL 一定要贴完整，别多空格。',
+            '在 Shadowrocket 首页点右上角加号，类型选 Subscribe，把当前页面复制的订阅链接填进 URL，并在备注里填写 PrismProxy。',
+            '备注不要留空；Shadowrocket 不会自动采用服务端标题，留空时可能把订阅 ID 当成本地名称。',
             '新增订阅',
-            ['点右上角加号', '类型选 Subscribe', '粘贴 URL 并保存'],
+            ['点右上角加号', '类型选 Subscribe', '粘贴 URL', '备注填 PrismProxy 并保存'],
             '添加订阅',
             {
               src: SHADOWROCKET_SCREENSHOTS.addSubscription,
@@ -1289,10 +1289,15 @@ export function buildRealShadowrocketGuide(isZh: boolean): ClientGuide {
           createStep(
             'import',
             'Add the subscription from the plus button',
-            'Tap the top-right plus button on the Shadowrocket home screen, choose Subscribe, and paste the copied URL.',
-            'The name can be anything, but the URL must be pasted cleanly.',
+            'Tap the top-right plus button on the Shadowrocket home screen, choose Subscribe, paste the copied URL, and set Remark to PrismProxy.',
+            'Do not leave Remark empty. Shadowrocket does not automatically adopt the server profile title and may use the subscription ID as the local name.',
             'Add subscription',
-            ['Tap the top-right plus button', 'Choose Subscribe', 'Paste the URL and save'],
+            [
+              'Tap the top-right plus button',
+              'Choose Subscribe',
+              'Paste the URL',
+              'Set Remark to PrismProxy and save',
+            ],
             'Add subscription',
             {
               src: SHADOWROCKET_SCREENSHOTS.addSubscription,

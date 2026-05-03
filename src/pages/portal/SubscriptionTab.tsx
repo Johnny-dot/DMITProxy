@@ -57,7 +57,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
   const { toast } = useToast();
   const isZh = language === 'zh-CN';
   const downloadsRef = useRef<HTMLElement>(null);
-  const importName = isZh ? '我的订阅' : 'My Subscription';
+  const importName = 'PrismProxy';
   const [activePlatform, setActivePlatform] = useState<GuidePlatform>(() =>
     detectInitialPlatform(),
   );
@@ -570,6 +570,13 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                       : isZh
                         ? `如果 ${activeClient.name} 已经安装，优先试一键导入。`
                         : `If ${activeClient.name} is already installed, try one-click import first.`}
+                  </p>
+                ) : null}
+                {activeClient.id === 'shadowrocket' ? (
+                  <p className="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-xs leading-6 text-amber-100">
+                    {isZh
+                      ? 'Shadowrocket 不会自动采用订阅响应头里的标题。新增 Subscribe 时请在“备注”里填写 PrismProxy，否则它会把订阅 ID 当成本地名称。'
+                      : 'Shadowrocket does not automatically use the profile title header. When adding Subscribe, set Remark to PrismProxy, otherwise it may use the subscription ID as the local name.'}
                   </p>
                 ) : null}
                 {showQr ? <QrCodeCanvas url={activeSubUrl} isZh={isZh} /> : null}

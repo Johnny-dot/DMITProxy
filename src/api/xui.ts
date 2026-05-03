@@ -147,24 +147,68 @@ export interface Inbound {
   remark: string;
   protocol: string;
   port: number;
+  listen?: string;
   enable: boolean;
   up: number;
   down: number;
   total: number;
   expiryTime: number;
+  trafficReset?: TrafficResetPeriod;
+  lastTrafficResetTime?: number;
   clientStats: InboundClient[];
   settings: string;
+  streamSettings?: string;
+  sniffing?: string;
 }
 
 export function getInbounds(options?: RequestInit) {
   return apiFetch<Inbound[]>('/panel/api/inbounds/list', options);
 }
 
-export async function toggleInbound(id: number, enable: boolean) {
-  return apiFetch<null>(`/panel/api/inbounds/update/${id}`, {
-    method: 'POST',
-    body: JSON.stringify({ enable }),
-  });
+export type TrafficResetPeriod = 'never' | 'hourly' | 'daily' | 'weekly' | 'monthly';
+
+export function buildInboundUpdateForm(
+  inbound: Inbound,
+  patch: Partial<Pick<Inbound, 'enable' | 'trafficReset'>>,
+): Record<string, string> {
+  const updated = { ...inbound, ...patch };
+  const form: Record<string, string> = {
+    up: String(updated.up ?? 0),
+    down: String(updated.down ?? 0),
+    total: String(updated.total ?? 0),
+    remark: updated.remark,
+    enable: String(updated.enable === true),
+    expiryTime: String(updated.expiryTime ?? 0),
+    trafficReset: updated.trafficReset ?? 'never',
+    lastTrafficResetTime: String(updated.lastTrafficResetTime ?? 0),
+    listen: updated.listen ?? '',
+    port: String(updated.port),
+    protocol: updated.protocol,
+    settings: updated.settings,
+  };
+
+  if (updated.streamSettings !== undefined) form.streamSettings = updated.streamSettings;
+  if (updated.sniffing !== undefined) form.sniffing = updated.sniffing;
+  return form;
+}
+
+export async function updateInbound(
+  inbound: Inbound,
+  patch: Partial<Pick<Inbound, 'trafficReset'>>,
+) {
+  return apiFormFetch<null>(
+    `/panel/api/inbounds/update/${inbound.id}`,
+    buildInboundUpdateForm(inbound, patch),
+    'Failed to update inbound',
+  );
+}
+
+export async function toggleInbound(inbound: Inbound, enable: boolean) {
+  return apiFormFetch<null>(
+    `/panel/api/inbounds/update/${inbound.id}`,
+    buildInboundUpdateForm(inbound, { enable }),
+    'Failed to update inbound',
+  );
 }
 
 export async function deleteInbound(id: number) {
