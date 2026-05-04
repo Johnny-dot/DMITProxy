@@ -242,7 +242,7 @@ export function MySubscriptionPage() {
       className={cn('content-shell-wide flex flex-col gap-4 px-4 py-2 md:px-6 xl:px-8')}
       data-testid="my-subscription-page"
     >
-      {activeTab === 'home' || activeTab === 'help' ? null : (
+      {activeTab === 'home' || activeTab === 'help' || activeTab === 'setup' ? null : (
         <section className="surface-card space-y-3 p-6 md:p-7">
           <p className="section-kicker">{sectionMeta.kicker}</p>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">

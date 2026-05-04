@@ -6,10 +6,8 @@ import {
   Copy,
   Download,
   ExternalLink,
-  Link as LinkIcon,
   Monitor,
   QrCode,
-  Smartphone,
   Terminal,
 } from 'lucide-react';
 import { MirrorDownloadDialog } from '@/src/components/downloads/MirrorDownloadDialog';
@@ -70,7 +68,6 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
   const [hasCopied, setHasCopied] = useState(false);
   const [hasMarkedConnected, setHasMarkedConnected] = useState(false);
   const [showQuickQr, setShowQuickQr] = useState(false);
-  const [showQr, setShowQr] = useState(false);
   const [mirrorDialog, setMirrorDialog] = useState<MirrorDialogState | null>(null);
 
   const subscriptionLinks = useMemo(
@@ -197,6 +194,8 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     ? activePlatform
     : (activeClient.recommendedFor[0] ?? activeClient.platforms[0] ?? 'windows');
   const guidePlatformLabel = getPlatformLabel(guidePlatform, isZh);
+  const activePlatformLabel = getPlatformLabel(activePlatform, isZh);
+  const ActiveClientIcon = activeClient.icon;
   const guide = decorateGuideWithRealScreenshots(
     buildClientGuide(activeClient.id, guidePlatform, guidePlatformLabel, isZh),
     activeClient.id,
@@ -310,143 +309,327 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
 
   return (
     <div className="space-y-6" data-testid="portal-setup-tab">
-      <section className="surface-card space-y-4 p-6 md:p-7" data-testid="portal-setup-quick">
-        <StepHeader
-          step={1}
-          icon={LinkIcon}
-          title={isZh ? '快速接入' : 'Quick setup'}
-          description={
-            isZh
-              ? '已经装好客户端的话，直接复制推荐订阅或扫二维码即可；下面仍然保留完整下载和导入步骤。'
-              : 'If your client is already installed, copy the recommended link or scan the QR code. Full download and import steps remain below.'
-          }
-        />
-        <div className="surface-panel space-y-4 rounded-[28px] p-4 md:p-5">
-          {hasSubscription ? (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-300">
-                  {activeClient.name}
-                </span>
-                <span className="rounded-full border border-[color:var(--border-subtle)] bg-black/10 px-2.5 py-1 text-[11px] text-zinc-300">
-                  {recommendedFormatOption.label}
-                </span>
-              </div>
-              <p className="break-all rounded-[20px] border border-[color:var(--border-subtle)] bg-black/10 px-4 py-3 font-mono text-xs leading-6 text-zinc-300">
-                {recommendedImportUrl}
+      <section
+        className="surface-card relative overflow-hidden p-5 md:p-7"
+        data-testid="portal-setup-quick"
+      >
+        <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-emerald-300/18 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-1/4 h-40 w-96 rounded-full bg-sky-300/10 blur-3xl" />
+        <div className="relative space-y-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl space-y-3">
+              <p className="text-xs font-medium uppercase tracking-[0.22em] text-emerald-300/90">
+                {isZh ? '使用订阅' : 'Subscription setup'}
               </p>
-              <div className="flex flex-wrap gap-2">
-                {oneClickImportUrl ? (
-                  <Button
+              <div className="space-y-2">
+                <h2 className="text-2xl font-semibold tracking-tight text-zinc-50 md:text-3xl">
+                  {isZh ? '接入控制台' : 'Setup console'}
+                </h2>
+                <p className="text-sm leading-7 text-zinc-400">
+                  {isZh
+                    ? '先确认设备和客户端，然后直接导入订阅；下载、格式和教程都跟着当前选择自动联动。'
+                    : 'Confirm your device and client first, then import the subscription. Downloads, format, and guide stay synced to the current choice.'}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 lg:min-w-[420px]">
+              <div className="min-w-0 rounded-[18px] border border-white/10 bg-white/[0.055] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:rounded-[22px] sm:px-4 sm:py-3">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                  {isZh ? '设备' : 'Device'}
+                </p>
+                <p className="mt-1 truncate text-sm font-medium text-zinc-100">
+                  {activePlatformLabel}
+                </p>
+              </div>
+              <div className="min-w-0 rounded-[18px] border border-white/10 bg-white/[0.055] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:rounded-[22px] sm:px-4 sm:py-3">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                  {isZh ? '客户端' : 'Client'}
+                </p>
+                <p className="mt-1 truncate text-sm font-medium text-zinc-100">
+                  {activeClient.name}
+                </p>
+              </div>
+              <div className="min-w-0 rounded-[18px] border border-white/10 bg-white/[0.055] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:rounded-[22px] sm:px-4 sm:py-3">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                  {isZh ? '状态' : 'Status'}
+                </p>
+                <p className="mt-1 truncate text-sm font-medium text-zinc-100">
+                  {hasCopied
+                    ? isZh
+                      ? '订阅已复制'
+                      : 'Link copied'
+                    : isZh
+                      ? '等待接入'
+                      : 'Ready to connect'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+            <div
+              className="rounded-[30px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4 md:p-5"
+              data-testid="portal-setup-platforms"
+            >
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-zinc-50">
+                    {isZh ? '选择设备平台' : 'Choose device'}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                    {isZh
+                      ? '选择后会同步客户端、格式和教程。'
+                      : 'This syncs client, format, and guide.'}
+                  </p>
+                </div>
+                <Monitor className="h-4 w-4 text-emerald-300" />
+              </div>
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-2">
+                {PLATFORM_OPTIONS.map((platform) => (
+                  <button
+                    key={platform.key}
                     type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => handleOneClickImport(oneClickImportUrl)}
+                    onClick={() => handlePlatformSelect(platform.key)}
+                    data-testid={`portal-setup-platform-${platform.key}`}
+                    className={cn(
+                      'group rounded-[18px] border px-3 py-2.5 text-left transition-all sm:rounded-[20px] sm:px-3.5 sm:py-3',
+                      activePlatform === platform.key
+                        ? 'border-emerald-500/45 bg-emerald-500/12 shadow-[0_16px_45px_rgba(16,185,129,0.12)]'
+                        : 'border-white/10 bg-white/[0.035] hover:border-[color:var(--border-strong)] hover:bg-white/[0.06]',
+                    )}
                   >
-                    <ExternalLink className="h-4 w-4" />
-                    {isZh ? '一键导入' : 'One-click import'}
-                  </Button>
-                ) : null}
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-medium text-zinc-50">
+                        {isZh ? platform.zhLabel : platform.label}
+                      </p>
+                      <span
+                        className={cn(
+                          'h-2 w-2 rounded-full transition-colors',
+                          activePlatform === platform.key ? 'bg-emerald-300' : 'bg-white/20',
+                        )}
+                      />
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-500">
+                      {getPlatformBlurb(platform.key, isZh)}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className="rounded-[30px] border border-emerald-500/25 bg-gradient-to-br from-white/[0.09] via-white/[0.045] to-emerald-500/[0.06] p-4 shadow-[0_24px_70px_rgba(15,23,42,0.22)] md:p-5"
+              data-testid="portal-setup-link"
+            >
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-white/10 bg-black/10">
+                    <ActiveClientIcon className="h-5 w-5 text-zinc-100" />
+                  </span>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-base font-semibold text-zinc-50">{activeClient.name}</p>
+                      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-300">
+                        {activeFormat === guide.recommendedFormat
+                          ? isZh
+                            ? '自动匹配'
+                            : 'Auto-matched'
+                          : isZh
+                            ? '手动格式'
+                            : 'Manual format'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs leading-6 text-zinc-400">
+                      {activeFormat === guide.recommendedFormat
+                        ? isZh
+                          ? `${activePlatformLabel} 推荐使用 ${recommendedFormatOption.label}。`
+                          : `${recommendedFormatOption.label} is recommended for ${activePlatformLabel}.`
+                        : isZh
+                          ? `当前使用 ${activeFormatOption.label}，一键导入仍会使用 ${recommendedFormatOption.label}。`
+                          : `Using ${activeFormatOption.label}; one-click import still uses ${recommendedFormatOption.label}.`}
+                    </p>
+                  </div>
+                </div>
                 <Button
                   type="button"
-                  variant={oneClickImportUrl ? 'outline' : 'secondary'}
+                  variant={showFormatOptions ? 'secondary' : 'outline'}
                   size="sm"
-                  className="gap-2"
-                  onClick={() => handleCopy(recommendedImportUrl, 'quick-recommended')}
+                  className="shrink-0 gap-2"
+                  onClick={() => setShowFormatOptions((current) => !current)}
+                  data-testid="portal-setup-toggle-formats"
                 >
-                  <Copy className="h-4 w-4" />
-                  {copiedKey === 'quick-recommended'
+                  {showFormatOptions
                     ? isZh
-                      ? '已复制'
-                      : 'Copied'
+                      ? '收起格式'
+                      : 'Hide formats'
                     : isZh
-                      ? '复制推荐订阅'
-                      : 'Copy recommended link'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => setShowQuickQr((current) => !current)}
-                >
-                  <QrCode className="h-4 w-4" />
-                  {showQuickQr
-                    ? isZh
-                      ? '隐藏二维码'
-                      : 'Hide QR'
-                    : isZh
-                      ? '显示二维码'
-                      : 'Show QR'}
-                  {showQuickQr ? (
+                      ? '切换格式'
+                      : 'Switch format'}
+                  {showFormatOptions ? (
                     <ChevronUp className="h-3 w-3" />
                   ) : (
                     <ChevronDown className="h-3 w-3" />
                   )}
                 </Button>
               </div>
-              {showQuickQr ? <QrCodeCanvas url={recommendedImportUrl} isZh={isZh} /> : null}
-            </>
-          ) : (
-            <div className="rounded-[20px] border border-dashed border-amber-500/30 bg-amber-500/5 px-4 py-5 text-sm leading-7 text-zinc-300">
-              {isZh
-                ? '订阅还在准备中。你可以先下载客户端，稍后回来复制推荐订阅。'
-                : 'Your subscription is still being prepared. You can download the client first and come back for the recommended link later.'}
+
+              {showFormatOptions ? (
+                <div className="mt-4 grid gap-2 md:grid-cols-5 xl:grid-cols-3">
+                  {formatOptions.map((format) => (
+                    <button
+                      key={format.key}
+                      type="button"
+                      onClick={() => setActiveFormat(format.key)}
+                      data-testid={`portal-setup-format-${format.key}`}
+                      className={cn(
+                        'rounded-[18px] border p-3 text-left transition-colors',
+                        activeFormat === format.key
+                          ? 'border-emerald-500/40 bg-emerald-500/10'
+                          : 'border-white/10 bg-black/10 hover:border-[color:var(--border-strong)]',
+                      )}
+                    >
+                      <p className="text-sm font-medium text-zinc-50">{format.label}</p>
+                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">{format.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="mt-4 space-y-4">
+                {hasSubscription ? (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1 text-xs text-zinc-400">
+                        <span>{isZh ? '当前可导入订阅' : 'Current import link'}</span>
+                        <InfoTooltip
+                          content={
+                            importUsesRecommendedFormat
+                              ? isZh
+                                ? '手动切换格式只影响复制链接；一键导入仍使用当前客户端推荐格式。'
+                                : 'Manual format switching only changes the copied link. One-click import keeps the client-recommended format.'
+                              : isZh
+                                ? '复制后直接粘贴到客户端，或优先尝试一键导入。'
+                                : 'Copy it into the client, or try one-click import first.'
+                          }
+                        />
+                      </div>
+                      <p
+                        className="break-all rounded-[22px] border border-white/10 bg-black/10 px-4 py-3 font-mono text-xs leading-6 text-zinc-300"
+                        data-testid="subscription-active-url"
+                      >
+                        {activeSubUrl}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {oneClickImportUrl ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => handleOneClickImport(oneClickImportUrl)}
+                          data-testid="portal-setup-one-click-import"
+                          title={
+                            isZh
+                              ? `唤起 ${activeClient.name} 并导入推荐的 ${recommendedFormatOption.label} 订阅`
+                              : `Open ${activeClient.name} and import the recommended ${recommendedFormatOption.label} link.`
+                          }
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          {isZh ? '一键导入' : 'One-click import'}
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant={oneClickImportUrl ? 'outline' : 'secondary'}
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => handleCopy(activeSubUrl, `active-${activeFormat}`)}
+                        data-testid="portal-setup-copy-link"
+                      >
+                        <Copy className="h-4 w-4" />
+                        {copiedKey === `active-${activeFormat}`
+                          ? isZh
+                            ? '已复制'
+                            : 'Copied'
+                          : isZh
+                            ? '复制订阅'
+                            : 'Copy link'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setShowQuickQr((current) => !current)}
+                      >
+                        <QrCode className="h-4 w-4" />
+                        {showQuickQr
+                          ? isZh
+                            ? '隐藏二维码'
+                            : 'Hide QR'
+                          : isZh
+                            ? '二维码'
+                            : 'QR code'}
+                        {showQuickQr ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() =>
+                          downloadsRef.current?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                          })
+                        }
+                      >
+                        <Download className="h-4 w-4" />
+                        {isZh ? '下载客户端' : 'Download client'}
+                      </Button>
+                    </div>
+                    {showQuickQr ? <QrCodeCanvas url={activeSubUrl} isZh={isZh} /> : null}
+                  </>
+                ) : (
+                  <div
+                    className="space-y-2 rounded-[22px] border border-dashed border-amber-500/30 bg-amber-500/5 px-4 py-5 text-sm leading-7 text-zinc-300"
+                    data-testid="portal-setup-not-ready"
+                  >
+                    <p className="font-medium text-zinc-100">
+                      {isZh ? '订阅还在准备中' : 'Your subscription is still being prepared'}
+                    </p>
+                    <p>
+                      {isZh
+                        ? '你可以先下载客户端并预览导入步骤，等订阅准备好后再回来复制链接。'
+                        : 'You can download the client and preview the guide now, then come back once the subscription is ready.'}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </section>
-      <section className="space-y-6">
-        <section className="surface-card space-y-5 p-6 md:p-7" data-testid="portal-setup-platforms">
-          <StepHeader
-            step={2}
-            icon={Monitor}
-            title={isZh ? '先选你的设备平台' : 'Start with your device'}
-            description={
-              isZh
-                ? '先选你最常用的设备，下面的推荐客户端、订阅格式和导入步骤会一起切到更合适的路径。'
-                : 'Choose the device you use most and the recommended client, format, and guide will switch together.'
-            }
-          />
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {PLATFORM_OPTIONS.map((platform) => (
-              <button
-                key={platform.key}
-                type="button"
-                onClick={() => handlePlatformSelect(platform.key)}
-                data-testid={`portal-setup-platform-${platform.key}`}
-                className={cn(
-                  'rounded-[24px] border px-4 py-4 text-left transition-colors',
-                  activePlatform === platform.key
-                    ? 'border-emerald-500/40 bg-emerald-500/10'
-                    : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] hover:border-[color:var(--border-strong)]',
-                )}
-              >
-                <p className="text-sm font-medium text-zinc-50">
-                  {isZh ? platform.zhLabel : platform.label}
-                </p>
-                <p className="mt-1 text-xs leading-6 text-zinc-400">
-                  {getPlatformBlurb(platform.key, isZh)}
-                </p>
-              </button>
-            ))}
-          </div>
-        </section>
 
+      <section className="space-y-6">
         <section
           ref={downloadsRef}
           className="surface-card space-y-5 p-6 md:p-7"
           data-testid="portal-setup-clients"
         >
           <StepHeader
-            step={3}
+            step={2}
             icon={Download}
-            title={isZh ? '下载推荐客户端' : 'Download a recommended client'}
+            title={isZh ? '客户端与下载' : 'Client and downloads'}
             description={
               isZh
-                ? '先从推荐客户端开始，下面也保留了常见备选，切换后教程会同步更新。'
-                : 'Start with the recommended client. Common alternatives stay below and the guide updates when you switch.'
+                ? '推荐项会根据你的设备自动切换；如果你更熟悉其他客户端，也可以在这里改。'
+                : 'The primary pick follows your device. If you prefer another client, switch here.'
             }
           />
           <div className="space-y-4">
@@ -488,203 +671,9 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
           </div>
         </section>
 
-        <section className="surface-card space-y-5 p-6 md:p-7" data-testid="portal-setup-link">
-          <StepHeader
-            step={4}
-            icon={LinkIcon}
-            title={isZh ? '复制匹配好的订阅链接' : 'Copy the matched subscription link'}
-            description={
-              isZh
-                ? '下面这条链接会优先匹配当前客户端；如果客户端支持，优先试一键导入，其次再用复制或二维码。'
-                : 'The link below is matched to the current client first. If the app supports it, start with one-click import before falling back to copy or QR.'
-            }
-          />
-          <div className="flex flex-col gap-3 rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-300">
-                  {activeFormat === guide.recommendedFormat
-                    ? isZh
-                      ? '\u5df2\u6309\u5f53\u524d\u5ba2\u6237\u7aef\u81ea\u52a8\u5339\u914d'
-                      : 'Auto-matched to current client'
-                    : isZh
-                      ? '\u5df2\u624b\u52a8\u5207\u6362\u683c\u5f0f'
-                      : 'Manual format override'}
-                </span>
-                <span className="rounded-full border border-[color:var(--border-subtle)] bg-black/10 px-2.5 py-1 text-[11px] text-zinc-300">
-                  {activeClient.name} / {recommendedFormatOption.label}
-                  {activeFormat === guide.recommendedFormat
-                    ? ''
-                    : isZh
-                      ? ' \u63a8\u8350'
-                      : ' recommended'}
-                </span>
-              </div>
-              <p className="text-sm text-zinc-300">
-                {activeFormat === guide.recommendedFormat
-                  ? isZh
-                    ? `\u73b0\u5728\u663e\u793a\u7684\u662f ${activeClient.name} \u5bf9\u5e94\u7684 ${recommendedFormatOption.label} \u8ba2\u9605\uff0c\u53ef\u4ee5\u76f4\u63a5\u590d\u5236\u3002`
-                    : `You are seeing the ${recommendedFormatOption.label} link for ${activeClient.name}, ready to copy.`
-                  : isZh
-                    ? `\u4f60\u76ee\u524d\u624b\u52a8\u5207\u6362\u5230\u4e86 ${activeFormatOption.label} \u683c\u5f0f\u3002\u5982\u679c\u60f3\u56de\u5230\u9ed8\u8ba4\u63a8\u8350\uff0c\u5207\u6362\u5ba2\u6237\u7aef\u540e\u4f1a\u81ea\u52a8\u6062\u590d\u3002`
-                    : `You have manually switched to the ${activeFormatOption.label} format. Changing the client will reset this back to the recommended format.`}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant={showFormatOptions ? 'secondary' : 'outline'}
-              size="sm"
-              className="shrink-0 gap-2"
-              onClick={() => setShowFormatOptions((current) => !current)}
-              data-testid="portal-setup-toggle-formats"
-            >
-              {showFormatOptions
-                ? isZh
-                  ? '\u6536\u8d77\u5176\u4ed6\u683c\u5f0f'
-                  : 'Hide other formats'
-                : isZh
-                  ? '\u5207\u6362\u5176\u4ed6\u683c\u5f0f'
-                  : 'Switch format'}
-              {showFormatOptions ? (
-                <ChevronUp className="h-3 w-3" />
-              ) : (
-                <ChevronDown className="h-3 w-3" />
-              )}
-            </Button>
-          </div>
-          {showFormatOptions ? (
-            <div className="grid gap-2 md:grid-cols-5">
-              {formatOptions.map((format) => (
-                <button
-                  key={format.key}
-                  type="button"
-                  onClick={() => setActiveFormat(format.key)}
-                  data-testid={`portal-setup-format-${format.key}`}
-                  className={cn(
-                    'rounded-[20px] border p-3 text-left transition-colors',
-                    activeFormat === format.key
-                      ? 'border-emerald-500/40 bg-emerald-500/10'
-                      : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] hover:border-[color:var(--border-strong)]',
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-zinc-50">{format.label}</p>
-                    {guide.recommendedFormat === format.key ? (
-                      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300">
-                        {isZh ? '当前推荐' : 'Recommended'}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 text-[11px] leading-5 text-zinc-400">{format.desc}</p>
-                </button>
-              ))}
-            </div>
-          ) : null}
-          <div className="surface-panel space-y-4 rounded-[28px] p-4 md:p-5">
-            {hasSubscription ? (
-              <>
-                <div className="flex items-center gap-1 text-xs text-zinc-400">
-                  <span>{isZh ? '可直接导入的链接' : 'Ready-to-import link'}</span>
-                  <InfoTooltip
-                    content={
-                      isZh
-                        ? '复制后直接粘贴到客户端即可。'
-                        : 'Copy it, then paste it into your client.'
-                    }
-                  />
-                </div>
-                <p
-                  className="break-all rounded-[20px] border border-[color:var(--border-subtle)] bg-black/10 px-4 py-3 font-mono text-xs leading-6 text-zinc-300"
-                  data-testid="subscription-active-url"
-                >
-                  {activeSubUrl}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {oneClickImportUrl ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => handleOneClickImport(oneClickImportUrl)}
-                      data-testid="portal-setup-one-click-import"
-                      title={
-                        isZh
-                          ? `唤起 ${activeClient.name} 并导入推荐的 ${recommendedFormatOption.label} 订阅`
-                          : `Open ${activeClient.name} and import the recommended ${recommendedFormatOption.label} link.`
-                      }
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      {isZh ? '一键导入' : 'One-click import'}
-                    </Button>
-                  ) : null}
-                  <Button
-                    type="button"
-                    variant={oneClickImportUrl ? 'outline' : 'secondary'}
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => handleCopy(activeSubUrl, `active-${activeFormat}`)}
-                    data-testid="portal-setup-copy-link"
-                  >
-                    <Copy className="h-4 w-4" />
-                    {copiedKey === `active-${activeFormat}`
-                      ? isZh
-                        ? '已复制'
-                        : 'Copied'
-                      : isZh
-                        ? '复制订阅链接'
-                        : 'Copy subscription link'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => setShowQr((current) => !current)}
-                  >
-                    <QrCode className="h-4 w-4" />
-                    {showQr ? (isZh ? '隐藏二维码' : 'Hide QR') : isZh ? '显示二维码' : 'Show QR'}
-                    {showQr ? (
-                      <ChevronUp className="h-3 w-3" />
-                    ) : (
-                      <ChevronDown className="h-3 w-3" />
-                    )}
-                  </Button>
-                </div>
-                {oneClickImportUrl ? (
-                  <p className="text-xs leading-6 text-zinc-500">
-                    {importUsesRecommendedFormat
-                      ? isZh
-                        ? `一键导入会固定使用 ${activeClient.name} 推荐的 ${recommendedFormatOption.label} 格式，不受上方手动切换影响。`
-                        : `One-click import always uses the recommended ${recommendedFormatOption.label} link for ${activeClient.name}, even if you manually switched formats above.`
-                      : isZh
-                        ? `如果 ${activeClient.name} 已经安装，优先试一键导入。`
-                        : `If ${activeClient.name} is already installed, try one-click import first.`}
-                  </p>
-                ) : null}
-                {showQr ? <QrCodeCanvas url={activeSubUrl} isZh={isZh} /> : null}
-              </>
-            ) : (
-              <div
-                className="space-y-2 rounded-[20px] border border-dashed border-amber-500/30 bg-amber-500/5 px-4 py-5 text-sm leading-7 text-zinc-300"
-                data-testid="portal-setup-not-ready"
-              >
-                <p className="font-medium text-zinc-100">
-                  {isZh ? '订阅还在准备中' : 'Your subscription is still being prepared'}
-                </p>
-                <p>
-                  {isZh
-                    ? '你可以先下载客户端并预览下面的导入步骤，等订阅准备好后再回来复制链接。'
-                    : 'You can download the client and preview the import steps now, then come back once the subscription is ready.'}
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
         <section className="surface-card space-y-5 p-6 md:p-7" data-testid="portal-setup-guide">
           <StepHeader
-            step={5}
+            step={3}
             icon={Terminal}
             title={isZh ? '按步骤导入并连接' : 'Import and connect'}
             description={guideDescription}
