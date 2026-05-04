@@ -30,6 +30,7 @@ import { useAuth } from '@/src/context/AuthContext';
 import { getServerStatus, getUserProfile, updateUserProfile } from '@/src/api/client';
 import { cn } from '@/src/utils/cn';
 import { USER_AVATAR_STYLE_OPTIONS, type UserAvatarStyle } from '@/src/types/userProfile';
+import { AppVersionFooter } from '@/src/components/AppVersionFooter';
 import {
   getAvatarInitials,
   getAvatarToneClasses,
@@ -570,6 +571,8 @@ export function ProfilePage() {
       </div>
 
       {isAdmin ? <AdminProfileView /> : <UserProfileView />}
+
+      <AppVersionFooter />
     </div>
   );
 }

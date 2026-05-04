@@ -28,6 +28,7 @@ import { Input } from '@/src/components/ui/Input';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/Tabs';
 import { useToast } from '@/src/components/ui/Toast';
+import { AppVersionFooter } from '@/src/components/AppVersionFooter';
 import {
   backupDatabase,
   clearPortalSessions,
@@ -1077,6 +1078,8 @@ export function SettingsPage() {
             </CardContent>
           </Card>
         ) : null}
+
+        <AppVersionFooter />
       </div>
     </div>
   );
