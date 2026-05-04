@@ -31,6 +31,30 @@ function formatCheckedAt(value: number | null | undefined, isZh: boolean) {
   return new Date(value).toLocaleString(isZh ? 'zh-CN' : 'en-US', { hour12: false });
 }
 
+export function getNodeQualityCardNotes(
+  profile: NodeQualityProfile | null | undefined,
+  isZh: boolean,
+) {
+  const overviewLines = getNodeQualityOverviewLines(profile, isZh).filter((line): line is string =>
+    Boolean(line),
+  );
+  const serviceNoteLines = getNodeQualityServiceItems(profile)
+    .filter((item) => item.detail || item.status !== 'unknown')
+    .map((item) => getNodeQualityServiceNote(item.id, item.status, item.detail, isZh));
+  const hasStructuredNotes = overviewLines.length > 0 || serviceNoteLines.length > 0;
+  const legacyNotesText = profile?.notes?.trim() ?? '';
+  const hasServiceDetails = Object.keys(profile?.serviceDetails ?? {}).length > 0;
+  const shouldRenderLegacyNotes = legacyNotesText.length > 0 && !hasServiceDetails;
+
+  return {
+    overviewLines,
+    serviceNoteLines,
+    legacyNotesText,
+    shouldRenderLegacyNotes,
+    hasAnyNotes: hasStructuredNotes || shouldRenderLegacyNotes,
+  };
+}
+
 export function NodeQualityCard({
   isZh,
   inboundRemark,
@@ -46,17 +70,8 @@ export function NodeQualityCard({
   const unlockItems = getNodeQualityServiceItems(profile);
   const hasDetails = hasMeaningfulNodeQuality(profile);
   const summary = getNodeQualitySummary(profile, isZh);
-  const overviewLines = getNodeQualityOverviewLines(profile, isZh).filter((line): line is string =>
-    Boolean(line),
-  );
-  const serviceNoteLines = unlockItems
-    .filter((item) => item.detail || item.status !== 'unknown')
-    .map((item) => getNodeQualityServiceNote(item.id, item.status, item.detail, isZh));
-  const legacyNotesText = profile?.notes?.trim() ?? '';
-  const hasStructuredNotes = overviewLines.length > 0 || serviceNoteLines.length > 0;
-  const hasAnyNotes = hasStructuredNotes || legacyNotesText.length > 0;
-  const hasServiceDetails = Object.keys(profile?.serviceDetails ?? {}).length > 0;
-  const showLegacyNotesDisclaimer = legacyNotesText.length > 0 && !hasServiceDetails;
+  const { overviewLines, serviceNoteLines, legacyNotesText, shouldRenderLegacyNotes, hasAnyNotes } =
+    getNodeQualityCardNotes(profile, isZh);
   const riskHelpText = isZh
     ? '这是当前检测到的出口 IP 风险参考值。通常越低越稳定，但它不是任何平台的官方评分。'
     : 'This is a reference risk score for the detected exit IP. Lower usually means steadier, but it is not an official platform score.';
@@ -225,11 +240,9 @@ export function NodeQualityCard({
             </div>
           )}
 
-          {legacyNotesText.length > 0 && (
+          {shouldRenderLegacyNotes && (
             <div className="space-y-2">
-              {showLegacyNotesDisclaimer && (
-                <p className="text-xs leading-5 text-zinc-500">{legacyNotesHelpText}</p>
-              )}
+              <p className="text-xs leading-5 text-zinc-500">{legacyNotesHelpText}</p>
               <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">
                 {legacyNotesText}
               </p>
