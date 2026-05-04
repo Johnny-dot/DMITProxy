@@ -52,7 +52,11 @@ export function NodeQualityCard({
   const serviceNoteLines = unlockItems
     .filter((item) => item.detail || item.status !== 'unknown')
     .map((item) => getNodeQualityServiceNote(item.id, item.status, item.detail, isZh));
+  const legacyNotesText = profile?.notes?.trim() ?? '';
   const hasStructuredNotes = overviewLines.length > 0 || serviceNoteLines.length > 0;
+  const hasAnyNotes = hasStructuredNotes || legacyNotesText.length > 0;
+  const hasServiceDetails = Object.keys(profile?.serviceDetails ?? {}).length > 0;
+  const showLegacyNotesDisclaimer = legacyNotesText.length > 0 && !hasServiceDetails;
   const riskHelpText = isZh
     ? '这是当前检测到的出口 IP 风险参考值。通常越低越稳定，但它不是任何平台的官方评分。'
     : 'This is a reference risk score for the detected exit IP. Lower usually means steadier, but it is not an official platform score.';
@@ -194,7 +198,7 @@ export function NodeQualityCard({
         </div>
       </div>
 
-      {hasStructuredNotes ? (
+      {hasAnyNotes ? (
         <div className="surface-panel space-y-4 p-4">
           <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
             <span>{isZh ? '检测备注' : 'Check notes'}</span>
@@ -211,22 +215,26 @@ export function NodeQualityCard({
             </div>
           )}
 
-          <div className="grid gap-2 md:grid-cols-2">
-            {serviceNoteLines.map((line) => (
-              <p key={line} className="text-sm leading-6 text-zinc-300">
-                {line}
+          {serviceNoteLines.length > 0 && (
+            <div className="grid gap-2 md:grid-cols-2">
+              {serviceNoteLines.map((line) => (
+                <p key={line} className="text-sm leading-6 text-zinc-300">
+                  {line}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {legacyNotesText.length > 0 && (
+            <div className="space-y-2">
+              {showLegacyNotesDisclaimer && (
+                <p className="text-xs leading-5 text-zinc-500">{legacyNotesHelpText}</p>
+              )}
+              <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                {legacyNotesText}
               </p>
-            ))}
-          </div>
-        </div>
-      ) : profile?.notes ? (
-        <div className="surface-panel space-y-2 p-4">
-          <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-            <span>{isZh ? '检测备注' : 'Check notes'}</span>
-            <InfoTooltip content={legacyNotesHelpText} />
-          </p>
-          <p className="text-xs leading-5 text-zinc-500">{legacyNotesHelpText}</p>
-          <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">{profile.notes}</p>
+            </div>
+          )}
         </div>
       ) : !hasDetails ? (
         <p className="text-sm leading-6 text-zinc-500">
