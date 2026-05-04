@@ -10,7 +10,7 @@ interface UnlockServiceIconProps {
 const OFFICIAL_FAVICONS: Record<UnlockServiceId, string> = {
   netflix: 'https://www.netflix.com/favicon.ico',
   chatgpt: 'https://chatgpt.com/favicon.ico',
-  claude: 'https://claude.ai/favicon.ico',
+  claude: 'https://claude.ai/favicon.svg',
   tiktok: 'https://www.tiktok.com/favicon.ico',
   instagram: 'https://www.instagram.com/favicon.ico',
   spotify: 'https://open.spotify.com/favicon.ico',
@@ -80,8 +80,18 @@ function FallbackIcon({ service, className }: UnlockServiceIconProps) {
 
   if (service === 'claude') {
     return (
-      <Wrapper className={cn('bg-[#d97706]/15 text-[#f59e0b]', className)}>
-        <span className="text-[11px] font-semibold tracking-[-0.02em]">Cl</span>
+      <Wrapper className={cn('bg-[#d97706]/15 text-[#d97706]', className)}>
+        <svg viewBox="0 0 24 24" className="h-[72%] w-[72%]" fill="none">
+          <circle cx="12" cy="12" r="2.2" fill="currentColor" />
+          <path d="M12 3.7v4.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M12 15.7v4.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M3.7 12h4.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M15.7 12h4.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="m6.1 6.1 3.2 3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="m14.7 14.7 3.2 3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="m17.9 6.1-3.2 3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="m9.3 14.7-3.2 3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
       </Wrapper>
     );
   }
