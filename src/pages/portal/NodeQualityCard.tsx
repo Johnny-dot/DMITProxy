@@ -70,49 +70,6 @@ function getOverviewLines(profile: NodeQualityProfile | null | undefined, isZh: 
   ].filter(Boolean);
 }
 
-function getServiceHint(detail: NodeQualityServiceDetail | null | undefined, isZh: boolean) {
-  if (!detail) {
-    return isZh ? '还没有明确结果。' : 'There is no clear result yet.';
-  }
-
-  switch (detail.code) {
-    case 'http_ok':
-      return detail.httpStatus
-        ? isZh
-          ? `HTTP ${detail.httpStatus} · 公开页面可以打开`
-          : `HTTP ${detail.httpStatus} · Public page reachable`
-        : isZh
-          ? '公开页面可以打开'
-          : 'Public page reachable';
-    case 'challenge':
-      return isZh ? '可以访问，但可能需要验证' : 'Reachable, but verification may be required';
-    case 'region_block':
-      return isZh
-        ? '当前出口 IP 可能受地区限制'
-        : 'Likely region-restricted on the current exit IP';
-    case 'unsupported_browser':
-      return isZh ? '能打开，但结果还不够确定' : 'Reachable, but the result is still inconclusive';
-    case 'probe_failed':
-      return isZh ? '这次检测没有成功' : 'This check did not succeed';
-    case 'trace_unreachable':
-      return isZh ? '检测端点暂时没有响应' : 'The probe endpoint did not respond';
-    case 'static_unreachable':
-      return isZh ? '资源入口暂时没有响应' : 'The asset endpoint did not respond';
-    case 'http_status':
-      return detail.httpStatus
-        ? detail.location
-          ? isZh
-            ? `HTTP ${detail.httpStatus} · 跳转到 ${detail.location}`
-            : `HTTP ${detail.httpStatus} · Redirected to ${detail.location}`
-          : `HTTP ${detail.httpStatus}`
-        : isZh
-          ? '需要更多信号'
-          : 'More signal is needed';
-    default:
-      return isZh ? '还需要更多信号' : 'More signal is needed';
-  }
-}
-
 function getServiceTooltip(
   label: string,
   detail: NodeQualityServiceDetail | null | undefined,
@@ -342,27 +299,22 @@ export function NodeQualityCard({
             </div>
           )}
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {unlockItems.map((item) => {
               const meta = getUnlockStatusMeta(item.status, isZh);
               const tooltipText = getServiceTooltip(item.label, item.detail, isZh);
-              const hintText = getServiceHint(item.detail, isZh);
 
               return (
                 <div
                   key={item.id}
-                  className="surface-panel flex items-center justify-between gap-3 p-4"
+                  className="surface-panel flex items-center justify-between gap-2 px-3 py-2"
                 >
-                  <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
                     <UnlockServiceIcon service={item.id} />
-                    <div className="min-w-0">
-                      <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                        <span>{item.label}</span>
-                        <InfoTooltip content={tooltipText} />
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-zinc-50">{meta.label}</p>
-                      <p className="mt-1 text-xs leading-5 text-zinc-500">{hintText}</p>
-                    </div>
+                    <p className="inline-flex min-w-0 items-center gap-1 text-[11px] uppercase tracking-[0.14em] text-zinc-400">
+                      <span className="truncate">{item.label}</span>
+                      <InfoTooltip content={tooltipText} />
+                    </p>
                   </div>
                   <Badge className={cn('shrink-0 border', meta.className)}>{meta.label}</Badge>
                 </div>
