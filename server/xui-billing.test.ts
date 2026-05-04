@@ -190,4 +190,41 @@ describe('xui-billing CRUD + runBillingResetTick', () => {
 
     clearBillingDay(300);
   });
+
+  it('createBillingTickRunner skips overlapping ticks while a previous run is in flight', async () => {
+    const { setBillingDay, createBillingTickRunner, getBillingConfig, clearBillingDay } =
+      await import('./xui-billing.js');
+    setBillingDay(400, 15);
+
+    // Hold the first reset open until we explicitly resolve it, so we can
+    // fire a second tick while the first is still awaiting the remote call.
+    let resolveFirst!: () => void;
+    const firstReset = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const resetFn = vi
+      .fn<(inboundId: number) => Promise<void>>()
+      .mockReturnValueOnce(firstReset)
+      .mockResolvedValue(undefined);
+
+    const tick = createBillingTickRunner(() => new Date(Date.UTC(2026, 4, 15, 12, 0)), resetFn);
+
+    const firstTickPromise = tick(); // starts, awaits firstReset
+    await Promise.resolve(); // yield so isRunning is set before second tick
+    await tick(); // must be skipped because first is still in flight
+
+    expect(resetFn).toHaveBeenCalledTimes(1);
+    expect(getBillingConfig(400)?.lastResetDate).toBeNull();
+
+    resolveFirst();
+    await firstTickPromise;
+    expect(getBillingConfig(400)?.lastResetDate).toBe('2026-05-15');
+
+    // After the first run finishes, subsequent ticks proceed normally but
+    // no-op because lastResetDate now matches today.
+    await tick();
+    expect(resetFn).toHaveBeenCalledTimes(1);
+
+    clearBillingDay(400);
+  });
 });

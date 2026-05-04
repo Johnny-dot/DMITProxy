@@ -94,14 +94,30 @@ export async function runBillingResetTick(
   }
 }
 
-export function startXuiBillingScheduler(): { stop: () => void } {
-  const tick = () => {
-    runBillingResetTick(new Date()).catch((err) => {
+export function createBillingTickRunner(
+  getNow: () => Date = () => new Date(),
+  resetFn?: (inboundId: number) => Promise<void>,
+): () => Promise<void> {
+  let isRunning = false;
+  return async () => {
+    if (isRunning) {
+      console.warn('[Prism] Billing scheduler tick skipped: previous run still in flight');
+      return;
+    }
+    isRunning = true;
+    try {
+      await runBillingResetTick(getNow(), resetFn);
+    } catch (err) {
       console.error('[Prism] Billing scheduler tick failed:', err);
-    });
+    } finally {
+      isRunning = false;
+    }
   };
+}
 
-  tick();
+export function startXuiBillingScheduler(): { stop: () => void } {
+  const tick = createBillingTickRunner();
+  void tick();
   const timer = setInterval(tick, SCHEDULER_TICK_MS);
   return {
     stop: () => clearInterval(timer),
