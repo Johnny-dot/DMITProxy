@@ -10,7 +10,6 @@ import {
   getFraudRiskMeta,
   getNodeQualityOverviewLines,
   getNodeQualityServiceItems,
-  getNodeQualityServiceNote,
   getNodeQualityServiceTooltip,
   getNodeQualitySummary,
   getUnlockStatusMeta,
@@ -38,20 +37,17 @@ export function getNodeQualityCardNotes(
   const overviewLines = getNodeQualityOverviewLines(profile, isZh).filter((line): line is string =>
     Boolean(line),
   );
-  const serviceNoteLines = getNodeQualityServiceItems(profile)
-    .filter((item) => item.detail || item.status !== 'unknown')
-    .map((item) => getNodeQualityServiceNote(item.id, item.status, item.detail, isZh));
-  const hasStructuredNotes = overviewLines.length > 0 || serviceNoteLines.length > 0;
   const legacyNotesText = profile?.notes?.trim() ?? '';
   const hasServiceDetails = Object.keys(profile?.serviceDetails ?? {}).length > 0;
   const shouldRenderLegacyNotes = legacyNotesText.length > 0 && !hasServiceDetails;
+  const serviceNoteLines: string[] = [];
 
   return {
     overviewLines,
     serviceNoteLines,
     legacyNotesText,
     shouldRenderLegacyNotes,
-    hasAnyNotes: hasStructuredNotes || shouldRenderLegacyNotes,
+    hasAnyNotes: overviewLines.length > 0 || shouldRenderLegacyNotes,
   };
 }
 
@@ -70,7 +66,7 @@ export function NodeQualityCard({
   const unlockItems = getNodeQualityServiceItems(profile);
   const hasDetails = hasMeaningfulNodeQuality(profile);
   const summary = getNodeQualitySummary(profile, isZh);
-  const { overviewLines, serviceNoteLines, legacyNotesText, shouldRenderLegacyNotes, hasAnyNotes } =
+  const { overviewLines, legacyNotesText, shouldRenderLegacyNotes, hasAnyNotes } =
     getNodeQualityCardNotes(profile, isZh);
   const riskHelpText = isZh
     ? '这是当前检测到的出口 IP 风险参考值。通常越低越稳定，但它不是任何平台的官方评分。'
@@ -84,11 +80,11 @@ export function NodeQualityCard({
       : 'This is when the latest server-egress check finished.';
   const notesHelpText = isZh
     ? isProxyProbe
-      ? '这里会说明代理出口的检测结果，以及各服务现在大致是可用、受限还是待确认。'
-      : '这里会说明服务器出口的检测结果，以及各服务现在大致是可用、受限还是待确认。'
+      ? '这里会说明代理出口的检测上下文；各服务的具体解释可以点服务旁的问号查看。'
+      : '这里会说明服务器出口的检测上下文；各服务的具体解释可以点服务旁的问号查看。'
     : isProxyProbe
-      ? 'This section explains the proxy egress and whether each service looks available, limited, or still inconclusive.'
-      : 'This section explains the server egress and whether each service looks available, limited, or still inconclusive.';
+      ? 'This section explains the proxy egress context. Use each service tooltip for service-specific details.'
+      : 'This section explains the server egress context. Use each service tooltip for service-specific details.';
   const legacyNotesHelpText = isZh
     ? '这是较早缓存下来的结果。重新检测一次后，会显示新的说明。'
     : 'This is an older cached result. Refresh once to get the newer explanation.';
@@ -223,16 +219,6 @@ export function NodeQualityCard({
           {overviewLines.length > 0 && (
             <div className="grid gap-2 md:grid-cols-2">
               {overviewLines.map((line) => (
-                <p key={line} className="text-sm leading-6 text-zinc-300">
-                  {line}
-                </p>
-              ))}
-            </div>
-          )}
-
-          {serviceNoteLines.length > 0 && (
-            <div className="grid gap-2 md:grid-cols-2">
-              {serviceNoteLines.map((line) => (
                 <p key={line} className="text-sm leading-6 text-zinc-300">
                   {line}
                 </p>

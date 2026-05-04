@@ -28,7 +28,7 @@ function createProfile(overrides: Partial<NodeQualityProfile> = {}): NodeQuality
 }
 
 describe('NodeQualityCard notes', () => {
-  it('keeps legacy status-only free-form notes visible alongside generated service notes', () => {
+  it('keeps legacy status-only free-form notes visible without duplicating service tooltip copy', () => {
     const notes = getNodeQualityCardNotes(
       createProfile({
         claudeStatus: 'limited',
@@ -37,14 +37,12 @@ describe('NodeQualityCard notes', () => {
       false,
     );
 
-    expect(notes.serviceNoteLines).toContain(
-      'Claude: This is an older result and currently shows as limited.',
-    );
+    expect(notes.serviceNoteLines).toEqual([]);
     expect(notes.shouldRenderLegacyNotes).toBe(true);
     expect(notes.legacyNotesText).toBe('Claude may ask for extra verification on first login.');
   });
 
-  it('does not repeat generated raw notes when serviceDetails already drive structured notes', () => {
+  it('does not repeat service detail notes or generated raw notes when tooltips already carry them', () => {
     const notes = getNodeQualityCardNotes(
       createProfile({
         egress: {
@@ -73,7 +71,7 @@ describe('NodeQualityCard notes', () => {
       false,
     );
 
-    expect(notes.serviceNoteLines).toContain('Netflix: The public page is reachable.');
+    expect(notes.serviceNoteLines).toEqual([]);
     expect(notes.shouldRenderLegacyNotes).toBe(false);
     expect(notes.legacyNotesText).toBe('Netflix: Raw generated duplicate notes from the probe.');
   });
