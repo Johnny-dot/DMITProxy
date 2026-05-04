@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
@@ -18,6 +19,19 @@ function findEnvDir(start: string): string {
   return start;
 }
 
+function readGitShortSha(): string {
+  try {
+    return execSync('git rev-parse --short HEAD', {
+      cwd: __dirname,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const envDir = findEnvDir(__dirname);
   const env = loadEnv(mode, envDir, '');
@@ -25,6 +39,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    define: {
+      __APP_COMMIT__: JSON.stringify(readGitShortSha()),
+      __APP_BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

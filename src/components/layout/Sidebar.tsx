@@ -17,6 +17,8 @@ import { useAuth } from '@/src/context/AuthContext';
 import { getAvatarInitials, getAvatarToneClasses } from '@/src/utils/userProfile';
 import { resolveUserPortalSection } from '@/src/pages/portal/types';
 
+const CLIENT_COMMIT: string = typeof __APP_COMMIT__ === 'string' ? __APP_COMMIT__ : 'unknown';
+
 export function Sidebar({
   onNavigate,
   onClose,
@@ -29,6 +31,27 @@ export function Sidebar({
   const { t, language } = useI18n();
   const { role, username, displayName, avatarStyle } = useAuth();
   const isZh = language === 'zh-CN';
+  const [serverCommit, setServerCommit] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (role !== 'admin') {
+      setServerCommit(null);
+      return;
+    }
+    let cancelled = false;
+    fetch('/local/admin/system', { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { serverCommit?: string } | null) => {
+        if (cancelled) return;
+        setServerCommit(typeof data?.serverCommit === 'string' ? data.serverCommit : null);
+      })
+      .catch(() => {
+        if (!cancelled) setServerCommit(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [role]);
 
   const userCenterLabel = isZh ? '用户中心' : 'User Center';
   const overviewLabel = isZh ? '概览' : 'Overview';
@@ -182,6 +205,15 @@ export function Sidebar({
             )}
           </div>
         </NavLink>
+      </div>
+
+      <div
+        className="pt-2 text-center text-[10px] font-mono text-[var(--text-secondary)]/60"
+        title={isZh ? '前端 / 服务器 commit' : 'client / server commit'}
+      >
+        {serverCommit && serverCommit !== CLIENT_COMMIT
+          ? `v${CLIENT_COMMIT} · server ${serverCommit}`
+          : `v${CLIENT_COMMIT}`}
       </div>
     </aside>
   );

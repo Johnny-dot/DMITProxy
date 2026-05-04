@@ -34,6 +34,7 @@ import {
   removeAnnouncementHistoryEntry,
 } from '../announcement-history.js';
 import { clearBillingDay, listBillingConfigs, setBillingDay } from '../xui-billing.js';
+import { getServerVersion } from '../app-version.js';
 
 const router = Router();
 const xuiTarget = getXuiTarget();
@@ -601,10 +602,13 @@ router.get('/system', requireAdmin, (_req, res) => {
     (process.env.XUI_AUTO_CREATE_ON_REGISTER ?? 'false').toLowerCase() === 'true';
   const xuiUsername = process.env.XUI_ADMIN_USERNAME ?? '';
   const xuiPassword = process.env.XUI_ADMIN_PASSWORD ?? '';
+  const version = getServerVersion();
 
   res.json({
     xuiAutoProvisionEnabled: autoProvisionEnabled,
     xuiAutoProvisionCredentialsConfigured: Boolean(xuiUsername && xuiPassword),
+    serverCommit: version.commit,
+    serverStartedAt: version.startedAt,
   });
 });
 
