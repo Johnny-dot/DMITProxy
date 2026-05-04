@@ -75,6 +75,12 @@ db.exec(`
     value TEXT NOT NULL,
     updated_at INTEGER NOT NULL DEFAULT (unixepoch())
   );
+
+  CREATE TABLE IF NOT EXISTS xui_inbound_billing (
+    inbound_id INTEGER PRIMARY KEY,
+    billing_day INTEGER NOT NULL CHECK (billing_day BETWEEN 1 AND 31),
+    last_reset_date TEXT
+  );
 `);
 
 function ensureUserProfileColumns() {

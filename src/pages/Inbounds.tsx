@@ -23,6 +23,11 @@ import {
   type Inbound,
   type TrafficResetPeriod,
 } from '@/src/api/client';
+import {
+  getInboundBillingConfigs,
+  setInboundBillingDay,
+  type InboundBillingConfig,
+} from '@/src/api/admin';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
@@ -30,9 +35,13 @@ import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 export function InboundsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
+  const [billingByInboundId, setBillingByInboundId] = useState<
+    Record<number, InboundBillingConfig>
+  >({});
   const [searchQuery, setSearchQuery] = useState('');
   const [editingInbound, setEditingInbound] = useState<Inbound | null>(null);
   const [editTrafficReset, setEditTrafficReset] = useState<TrafficResetPeriod>('never');
+  const [editBillingDay, setEditBillingDay] = useState<string>('');
   const [isSavingInbound, setIsSavingInbound] = useState(false);
   const { toast } = useToast();
   const { t } = useI18n();
@@ -46,8 +55,13 @@ export function InboundsPage() {
   ];
 
   useEffect(() => {
-    getInbounds()
-      .then(setInbounds)
+    Promise.all([getInbounds(), getInboundBillingConfigs().catch(() => [])])
+      .then(([inboundList, billingConfigs]) => {
+        setInbounds(inboundList);
+        const map: Record<number, InboundBillingConfig> = {};
+        for (const cfg of billingConfigs) map[cfg.inboundId] = cfg;
+        setBillingByInboundId(map);
+      })
       .catch(() => toast(t('inbounds.failedLoad'), 'error'))
       .finally(() => setIsLoading(false));
   }, []);
@@ -115,19 +129,62 @@ export function InboundsPage() {
   const openEditInbound = (inbound: Inbound) => {
     setEditingInbound(inbound);
     setEditTrafficReset(inbound.trafficReset ?? 'never');
+    const existing = billingByInboundId[inbound.id];
+    setEditBillingDay(existing ? String(existing.billingDay) : '');
   };
 
   const saveInboundEdits = async () => {
     if (!editingInbound) return;
 
+    const trimmedBillingDay = editBillingDay.trim();
+    let parsedBillingDay: number | null = null;
+    if (trimmedBillingDay !== '') {
+      const n = Number(trimmedBillingDay);
+      if (!Number.isInteger(n) || n < 1 || n > 31) {
+        toast(t('inbounds.billingDayInvalid'), 'error');
+        return;
+      }
+      parsedBillingDay = n;
+    }
+
+    // Mutual exclusivity: when a Prism billing day is set, force 3X-UI's native
+    // periodic reset to 'never' so counters aren't cleared twice per cycle.
+    const effectiveTrafficReset: TrafficResetPeriod =
+      parsedBillingDay !== null ? 'never' : editTrafficReset;
+
     setIsSavingInbound(true);
     try {
-      await updateInbound(editingInbound, { trafficReset: editTrafficReset });
+      const currentBilling = billingByInboundId[editingInbound.id] ?? null;
+      const currentBillingDay = currentBilling?.billingDay ?? null;
+      const billingChanged = parsedBillingDay !== currentBillingDay;
+      const trafficResetChanged =
+        effectiveTrafficReset !== (editingInbound.trafficReset ?? 'never');
+
+      if (trafficResetChanged) {
+        await updateInbound(editingInbound, { trafficReset: effectiveTrafficReset });
+      }
+      if (billingChanged) {
+        await setInboundBillingDay(editingInbound.id, parsedBillingDay);
+      }
+
       setInbounds((prev) =>
         prev.map((item) =>
-          item.id === editingInbound.id ? { ...item, trafficReset: editTrafficReset } : item,
+          item.id === editingInbound.id ? { ...item, trafficReset: effectiveTrafficReset } : item,
         ),
       );
+      setBillingByInboundId((prev) => {
+        const next = { ...prev };
+        if (parsedBillingDay === null) {
+          delete next[editingInbound.id];
+        } else {
+          next[editingInbound.id] = {
+            inboundId: editingInbound.id,
+            billingDay: parsedBillingDay,
+            lastResetDate: currentBilling?.lastResetDate ?? null,
+          };
+        }
+        return next;
+      });
       toast(t('inbounds.editSaved', { remark: editingInbound.remark }), 'success');
       setEditingInbound(null);
     } catch (error) {
@@ -208,6 +265,12 @@ export function InboundsPage() {
                       <InfoTooltip content={t('inbounds.help.trafficReset')} />
                     </span>
                   </TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    <span className="inline-flex items-center gap-1">
+                      <span>{t('inbounds.billingDay')}</span>
+                      <InfoTooltip content={t('inbounds.help.billingDay')} />
+                    </span>
+                  </TableHead>
                   <TableHead>{t('inbounds.status')}</TableHead>
                   <TableHead className="text-right">{t('inbounds.actions')}</TableHead>
                 </TableRow>
@@ -259,6 +322,17 @@ export function InboundsPage() {
                         <Badge variant="secondary">
                           {getTrafficResetLabel(inbound.trafficReset)}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {billingByInboundId[inbound.id] ? (
+                          <Badge variant="secondary">
+                            {String(billingByInboundId[inbound.id].billingDay)}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-zinc-500">
+                            {t('inbounds.billingDayNotConfigured')}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={inbound.enable ? 'success' : 'secondary'}>
@@ -385,11 +459,11 @@ export function InboundsPage() {
                       <InfoTooltip content={t('inbounds.help.trafficReset')} />
                     </label>
                     <select
-                      value={editTrafficReset}
+                      value={editBillingDay.trim() !== '' ? 'never' : editTrafficReset}
                       onChange={(event) =>
                         setEditTrafficReset(event.target.value as TrafficResetPeriod)
                       }
-                      disabled={isSavingInbound}
+                      disabled={isSavingInbound || editBillingDay.trim() !== ''}
                       className="flex h-11 w-full rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none ring-offset-zinc-950 transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {trafficResetOptions.map((option) => (
@@ -409,8 +483,34 @@ export function InboundsPage() {
                 </div>
 
                 <p className="text-xs leading-5 text-[var(--text-secondary)]">
-                  {t('inbounds.trafficResetHint')}
+                  {editBillingDay.trim() !== ''
+                    ? t('inbounds.trafficResetOverriddenHint')
+                    : t('inbounds.trafficResetHint')}
                 </p>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                      <span>{t('inbounds.billingDay')}</span>
+                      <InfoTooltip content={t('inbounds.help.billingDay')} />
+                    </label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={31}
+                      inputMode="numeric"
+                      value={editBillingDay}
+                      placeholder={t('inbounds.billingDayPlaceholder')}
+                      onChange={(event) => setEditBillingDay(event.target.value)}
+                      disabled={isSavingInbound}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <p className="text-xs leading-5 text-[var(--text-secondary)]">
+                      {t('inbounds.billingDayHint')}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 

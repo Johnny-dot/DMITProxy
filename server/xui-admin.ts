@@ -615,6 +615,27 @@ export async function autoProvisionClientForRegisteredUser(
   return provisionedClient?.subId ?? null;
 }
 
+export async function resetInboundAllClientTraffics(inboundId: number): Promise<void> {
+  const creds = getXuiCredentials();
+  if (!creds) {
+    throw new XuiAdminError('XUI admin credentials are missing in .env');
+  }
+
+  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
+  const resp = await requestXuiJson<null>(
+    `/panel/api/inbounds/resetAllClientTraffics/${inboundId}`,
+    'POST',
+    null,
+    cookieHeader,
+  );
+
+  if (!resp.success) {
+    throw new XuiAdminError(resp.msg || `Failed to reset inbound ${inboundId} traffics`);
+  }
+
+  invalidateStatsSnapshotCache();
+}
+
 export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientUsage | null> {
   const normalizedSubId = normalizeLookupKey(subId);
   if (!normalizedSubId) return null;

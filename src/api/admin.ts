@@ -108,3 +108,28 @@ export async function clearTrafficLogs(): Promise<void> {
     fallbackError: 'Failed to clear traffic logs',
   });
 }
+
+export interface InboundBillingConfig {
+  inboundId: number;
+  billingDay: number;
+  lastResetDate: string | null;
+}
+
+export async function getInboundBillingConfigs(): Promise<InboundBillingConfig[]> {
+  const data = await localFetch<{ configs?: InboundBillingConfig[] }>(
+    '/local/admin/xui-inbounds-billing',
+    { fallbackError: 'Failed to load billing configs' },
+  );
+  return Array.isArray(data.configs) ? data.configs : [];
+}
+
+export async function setInboundBillingDay(
+  inboundId: number,
+  billingDay: number | null,
+): Promise<void> {
+  await localFetch<{ ok: boolean }>(`/local/admin/xui-inbounds/${inboundId}/billing-day`, {
+    method: 'PUT',
+    body: JSON.stringify({ billingDay }),
+    fallbackError: 'Failed to update billing day',
+  });
+}

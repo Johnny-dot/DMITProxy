@@ -144,11 +144,21 @@ export const enUS = {
     trafficResetMonthly: 'Monthly',
     trafficResetHint:
       'This maps to the 3X-UI inbound-level periodic traffic reset and clears traffic counters for the inbound and its clients on that schedule.',
+    trafficResetOverriddenHint:
+      'Disabled because a Prism billing day is set on this inbound. Prism will handle the monthly reset instead; clear the billing day to re-enable 3X-UI periodic reset.',
+    billingDay: 'Billing day',
+    billingDayPlaceholder: 'e.g. 15',
+    billingDayNotConfigured: 'Not set',
+    billingDayInvalid: 'Billing day must be an integer between 1 and 31.',
+    billingDayHint:
+      'UTC day-of-month (1-31) when Prism resets this inbound, to match DMIT-style billing cycles (DMIT tracks usage in UTC). Months with fewer days fall back to the last day. When set, 3X-UI periodic reset is forced to "Never" to avoid double resets.',
     help: {
       protocol: 'Proxy protocol used by this inbound (for example VLESS/VMess/Trojan).',
       trafficUsedTotal: 'Cumulative used traffic vs configured total limit for this inbound.',
       clients: 'Number of client entries configured under this inbound.',
       trafficReset: '3X-UI inbound-level automatic traffic reset period.',
+      billingDay:
+        'Prism-managed UTC monthly reset day, independent of 3X-UI trafficReset. Useful when your VPS billing cycle does not start on the 1st. Mutually exclusive with 3X-UI periodic reset.',
     },
   },
   users: {

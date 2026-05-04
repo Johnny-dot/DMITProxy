@@ -3,6 +3,7 @@ import './logger.js';
 import { createServer } from 'node:http';
 import { createApp } from './app.js';
 import { db } from './db.js';
+import { startXuiBillingScheduler } from './xui-billing.js';
 
 const PORT = parseInt(process.env.SERVER_PORT ?? '3001');
 const app = createApp();
@@ -32,6 +33,8 @@ try {
   console.error('[Prism] Initial session cleanup failed:', err);
 }
 
+const billingScheduler = startXuiBillingScheduler();
+
 server.listen(PORT, () => {
   console.log(`[Prism] Server running on http://localhost:${PORT}`);
 });
@@ -39,6 +42,7 @@ server.listen(PORT, () => {
 function shutdown(signal: string) {
   console.log(`[Prism] ${signal} received, shutting down gracefully...`);
   clearInterval(cleanupTimer);
+  billingScheduler.stop();
   server.close(() => {
     console.log('[Prism] HTTP server closed');
     db.close();

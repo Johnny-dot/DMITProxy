@@ -33,6 +33,7 @@ import {
   parseAnnouncementHistory,
   removeAnnouncementHistoryEntry,
 } from '../announcement-history.js';
+import { clearBillingDay, listBillingConfigs, setBillingDay } from '../xui-billing.js';
 
 const router = Router();
 const xuiTarget = getXuiTarget();
@@ -800,6 +801,35 @@ router.post('/maintenance/backup', requireAdmin, (_req, res) => {
 // POST /local/admin/maintenance/clear-traffic - placeholder action
 router.post('/maintenance/clear-traffic', requireAdmin, (_req, res) => {
   res.status(501).json({ error: '3X-UI traffic reset is not exposed by this panel API path yet' });
+});
+
+// GET /local/admin/xui-inbounds-billing - list per-inbound billing-day configs
+router.get('/xui-inbounds-billing', requireAdmin, (_req, res) => {
+  res.json({ configs: listBillingConfigs() });
+});
+
+// PUT /local/admin/xui-inbounds/:id/billing-day - set or clear billing day
+router.put('/xui-inbounds/:id/billing-day', requireAdmin, (req, res) => {
+  const inboundId = Number.parseInt(req.params.id, 10);
+  if (!Number.isFinite(inboundId) || inboundId <= 0) {
+    return res.status(400).json({ error: 'Invalid inbound id' });
+  }
+  const raw = (req.body as { billingDay?: unknown } | undefined)?.billingDay;
+  if (raw === null || raw === undefined || raw === '') {
+    clearBillingDay(inboundId);
+    return res.json({ ok: true, billingDay: null });
+  }
+  const day = Number(raw);
+  if (!Number.isInteger(day) || day < 1 || day > 31) {
+    return res.status(400).json({ error: 'billingDay must be an integer between 1 and 31' });
+  }
+  try {
+    setBillingDay(inboundId, day);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'Unknown error';
+    return res.status(400).json({ error: detail });
+  }
+  return res.json({ ok: true, billingDay: day });
 });
 
 export default router;

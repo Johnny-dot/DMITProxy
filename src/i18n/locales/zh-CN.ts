@@ -143,11 +143,21 @@ export const zhCN = {
     trafficResetMonthly: '每月',
     trafficResetHint:
       '此配置对应 3X-UI 的入站级周期流量重置，会按周期清空该入站及其客户端流量统计。',
+    trafficResetOverriddenHint:
+      '已禁用：该入站已设置 Prism 账单日，由 Prism 负责月度重置。清空账单日后可重新启用 3X-UI 周期重置。',
+    billingDay: '账单日',
+    billingDayPlaceholder: '例如 15',
+    billingDayNotConfigured: '未设置',
+    billingDayInvalid: '账单日需为 1 到 31 的整数。',
+    billingDayHint:
+      '按 UTC 计算每月第几天由 Prism 触发该入站的流量重置，用于对齐 DMIT 等以 UTC 计量的 VPS 账单周期；当月天数不足时回退到当月最后一天。设置账单日后 3X-UI 的周期重置会被强制为"从不"以避免双重清零。',
     help: {
       protocol: '该入站使用的代理协议（例如 VLESS/VMess/Trojan）。',
       trafficUsedTotal: '该入站累计已用流量与配置总流量上限。',
       clients: '该入站下配置的客户端条目数量。',
       trafficReset: '3X-UI 入站级自动流量重置周期。',
+      billingDay:
+        '由 Prism 管理的 UTC 按日重置，不依赖 3X-UI trafficReset。当 VPS 账单周期不是从 1 号开始时使用；与 3X-UI 周期重置互斥。',
     },
   },
   users: {
