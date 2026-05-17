@@ -55,7 +55,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
   const { toast } = useToast();
   const isZh = language === 'zh-CN';
   const downloadsRef = useRef<HTMLElement>(null);
-  const importName = 'PrismProxy';
+  const importName = 'Prism';
   const [activePlatform, setActivePlatform] = useState<GuidePlatform>(() =>
     detectInitialPlatform(),
   );

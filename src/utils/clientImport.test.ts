@@ -54,6 +54,18 @@ describe('buildClientImportUrl', () => {
     ).toBe('v2rayng://install-sub?url=https%3A%2F%2Fexample.com%2Fsub%2F123&name=Fast%20Link');
   });
 
+  it('builds a Shadowrocket add-sub link with a remark name', () => {
+    expect(
+      buildClientImportUrl({
+        clientId: 'shadowrocket',
+        platform: 'ios',
+        subscriptionUrl: 'https://example.com/sub/123',
+        subscriptionName: 'Prism',
+        format: 'universal',
+      }),
+    ).toBe('shadowrocket://add/sub://aHR0cHM6Ly9leGFtcGxlLmNvbS9zdWIvMTIz?remark=Prism');
+  });
+
   it('returns null when the client does not support a direct import link', () => {
     expect(
       buildClientImportUrl({

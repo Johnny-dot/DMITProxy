@@ -60,5 +60,19 @@ export function buildClientImportUrl({
       : `v2rayng://install-sub?url=${encodedUrl}`;
   }
 
+  if (clientId === 'shadowrocket') {
+    if (platform !== 'ios' || (format !== 'universal' && format !== 'v2ray')) return null;
+
+    const base64Url = Buffer.from(normalizedUrl, 'utf8')
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+
+    return encodedName
+      ? `shadowrocket://add/sub://${base64Url}?remark=${encodedName}`
+      : `shadowrocket://add/sub://${base64Url}`;
+  }
+
   return null;
 }
