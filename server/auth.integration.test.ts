@@ -49,6 +49,43 @@ async function createTestContext(options?: {
     expiryTime: number;
     enable: boolean;
   };
+  mockClientUsageSource?: {
+    inbound: {
+      id: number;
+      remark?: string;
+      protocol: string;
+      enable: boolean;
+      settings: string;
+      total?: number;
+      clientStats?: Array<{
+        email: string;
+        up: number;
+        down: number;
+        total: number;
+        expiryTime: number;
+        enable: boolean;
+      }>;
+    };
+    client: Record<string, unknown>;
+    clientStat: {
+      email: string;
+      up: number;
+      down: number;
+      total: number;
+      expiryTime: number;
+      enable: boolean;
+    } | null;
+    usage: {
+      inboundId: number;
+      inboundRemark: string;
+      protocol: string;
+      up: number;
+      down: number;
+      total: number;
+      expiryTime: number;
+      enable: boolean;
+    };
+  };
   mockNodeQualityProfile?: {
     inboundId: number;
     probeMode?: 'server-egress' | 'proxy-outbound';
@@ -171,8 +208,14 @@ async function createTestContext(options?: {
   vi.doUnmock('./xui-admin.js');
   vi.doUnmock('./node-quality-probe.js');
   const xuiMocks: TestContext['mocks'] = {};
-  if (options?.mockClientStats || options?.mockServerStatus || options?.mockAutoProvision) {
+  if (
+    options?.mockClientStats ||
+    options?.mockClientUsageSource ||
+    options?.mockServerStatus ||
+    options?.mockAutoProvision
+  ) {
     const mockClientStats = options.mockClientStats;
+    const mockClientUsageSource = options.mockClientUsageSource;
     const mockServerStatus = options.mockServerStatus;
     const provisionClientForRegisteredUser = options.mockAutoProvision
       ? vi.fn(options.mockAutoProvision.implementation)
@@ -201,6 +244,11 @@ async function createTestContext(options?: {
         ...(mockClientStats
           ? {
               fetchClientStatsBySubId: vi.fn(async () => mockClientStats),
+            }
+          : {}),
+        ...(mockClientUsageSource
+          ? {
+              fetchClientUsageSourceBySubId: vi.fn(async () => mockClientUsageSource),
             }
           : {}),
         ...(mockServerStatus
@@ -921,6 +969,55 @@ describe.sequential('Portal Stats Integration', () => {
         expiryTime: 0,
         enable: true,
       },
+      mockClientUsageSource: {
+        inbound: {
+          id: 11,
+          remark: 'US-West-Reality',
+          protocol: 'vless',
+          enable: true,
+          settings: JSON.stringify({
+            clients: [{ email: 'bob@example.com', subId: 'mock-sub-id' }],
+          }),
+          total: 1000 * 1024 ** 3,
+          clientStats: [
+            {
+              email: 'bob@example.com',
+              up: 100 * 1024 ** 3,
+              down: 89.68 * 1024 ** 3,
+              total: 1000 * 1024 ** 3,
+              expiryTime: 0,
+              enable: true,
+            },
+            {
+              email: 'other@example.com',
+              up: 200 * 1024 ** 3,
+              down: 192.6 * 1024 ** 3,
+              total: 1000 * 1024 ** 3,
+              expiryTime: 0,
+              enable: true,
+            },
+          ],
+        },
+        client: { email: 'bob@example.com', subId: 'mock-sub-id' },
+        clientStat: {
+          email: 'bob@example.com',
+          up: 100 * 1024 ** 3,
+          down: 89.68 * 1024 ** 3,
+          total: 1000 * 1024 ** 3,
+          expiryTime: 0,
+          enable: true,
+        },
+        usage: {
+          inboundId: 11,
+          inboundRemark: 'US-West-Reality',
+          protocol: 'vless',
+          up: 100 * 1024 ** 3,
+          down: 89.68 * 1024 ** 3,
+          total: 1000 * 1024 ** 3,
+          expiryTime: 0,
+          enable: true,
+        },
+      },
       mockServerStatus: {
         cpu: 12.5,
         cpuCores: 4,
@@ -943,6 +1040,9 @@ describe.sequential('Portal Stats Integration', () => {
   });
 
   it('returns node quality metadata alongside portal stats', async () => {
+    const ownUsed = 100 * 1024 ** 3 + Math.trunc(89.68 * 1024 ** 3);
+    const otherUsersUsed = 200 * 1024 ** 3 + Math.trunc(192.6 * 1024 ** 3);
+    const machineTotal = 1000 * 1024 ** 3;
     context.db.prepare('INSERT INTO invite_codes (code) VALUES (?)').run('invite-bob');
 
     const registerRes = await request(context.app).post('/local/auth/register').send({
@@ -998,6 +1098,14 @@ describe.sequential('Portal Stats Integration', () => {
       inboundId: 11,
       inboundRemark: 'US-West-Reality',
       protocol: 'vless',
+    });
+    expect(statsRes.body.usageSummary).toMatchObject({
+      resetDay: null,
+      ownUsed,
+      otherUsersUsed,
+      totalUsed: ownUsed + otherUsersUsed,
+      machineRemaining: machineTotal - (ownUsed + otherUsersUsed),
+      machineTotal,
     });
     expect(statsRes.body.nodeQuality).toMatchObject({
       inboundId: 11,

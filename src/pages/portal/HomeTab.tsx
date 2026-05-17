@@ -8,7 +8,7 @@ import { ServerStatusCard } from '@/src/components/status/ServerStatusCard';
 import { cn } from '@/src/utils/cn';
 import { formatTraffic } from '@/src/utils/xuiClients';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
-import type { ClientStats, PortalSettings, PortalTab, UserInfo } from './types';
+import type { ClientStats, PortalSettings, PortalTab, PortalUsageSummary, UserInfo } from './types';
 import { toMillis } from './types';
 import { NodeQualityCard } from './NodeQualityCard';
 
@@ -19,6 +19,7 @@ interface HomeTabProps {
   hasSubscription: boolean;
   subscriptionUniversalUrl: string;
   clientStats?: ClientStats;
+  usageSummary?: PortalUsageSummary | null;
   serverStatus?: ServerStatus | null;
   nodeQuality?: NodeQualityProfile | null;
   isStatsLoading?: boolean;
@@ -37,6 +38,7 @@ export function HomeTab({
   hasSubscription,
   subscriptionUniversalUrl,
   clientStats,
+  usageSummary,
   serverStatus,
   nodeQuality,
   isStatsLoading,
@@ -152,6 +154,7 @@ export function HomeTab({
           <TrafficStatsCard
             isZh={isZh}
             stats={clientStats}
+            usageSummary={usageSummary}
             isLoading={isStatsLoading}
             className="min-w-0 h-full"
           />
@@ -257,11 +260,13 @@ function OverviewCard({
 function TrafficStatsCard({
   isZh,
   stats,
+  usageSummary,
   isLoading,
   className,
 }: {
   isZh: boolean;
   stats?: ClientStats;
+  usageSummary?: PortalUsageSummary | null;
   isLoading?: boolean;
   className?: string;
 }) {
@@ -281,6 +286,16 @@ function TrafficStatsCard({
   const protocolHelpText = isZh
     ? '这是当前订阅使用的协议类型。'
     : 'This is the protocol used by the current subscription.';
+  const machineSummaryHelpText = isZh
+    ? '这里显示的是 Prism 按整台机器汇总后的真实口径，不是 3X-UI 原生页面里按单个用户计算的“剩余”。'
+    : 'These numbers come from Prism machine-wide accounting, not the single-user remaining quota shown by the native 3X-UI page.';
+  const resetDayText = usageSummary?.resetDay
+    ? isZh
+      ? `UTC 每月 ${usageSummary.resetDay} 日`
+      : `UTC day ${usageSummary.resetDay} each month`
+    : isZh
+      ? '未配置'
+      : 'Not set';
 
   const formatExpiry = (ms: number) => {
     if (ms === 0) return isZh ? '永不过期' : 'Never';
@@ -318,6 +333,30 @@ function TrafficStatsCard({
         </p>
       ) : (
         <div className="space-y-4">
+          {usageSummary ? (
+            <div className="space-y-3 rounded-[22px] border border-emerald-500/20 bg-emerald-500/5 p-4">
+              <div className="flex items-center gap-1 text-xs uppercase tracking-[0.16em] text-zinc-400">
+                <span>{isZh ? 'Prism 流量口径' : 'Prism usage view'}</span>
+                <InfoTooltip content={machineSummaryHelpText} />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <MetricPanel label={isZh ? '重置日期' : 'Reset day'} value={resetDayText} />
+                <MetricPanel
+                  label={isZh ? '当前用户已用' : 'Your usage'}
+                  value={formatTraffic(usageSummary.ownUsed)}
+                />
+                <MetricPanel
+                  label={isZh ? '其他用户已用' : 'Other users'}
+                  value={formatTraffic(usageSummary.otherUsersUsed)}
+                />
+                <MetricPanel
+                  label={isZh ? '机器真实剩余' : 'Machine remaining'}
+                  value={`${formatTraffic(usageSummary.machineRemaining)} / ${formatTraffic(usageSummary.machineTotal)}`}
+                />
+              </div>
+            </div>
+          ) : null}
+
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="inline-flex items-center gap-1 text-zinc-400">

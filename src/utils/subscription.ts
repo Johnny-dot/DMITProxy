@@ -3,33 +3,20 @@ const SUB_TEMPLATE = (import.meta.env.VITE_SUB_URL_TEMPLATE ?? '').trim();
 
 type SubscriptionFormat = 'universal' | 'clash' | 'v2ray' | 'singbox' | 'surge' | 'quanx';
 
-/** Formats that DMITProxy converts server-side (3X-UI doesn't support these natively). */
-const LOCAL_CONVERTED_FORMATS = new Set<SubscriptionFormat>(['clash', 'singbox', 'surge']);
-
 function appendQuery(url: string, key: string, value: string): string {
   const join = url.includes('?') ? '&' : '?';
   return `${url}${join}${key}=${encodeURIComponent(value)}`;
 }
 
 /**
- * Build the URL that the user's subscription link points to for the DMITProxy
- * conversion endpoint.  In production the browser's origin IS the server; in
- * dev mode the Vite proxy forwards `/sub/*` to the backend.
+ * Build the public Prism subscription URL. In production the app and backend
+ * usually share an origin; in dev mode the Vite proxy forwards `/sub/*`.
  */
-/** Maps internal format names to the query parameter values the backend expects. */
 const FORMAT_TO_FLAG: Partial<Record<SubscriptionFormat, string>> = {
   singbox: 'sing-box',
 };
 
-function buildLocalSubUrl(subId: string, format: SubscriptionFormat): string {
-  const token = encodeURIComponent(subId.trim());
-  if (!token) return '';
-  const base = `${window.location.origin}/sub/${token}`;
-  const flag = FORMAT_TO_FLAG[format] ?? format;
-  return appendQuery(base, 'flag', flag);
-}
-
-function buildUpstreamSubUrl(subId: string): string {
+function buildPrismSubUrl(subId: string): string {
   const token = encodeURIComponent(subId.trim());
   if (!token) return '';
   if (SUB_TEMPLATE.includes('{subId}')) {
@@ -38,7 +25,7 @@ function buildUpstreamSubUrl(subId: string): string {
   if (SUB_BASE) {
     return `${SUB_BASE}/sub/${token}`;
   }
-  return '';
+  return `${window.location.origin}/sub/${token}`;
 }
 
 /**
@@ -61,18 +48,10 @@ export function buildSubscriptionUrl(
 ): string {
   if (!subId.trim()) return '';
 
-  // Formats that need server-side conversion go through DMITProxy's /sub route
-  if (LOCAL_CONVERTED_FORMATS.has(format)) {
-    return buildLocalSubUrl(subId, format);
-  }
-
-  // All other formats go directly to the upstream 3X-UI subscription endpoint
-  const baseLink = buildUpstreamSubUrl(subId);
+  const baseLink = buildPrismSubUrl(subId);
   if (!baseLink) return '';
+  if (format === 'universal') return baseLink;
 
-  if (format === 'v2ray') return appendQuery(baseLink, 'flag', 'v2ray');
-  if (format === 'singbox') return appendQuery(baseLink, 'flag', 'sing-box');
-  if (format === 'surge') return appendQuery(baseLink, 'flag', 'surge');
-  if (format === 'quanx') return appendQuery(baseLink, 'flag', 'quanx');
-  return baseLink;
+  const flag = FORMAT_TO_FLAG[format] ?? format;
+  return appendQuery(baseLink, 'flag', flag);
 }

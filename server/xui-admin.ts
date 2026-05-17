@@ -60,6 +60,13 @@ export interface XuiClientUsage {
   enable: boolean;
 }
 
+export interface XuiClientUsageSource {
+  inbound: XuiInbound;
+  client: Record<string, unknown>;
+  clientStat: XuiClientStat | null;
+  usage: XuiClientUsage;
+}
+
 export interface XuiClientTrafficUpdate {
   email: string;
   upload: number;
@@ -141,6 +148,7 @@ const MAX_STATS_CACHE_TTL_MS = 60_000;
 
 interface StatsSnapshot {
   bySubId: Map<string, XuiClientUsage>;
+  inbounds: XuiInbound[];
   fetchedAt: number;
   expiresAt: number;
 }
@@ -220,6 +228,38 @@ export function buildClientUsageIndex(inbounds: XuiInbound[]): Map<string, XuiCl
   return bySubId;
 }
 
+export function findClientUsageSource(
+  inbounds: XuiInbound[],
+  subId: string,
+): XuiClientUsageSource | null {
+  const normalizedSubId = normalizeLookupKey(subId);
+  if (!normalizedSubId) return null;
+
+  for (const inbound of inbounds) {
+    const clients = parseInboundClients(inbound.settings);
+    const statsByEmail = new Map<string, XuiClientStat>();
+    for (const stat of inbound.clientStats ?? []) {
+      const email = normalizeLookupKey(stat.email);
+      if (email) statsByEmail.set(email, stat);
+    }
+
+    for (const client of clients) {
+      if (normalizeLookupKey(client.subId) !== normalizedSubId) continue;
+
+      const email = normalizeLookupKey(client.email);
+      const clientStat = email ? (statsByEmail.get(email) ?? null) : null;
+      return {
+        inbound,
+        client,
+        clientStat,
+        usage: toClientUsage(inbound, client, clientStat),
+      };
+    }
+  }
+
+  return null;
+}
+
 async function getStatsSnapshot(
   cookieHeader: string,
   forceRefresh = false,
@@ -247,6 +287,7 @@ async function getStatsSnapshot(
     const fetchedAt = Date.now();
     const snapshot: StatsSnapshot = {
       bySubId: buildClientUsageIndex(listResp.obj),
+      inbounds: listResp.obj,
       fetchedAt,
       expiresAt: fetchedAt + getStatsCacheTtlMs(),
     };
@@ -735,6 +776,32 @@ export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientU
 
   const refreshed = await getStatsSnapshot(cookieHeader, true);
   return refreshed.snapshot.bySubId.get(normalizedSubId) ?? null;
+}
+
+export async function fetchClientUsageSourceBySubId(
+  subId: string,
+): Promise<XuiClientUsageSource | null> {
+  const normalizedSubId = normalizeLookupKey(subId);
+  if (!normalizedSubId) return null;
+
+  const creds = getXuiCredentials();
+  if (!creds) {
+    console.warn(
+      '[Prism] fetchClientUsageSourceBySubId: XUI credentials not configured, stats unavailable',
+    );
+    return null;
+  }
+
+  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
+
+  const initial = await getStatsSnapshot(cookieHeader);
+  const cachedUsage = findClientUsageSource(initial.snapshot.inbounds, normalizedSubId);
+  if (cachedUsage || !initial.fromCache) {
+    return cachedUsage;
+  }
+
+  const refreshed = await getStatsSnapshot(cookieHeader, true);
+  return findClientUsageSource(refreshed.snapshot.inbounds, normalizedSubId);
 }
 
 export async function fetchXuiInbounds(): Promise<XuiInbound[]> {

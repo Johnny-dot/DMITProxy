@@ -21,6 +21,7 @@ import type {
   PortalNotification,
   ClientStats,
   PortalStatsResponse,
+  PortalUsageSummary,
 } from './portal/types';
 import { isPortalTab, toMillis, COPY_RESET_DELAY_MS } from './portal/types';
 
@@ -48,6 +49,7 @@ export function UserPortalPage() {
 
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [clientStats, setClientStats] = useState<ClientStats | null | 'loading'>('loading');
+  const [usageSummary, setUsageSummary] = useState<PortalUsageSummary | null>(null);
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [nodeQuality, setNodeQuality] = useState<NodeQualityProfile | null>(null);
 
@@ -160,6 +162,7 @@ export function UserPortalPage() {
 
   const loadStats = useCallback(async () => {
     setClientStats('loading');
+    setUsageSummary(null);
     setServerStatus(null);
     setNodeQuality(null);
     try {
@@ -175,11 +178,13 @@ export function UserPortalPage() {
       });
       const typed = data as PortalStatsResponse | null;
       setClientStats(typed?.stats ?? null);
+      setUsageSummary(typed?.usageSummary ?? null);
       setServerStatus(typed?.serverStatus ?? null);
       setNodeQuality(typed?.nodeQuality ?? null);
     } catch (error) {
       console.error('[portal] loadStats: network error:', error);
       setClientStats(null);
+      setUsageSummary(null);
       setServerStatus(null);
       setNodeQuality(null);
     }
@@ -189,6 +194,7 @@ export function UserPortalPage() {
     if (viewerRole === 'user') void loadStats();
     else {
       setClientStats(null);
+      setUsageSummary(null);
       setServerStatus(null);
       setNodeQuality(null);
     }
@@ -419,6 +425,7 @@ export function UserPortalPage() {
             hasSubscription={hasSubscription}
             subscriptionUniversalUrl={subscriptionLinks.universal}
             clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
+            usageSummary={usageSummary}
             serverStatus={serverStatus}
             isStatsLoading={clientStats === 'loading'}
             onCopy={handleCopy}

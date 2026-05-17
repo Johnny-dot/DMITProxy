@@ -21,6 +21,7 @@ import { renderSubscription, SubconverterError, type SubFormat } from './subconv
 import { buildPublicSubscriptionSourceUrl } from './subscription-source-url.js';
 import { buildSubscriptionUserinfoHeader } from './subscription-userinfo.js';
 import { fetchClientStatsBySubId } from './xui-admin.js';
+import { buildSubscriptionProfileTitleHeader } from './subscription-profile.js';
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
@@ -61,6 +62,14 @@ async function setSubscriptionUserinfoHeader(res: express.Response, subId: strin
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.warn(`[Prism] subscription-userinfo unavailable: ${message}`);
   }
+}
+
+function setSubscriptionProfileHeaders(res: express.Response, subId: string) {
+  res.set('profile-title', buildSubscriptionProfileTitleHeader('Prism'));
+  res.set(
+    'profile-web-page-url',
+    buildPublicSubscriptionSourceUrl(subId) ?? `/sub/${encodeURIComponent(subId)}`,
+  );
 }
 
 export function createApp() {
@@ -203,6 +212,7 @@ export function createApp() {
       const payload = await buildSubscriptionPayload(subId);
       const base64Payload = Buffer.from(payload).toString('base64');
       await setSubscriptionUserinfoHeader(res, subId);
+      setSubscriptionProfileHeaders(res, subId);
       res.set('Content-Type', 'text/plain; charset=utf-8').send(base64Payload);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -277,6 +287,7 @@ export function createApp() {
       }
       try {
         await setSubscriptionUserinfoHeader(res, subId);
+        setSubscriptionProfileHeaders(res, subId);
         const result = await renderSubscription({ format, rawSourceUrl });
         res
           .set('Content-Type', result.contentType)
@@ -300,6 +311,7 @@ export function createApp() {
       const payload = await buildSubscriptionPayload(subId);
       const base64Payload = Buffer.from(payload).toString('base64');
       await setSubscriptionUserinfoHeader(res, subId);
+      setSubscriptionProfileHeaders(res, subId);
       res.set('Content-Type', 'text/plain; charset=utf-8').send(base64Payload);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';

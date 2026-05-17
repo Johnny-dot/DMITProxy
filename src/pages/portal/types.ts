@@ -80,8 +80,18 @@ export interface ClientStats {
   enable: boolean;
 }
 
+export interface PortalUsageSummary {
+  resetDay: number | null;
+  ownUsed: number;
+  otherUsersUsed: number;
+  totalUsed: number;
+  machineRemaining: number;
+  machineTotal: number;
+}
+
 export interface PortalStatsResponse {
   stats: ClientStats | null;
+  usageSummary: PortalUsageSummary | null;
   nodeQuality: NodeQualityProfile | null;
   serverStatus: ServerStatus | null;
 }

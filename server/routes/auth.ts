@@ -3,6 +3,7 @@ import { db, hashPassword, verifyPassword, generateToken, hashToken } from '../d
 import {
   cleanupProvisionedClient,
   fetchClientStatsBySubId,
+  fetchClientUsageSourceBySubId,
   fetchServerStatusForPortal,
   provisionClientForRegisteredUser,
   type AutoProvisionedClient,
@@ -22,6 +23,12 @@ import {
   resolveUserDisplayName,
   sanitizeUserDisplayName,
 } from '../user-profile.js';
+import { getBillingConfig } from '../xui-billing.js';
+import {
+  buildSubscriptionUsageSummary,
+  getClientTrafficBreakdown,
+  getInboundClientTrafficBreakdown,
+} from '../subscription-usage.js';
 
 const router = Router();
 const SESSION_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -577,17 +584,34 @@ router.get('/portal/stats', async (req, res) => {
     if (!session.sub_id) {
       return res.json({
         stats: null,
+        usageSummary: null,
         nodeQuality: null,
         serverStatus: await serverStatusPromise,
       });
     }
 
-    const [stats, serverStatus] = await Promise.all([
-      fetchClientStatsBySubId(session.sub_id),
+    const [usageSource, serverStatus] = await Promise.all([
+      fetchClientUsageSourceBySubId(session.sub_id),
       serverStatusPromise,
     ]);
+    const stats = usageSource?.usage ?? null;
+    const usageSummary = usageSource
+      ? buildSubscriptionUsageSummary({
+          resetDay: getBillingConfig(usageSource.inbound.id)?.billingDay ?? null,
+          expiryTime:
+            usageSource.clientStat?.expiryTime ??
+            (usageSource.client.expiryTime as number | undefined) ??
+            null,
+          ownUp: getClientTrafficBreakdown(usageSource.clientStat).up,
+          ownDown: getClientTrafficBreakdown(usageSource.clientStat).down,
+          allClientUp: getInboundClientTrafficBreakdown(usageSource.inbound).up,
+          allClientDown: getInboundClientTrafficBreakdown(usageSource.inbound).down,
+          machineTotal: usageSource.inbound.total ?? 0,
+        })
+      : null;
     return res.json({
       stats,
+      usageSummary,
       nodeQuality: stats ? getNodeQualityProfile(stats.inboundId) : null,
       serverStatus,
     });

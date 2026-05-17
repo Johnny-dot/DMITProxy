@@ -5,7 +5,6 @@
 
 import {
   type XuiInbound,
-  safeNonNegativeInt,
   XuiAdminError,
   parseInboundClients,
   getXuiCredentials,
@@ -13,8 +12,11 @@ import {
 } from './xui-admin.js';
 import { getBillingConfig } from './xui-billing.js';
 import { db } from './db.js';
-
-const GB = 1024 ** 3;
+import {
+  buildSubscriptionDecorations,
+  getClientTrafficBreakdown,
+  getInboundClientTrafficBreakdown,
+} from './subscription-usage.js';
 
 interface StreamSettings {
   network?: string;
@@ -287,35 +289,47 @@ export function replaceLinkName(link: string, name: string): string {
   return `${link}#${encodedName}`;
 }
 
-function formatTrafficGB(bytes: number): string {
-  return `${(safeNonNegativeInt(bytes) / GB).toFixed(2)}G`;
+function extractLinkName(link: string): string {
+  if (link.startsWith('vmess://')) {
+    const encoded = link.slice('vmess://'.length);
+    const config = decodeBase64Json(encoded);
+    return String(config?.ps ?? '').trim();
+  }
+
+  const fragmentIndex = link.indexOf('#');
+  if (fragmentIndex < 0) return '';
+  try {
+    return decodeURIComponent(link.slice(fragmentIndex + 1)).trim();
+  } catch {
+    return link.slice(fragmentIndex + 1).trim();
+  }
 }
 
-export function buildSubscriptionDecorations(input: {
-  resetDay: number | null;
-  ownUsed: number;
-  allClientUsed: number;
-  machineTotal: number;
-}): string[] {
-  const ownUsed = safeNonNegativeInt(input.ownUsed);
-  const allClientUsed = safeNonNegativeInt(input.allClientUsed);
-  const machineTotal = safeNonNegativeInt(input.machineTotal);
-  const otherUsed = Math.max(0, allClientUsed - ownUsed);
-  const machineRemaining = Math.max(0, machineTotal - allClientUsed);
-  const resetText = input.resetDay ? `UTC 每月 ${input.resetDay} 日` : '未配置';
+function sanitizeSharedNodeName(name: string): string {
+  return name
+    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/[｜|·•]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 24);
+}
 
-  return [
-    `重置日期 | ${resetText}`,
-    `你已用 ${formatTrafficGB(ownUsed)} | 其他人 ${formatTrafficGB(otherUsed)}`,
-    `机器剩余 ${formatTrafficGB(machineRemaining)} | 已用 ${formatTrafficGB(allClientUsed)}/${formatTrafficGB(machineTotal)}`,
-  ];
+function buildUserNodeName(client: Record<string, unknown>, inbound: XuiInbound): string {
+  const raw = String(client.email ?? inbound.remark ?? '默认节点').trim() || '默认节点';
+  return `用户节点｜${raw}`;
 }
 
 export function buildDecoratedSubscriptionLinks(
   originalLink: string,
   decorations: string[],
 ): string[] {
-  return [originalLink, ...decorations.map((name) => replaceLinkName(originalLink, name))];
+  return [
+    originalLink,
+    ...decorations.map((name, index) =>
+      replaceLinkName(addDecorationMarker(originalLink, `prism-info-${index + 1}`), name),
+    ),
+  ];
 }
 
 export function getExtraSubscriptionLinks(
@@ -329,19 +343,19 @@ export function getExtraSubscriptionLinks(
     .filter((link) => link && !link.startsWith('#'));
 }
 
+export function normalizeExtraSubscriptionLinks(links: string[]): string[] {
+  return links.map((link, index) => {
+    const originalName = sanitizeSharedNodeName(extractLinkName(link));
+    const suffix = originalName || String(index + 1).padStart(2, '0');
+    return replaceLinkName(link, `共享节点｜${suffix}`);
+  });
+}
+
 function getStoredExtraSubscriptionLinks(): string {
   const row = db
     .prepare('SELECT value FROM app_settings WHERE key = ?')
     .get('extraSubscriptionLinks') as { value: string } | undefined;
   return row?.value?.trim() ?? '';
-}
-
-function getClientUsedBytes(stats: { up?: unknown; down?: unknown } | null | undefined): number {
-  return safeNonNegativeInt(stats?.up) + safeNonNegativeInt(stats?.down);
-}
-
-function getInboundClientUsedBytes(inbound: XuiInbound): number {
-  return (inbound.clientStats ?? []).reduce((sum, stats) => sum + getClientUsedBytes(stats), 0);
 }
 
 function findClientStats(inbound: XuiInbound, client: Record<string, unknown>) {
@@ -350,6 +364,21 @@ function findClientStats(inbound: XuiInbound, client: Record<string, unknown>) {
   return (
     (inbound.clientStats ?? []).find((stats) => String(stats.email ?? '').trim() === email) ?? null
   );
+}
+
+function addDecorationMarker(link: string, marker: string): string {
+  if (link.startsWith('vmess://')) {
+    const encoded = link.slice('vmess://'.length);
+    const config = decodeBase64Json(encoded);
+    if (!config) return link;
+    return `vmess://${encodeBase64Json({ ...config, prismInfo: marker })}`;
+  }
+
+  const fragmentIndex = link.indexOf('#');
+  const base = fragmentIndex >= 0 ? link.slice(0, fragmentIndex) : link;
+  const fragment = fragmentIndex >= 0 ? link.slice(fragmentIndex) : '';
+  const join = base.includes('?') ? '&' : '?';
+  return `${base}${join}prism_info=${encodeURIComponent(marker)}${fragment}`;
 }
 
 function resolveAddress(inbound: XuiInbound): string {
@@ -400,13 +429,23 @@ export async function buildSubscriptionPayload(subId: string): Promise<string> {
       const link = buildProtocolLink(protocol, client, inbound, stream, address);
       if (link) {
         const stats = findClientStats(inbound, client);
+        const clientTraffic = getClientTrafficBreakdown(stats);
+        const inboundTraffic = getInboundClientTrafficBreakdown(inbound);
         const decorations = buildSubscriptionDecorations({
           resetDay: getBillingConfig(inbound.id)?.billingDay ?? null,
-          ownUsed: getClientUsedBytes(stats),
-          allClientUsed: getInboundClientUsedBytes(inbound),
-          machineTotal: safeNonNegativeInt(inbound.total),
+          expiryTime: stats?.expiryTime ?? (client.expiryTime as number | undefined) ?? null,
+          ownUp: clientTraffic.up,
+          ownDown: clientTraffic.down,
+          allClientUp: inboundTraffic.up,
+          allClientDown: inboundTraffic.down,
+          machineTotal: inbound.total ?? 0,
         });
-        links.push(...buildDecoratedSubscriptionLinks(link, decorations));
+        links.push(
+          ...buildDecoratedSubscriptionLinks(
+            replaceLinkName(link, buildUserNodeName(client, inbound)),
+            decorations,
+          ),
+        );
       }
     }
   }
@@ -415,7 +454,7 @@ export async function buildSubscriptionPayload(subId: string): Promise<string> {
     throw new XuiAdminError(`No active client found for subscription ID: ${subId}`);
   }
 
-  links.push(...getExtraSubscriptionLinks());
+  links.push(...normalizeExtraSubscriptionLinks(getExtraSubscriptionLinks()));
 
   return links.join('\n');
 }

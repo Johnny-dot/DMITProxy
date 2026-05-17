@@ -17,6 +17,7 @@ import type {
   PortalContextResponse,
   PortalStatsResponse,
   PortalTab,
+  PortalUsageSummary,
 } from './portal/types';
 import { getUserPortalSectionParam, resolveUserPortalSection } from './portal/types';
 
@@ -32,6 +33,7 @@ export function MySubscriptionPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [clientStats, setClientStats] = useState<ClientStats | null | 'loading'>('loading');
+  const [usageSummary, setUsageSummary] = useState<PortalUsageSummary | null>(null);
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [nodeQuality, setNodeQuality] = useState<NodeQualityProfile | null>(null);
   const [isRefreshingNodeQuality, setIsRefreshingNodeQuality] = useState(false);
@@ -112,6 +114,7 @@ export function MySubscriptionPage() {
 
   const loadStats = useCallback(async () => {
     setClientStats('loading');
+    setUsageSummary(null);
     setServerStatus(null);
     setNodeQuality(null);
 
@@ -128,10 +131,12 @@ export function MySubscriptionPage() {
 
       const data = (await response.json().catch(() => null)) as PortalStatsResponse | null;
       setClientStats(data?.stats ?? null);
+      setUsageSummary(data?.usageSummary ?? null);
       setServerStatus(data?.serverStatus ?? null);
       setNodeQuality(data?.nodeQuality ?? null);
     } catch {
       setClientStats(null);
+      setUsageSummary(null);
       setServerStatus(null);
       setNodeQuality(null);
     }
@@ -260,6 +265,7 @@ export function MySubscriptionPage() {
           hasSubscription={hasSubscription}
           subscriptionUniversalUrl={subscriptionLinks.universal}
           clientStats={clientStats === 'loading' ? undefined : (clientStats ?? undefined)}
+          usageSummary={usageSummary}
           serverStatus={serverStatus}
           nodeQuality={nodeQuality}
           isStatsLoading={clientStats === 'loading'}
