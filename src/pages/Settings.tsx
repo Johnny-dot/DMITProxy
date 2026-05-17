@@ -9,12 +9,14 @@ import {
   Globe,
   Link2,
   Network,
+  PencilLine,
   Plus,
   RefreshCw,
   Save,
   Shield,
   ShieldAlert,
   Trash2,
+  X,
 } from 'lucide-react';
 import {
   Card,
@@ -41,9 +43,11 @@ import {
 import { useI18n } from '@/src/context/I18nContext';
 import { cn } from '@/src/utils/cn';
 import {
+  buildSubscriptionNodePreviewEntries,
   createEmptyCommunityLink,
   createEmptySharedResource,
   normalizeSettings,
+  parseSubscriptionNodeLinks,
   visibleItemCount,
 } from '@/src/utils/settingsHelpers';
 import { type SharedResource } from '@/src/types/sharedResource';
@@ -238,6 +242,24 @@ export function SettingsPage() {
         ? '粘贴 vless://、vmess://、trojan:// 等分享链接，一行一个'
         : 'Paste vless://, vmess://, trojan:// links, one per line',
       saveSubscriptionNodes: isZh ? '保存公共节点' : 'Save public nodes',
+      editSubscriptionNodes: isZh ? '编辑节点' : 'Edit nodes',
+      addSubscriptionNodes: isZh ? '新增节点' : 'Add nodes',
+      cancelEditing: isZh ? '取消编辑' : 'Cancel',
+      savedSubscriptionNodesTitle: isZh ? '已保存节点' : 'Saved nodes',
+      savedSubscriptionNodesHint: isZh
+        ? '保存后展示结构化节点清单，避免原始链接一直停在页面上。'
+        : 'Saved nodes are shown as a structured list instead of leaving the raw links on the page.',
+      subscriptionNodesEmptyTitle: isZh ? '还没有公共节点' : 'No public nodes yet',
+      subscriptionNodesEmptyHint: isZh
+        ? '添加后会自动追加到所有用户订阅末尾，并按统一规则整理显示名。'
+        : 'Added nodes are appended to every user subscription and renamed with a consistent format.',
+      subscriptionPreviewTitle: isZh ? '保存预览' : 'Saved preview',
+      subscriptionPreviewHint: isZh
+        ? '下面会按最终输出的命名方式预览，不需要管理员自己处理名称格式。'
+        : 'Preview the final node labels here without manually formatting their names.',
+      subscriptionPreviewEmpty: isZh
+        ? '还没有可解析的节点。粘贴分享链接后会在这里出现。'
+        : 'No nodes parsed yet. The preview appears after you paste share links.',
       announcementEnabledHint: isZh
         ? '启用后会在用户门户首页立即显示。'
         : 'When enabled, the announcement is shown immediately in the user portal.',
@@ -346,6 +368,8 @@ export function SettingsPage() {
   const [isSavingResources, setIsSavingResources] = useState(false);
   const [isSavingCommunities, setIsSavingCommunities] = useState(false);
   const [lastBackupPath, setLastBackupPath] = useState('');
+  const [savedSubscriptionLinks, setSavedSubscriptionLinks] = useState('');
+  const [isEditingSubscriptionNodes, setIsEditingSubscriptionNodes] = useState(false);
   const [activePortalTab, setActivePortalTab] = useState<PortalTab>('resources');
   const [activeSection, setActiveSection] = useState<SettingsSection>(() =>
     typeof window === 'undefined' ? 'general' : resolveSectionFromHash(window.location.hash),
@@ -355,6 +379,7 @@ export function SettingsPage() {
   const applyServerSettings = (data: AdminSettings) => {
     const normalized = normalizeSettings(data);
     setSettings(normalized);
+    setSavedSubscriptionLinks(normalized.extraSubscriptionLinks);
   };
 
   const load = async () => {
@@ -465,6 +490,7 @@ export function SettingsPage() {
         extraSubscriptionLinks: settings.extraSubscriptionLinks,
       });
       applyServerSettings(updated);
+      setIsEditingSubscriptionNodes(false);
       toast(isZh ? '公共订阅节点已保存' : 'Public subscription nodes saved', 'success');
     } catch (error) {
       const message =
@@ -585,6 +611,28 @@ export function SettingsPage() {
     ? copy.announcementEnabledHint
     : copy.announcementDisabledHint;
   const toolsSummary = lastBackupPath ? copy.toolsSummaryReady : copy.toolsSummaryMissing;
+  const savedSubscriptionNodeEntries = useMemo(
+    () => buildSubscriptionNodePreviewEntries(savedSubscriptionLinks),
+    [savedSubscriptionLinks],
+  );
+  const draftSubscriptionNodeEntries = useMemo(
+    () => buildSubscriptionNodePreviewEntries(settings.extraSubscriptionLinks),
+    [settings.extraSubscriptionLinks],
+  );
+  const hasSubscriptionDraftChanges = settings.extraSubscriptionLinks !== savedSubscriptionLinks;
+  const subscriptionNodeCount = parseSubscriptionNodeLinks(settings.extraSubscriptionLinks).length;
+
+  const handleEditSubscriptionNodes = () => {
+    setIsEditingSubscriptionNodes(true);
+  };
+
+  const handleCancelSubscriptionNodesEdit = () => {
+    setSettings((prev) => ({
+      ...prev,
+      extraSubscriptionLinks: savedSubscriptionLinks,
+    }));
+    setIsEditingSubscriptionNodes(false);
+  };
 
   const overviewTiles = [
     {
@@ -794,34 +842,168 @@ export function SettingsPage() {
                     <CardDescription>{copy.extraSubscriptionHelper}</CardDescription>
                   </div>
                 </div>
-                <Badge variant="secondary">
-                  {settings.extraSubscriptionLinks
-                    .split('\n')
-                    .map((item) => item.trim())
-                    .filter(Boolean).length || copy.notConfigured}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{subscriptionNodeCount || copy.notConfigured}</Badge>
+                  {!isEditingSubscriptionNodes ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={handleEditSubscriptionNodes}
+                    >
+                      {savedSubscriptionNodeEntries.length ? (
+                        <PencilLine className="h-4 w-4" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      {savedSubscriptionNodeEntries.length
+                        ? copy.editSubscriptionNodes
+                        : copy.addSubscriptionNodes}
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             </CardHeader>
 
             <CardContent className="space-y-5">
-              <textarea
-                className="min-h-[220px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 font-mono text-xs leading-6 text-[var(--text-primary)] shadow-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2"
-                placeholder={copy.extraSubscriptionPlaceholder}
-                value={settings.extraSubscriptionLinks}
-                onChange={(event) => updateField('extraSubscriptionLinks', event.target.value)}
-              />
+              {!isEditingSubscriptionNodes ? (
+                <>
+                  {savedSubscriptionNodeEntries.length ? (
+                    <div className="space-y-4 rounded-[26px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-5">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                          {copy.savedSubscriptionNodesTitle}
+                        </p>
+                        <p className="text-sm leading-6 text-zinc-400">
+                          {copy.savedSubscriptionNodesHint}
+                        </p>
+                      </div>
 
-              <div className="flex flex-col gap-3 border-t border-[color:var(--border-subtle)] pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm leading-6 text-zinc-400">{copy.extraSubscriptionHelper}</p>
-                <Button
-                  className="gap-2"
-                  onClick={saveSubscriptionNodes}
-                  disabled={isSavingSubscriptionNodes}
-                >
-                  <Save className="h-4 w-4" />
-                  {isSavingSubscriptionNodes ? t('common.saving') : copy.saveSubscriptionNodes}
-                </Button>
-              </div>
+                      <div className="space-y-3">
+                        {savedSubscriptionNodeEntries.map((entry, index) => (
+                          <div
+                            key={`${entry.name}-${index}`}
+                            className="flex items-center gap-4 rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3"
+                          >
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[var(--accent-soft)] text-sm font-semibold text-[var(--accent)]">
+                              {String(index + 1).padStart(2, '0')}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                                {entry.name}
+                              </p>
+                              <p className="truncate text-xs leading-6 text-zinc-400">
+                                {entry.target
+                                  ? `${entry.protocol} · ${entry.target}`
+                                  : entry.protocol}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-[26px] border border-dashed border-[color:var(--border-strong)] bg-[var(--surface-panel)] px-5 py-8 text-center">
+                      <p className="text-base font-semibold text-[var(--text-primary)]">
+                        {copy.subscriptionNodesEmptyTitle}
+                      </p>
+                      <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+                        {copy.subscriptionNodesEmptyHint}
+                      </p>
+                      <Button
+                        className="mt-5 gap-2"
+                        variant="outline"
+                        onClick={handleEditSubscriptionNodes}
+                      >
+                        <Plus className="h-4 w-4" />
+                        {copy.addSubscriptionNodes}
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="border-t border-[color:var(--border-subtle)] pt-5">
+                    <p className="text-sm leading-6 text-zinc-400">
+                      {copy.extraSubscriptionHelper}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <textarea
+                    className="min-h-[220px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 font-mono text-xs leading-6 text-[var(--text-primary)] shadow-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2"
+                    placeholder={copy.extraSubscriptionPlaceholder}
+                    value={settings.extraSubscriptionLinks}
+                    onChange={(event) => updateField('extraSubscriptionLinks', event.target.value)}
+                  />
+
+                  <div className="rounded-[26px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-5">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-[var(--text-primary)]">
+                        {copy.subscriptionPreviewTitle}
+                      </p>
+                      <p className="text-sm leading-6 text-zinc-400">
+                        {copy.subscriptionPreviewHint}
+                      </p>
+                    </div>
+
+                    {draftSubscriptionNodeEntries.length ? (
+                      <div className="mt-4 space-y-3">
+                        {draftSubscriptionNodeEntries.map((entry, index) => (
+                          <div
+                            key={`${entry.name}-${index}`}
+                            className="flex items-center gap-4 rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3"
+                          >
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[var(--accent-soft)] text-sm font-semibold text-[var(--accent)]">
+                              {String(index + 1).padStart(2, '0')}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                                {entry.name}
+                              </p>
+                              <p className="truncate text-xs leading-6 text-zinc-400">
+                                {entry.target
+                                  ? `${entry.protocol} · ${entry.target}`
+                                  : entry.protocol}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-4 text-sm leading-6 text-zinc-400">
+                        {copy.subscriptionPreviewEmpty}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-3 border-t border-[color:var(--border-subtle)] pt-5 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm leading-6 text-zinc-400">
+                      {copy.extraSubscriptionHelper}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        className="gap-2"
+                        onClick={handleCancelSubscriptionNodesEdit}
+                        disabled={isSavingSubscriptionNodes}
+                      >
+                        <X className="h-4 w-4" />
+                        {copy.cancelEditing}
+                      </Button>
+                      <Button
+                        className="gap-2"
+                        onClick={saveSubscriptionNodes}
+                        disabled={isSavingSubscriptionNodes || !hasSubscriptionDraftChanges}
+                      >
+                        <Save className="h-4 w-4" />
+                        {isSavingSubscriptionNodes
+                          ? t('common.saving')
+                          : copy.saveSubscriptionNodes}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         ) : null}

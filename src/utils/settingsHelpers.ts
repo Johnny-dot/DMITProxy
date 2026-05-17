@@ -183,6 +183,125 @@ export function formatCommunityLinkPreview(value: string): string {
   return normalized.length > 52 ? `${normalized.slice(0, 49)}...` : normalized;
 }
 
+export interface SubscriptionNodePreviewEntry {
+  raw: string;
+  name: string;
+  protocol: string;
+  target: string;
+}
+
+function decodeBase64Value(value: string): string | null {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padding = normalized.length % 4;
+  const withPadding =
+    padding === 0 ? normalized : normalized.padEnd(normalized.length + (4 - padding), '=');
+
+  try {
+    if (typeof atob === 'function') {
+      const binary = atob(withPadding);
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    }
+
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(withPadding, 'base64').toString('utf8');
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function decodeBase64Json(value: string): Record<string, unknown> | null {
+  const decoded = decodeBase64Value(value);
+  if (!decoded) return null;
+
+  try {
+    const parsed = JSON.parse(decoded);
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractSubscriptionNodeName(link: string): string {
+  if (link.startsWith('vmess://')) {
+    const encoded = link.slice('vmess://'.length);
+    const config = decodeBase64Json(encoded);
+    return String(config?.ps ?? '').trim();
+  }
+
+  const fragmentIndex = link.indexOf('#');
+  if (fragmentIndex < 0) return '';
+
+  try {
+    return decodeURIComponent(link.slice(fragmentIndex + 1)).trim();
+  } catch {
+    return link.slice(fragmentIndex + 1).trim();
+  }
+}
+
+function sanitizeSubscriptionNodeName(name: string): string {
+  return name
+    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/[｜|·•]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 24);
+}
+
+function extractSubscriptionNodeTarget(link: string): string {
+  if (link.startsWith('vmess://')) {
+    const encoded = link.slice('vmess://'.length);
+    const config = decodeBase64Json(encoded);
+    const host = String(config?.add ?? '').trim();
+    const port = String(config?.port ?? '').trim();
+    return host ? `${host}${port ? `:${port}` : ''}` : '';
+  }
+
+  try {
+    const parsed = new URL(link);
+    if (!parsed.hostname) return '';
+    return parsed.port ? `${parsed.hostname}:${parsed.port}` : parsed.hostname;
+  } catch {
+    return '';
+  }
+}
+
+function formatSubscriptionNodeDetail(link: string): { protocol: string; target: string } {
+  const protocol = link.slice(0, link.indexOf('://')).toUpperCase() || 'LINK';
+  const target = extractSubscriptionNodeTarget(link);
+  return {
+    protocol,
+    target: target.length > 44 ? `${target.slice(0, 41)}...` : target,
+  };
+}
+
+export function parseSubscriptionNodeLinks(raw: string): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter((item) => item && !item.startsWith('#'));
+}
+
+export function buildSubscriptionNodePreviewEntries(raw: string): SubscriptionNodePreviewEntry[] {
+  return parseSubscriptionNodeLinks(raw).map((link, index) => {
+    const originalName = sanitizeSubscriptionNodeName(extractSubscriptionNodeName(link));
+    const suffix = originalName || String(index + 1).padStart(2, '0');
+    const { protocol, target } = formatSubscriptionNodeDetail(link);
+
+    return {
+      raw: link,
+      name: `共享节点｜${suffix}`,
+      protocol,
+      target,
+    };
+  });
+}
+
 export function getCommunityEntryHeadline(entry: CommunityLink, isZh: boolean): string {
   const title = entry.title.trim();
   if (title) return title;

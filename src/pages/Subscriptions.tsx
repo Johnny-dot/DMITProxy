@@ -44,6 +44,12 @@ import {
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 
 const STORAGE_KEY = 'prism:last-sub-id';
+const SUBSCRIPTION_LINK_TABS = [
+  { key: 'universal', label: 'Shadowrocket / V2Ray' },
+  { key: 'clash', label: 'Clash' },
+  { key: 'singbox', label: 'Sing-box' },
+  { key: 'surge', label: 'Surge' },
+] as const;
 
 interface MirrorDialogState {
   url: string;
@@ -60,7 +66,8 @@ export function SubscriptionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [activeSubTab, setActiveSubTab] = useState('universal');
+  const [activeSubTab, setActiveSubTab] =
+    useState<(typeof SUBSCRIPTION_LINK_TABS)[number]['key']>('universal');
   const [activeOsTab, setActiveOsTab] = useState<
     'windows' | 'macos' | 'linux' | 'ios' | 'android' | 'harmonyos'
   >('windows');
@@ -113,13 +120,6 @@ export function SubscriptionsPage() {
     [t],
   );
 
-  const linkTabs = [
-    { key: 'universal', label: 'Universal' },
-    { key: 'clash', label: 'Clash' },
-    { key: 'v2ray', label: 'V2Ray' },
-    { key: 'singbox', label: 'Singbox' },
-  ] as const;
-
   const load = async () => {
     setIsLoading(true);
     try {
@@ -162,15 +162,15 @@ export function SubscriptionsPage() {
       return {
         universal: '',
         clash: '',
-        v2ray: '',
         singbox: '',
+        surge: '',
       };
     }
     return {
       universal: buildSubscriptionUrl(subId, 'universal'),
       clash: buildSubscriptionUrl(subId, 'clash'),
-      v2ray: buildSubscriptionUrl(subId, 'v2ray'),
       singbox: buildSubscriptionUrl(subId, 'singbox'),
+      surge: buildSubscriptionUrl(subId, 'surge'),
     };
   }, [subId]);
 
@@ -258,6 +258,8 @@ export function SubscriptionsPage() {
   }, [generatedLinks]);
 
   const activeLink = generatedLinks[activeSubTab as keyof typeof generatedLinks] ?? '';
+  const activeLinkLabel =
+    SUBSCRIPTION_LINK_TABS.find((item) => item.key === activeSubTab)?.label ?? activeSubTab;
 
   return (
     <div className="content-shell-wide w-full min-w-0 space-y-10 px-4 pb-20 md:px-6 xl:px-8">
@@ -309,7 +311,7 @@ export function SubscriptionsPage() {
           <CardContent className="space-y-6">
             <Tabs>
               <TabsList className="grid grid-cols-4 w-full">
-                {linkTabs.map((tab) => (
+                {SUBSCRIPTION_LINK_TABS.map((tab) => (
                   <TabsTrigger
                     key={tab.key}
                     active={activeSubTab === tab.key}
@@ -323,7 +325,7 @@ export function SubscriptionsPage() {
               {(Object.entries(generatedLinks) as Array<[keyof typeof generatedLinks, string]>).map(
                 ([key, link]) => {
                   const keyName = String(key);
-                  const tab = linkTabs.find((item) => item.key === keyName);
+                  const tab = SUBSCRIPTION_LINK_TABS.find((item) => item.key === keyName);
                   const label = tab?.label ?? keyName;
                   return (
                     <TabsContent
@@ -447,23 +449,15 @@ export function SubscriptionsPage() {
           <span>{t('subscriptions.protocolShareCards')}</span>
           <InfoTooltip content={t('subscriptions.help.protocolShareCards')} />
         </h2>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
             {
               key: 'universal' as const,
-              name: 'Universal',
+              name: 'Shadowrocket / V2Ray',
               icon: Shield,
               color: 'text-indigo-500',
               bg: 'bg-indigo-500/10',
               link: generatedLinks.universal,
-            },
-            {
-              key: 'v2ray' as const,
-              name: 'V2Ray',
-              icon: Zap,
-              color: 'text-emerald-500',
-              bg: 'bg-emerald-500/10',
-              link: generatedLinks.v2ray,
             },
             {
               key: 'clash' as const,
@@ -473,6 +467,22 @@ export function SubscriptionsPage() {
               bg: 'bg-amber-500/10',
               link: generatedLinks.clash,
               qrLink: buildSubscriptionQrUrl(subId, 'clash'),
+            },
+            {
+              key: 'singbox' as const,
+              name: 'Sing-box',
+              icon: Zap,
+              color: 'text-emerald-500',
+              bg: 'bg-emerald-500/10',
+              link: generatedLinks.singbox,
+            },
+            {
+              key: 'surge' as const,
+              name: 'Surge',
+              icon: Terminal,
+              color: 'text-sky-500',
+              bg: 'bg-sky-500/10',
+              link: generatedLinks.surge,
             },
           ].map((proto) => (
             <Card key={proto.name} className="overflow-hidden">
@@ -707,7 +717,7 @@ export function SubscriptionsPage() {
                   activeOsTab === 'linux' ||
                   activeOsTab === 'harmonyos'
                     ? 'Clash'
-                    : 'Universal',
+                    : 'Shadowrocket / V2Ray',
               })}
             </div>
           </CardContent>
@@ -718,7 +728,7 @@ export function SubscriptionsPage() {
         <Card className="border-emerald-500/20 bg-emerald-500/5">
           <CardContent className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <p className="text-sm text-zinc-300">
-              {t('subscriptions.currentLinkReady', { type: activeSubTab.toUpperCase() })}
+              {t('subscriptions.currentLinkReady', { type: activeLinkLabel })}
             </p>
             <Button
               size="sm"

@@ -50,7 +50,7 @@ import {
   XuiClientRow,
 } from '@/src/utils/xuiClients';
 import { useI18n } from '@/src/context/I18nContext';
-import { buildSubscriptionUrl } from '@/src/utils/subscription';
+import { buildSubscriptionQrUrl, buildSubscriptionUrl } from '@/src/utils/subscription';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 
 interface UsersPageProps {
@@ -171,7 +171,9 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
       ]);
       setInbounds(data);
       setLastOnlineByEmail(lastOnline ?? {});
-      setOnlineEmailSet(new Set((onlineList ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean)));
+      setOnlineEmailSet(
+        new Set((onlineList ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean)),
+      );
     } catch {
       toast(t('users.failedLoad'), 'error');
     } finally {
@@ -188,7 +190,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
       setSubQrImage('');
       return;
     }
-    const url = buildSubscriptionUrl(subModal.subId, 'universal');
+    const url = buildSubscriptionQrUrl(subModal.subId, 'universal');
     if (!url) {
       setSubQrImage('');
       return;
@@ -1057,10 +1059,14 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
       {subModal &&
         (() => {
           const formats = [
-            { key: 'universal', label: 'Universal', format: 'universal' as const },
+            {
+              key: 'universal',
+              label: 'Shadowrocket / V2Ray',
+              format: 'universal' as const,
+            },
             { key: 'clash', label: 'Clash', format: 'clash' as const },
-            { key: 'v2ray', label: 'V2Ray', format: 'v2ray' as const },
             { key: 'singbox', label: 'Sing-box', format: 'singbox' as const },
+            { key: 'surge', label: 'Surge', format: 'surge' as const },
           ];
           return (
             <div
@@ -1117,7 +1123,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
 
                 {subQrImage && (
                   <div className="px-5 pb-5 flex flex-col items-center gap-2">
-                    <p className="text-xs text-[var(--text-secondary)]">Universal QR</p>
+                    <p className="text-xs text-[var(--text-secondary)]">Shadowrocket / V2Ray QR</p>
                     <img src={subQrImage} alt="QR Code" className="w-40 h-40 rounded-[20px]" />
                   </div>
                 )}
