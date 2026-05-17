@@ -7,7 +7,8 @@ export interface BillingConfig {
   lastResetDate: string | null;
 }
 
-const SCHEDULER_TICK_MS = 60 * 60 * 1000;
+const SCHEDULER_RECHECK_MS = 60 * 1000;
+const MAX_TIMEOUT_MS = 2_147_483_647;
 
 const selectAllStmt = db.prepare(
   'SELECT inbound_id AS inboundId, billing_day AS billingDay, last_reset_date AS lastResetDate FROM xui_inbound_billing ORDER BY inbound_id',
@@ -70,6 +71,43 @@ export function shouldResetToday(
   return now.getUTCDate() === effectiveDay;
 }
 
+function billingResetAtUTC(year: number, monthIndex: number, billingDay: number): Date {
+  const monthLastDay = lastDayOfMonthUTC(year, monthIndex);
+  const effectiveDay = Math.min(billingDay, monthLastDay);
+  return new Date(Date.UTC(year, monthIndex, effectiveDay, 0, 0, 0, 0));
+}
+
+export function getNextBillingResetAtUTC(now: Date, billingDay: number): Date {
+  if (!Number.isInteger(billingDay) || billingDay < 1 || billingDay > 31) {
+    throw new Error(`Invalid billing day: ${billingDay} (must be integer 1-31)`);
+  }
+
+  const thisMonth = billingResetAtUTC(now.getUTCFullYear(), now.getUTCMonth(), billingDay);
+  if (thisMonth.getTime() > now.getTime()) return thisMonth;
+  return billingResetAtUTC(now.getUTCFullYear(), now.getUTCMonth() + 1, billingDay);
+}
+
+export function getNextScheduledBillingResetAtUTC(
+  now: Date,
+  configs: BillingConfig[] = listBillingConfigs(),
+): Date | null {
+  if (configs.length === 0) return null;
+  return configs.reduce<Date | null>((next, cfg) => {
+    const candidate = getNextBillingResetAtUTC(now, cfg.billingDay);
+    return next === null || candidate.getTime() < next.getTime() ? candidate : next;
+  }, null);
+}
+
+export function getBillingSchedulerDelayMs(
+  now: Date,
+  configs: BillingConfig[] = listBillingConfigs(),
+): number {
+  const nextResetAt = getNextScheduledBillingResetAtUTC(now, configs);
+  if (!nextResetAt) return SCHEDULER_RECHECK_MS;
+  const msUntilReset = Math.max(0, nextResetAt.getTime() - now.getTime());
+  return Math.min(msUntilReset, SCHEDULER_RECHECK_MS, MAX_TIMEOUT_MS);
+}
+
 export async function runBillingResetTick(
   now: Date,
   resetFn: (inboundId: number) => Promise<void> = resetInboundAllClientTraffics,
@@ -117,9 +155,27 @@ export function createBillingTickRunner(
 
 export function startXuiBillingScheduler(): { stop: () => void } {
   const tick = createBillingTickRunner();
+  let timer: NodeJS.Timeout | null = null;
+
+  const scheduleNext = () => {
+    const now = new Date();
+    const nextResetAt = getNextScheduledBillingResetAtUTC(now);
+    const delay = getBillingSchedulerDelayMs(now);
+
+    timer = setTimeout(async () => {
+      if (nextResetAt && nextResetAt.getTime() <= Date.now()) {
+        await tick();
+      }
+      scheduleNext();
+    }, delay);
+  };
+
   void tick();
-  const timer = setInterval(tick, SCHEDULER_TICK_MS);
+  scheduleNext();
+
   return {
-    stop: () => clearInterval(timer),
+    stop: () => {
+      if (timer) clearTimeout(timer);
+    },
   };
 }

@@ -39,6 +39,13 @@ export interface XuiInbound {
   settings: string;
   streamSettings?: string;
   tag?: string;
+  up?: number;
+  down?: number;
+  total?: number;
+  allTime?: number;
+  expiryTime?: number;
+  trafficReset?: string;
+  lastTrafficResetTime?: number;
   clientStats?: XuiClientStat[];
 }
 
@@ -51,6 +58,12 @@ export interface XuiClientUsage {
   total: number;
   expiryTime: number;
   enable: boolean;
+}
+
+export interface XuiClientTrafficUpdate {
+  email: string;
+  upload: number;
+  download: number;
 }
 
 export interface XuiServerStatus {
@@ -402,6 +415,40 @@ async function requestXuiJson<T>(
   return parsed;
 }
 
+async function requestXuiJsonBody<T>(
+  path: string,
+  method: string,
+  payload: Record<string, unknown>,
+  cookieHeader: string | null,
+): Promise<XuiEnvelope<T>> {
+  const body = JSON.stringify(payload);
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  };
+  if (cookieHeader) headers.Cookie = cookieHeader;
+
+  const response = await requestXui(path, method, headers, body, MAX_REDIRECTS);
+  if (!response.body) throw new XuiAdminError(`3X-UI returned empty response for ${path}`);
+
+  let parsed: XuiEnvelope<T>;
+  try {
+    parsed = JSON.parse(response.body);
+  } catch {
+    throw new XuiAdminError(
+      `3X-UI returned non-JSON response for ${path} (HTTP ${response.status})`,
+    );
+  }
+  return parsed;
+}
+
+export function buildClientTrafficUpdatePayload(upload: unknown, download: unknown) {
+  return {
+    upload: safeNonNegativeInt(upload),
+    download: safeNonNegativeInt(download),
+  };
+}
+
 export function parseInboundClients(settings: string): Array<Record<string, unknown>> {
   try {
     const obj = JSON.parse(settings);
@@ -631,6 +678,36 @@ export async function resetInboundAllClientTraffics(inboundId: number): Promise<
 
   if (!resp.success) {
     throw new XuiAdminError(resp.msg || `Failed to reset inbound ${inboundId} traffics`);
+  }
+
+  invalidateStatsSnapshotCache();
+}
+
+export async function updateClientTrafficByEmail({
+  email,
+  upload,
+  download,
+}: XuiClientTrafficUpdate): Promise<void> {
+  const normalizedEmail = normalizeLookupKey(email);
+  if (!normalizedEmail) {
+    throw new XuiAdminError('Missing client email');
+  }
+
+  const creds = getXuiCredentials();
+  if (!creds) {
+    throw new XuiAdminError('XUI admin credentials are missing in .env');
+  }
+
+  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
+  const resp = await requestXuiJsonBody<null>(
+    `/panel/api/inbounds/updateClientTraffic/${encodeURIComponent(normalizedEmail)}`,
+    'POST',
+    buildClientTrafficUpdatePayload(upload, download),
+    cookieHeader,
+  );
+
+  if (!resp.success) {
+    throw new XuiAdminError(resp.msg || `Failed to update client traffic for ${normalizedEmail}`);
   }
 
   invalidateStatsSnapshotCache();

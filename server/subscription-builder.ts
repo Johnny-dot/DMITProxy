@@ -5,11 +5,15 @@
 
 import {
   type XuiInbound,
+  safeNonNegativeInt,
   XuiAdminError,
   parseInboundClients,
   getXuiCredentials,
   loginAndListInbounds,
 } from './xui-admin.js';
+import { getBillingConfig } from './xui-billing.js';
+
+const GB = 1024 ** 3;
 
 interface StreamSettings {
   network?: string;
@@ -255,6 +259,80 @@ function buildProtocolLink(
   }
 }
 
+function encodeBase64Json(value: Record<string, unknown>): string {
+  return Buffer.from(JSON.stringify(value)).toString('base64');
+}
+
+function decodeBase64Json(value: string): Record<string, unknown> | null {
+  try {
+    const decoded = Buffer.from(value, 'base64').toString('utf8');
+    return JSON.parse(decoded) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+export function replaceLinkName(link: string, name: string): string {
+  if (link.startsWith('vmess://')) {
+    const encoded = link.slice('vmess://'.length);
+    const config = decodeBase64Json(encoded);
+    if (!config) return link;
+    return `vmess://${encodeBase64Json({ ...config, ps: name })}`;
+  }
+
+  const fragmentIndex = link.indexOf('#');
+  const encodedName = encodeURIComponent(name);
+  if (fragmentIndex >= 0) return `${link.slice(0, fragmentIndex)}#${encodedName}`;
+  return `${link}#${encodedName}`;
+}
+
+function formatTrafficGB(bytes: number): string {
+  return `${(safeNonNegativeInt(bytes) / GB).toFixed(2)}G`;
+}
+
+export function buildSubscriptionDecorations(input: {
+  resetDay: number | null;
+  ownUsed: number;
+  allClientUsed: number;
+  machineTotal: number;
+}): string[] {
+  const ownUsed = safeNonNegativeInt(input.ownUsed);
+  const allClientUsed = safeNonNegativeInt(input.allClientUsed);
+  const machineTotal = safeNonNegativeInt(input.machineTotal);
+  const otherUsed = Math.max(0, allClientUsed - ownUsed);
+  const machineRemaining = Math.max(0, machineTotal - allClientUsed);
+  const resetText = input.resetDay ? `UTC 每月 ${input.resetDay} 日` : '未配置';
+
+  return [
+    `重置日期 | ${resetText}`,
+    `你已用 ${formatTrafficGB(ownUsed)} | 其他人 ${formatTrafficGB(otherUsed)}`,
+    `机器剩余 ${formatTrafficGB(machineRemaining)} | 已用 ${formatTrafficGB(allClientUsed)}/${formatTrafficGB(machineTotal)}`,
+  ];
+}
+
+export function buildDecoratedSubscriptionLinks(
+  originalLink: string,
+  decorations: string[],
+): string[] {
+  return [originalLink, ...decorations.map((name) => replaceLinkName(originalLink, name))];
+}
+
+function getClientUsedBytes(stats: { up?: unknown; down?: unknown } | null | undefined): number {
+  return safeNonNegativeInt(stats?.up) + safeNonNegativeInt(stats?.down);
+}
+
+function getInboundClientUsedBytes(inbound: XuiInbound): number {
+  return (inbound.clientStats ?? []).reduce((sum, stats) => sum + getClientUsedBytes(stats), 0);
+}
+
+function findClientStats(inbound: XuiInbound, client: Record<string, unknown>) {
+  const email = String(client.email ?? '').trim();
+  if (!email) return null;
+  return (
+    (inbound.clientStats ?? []).find((stats) => String(stats.email ?? '').trim() === email) ?? null
+  );
+}
+
 function resolveAddress(inbound: XuiInbound): string {
   // Use SNI as the address if available (common for Reality/TLS setups behind CDN)
   // Fall back to the server's public IP from env
@@ -301,7 +379,16 @@ export async function buildSubscriptionPayload(subId: string): Promise<string> {
       if (client.enable === false) continue;
 
       const link = buildProtocolLink(protocol, client, inbound, stream, address);
-      if (link) links.push(link);
+      if (link) {
+        const stats = findClientStats(inbound, client);
+        const decorations = buildSubscriptionDecorations({
+          resetDay: getBillingConfig(inbound.id)?.billingDay ?? null,
+          ownUsed: getClientUsedBytes(stats),
+          allClientUsed: getInboundClientUsedBytes(inbound),
+          machineTotal: safeNonNegativeInt(inbound.total),
+        });
+        links.push(...buildDecoratedSubscriptionLinks(link, decorations));
+      }
     }
   }
 

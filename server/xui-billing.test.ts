@@ -21,6 +21,58 @@ describe('xui-billing pure helpers', () => {
     expect(lastDayOfMonthUTC(2026, 11)).toBe(31); // Dec
   });
 
+  describe('getNextBillingResetAtUTC', () => {
+    it('returns the current billing day at exactly 00:00 UTC when it has not passed', async () => {
+      const { getNextBillingResetAtUTC } = await import('./xui-billing.js');
+      expect(getNextBillingResetAtUTC(new Date(Date.UTC(2026, 4, 2, 12, 0)), 3)).toEqual(
+        new Date(Date.UTC(2026, 4, 3, 0, 0, 0, 0)),
+      );
+    });
+
+    it('returns next month billing day once this month reset time has passed', async () => {
+      const { getNextBillingResetAtUTC } = await import('./xui-billing.js');
+      expect(getNextBillingResetAtUTC(new Date(Date.UTC(2026, 4, 3, 0, 1)), 3)).toEqual(
+        new Date(Date.UTC(2026, 5, 3, 0, 0, 0, 0)),
+      );
+    });
+
+    it('uses month-end fallback at 00:00 UTC when billing day exceeds month length', async () => {
+      const { getNextBillingResetAtUTC } = await import('./xui-billing.js');
+      expect(getNextBillingResetAtUTC(new Date(Date.UTC(2026, 1, 27, 23, 0)), 31)).toEqual(
+        new Date(Date.UTC(2026, 1, 28, 0, 0, 0, 0)),
+      );
+      expect(getNextBillingResetAtUTC(new Date(Date.UTC(2026, 1, 28, 0, 1)), 31)).toEqual(
+        new Date(Date.UTC(2026, 2, 31, 0, 0, 0, 0)),
+      );
+    });
+  });
+
+  describe('getBillingSchedulerDelayMs', () => {
+    it('caps long waits so billing-day changes are picked up while the server is running', async () => {
+      const { getBillingSchedulerDelayMs } = await import('./xui-billing.js');
+      const oneMinute = 60 * 1000;
+      expect(
+        getBillingSchedulerDelayMs(new Date(Date.UTC(2026, 4, 1, 0, 0)), [
+          { inboundId: 1, billingDay: 3, lastResetDate: null },
+        ]),
+      ).toBe(oneMinute);
+    });
+
+    it('returns the exact short delay when the next reset is less than the recheck cap away', async () => {
+      const { getBillingSchedulerDelayMs } = await import('./xui-billing.js');
+      expect(
+        getBillingSchedulerDelayMs(new Date(Date.UTC(2026, 4, 2, 23, 59, 30)), [
+          { inboundId: 1, billingDay: 3, lastResetDate: null },
+        ]),
+      ).toBe(30 * 1000);
+    });
+
+    it('uses the recheck cap when no billing configs exist', async () => {
+      const { getBillingSchedulerDelayMs } = await import('./xui-billing.js');
+      expect(getBillingSchedulerDelayMs(new Date(Date.UTC(2026, 4, 1)), [])).toBe(60 * 1000);
+    });
+  });
+
   describe('shouldResetToday', () => {
     it('triggers when today matches billing day and no prior reset', async () => {
       const { shouldResetToday } = await import('./xui-billing.js');

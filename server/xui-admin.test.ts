@@ -7,6 +7,7 @@ import {
   createUniqueEmail,
   parseInboundClients,
   buildClientPayload,
+  buildClientTrafficUpdatePayload,
   pickInboundForAutoProvision,
   toClientUsage,
 } from './xui-admin.js';
@@ -195,6 +196,25 @@ describe('buildClientPayload', () => {
     const a = buildClientPayload('vless', 'u');
     const b = buildClientPayload('vless', 'u');
     expect((a as any).subId).not.toBe((b as any).subId);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildClientTrafficUpdatePayload
+// ---------------------------------------------------------------------------
+describe('buildClientTrafficUpdatePayload', () => {
+  it('uses upload/download JSON keys expected by 3X-UI', () => {
+    expect(buildClientTrafficUpdatePayload(1024, 2048)).toEqual({
+      upload: 1024,
+      download: 2048,
+    });
+  });
+
+  it('normalizes values to non-negative integer bytes', () => {
+    expect(buildClientTrafficUpdatePayload(10.9, -1)).toEqual({
+      upload: 10,
+      download: 0,
+    });
   });
 });
 

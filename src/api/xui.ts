@@ -287,6 +287,24 @@ export async function resetInboundClientTraffic(inboundId: number, email: string
   );
 }
 
+export async function updateInboundClientTraffic(email: string, upload: number, download: number) {
+  const normalizedEmail = email.trim();
+  if (!normalizedEmail) {
+    throw new Error('Missing client email');
+  }
+  return apiFetch<null>(
+    `/panel/api/inbounds/updateClientTraffic/${encodeURIComponent(normalizedEmail)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        upload: Math.max(0, Math.trunc(upload)),
+        download: Math.max(0, Math.trunc(download)),
+      }),
+    },
+  );
+}
+
 export interface UpdateInboundClientInput {
   inboundId: number;
   clientId: string;
