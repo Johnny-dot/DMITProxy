@@ -66,6 +66,18 @@ describe('buildClientImportUrl', () => {
     ).toBe('shadowrocket://add/sub://aHR0cHM6Ly9leGFtcGxlLmNvbS9zdWIvMTIz?remark=Prism');
   });
 
+  it('builds the same Shadowrocket import link on macOS', () => {
+    expect(
+      buildClientImportUrl({
+        clientId: 'shadowrocket',
+        platform: 'macos',
+        subscriptionUrl: 'https://example.com/sub/123',
+        subscriptionName: 'Prism',
+        format: 'universal',
+      }),
+    ).toBe('shadowrocket://add/sub://aHR0cHM6Ly9leGFtcGxlLmNvbS9zdWIvMTIz?remark=Prism');
+  });
+
   it('returns null when the client does not support a direct import link', () => {
     expect(
       buildClientImportUrl({

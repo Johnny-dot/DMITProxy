@@ -25,6 +25,29 @@ function appendFragment(url: string, name?: string) {
   return normalizedName ? `${url}#${encodeURIComponent(normalizedName)}` : url;
 }
 
+function encodeBase64Url(value: string): string {
+  if (typeof TextEncoder !== 'undefined' && typeof btoa === 'function') {
+    const bytes = new TextEncoder().encode(value);
+    let binary = '';
+
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(value, 'utf8')
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+  }
+
+  throw new Error('No base64 encoder available');
+}
+
 export function buildClientImportUrl({
   clientId,
   platform,
@@ -61,13 +84,14 @@ export function buildClientImportUrl({
   }
 
   if (clientId === 'shadowrocket') {
-    if (platform !== 'ios' || (format !== 'universal' && format !== 'v2ray')) return null;
+    if (
+      (platform !== 'ios' && platform !== 'macos') ||
+      (format !== 'universal' && format !== 'v2ray')
+    ) {
+      return null;
+    }
 
-    const base64Url = Buffer.from(normalizedUrl, 'utf8')
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/g, '');
+    const base64Url = encodeBase64Url(normalizedUrl);
 
     return encodedName
       ? `shadowrocket://add/sub://${base64Url}?remark=${encodedName}`

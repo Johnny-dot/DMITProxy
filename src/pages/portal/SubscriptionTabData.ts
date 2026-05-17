@@ -107,11 +107,12 @@ export const CLIENT_META: Array<{
     id: 'shadowrocket',
     name: 'Shadowrocket',
     icon: Apple,
-    os: 'iPhone / iPad',
-    platforms: ['ios'],
+    os: 'iPhone / iPad / macOS',
+    platforms: ['ios', 'macos'],
     recommendedFor: ['ios'],
-    descZh: 'iPhone 和 iPad 上最常见的导入方式。',
-    descEn: 'The most common import flow on iPhone and iPad.',
+    descZh: 'Apple 设备上最常见的导入方式，适合 iPhone、iPad 和已安装 Shadowrocket 的 Mac。',
+    descEn:
+      'The most common import flow on Apple devices, including iPhone, iPad, and Macs with Shadowrocket installed.',
   },
   {
     id: 'flClash',
@@ -191,7 +192,7 @@ export const DEFAULT_CLIENT_BY_PLATFORM: Record<GuidePlatform, ClientId> = {
 
 export const PLATFORM_CLIENT_ORDER: Record<GuidePlatform, ClientId[]> = {
   windows: ['flClash', 'v2rayN', 'sparkle'],
-  macos: ['flClash', 'sparkle', 'singBox'],
+  macos: ['flClash', 'shadowrocket', 'sparkle', 'singBox'],
   linux: ['flClash', 'v2rayN', 'sparkle', 'singBox'],
   android: ['flClash', 'clashMeta', 'singBox', 'v2rayNG', 'exclave'],
   ios: ['shadowrocket', 'surge', 'singBox'],
