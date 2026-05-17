@@ -61,6 +61,7 @@ interface AppSettings {
   siteName: string;
   publicUrl: string;
   supportTelegram: string;
+  extraSubscriptionLinks: string;
   announcementText: string;
   announcementActive: boolean;
   sharedResources: SharedResource[];
@@ -91,6 +92,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   siteName: 'Prism Admin',
   publicUrl: '',
   supportTelegram: '',
+  extraSubscriptionLinks: '',
   announcementText: '',
   announcementActive: false,
   sharedResources: [],
@@ -101,6 +103,7 @@ const SETTINGS_KEYS: Array<keyof AppSettings> = [
   'siteName',
   'publicUrl',
   'supportTelegram',
+  'extraSubscriptionLinks',
   'announcementText',
   'announcementActive',
   'sharedResources',

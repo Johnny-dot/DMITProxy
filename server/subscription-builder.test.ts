@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildDecoratedSubscriptionLinks,
+  getExtraSubscriptionLinks,
   buildSubscriptionDecorations,
   replaceLinkName,
 } from './subscription-builder.js';
@@ -54,6 +55,22 @@ describe('buildDecoratedSubscriptionLinks', () => {
     expect(links).toEqual([
       original,
       'vless://uuid@example.com:443?security=reality&type=tcp#%E9%87%8D%E7%BD%AE%E6%97%A5%E6%9C%9F%20%7C%20UTC%20%E6%AF%8F%E6%9C%88%203%20%E6%97%A5',
+    ]);
+  });
+});
+
+describe('getExtraSubscriptionLinks', () => {
+  it('returns public nodes from comma and newline separated env text', () => {
+    expect(
+      getExtraSubscriptionLinks(`
+        vless://first@example.com:443#First
+        # disabled comment
+        vmess://second, trojan://third@example.com:443#Third
+      `),
+    ).toEqual([
+      'vless://first@example.com:443#First',
+      'vmess://second',
+      'trojan://third@example.com:443#Third',
     ]);
   });
 });

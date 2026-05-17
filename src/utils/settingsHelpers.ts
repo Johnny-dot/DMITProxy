@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS: AdminSettings = {
   siteName: 'Prism Admin',
   publicUrl: '',
   supportTelegram: '',
+  extraSubscriptionLinks: '',
   announcementText: '',
   announcementActive: false,
   sharedResources: [],

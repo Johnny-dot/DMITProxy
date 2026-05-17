@@ -8,6 +8,7 @@ import {
   Database,
   Globe,
   Link2,
+  Network,
   Plus,
   RefreshCw,
   Save,
@@ -57,6 +58,7 @@ const DEFAULT_SETTINGS: AdminSettings = {
   siteName: 'Prism Admin',
   publicUrl: '',
   supportTelegram: '',
+  extraSubscriptionLinks: '',
   announcementText: '',
   announcementActive: false,
   sharedResources: [],
@@ -64,10 +66,11 @@ const DEFAULT_SETTINGS: AdminSettings = {
 };
 
 type PortalTab = 'resources' | 'communities';
-type SettingsSection = 'general' | 'announcement' | 'portal' | 'tools';
+type SettingsSection = 'general' | 'subscription' | 'announcement' | 'portal' | 'tools';
 
 const SETTINGS_SECTION_HASH: Record<SettingsSection, string> = {
   general: 'general-settings',
+  subscription: 'subscription-nodes',
   announcement: 'system-announcement',
   portal: 'portal-content',
   tools: 'admin-tools',
@@ -211,6 +214,7 @@ export function SettingsPage() {
     () => ({
       refresh: isZh ? '刷新数据' : 'Refresh',
       navBasics: isZh ? '基础' : 'Basics',
+      navSubscription: isZh ? '订阅节点' : 'Subscription nodes',
       navAnnouncement: isZh ? '公告' : 'Announcement',
       navPortal: isZh ? '门户内容' : 'Portal content',
       navTools: isZh ? '管理工具' : 'Admin tools',
@@ -227,6 +231,13 @@ export function SettingsPage() {
       telegramHelper: isZh
         ? '展示给用户的售后或支持联系方式。'
         : 'The support or after-sales Telegram contact shown to users.',
+      extraSubscriptionHelper: isZh
+        ? '一行一个分享链接；会追加到所有用户订阅末尾，保存后用户刷新订阅即可看到。'
+        : 'One share link per line. Saved nodes are appended to every user subscription after refresh.',
+      extraSubscriptionPlaceholder: isZh
+        ? '粘贴 vless://、vmess://、trojan:// 等分享链接，一行一个'
+        : 'Paste vless://, vmess://, trojan:// links, one per line',
+      saveSubscriptionNodes: isZh ? '保存公共节点' : 'Save public nodes',
       announcementEnabledHint: isZh
         ? '启用后会在用户门户首页立即显示。'
         : 'When enabled, the announcement is shown immediately in the user portal.',
@@ -330,6 +341,7 @@ export function SettingsPage() {
   const [settings, setSettings] = useState<AdminSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingGeneral, setIsSavingGeneral] = useState(false);
+  const [isSavingSubscriptionNodes, setIsSavingSubscriptionNodes] = useState(false);
   const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
   const [isSavingResources, setIsSavingResources] = useState(false);
   const [isSavingCommunities, setIsSavingCommunities] = useState(false);
@@ -443,6 +455,27 @@ export function SettingsPage() {
       toast(message, 'error');
     } finally {
       setIsSavingGeneral(false);
+    }
+  };
+
+  const saveSubscriptionNodes = async () => {
+    setIsSavingSubscriptionNodes(true);
+    try {
+      const updated = await saveAdminSettings({
+        extraSubscriptionLinks: settings.extraSubscriptionLinks,
+      });
+      applyServerSettings(updated);
+      toast(isZh ? '公共订阅节点已保存' : 'Public subscription nodes saved', 'success');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : isZh
+            ? '保存公共订阅节点失败'
+            : 'Failed to save public subscription nodes';
+      toast(message, 'error');
+    } finally {
+      setIsSavingSubscriptionNodes(false);
     }
   };
 
@@ -562,6 +595,29 @@ export function SettingsPage() {
       hint: settings.publicUrl || copy.publicUrlHelper,
       accentClassName:
         'border-[color:var(--info-soft-strong)] bg-[var(--info-soft)] text-[var(--info)]',
+    },
+    {
+      section: 'subscription' as const,
+      icon: Network,
+      label: copy.navSubscription,
+      value: settings.extraSubscriptionLinks.trim()
+        ? isZh
+          ? `${
+              settings.extraSubscriptionLinks
+                .split('\n')
+                .map((item) => item.trim())
+                .filter(Boolean).length
+            } 个公共节点`
+          : `${
+              settings.extraSubscriptionLinks
+                .split('\n')
+                .map((item) => item.trim())
+                .filter(Boolean).length
+            } public nodes`
+        : copy.notConfigured,
+      hint: copy.extraSubscriptionHelper,
+      accentClassName:
+        'border-[color:var(--accent-soft)] bg-[var(--accent-soft)] text-[var(--accent)]',
     },
     {
       section: 'announcement' as const,
@@ -719,6 +775,51 @@ export function SettingsPage() {
                 <Button className="gap-2" onClick={saveGeneral} disabled={isSavingGeneral}>
                   <Save className="h-4 w-4" />
                   {isSavingGeneral ? t('common.saving') : t('settings.saveChanges')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {activeSection === 'subscription' ? (
+          <Card>
+            <CardHeader className="pb-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-[color:var(--accent-soft)] bg-[var(--accent-soft)] text-[var(--accent)]">
+                    <Network className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <CardTitle>{copy.navSubscription}</CardTitle>
+                    <CardDescription>{copy.extraSubscriptionHelper}</CardDescription>
+                  </div>
+                </div>
+                <Badge variant="secondary">
+                  {settings.extraSubscriptionLinks
+                    .split('\n')
+                    .map((item) => item.trim())
+                    .filter(Boolean).length || copy.notConfigured}
+                </Badge>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-5">
+              <textarea
+                className="min-h-[220px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 font-mono text-xs leading-6 text-[var(--text-primary)] shadow-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2"
+                placeholder={copy.extraSubscriptionPlaceholder}
+                value={settings.extraSubscriptionLinks}
+                onChange={(event) => updateField('extraSubscriptionLinks', event.target.value)}
+              />
+
+              <div className="flex flex-col gap-3 border-t border-[color:var(--border-subtle)] pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm leading-6 text-zinc-400">{copy.extraSubscriptionHelper}</p>
+                <Button
+                  className="gap-2"
+                  onClick={saveSubscriptionNodes}
+                  disabled={isSavingSubscriptionNodes}
+                >
+                  <Save className="h-4 w-4" />
+                  {isSavingSubscriptionNodes ? t('common.saving') : copy.saveSubscriptionNodes}
                 </Button>
               </div>
             </CardContent>

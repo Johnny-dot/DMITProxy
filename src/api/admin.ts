@@ -7,6 +7,7 @@ export interface AdminSettings {
   siteName: string;
   publicUrl: string;
   supportTelegram: string;
+  extraSubscriptionLinks: string;
   announcementText: string;
   announcementActive: boolean;
   sharedResources: SharedResource[];

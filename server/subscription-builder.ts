@@ -12,6 +12,7 @@ import {
   loginAndListInbounds,
 } from './xui-admin.js';
 import { getBillingConfig } from './xui-billing.js';
+import { db } from './db.js';
 
 const GB = 1024 ** 3;
 
@@ -317,6 +318,24 @@ export function buildDecoratedSubscriptionLinks(
   return [originalLink, ...decorations.map((name) => replaceLinkName(originalLink, name))];
 }
 
+export function getExtraSubscriptionLinks(
+  raw: string | undefined = getStoredExtraSubscriptionLinks() ||
+    process.env.EXTRA_SUBSCRIPTION_LINKS,
+): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/[\n,]/)
+    .map((link) => link.trim())
+    .filter((link) => link && !link.startsWith('#'));
+}
+
+function getStoredExtraSubscriptionLinks(): string {
+  const row = db
+    .prepare('SELECT value FROM app_settings WHERE key = ?')
+    .get('extraSubscriptionLinks') as { value: string } | undefined;
+  return row?.value?.trim() ?? '';
+}
+
 function getClientUsedBytes(stats: { up?: unknown; down?: unknown } | null | undefined): number {
   return safeNonNegativeInt(stats?.up) + safeNonNegativeInt(stats?.down);
 }
@@ -395,6 +414,8 @@ export async function buildSubscriptionPayload(subId: string): Promise<string> {
   if (links.length === 0) {
     throw new XuiAdminError(`No active client found for subscription ID: ${subId}`);
   }
+
+  links.push(...getExtraSubscriptionLinks());
 
   return links.join('\n');
 }
