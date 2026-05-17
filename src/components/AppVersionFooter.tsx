@@ -5,11 +5,18 @@ import { useI18n } from '@/src/context/I18nContext';
 const CLIENT_COMMIT: string = typeof __APP_COMMIT__ === 'string' ? __APP_COMMIT__ : 'unknown';
 const CLIENT_BUILD_TIME: string = typeof __APP_BUILD_TIME__ === 'string' ? __APP_BUILD_TIME__ : '';
 
-function formatBuildTime(iso: string): string {
+export function formatBuildTime(iso: string, locale: string): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toISOString().slice(0, 10);
+  return d.toLocaleString(locale, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 }
 
 export function AppVersionFooter() {
@@ -38,7 +45,7 @@ export function AppVersionFooter() {
     };
   }, [role]);
 
-  const buildDate = formatBuildTime(CLIENT_BUILD_TIME);
+  const buildDate = formatBuildTime(CLIENT_BUILD_TIME, isZh ? 'zh-CN' : 'en-US');
   const mismatch = Boolean(serverCommit && serverCommit !== CLIENT_COMMIT);
 
   const label = isZh ? '版本' : 'Version';

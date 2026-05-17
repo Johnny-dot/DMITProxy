@@ -1,6 +1,3 @@
-const SUB_BASE = (import.meta.env.VITE_SUB_URL ?? '').replace(/\/+$/, '');
-const SUB_TEMPLATE = (import.meta.env.VITE_SUB_URL_TEMPLATE ?? '').trim();
-
 type SubscriptionFormat = 'universal' | 'clash' | 'v2ray' | 'singbox' | 'surge' | 'quanx';
 
 function appendQuery(url: string, key: string, value: string): string {
@@ -19,12 +16,6 @@ const FORMAT_TO_FLAG: Partial<Record<SubscriptionFormat, string>> = {
 function buildPrismSubUrl(subId: string): string {
   const token = encodeURIComponent(subId.trim());
   if (!token) return '';
-  if (SUB_TEMPLATE.includes('{subId}')) {
-    return SUB_TEMPLATE.replace('{subId}', token);
-  }
-  if (SUB_BASE) {
-    return `${SUB_BASE}/sub/${token}`;
-  }
   return `${window.location.origin}/sub/${token}`;
 }
 

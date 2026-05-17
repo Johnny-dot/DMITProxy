@@ -40,4 +40,24 @@ describe('buildSubscriptionUrl', () => {
       'https://portal.example.com/sub/abc123?flag=surge',
     );
   });
+
+  it('ignores VITE_SUB_URL settings for user-facing links and uses the current site origin', async () => {
+    Object.defineProperty(globalThis, 'window', {
+      value: { location: { origin: 'https://prismproxy.uk' } },
+      configurable: true,
+    });
+
+    vi.stubEnv('VITE_SUB_URL', 'http://64.186.227.197:2096');
+    vi.stubEnv('VITE_SUB_URL_TEMPLATE', 'http://64.186.227.197:2096/a7k2xmp9qw3z/{subId}');
+    vi.resetModules();
+
+    const { buildSubscriptionUrl } = await import('./subscription');
+
+    expect(buildSubscriptionUrl('41b215b8b2f90467', 'universal')).toBe(
+      'https://prismproxy.uk/sub/41b215b8b2f90467',
+    );
+    expect(buildSubscriptionUrl('41b215b8b2f90467', 'v2ray')).toBe(
+      'https://prismproxy.uk/sub/41b215b8b2f90467?flag=v2ray',
+    );
+  });
 });
