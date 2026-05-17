@@ -2745,7 +2745,7 @@ export function decorateGuideWithRealScreenshots(
     return buildRealSingBoxAndroidGuide(isZh);
   }
 
-  if (clientId === 'shadowrocket' && platform === 'ios') {
+  if (clientId === 'shadowrocket' && (platform === 'ios' || platform === 'macos')) {
     return buildRealShadowrocketGuide(isZh);
   }
 
