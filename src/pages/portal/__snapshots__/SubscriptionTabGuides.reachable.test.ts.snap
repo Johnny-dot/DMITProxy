@@ -4,6 +4,8 @@ exports[`reachable generic guides (regression snapshot) > clashVerge × linux ×
 {
   "note": "Button labels vary by version, but the import flow is usually in these places.",
   "recommendedFormat": "clash",
+  "sourceLabel": undefined,
+  "sourceUrl": undefined,
   "steps": [
     {
       "ctaLabel": "Open Profiles",
@@ -55,6 +57,8 @@ exports[`reachable generic guides (regression snapshot) > clashVerge × linux ×
 {
   "note": "不同版本按钮名称会有差异，但导入路径一般都在这些位置。",
   "recommendedFormat": "clash",
+  "sourceLabel": undefined,
+  "sourceUrl": undefined,
   "steps": [
     {
       "ctaLabel": "进入 Profiles",
@@ -106,6 +110,8 @@ exports[`reachable generic guides (regression snapshot) > exclave × android × 
 {
   "note": "Exclave stays close to classic Android V2Ray clients, and the Shadowrocket / V2Ray link is usually the safest import path.",
   "recommendedFormat": "universal",
+  "sourceLabel": undefined,
+  "sourceUrl": undefined,
   "steps": [
     {
       "ctaLabel": "Open entry",
@@ -157,6 +163,8 @@ exports[`reachable generic guides (regression snapshot) > exclave × android × 
 {
   "note": "Exclave 的导入路径和经典安卓 V2Ray 客户端接近，优先用 Shadowrocket / V2Ray 链接会更稳。",
   "recommendedFormat": "universal",
+  "sourceLabel": undefined,
+  "sourceUrl": undefined,
   "steps": [
     {
       "ctaLabel": "打开入口",
@@ -208,6 +216,8 @@ exports[`reachable generic guides (regression snapshot) > singBox × linux × en
 {
   "note": "Singbox for Linux works best with the Sing-box format, so switch this page to Sing-box first for the cleanest import path.",
   "recommendedFormat": "singbox",
+  "sourceLabel": undefined,
+  "sourceUrl": undefined,
   "steps": [
     {
       "ctaLabel": "Open import entry",
@@ -259,6 +269,8 @@ exports[`reachable generic guides (regression snapshot) > singBox × linux × zh
 {
   "note": "Singbox for Linux works best with the Sing-box format, so switch this page to Sing-box first for the cleanest import path.",
   "recommendedFormat": "singbox",
+  "sourceLabel": undefined,
+  "sourceUrl": undefined,
   "steps": [
     {
       "ctaLabel": "Open import entry",
