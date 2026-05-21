@@ -1081,6 +1081,199 @@ export const enUS = {
         },
       },
     },
+    singBox: {
+      android: {
+        note: 'These steps use public sing-box for Android screenshots.',
+        sourceLabel: 'sing-box for Android tutorial source',
+        step0: {
+          title: 'Create a new remote profile first',
+          description:
+            'After opening sing-box for Android, start from Profiles or the new profile entry.',
+          helper:
+            'If first launch needs core initialization or storage permission, finish that first.',
+          visualLabel: 'New profile',
+          visualItems: ['Profiles', 'New profile', 'Remote profile'],
+          ctaLabel: 'Create profile',
+          screenshotAlt: 'Create a new profile in sing-box for Android',
+        },
+        step1: {
+          title: 'Continue with the remote import flow',
+          description:
+            'In the profile creation flow, keep going and choose URL or remote profile import.',
+          helper: 'The sing-box-native path usually stays under Profiles or Configs.',
+          visualLabel: 'Import method',
+          visualItems: ['Remote profile', 'URL import', 'Continue'],
+          ctaLabel: 'Choose import method',
+          screenshotAlt: 'Continue remote profile import in sing-box for Android',
+        },
+        step2: {
+          title: 'Switch this page to Sing-box and save the profile',
+          description:
+            'Copy the Sing-box link from here, paste it into the settings screen, then save.',
+          helper:
+            'If parsing fails after import, the first thing to check is whether the wrong format was copied.',
+          visualLabel: 'Profile settings',
+          visualItems: ['Sing-box format', 'Paste URL', 'Save profile'],
+          ctaLabel: 'Save profile',
+          screenshotAlt: 'Profile settings in sing-box for Android',
+        },
+        step3: {
+          title: 'Start the profile and allow VPN',
+          description:
+            'Return to the main screen, start the connection, and accept Android’s VPN permission prompt.',
+          helper:
+            'If the node list is visible but traffic still fails, this permission is usually the missing piece.',
+          visualLabel: 'VPN permission',
+          visualItems: ['Start connection', 'Allow VPN', 'Return to app'],
+          ctaLabel: 'Allow VPN',
+          screenshotAlt: 'VPN permission prompt in sing-box for Android',
+        },
+        step4: {
+          title: 'Choose a node or policy group last',
+          description:
+            'After the connection comes up, open the groups page and choose the node or policy group you want.',
+          helper:
+            'Leave lower-level DNS and routing toggles alone until the first connection is stable.',
+          visualLabel: 'Node selection',
+          visualItems: ['Open Groups', 'Choose node', 'Confirm active group'],
+          ctaLabel: 'Select node',
+          screenshotAlt: 'Node selection in sing-box for Android',
+        },
+      },
+      ios: {
+        note: 'These steps use public Sing-box VT screenshots and follow the normal iPhone / iPad import flow.',
+        sourceLabel: 'Sing-box for Apple tutorial source',
+        step0: {
+          title: 'Open the configuration screen first',
+          description:
+            'After launching Sing-box VT, go to Profiles or Configurations and prepare a new remote profile.',
+          helper:
+            'If installation just finished, clear any network extension or base permission prompt first.',
+          visualLabel: 'Configuration screen',
+          visualItems: ['Profiles', 'Configurations', 'New profile'],
+          ctaLabel: 'Open configuration screen',
+          screenshotAlt: 'Sing-box VT configuration screen',
+        },
+        step1: {
+          title: 'Switch this page to Sing-box and save the profile',
+          description:
+            'Copy the Sing-box link from here, paste it into the remote profile or URL field inside the app, then save.',
+          helper:
+            'If the app talks about JSON, Profiles, or Configurations, you are usually in the right place.',
+          visualLabel: 'Import profile',
+          visualItems: ['Sing-box format', 'Paste URL', 'Save profile'],
+          ctaLabel: 'Save profile',
+          screenshotAlt: 'Save a profile in Sing-box VT',
+        },
+        step2: {
+          title: 'Return home and enable sing-box',
+          description:
+            'After the profile is saved, go back to the main screen and turn sing-box on.',
+          helper:
+            'If import worked but no proxy starts, the switch often was not fully enabled yet.',
+          visualLabel: 'Enable profile',
+          visualItems: ['Return home', 'Turn on sing-box', 'Confirm status changed'],
+          ctaLabel: 'Enable sing-box',
+          screenshotAlt: 'Enable the connection in Sing-box VT',
+        },
+        step3: {
+          title: 'Allow the iOS VPN / network extension prompt',
+          description:
+            'The first connection on iPhone or iPad triggers a system confirmation that you must accept.',
+          helper: 'If the app looks active but traffic stays direct, check this permission first.',
+          visualLabel: 'System permission',
+          visualItems: ['Allow VPN', 'Accept system prompt', 'Return to app'],
+          ctaLabel: 'Allow permission',
+          screenshotAlt: 'iOS permission prompt in Sing-box VT',
+        },
+        step4: {
+          title: 'Choose a node or policy group last',
+          description:
+            'Once the connection is up, open the groups page and choose the node or policy group you want.',
+          helper: 'Keep DNS and routing tweaks for later. Start with the default rules first.',
+          visualLabel: 'Groups',
+          visualItems: ['Open Groups', 'Choose node', 'Confirm active group'],
+          ctaLabel: 'Select node',
+          screenshotAlt: 'Groups and node selection in Sing-box VT',
+        },
+      },
+      macos: {
+        note: 'These steps use public Singbox for Mac screenshots and follow the standard SFM profile import flow.',
+        sourceLabel: 'Sing-box for Apple tutorial source',
+        step0: {
+          title: 'Open the profile management screen first',
+          description:
+            'Inside Singbox for Mac, go to Profiles or Configurations and prepare a new remote profile.',
+          helper: 'If first launch asks for network or proxy permission, finish that first.',
+          visualLabel: 'Profile screen',
+          visualItems: ['Profiles', 'Configurations', 'Import entry'],
+          ctaLabel: 'Open profile screen',
+          screenshotAlt: 'Singbox for Mac profile management screen',
+        },
+        step1: {
+          title: 'Switch this page to Sing-box and save the profile',
+          description:
+            'Copy the Sing-box link from here, paste it into SFM, then save the profile.',
+          helper:
+            'Sing-box clients are most reliable when they import the Sing-box format directly.',
+          visualLabel: 'Profile import',
+          visualItems: ['Sing-box format', 'Paste URL', 'Save profile'],
+          ctaLabel: 'Import profile',
+          screenshotAlt: 'Save and enable profile in Singbox for Mac',
+        },
+        step2: {
+          title: 'Confirm network mode or system proxy',
+          description:
+            'After import, check the network mode and make sure system proxy handoff is ready.',
+          helper:
+            'Desktop traffic usually stays direct until system proxy has actually been taken over.',
+          visualLabel: 'Network mode',
+          visualItems: ['Network mode', 'System proxy', 'Allow permissions'],
+          ctaLabel: 'Check mode',
+          screenshotAlt: 'Singbox for Mac network mode settings',
+        },
+        step3: {
+          title: 'Choose a node or group and connect',
+          description:
+            'Once rules and resources have finished loading, select the node or group you want and connect.',
+          helper: 'Leave advanced DNS or routing toggles alone until the first connection works.',
+          visualLabel: 'Node selection',
+          visualItems: ['Choose node', 'Confirm group', 'Connect'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Singbox for Mac node selection',
+        },
+      },
+      linux: {
+        note: 'Singbox for Linux works best with the Sing-box format, so switch this page to Sing-box first for the cleanest import path.',
+        step0: {
+          title: 'Open the profile import entry in Singbox for Linux',
+          description:
+            'Sing-box clients usually place imports under Profiles, Configs, or Servers.',
+          helper:
+            'On first launch you may need to allow network or VPN permission before importing.',
+          visualItems: ['Profiles', 'Configs', 'Servers'],
+          ctaLabel: 'Open import entry',
+        },
+        step1: {
+          title: 'Switch to the Sing-box format before importing',
+          description:
+            'Choose Sing-box on this page first, then import by URL or clipboard inside the client.',
+          helper:
+            'If the client talks about Profiles or JSON, that is usually the sing-box-native import path.',
+          visualItems: ['Sing-box format', 'URL / Clipboard', 'Save'],
+          ctaLabel: 'Import profile',
+        },
+        step2: {
+          title: 'Save, switch to the imported profile, then connect',
+          description:
+            'Make sure nodes, DNS, and rule resources have loaded before you hit connect.',
+          helper:
+            'These clients expose more low-level options, so avoid changing unfamiliar toggles until the import works.',
+          visualItems: ['Select imported profile', 'Refresh subscription', 'Allow system proxy'],
+          ctaLabel: 'Connect',
+        },
+      },
+    },
   },
 } as const;
 
