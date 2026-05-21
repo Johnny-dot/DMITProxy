@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildClientGuide, decorateGuideWithRealScreenshots } from './SubscriptionTabGuides';
 import { getPlatformLabel } from './SubscriptionTabData';
 
-const REACHABLE_GENERIC_CASES: Array<{
+const PLATFORM_REGRESSION_CASES: Array<{
   clientId: 'clashVerge' | 'singBox' | 'exclave';
   platform: 'linux' | 'android';
 }> = [
@@ -11,8 +11,8 @@ const REACHABLE_GENERIC_CASES: Array<{
   { clientId: 'exclave', platform: 'android' },
 ];
 
-describe('reachable generic guides (regression snapshot)', () => {
-  for (const { clientId, platform } of REACHABLE_GENERIC_CASES) {
+describe('subscription guide platform regressions', () => {
+  for (const { clientId, platform } of PLATFORM_REGRESSION_CASES) {
     for (const isZh of [true, false]) {
       it(`${clientId} × ${platform} × ${isZh ? 'zh' : 'en'} stays stable`, () => {
         const label = getPlatformLabel(platform, isZh);

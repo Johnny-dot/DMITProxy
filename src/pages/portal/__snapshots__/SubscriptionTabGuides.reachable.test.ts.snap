@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`reachable generic guides (regression snapshot) > clashVerge × linux × en stays stable 1`] = `
+exports[`subscription guide platform regressions > clashVerge × linux × en stays stable 1`] = `
 {
   "note": "Button labels vary by version, but the import flow is usually in these places.",
   "recommendedFormat": "clash",
@@ -53,7 +53,7 @@ exports[`reachable generic guides (regression snapshot) > clashVerge × linux ×
 }
 `;
 
-exports[`reachable generic guides (regression snapshot) > clashVerge × linux × zh stays stable 1`] = `
+exports[`subscription guide platform regressions > clashVerge × linux × zh stays stable 1`] = `
 {
   "note": "不同版本按钮名称会有差异，但导入路径一般都在这些位置。",
   "recommendedFormat": "clash",
@@ -106,7 +106,7 @@ exports[`reachable generic guides (regression snapshot) > clashVerge × linux ×
 }
 `;
 
-exports[`reachable generic guides (regression snapshot) > exclave × android × en stays stable 1`] = `
+exports[`subscription guide platform regressions > exclave × android × en stays stable 1`] = `
 {
   "note": "Exclave stays close to classic Android V2Ray clients, and the Shadowrocket / V2Ray link is usually the safest import path.",
   "recommendedFormat": "universal",
@@ -159,7 +159,7 @@ exports[`reachable generic guides (regression snapshot) > exclave × android × 
 }
 `;
 
-exports[`reachable generic guides (regression snapshot) > exclave × android × zh stays stable 1`] = `
+exports[`subscription guide platform regressions > exclave × android × zh stays stable 1`] = `
 {
   "note": "Exclave 的导入路径和经典安卓 V2Ray 客户端接近，优先用 Shadowrocket / V2Ray 链接会更稳。",
   "recommendedFormat": "universal",
@@ -212,7 +212,7 @@ exports[`reachable generic guides (regression snapshot) > exclave × android × 
 }
 `;
 
-exports[`reachable generic guides (regression snapshot) > singBox × linux × en stays stable 1`] = `
+exports[`subscription guide platform regressions > singBox × linux × en stays stable 1`] = `
 {
   "note": "Singbox for Linux works best with the Sing-box format, so switch this page to Sing-box first for the cleanest import path.",
   "recommendedFormat": "singbox",
@@ -265,7 +265,7 @@ exports[`reachable generic guides (regression snapshot) > singBox × linux × en
 }
 `;
 
-exports[`reachable generic guides (regression snapshot) > singBox × linux × zh stays stable 1`] = `
+exports[`subscription guide platform regressions > singBox × linux × zh stays stable 1`] = `
 {
   "note": "Singbox for Linux works best with the Sing-box format, so switch this page to Sing-box first for the cleanest import path.",
   "recommendedFormat": "singbox",

@@ -86,6 +86,11 @@ export function buildClientGuide(
   };
 }
 
+// Kept as a no-op pass-through to preserve the public API. Pre-refactor callers
+// composed buildClientGuide + decorateGuideWithRealScreenshots; the data-driven
+// builder now handles real-screenshot variants directly via the registry, so the
+// decorate stage is redundant. Removing this requires updating SubscriptionTab.tsx
+// — defer to a follow-up PR.
 export function decorateGuideWithRealScreenshots(
   guide: ClientGuide,
   _clientId: ClientId,
