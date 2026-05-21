@@ -1191,6 +1191,35 @@ export const zhCN = {
         },
       },
     },
+    exclave: {
+      android: {
+        note: 'Exclave 的导入路径和经典安卓 V2Ray 客户端接近，优先用 Shadowrocket / V2Ray 链接会更稳。',
+        step0: {
+          title: '先打开订阅或配置入口',
+          description: 'Exclave 一般会把导入入口放在订阅、配置或右上角加号里。',
+          helper: '第一次启动时，先完成核心初始化或权限提示。',
+          visualLabel: '订阅 / 配置',
+          visualItems: ['订阅列表', '右上角 +', '导入入口'],
+          ctaLabel: '打开入口',
+        },
+        step1: {
+          title: '优先粘贴 Shadowrocket / V2Ray 订阅链接',
+          description: '保持当前页面为 Shadowrocket / V2Ray，再把复制的订阅链接粘贴到 Exclave。',
+          helper: '如果你刚复制过链接，优先尝试 URL 或剪贴板导入。',
+          visualLabel: 'URL 导入',
+          visualItems: ['Shadowrocket / V2Ray 格式', '粘贴 URL', '保存 / 更新'],
+          ctaLabel: '导入订阅',
+        },
+        step2: {
+          title: '刷新后选节点并允许 VPN',
+          description: '先确认节点列表已经拉下来，再点连接。',
+          helper: '节点为空时，先检查订阅是否刷新成功。',
+          visualLabel: 'VPN 权限',
+          visualItems: ['刷新订阅', '选择节点', '允许 VPN'],
+          ctaLabel: '开始连接',
+        },
+      },
+    },
     singBox: {
       android: {
         note: '这组步骤使用公开的 sing-box for Android 真机截图。',

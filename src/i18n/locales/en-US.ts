@@ -1310,6 +1310,38 @@ export const enUS = {
         },
       },
     },
+    exclave: {
+      android: {
+        note: 'Exclave stays close to classic Android V2Ray clients, and the Shadowrocket / V2Ray link is usually the safest import path.',
+        step0: {
+          title: 'Open the subscription or profile entry first',
+          description:
+            'Exclave usually places imports under subscriptions, profiles, or the top-right plus menu.',
+          helper: 'Finish any first-run core setup or permission prompts before importing.',
+          visualLabel: 'Subscription / Profile',
+          visualItems: ['Subscription list', 'Top-right +', 'Import entry'],
+          ctaLabel: 'Open entry',
+        },
+        step1: {
+          title: 'Prefer the Shadowrocket / V2Ray subscription link',
+          description:
+            'Keep this page on Shadowrocket / V2Ray, then paste the copied subscription link into Exclave.',
+          helper:
+            'If you just copied the link, URL or clipboard import is usually the fastest path.',
+          visualLabel: 'Import by URL',
+          visualItems: ['Shadowrocket / V2Ray format', 'Paste URL', 'Save / Update'],
+          ctaLabel: 'Import subscription',
+        },
+        step2: {
+          title: 'Refresh, pick a node, and allow VPN',
+          description: 'Make sure the node list has loaded before connecting.',
+          helper: 'If the node list stays empty, refresh the subscription again first.',
+          visualLabel: 'VPN permission',
+          visualItems: ['Refresh subscription', 'Pick node', 'Allow VPN'],
+          ctaLabel: 'Connect',
+        },
+      },
+    },
     singBox: {
       android: {
         note: 'These steps use public sing-box for Android screenshots.',
