@@ -35,6 +35,12 @@ import {
   getPlatformLabel,
 } from './SubscriptionTabData';
 
+const MINIMAL_FALLBACK_GUIDE: ClientGuide = {
+  recommendedFormat: 'universal',
+  note: '',
+  steps: [],
+};
+
 export function buildClientGuide(
   clientId: ClientId,
   platform: GuidePlatform,
@@ -44,58 +50,6 @@ export function buildClientGuide(
   const note = isZh
     ? '不同版本按钮名称会有差异，但导入路径一般都在这些位置。'
     : 'Button labels vary by version, but the import flow is usually in these places.';
-
-  if (
-    clientId === 'flClash' ||
-    clientId === 'clashMeta' ||
-    clientId === 'sparkle' ||
-    clientId === 'clashBox'
-  ) {
-    const clientName =
-      clientId === 'clashMeta'
-        ? 'Clash Meta for Android'
-        : clientId === 'clashBox'
-          ? 'ClashBox'
-          : clientId === 'sparkle'
-            ? 'Sparkle'
-            : 'FlClash';
-    const connectPermission =
-      platform === 'android' || platform === 'harmonyos' ? 'Allow VPN' : 'Allow system proxy';
-
-    return {
-      recommendedFormat: 'clash',
-      note: `${clientName} belongs to the Mihomo/Clash family, so keep this page on the Clash format during import.`,
-      steps: [
-        createStep(
-          'launch',
-          `Open the Profiles or Config screen in ${clientName}`,
-          'Subscription imports usually live under Profiles, Configs, or the subscription page.',
-          'If the app wants to initialize its core first, let that finish before importing.',
-          'Profiles / Config',
-          ['Profiles', 'Configs', 'Subscriptions'],
-          'Open import entry',
-        ),
-        createStep(
-          'import',
-          'Switch to the Clash format, then paste the subscription link',
-          'Choose Clash on this page first, then paste the subscription URL into the client.',
-          'If policy groups do not show up after import, the first thing to check is whether the format is wrong.',
-          'Import from URL',
-          ['Clash format', 'Subscription URL', 'Save / Update'],
-          'Import Clash profile',
-        ),
-        createStep(
-          'connect',
-          'Refresh, choose a policy group, then enable proxy',
-          'Make sure nodes and groups are loaded before enabling TUN or system proxy.',
-          'Importing alone does not move traffic until the proxy mode is enabled.',
-          'Proxy / TUN',
-          ['Refresh subscription', 'Choose group', connectPermission],
-          'Connect',
-        ),
-      ],
-    };
-  }
 
   if (clientId === 'singBox') {
     const appLabel =
