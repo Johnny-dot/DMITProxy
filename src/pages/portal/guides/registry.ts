@@ -3,10 +3,12 @@ import { clashVergeGuide } from './clients/clashVerge';
 import { flClashGuide } from './clients/flClash';
 import { sparkleGuide } from './clients/sparkle';
 import { singBoxGuide } from './clients/singBox';
+import { v2rayNGuide } from './clients/v2rayN';
 
 export const CLIENT_GUIDE_REGISTRY: Partial<Record<ClientId, ClientGuideDef>> = {
   clashVerge: clashVergeGuide,
   flClash: flClashGuide,
   sparkle: sparkleGuide,
   singBox: singBoxGuide,
+  v2rayN: v2rayNGuide,
 };

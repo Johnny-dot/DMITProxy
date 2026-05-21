@@ -1081,6 +1081,145 @@ export const enUS = {
         },
       },
     },
+    v2rayN: {
+      windows: {
+        note: 'These steps use real v2rayN screenshots so you can follow the exact UI.',
+        sourceLabel: 'Original v2rayN walkthrough',
+        step0: {
+          title: 'Open the subscription group settings',
+          description:
+            'Start from the main window and open the subscription group menu. That is the entry for importing a subscription URL.',
+          helper:
+            'If you just installed v2rayN, keep the main window open and do not touch system proxy yet.',
+          visualLabel: 'Subscription group',
+          visualItems: ['Open the subscription group menu', 'Enter subscription group settings'],
+          ctaLabel: 'Open menu',
+          screenshotAlt: 'Open v2rayN subscription group settings',
+        },
+        step1: {
+          title: 'Create a subscription group first',
+          description:
+            'Click Add in the subscription settings window so the current subscription has its own group.',
+          helper: 'One URL per group keeps future refreshes easier to manage.',
+          visualLabel: 'Add group',
+          visualItems: ['Click Add', 'Prepare the alias and subscription URL'],
+          ctaLabel: 'Create group',
+          screenshotAlt: 'v2rayN subscription group settings window',
+        },
+        step2: {
+          title: 'Paste the alias and subscription URL',
+          description:
+            'Use any alias you can recognize, paste the copied subscription URL into the URL field, then confirm.',
+          helper:
+            'The important part here is the URL field. Make sure you do not paste extra spaces.',
+          visualLabel: 'Subscription URL',
+          visualItems: ['Fill an alias', 'Paste the subscription URL', 'Confirm the dialog'],
+          ctaLabel: 'Save',
+          screenshotAlt: 'Paste subscription URL into v2rayN',
+        },
+        step3: {
+          title: 'Update all subscriptions from the main window',
+          description:
+            'Go back to Subscription Group and run Update all subscriptions (without proxy) so the node list is fetched.',
+          helper:
+            'Using the no-proxy option is safer on first import because the client is not routing traffic yet.',
+          visualLabel: 'Refresh subscription',
+          visualItems: [
+            'Return to Subscription Group',
+            'Update all subscriptions (without proxy)',
+            'Wait for nodes to load',
+          ],
+          ctaLabel: 'Refresh nodes',
+          screenshotAlt: 'Update all subscriptions without proxy in v2rayN',
+        },
+        step4: {
+          title: 'Choose the node you want to use',
+          description:
+            'After the list appears, select a node and set it as the active server, or simply double-click it.',
+          helper:
+            'Start with a node that looks stable and has lower latency instead of picking randomly.',
+          visualLabel: 'Select node',
+          visualItems: [
+            'Select a node',
+            'Set it as active server',
+            'Confirm the active node changed',
+          ],
+          ctaLabel: 'Select node',
+          screenshotAlt: 'Choose an active server in v2rayN',
+        },
+        step5: {
+          title: 'Enable system proxy last',
+          description:
+            'Use the tray icon menu and enable Auto configure system proxy so browser traffic actually goes through v2rayN.',
+          helper:
+            'Importing and refreshing alone will not route browser traffic until proxy mode is enabled.',
+          visualLabel: 'System proxy',
+          visualItems: [
+            'Right-click the tray icon',
+            'Enable auto configure system proxy',
+            'Reopen the browser and test',
+          ],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Enable auto configure system proxy in v2rayN',
+        },
+      },
+      linux: {
+        note: 'These steps use real Linux v2rayN screenshots. Public source material only covered the subscription settings and node list, so the rest stays text-first.',
+        sourceLabel: 'Official v2rayN Linux screenshot source',
+        step0: {
+          title: 'Open subscription group settings first',
+          description:
+            'Use the top Subscription Group menu to open the subscription settings window. On Linux, this is still where URL imports begin.',
+          helper:
+            'If the app is minimized to tray, bring the main window back before trying to open this page.',
+          visualLabel: 'Subscription settings',
+          visualItems: [
+            'Open Subscription Group',
+            'Enter the settings window',
+            'Prepare the URL field',
+          ],
+          ctaLabel: 'Open settings',
+          screenshotAlt: 'v2rayN Linux subscription group settings window',
+        },
+        step1: {
+          title: 'Paste the subscription URL and add User Agent when needed',
+          description:
+            'Paste the copied subscription link into URL (optional). If your provider changes the response by client, fill the User Agent field with V2ray or whatever value the provider expects, then confirm.',
+          helper:
+            'This is the Linux-specific detail most people miss. Some providers will not return the correct node list without a matching User Agent.',
+          visualLabel: 'Fill subscription',
+          visualItems: ['Paste the subscription URL', 'Fill User Agent if needed', 'Click Confirm'],
+          ctaLabel: 'Save subscription',
+          screenshotAlt: 'Fill subscription URL and User Agent in v2rayN Linux',
+        },
+        step2: {
+          title: 'Refresh subscriptions and verify the node list',
+          description:
+            'Go back to the main window and run Update subscriptions without proxy. After refresh, the list should look like the screenshot with real nodes loaded, not just JSON filenames.',
+          helper:
+            'If the result still looks wrong, re-check the URL, the User Agent, and the selected subscription format before retrying.',
+          visualLabel: 'Node list',
+          visualItems: [
+            'Refresh subscriptions',
+            'Wait for nodes to load',
+            'Verify the list content',
+          ],
+          ctaLabel: 'Refresh nodes',
+          screenshotAlt: 'v2rayN Linux node list',
+        },
+        step3: {
+          title: 'Choose a node, then enable TUN or system proxy',
+          description:
+            'After the nodes are loaded correctly, select the node you want to use and then enable the bottom TUN or system-proxy related controls that fit your Linux desktop setup.',
+          helper:
+            'Traffic takeover differs a bit across Linux desktops. If the browser is still direct, check TUN, system proxy, and desktop network settings first.',
+          visualLabel: 'Connect',
+          visualItems: ['Choose a node', 'Enable TUN or system proxy', 'Test in the browser'],
+          ctaLabel: 'Connect and test',
+          screenshotAlt: 'Select a node and prepare to connect in v2rayN Linux',
+        },
+      },
+    },
     singBox: {
       android: {
         note: 'These steps use public sing-box for Android screenshots.',

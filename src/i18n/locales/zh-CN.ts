@@ -1014,6 +1014,115 @@ export const zhCN = {
         },
       },
     },
+    v2rayN: {
+      windows: {
+        note: '这组步骤使用真实 v2rayN 界面截图，导入时照着点就可以。',
+        sourceLabel: 'v2rayN 图文教程原页',
+        step0: {
+          title: '先打开订阅分组设置',
+          description: '从主界面的“订阅分组”进入订阅设置，这是导入订阅的入口。',
+          helper: '如果你刚装好客户端，先保持主窗口打开，不用急着点系统代理。',
+          visualLabel: '订阅分组',
+          visualItems: ['点击订阅分组', '进入订阅分组设置'],
+          ctaLabel: '打开菜单',
+          screenshotAlt: 'v2rayN 打开订阅分组设置',
+        },
+        step1: {
+          title: '先新建一个订阅分组',
+          description: '在订阅分组设置窗口里先点“添加”，让当前订阅有一个独立入口。',
+          helper: '一个订阅地址对应一个分组最清楚，后面更新也更方便。',
+          visualLabel: '添加分组',
+          visualItems: ['点击添加', '准备填写别名和订阅地址'],
+          ctaLabel: '新增分组',
+          screenshotAlt: 'v2rayN 订阅分组设置窗口',
+        },
+        step2: {
+          title: '粘贴别名和订阅地址',
+          description: '别名随便填一个你认得出的名字，URL 位置粘贴刚才复制的订阅链接，然后点确定。',
+          helper: '这里最关键的是 URL 不要贴错，也不要多带空格。',
+          visualLabel: '订阅地址',
+          visualItems: ['填写别名', '粘贴订阅 URL', '点击确定'],
+          ctaLabel: '保存订阅',
+          screenshotAlt: 'v2rayN 填写订阅地址并保存',
+        },
+        step3: {
+          title: '回到主界面更新全部订阅',
+          description:
+            '保存后回到“订阅分组”，点击“更新全部订阅(不通过代理)”，把节点列表真正拉下来。',
+          helper: '第一次导入时建议用“不通过代理”，避免还没连上就卡在更新环节。',
+          visualLabel: '更新订阅',
+          visualItems: ['回到订阅分组', '更新全部订阅(不通过代理)', '等待节点刷新完成'],
+          ctaLabel: '刷新节点',
+          screenshotAlt: 'v2rayN 更新全部订阅不通过代理',
+        },
+        step4: {
+          title: '选一个节点设为活动服务器',
+          description:
+            '节点出来以后，在主列表选中一个节点，右键设为活动服务器，或者直接双击该节点。',
+          helper: '如果节点很多，先选延迟低、名字清楚的那个，不要随机点。',
+          visualLabel: '选择节点',
+          visualItems: ['选中目标节点', '右键设为活动服务器', '确认当前节点已切换'],
+          ctaLabel: '切换节点',
+          screenshotAlt: 'v2rayN 选择活动服务器',
+        },
+        step5: {
+          title: '最后开启系统代理',
+          description:
+            '在托盘图标右键菜单里开启“自动配置系统代理”，浏览器流量才会真正经过 v2rayN。',
+          helper: '如果只是导入和更新，没有开系统代理，网页还是不会走你的节点。',
+          visualLabel: '系统代理',
+          visualItems: ['右键托盘图标', '开启自动配置系统代理', '浏览器重新打开测试'],
+          ctaLabel: '开始连接',
+          screenshotAlt: 'v2rayN 开启自动配置系统代理',
+        },
+      },
+      linux: {
+        note: '这组步骤使用 v2rayN Linux 真实界面截图；公开资料只找到了订阅设置和节点列表，因此其余部分保留为文字提示。',
+        sourceLabel: 'v2rayN 官方 Linux 截图来源',
+        step0: {
+          title: '先进入订阅分组设置',
+          description:
+            '从顶部菜单打开 Subscription Group，进入订阅分组设置窗口。Linux 版导入订阅也是从这里开始。',
+          helper: '如果你当前只看到托盘图标，先把主窗口重新展开，再进入这个设置页。',
+          visualLabel: '订阅分组设置',
+          visualItems: ['打开 Subscription Group', '进入订阅设置窗口', '准备填写 URL'],
+          ctaLabel: '打开设置',
+          screenshotAlt: 'v2rayN Linux 订阅分组设置窗口',
+        },
+        step1: {
+          title: '填入订阅地址，必要时补 User Agent',
+          description:
+            '把这里复制的订阅链接粘到 URL(optional)。如果你的订阅服务会按客户端返回不同内容，可以像截图一样在 User Agent 里填 V2ray 或服务端要求的值，然后点击 Confirm。',
+          helper:
+            '这是 Linux 版比较容易漏掉的差异项；有些服务端不给合适的 User Agent，就不会返回正确节点列表。',
+          visualLabel: '填写订阅',
+          visualItems: ['粘贴订阅 URL', '按需填写 User Agent', '点击 Confirm'],
+          ctaLabel: '保存订阅',
+          screenshotAlt: '在 v2rayN Linux 里填写订阅地址和 User Agent',
+        },
+        step2: {
+          title: '更新订阅并确认节点真正加载出来',
+          description:
+            '回到主窗口后执行 Update subscriptions without proxy。刷新完成后，列表应像截图这样出现真实节点，而不是只得到一串 json 文件名。',
+          helper: '如果刷新后内容仍然不对，先回头检查 URL、User Agent 和订阅格式，再重试更新。',
+          visualLabel: '节点列表',
+          visualItems: ['更新订阅', '等待节点加载', '确认列表内容正常'],
+          ctaLabel: '刷新订阅',
+          screenshotAlt: 'v2rayN Linux 节点列表',
+        },
+        step3: {
+          title: '选中节点，再启用 TUN 或系统代理',
+          description:
+            '节点加载正常后，在列表里选一个节点作为当前连接，再根据你的桌面环境启用底部的 TUN 或系统代理相关开关。',
+          helper:
+            'Linux 上接管流量的方式会因桌面环境不同而略有差异；如果浏览器仍然直连，优先检查 TUN、系统代理和桌面网络设置。',
+          visualLabel: '开始连接',
+          visualItems: ['选择节点', '启用 TUN 或系统代理', '回到浏览器测试'],
+          ctaLabel: '连接并测试',
+          screenshotAlt: 'v2rayN Linux 选择节点后准备连接',
+        },
+      },
+    },
     singBox: {
       android: {
         note: '这组步骤使用公开的 sing-box for Android 真机截图。',
