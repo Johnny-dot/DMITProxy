@@ -1,9 +1,4 @@
-import type {
-  GuidePlatform,
-  GuideScreenshotHighlight,
-  GuideTone,
-  ClientGuide,
-} from '../SubscriptionTabData';
+import type { GuidePlatform, GuideTone, ClientGuide } from '../SubscriptionTabData';
 import type { SubscriptionFormat, ClientCard } from '../types';
 
 export type ClientId = ClientCard['id'];
@@ -17,7 +12,6 @@ export interface StepDef {
   visualItemsKey: string;
   ctaLabelKey: string;
   screenshot?: { src: string; altKey: string };
-  screenshotHighlights?: GuideScreenshotHighlight[];
 }
 
 export interface PlatformGuideDef {
@@ -32,8 +26,8 @@ export interface ClientGuideDef {
   byPlatform: Partial<Record<GuidePlatform, PlatformGuideDef>>;
 }
 
-export const MINIMAL_FALLBACK_GUIDE: ClientGuide = {
-  recommendedFormat: 'universal',
+export const MINIMAL_FALLBACK_GUIDE: ClientGuide = Object.freeze({
+  recommendedFormat: 'universal' as const,
   note: '',
-  steps: [],
-};
+  steps: Object.freeze([]) as never[],
+});

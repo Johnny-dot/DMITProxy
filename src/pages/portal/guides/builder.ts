@@ -22,12 +22,24 @@ function resolveRawKey(locale: Record<string, unknown>, key: string): unknown {
 
 function resolveStringKey(locale: Record<string, unknown>, key: string): string {
   const value = resolveRawKey(locale, key);
-  return typeof value === 'string' ? value : key;
+  if (typeof value !== 'string') {
+    if (import.meta.env?.DEV) {
+      throw new Error(`i18n key "${key}" is not a string: ${typeof value}`);
+    }
+    return key;
+  }
+  return value;
 }
 
 function resolveStringArrayKey(locale: Record<string, unknown>, key: string): string[] {
   const value = resolveRawKey(locale, key);
-  return Array.isArray(value) ? (value as string[]) : [];
+  if (!Array.isArray(value)) {
+    if (import.meta.env?.DEV) {
+      throw new Error(`i18n key "${key}" is not an array: ${typeof value}`);
+    }
+    return [];
+  }
+  return value as string[];
 }
 
 function resolveOptionalStringKey(
@@ -51,7 +63,6 @@ function resolveStep(step: StepDef, locale: Record<string, unknown>) {
     screenshot: step.screenshot
       ? { src: step.screenshot.src, alt: resolveStringKey(locale, step.screenshot.altKey) }
       : undefined,
-    screenshotHighlights: step.screenshotHighlights,
   };
 }
 
