@@ -589,6 +589,154 @@ export const enUS = {
     passwordHint: 'Admin password change should be handled in 3X-UI panel settings',
     twoFactorHint: '2FA setup should be configured in 3X-UI panel settings',
   },
+  guides: {
+    clashVerge: {
+      windows: {
+        note: 'Follow the real Clash Verge UI on Windows step by step.',
+        sourceLabel: 'Original Clash Verge walkthrough',
+        step0: {
+          title: 'Open the Profiles page first',
+          description:
+            'After launching Clash Verge, switch to Profiles from the left sidebar. That is where subscription import starts.',
+          helper: 'Do not worry about TUN or system proxy yet. Import the profile first.',
+          visualItems: ['Open Profiles', 'Check that Profile URL and NEW are visible'],
+          ctaLabel: 'Open Profiles',
+          screenshotAlt: 'Clash Verge Profiles page',
+        },
+        step1: {
+          title: 'Create a Remote profile',
+          description: 'Click NEW and create a remote subscription profile.',
+          helper: 'Leave the type as Remote. You do not need a local file here.',
+          visualItems: ['Click NEW', 'Keep Type on Remote'],
+          ctaLabel: 'Create profile',
+          screenshotAlt: 'Clash Verge create profile dialog',
+        },
+        step2: {
+          title: 'Paste the Clash link into Subscription URL',
+          description:
+            'Use any name you can recognize, then paste the Clash-formatted subscription link into Subscription URL.',
+          helper:
+            'Make sure you paste the Clash link here instead of the Shadowrocket / V2Ray link.',
+          visualItems: ['Enter a name', 'Paste the Subscription URL', 'Click SAVE'],
+          ctaLabel: 'Save profile',
+          screenshotAlt: 'Clash Verge paste subscription URL',
+        },
+        step3: {
+          title: 'Confirm the profile was added',
+          description: 'After saving, a new subscription card should appear in Profiles.',
+          helper: 'If the list is still empty, check the URL, format, and network first.',
+          visualItems: ['Confirm the card is visible', 'Refresh it if needed'],
+          ctaLabel: 'Check profile',
+          screenshotAlt: 'Clash Verge subscription card added',
+        },
+        step4: {
+          title: 'Pick a node or proxy group in Proxies',
+          description: 'Switch to Proxies and choose the node or group you want to use.',
+          helper: 'Importing alone does not start routing until a node or group is active.',
+          visualItems: [
+            'Open Proxies',
+            'Choose a node or proxy group',
+            'Confirm the active selection changed',
+          ],
+          ctaLabel: 'Select node',
+          screenshotAlt: 'Clash Verge proxy groups and nodes',
+        },
+        step5: {
+          title: 'Enable System Proxy last',
+          description:
+            'Go back to Home and enable System Proxy so browser and system traffic actually go through Clash Verge.',
+          helper: 'You can explore TUN later, but System Proxy is the cleanest first setup.',
+          visualItems: ['Return to Home', 'Enable System Proxy', 'Reload a page and test'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Clash Verge enable system proxy',
+        },
+      },
+      macos: {
+        note: 'Follow the real Clash Verge UI on macOS step by step.',
+        sourceLabel: 'Original Clash Verge walkthrough',
+        step0: {
+          title: 'Open the Profiles page first',
+          description:
+            'After launching Clash Verge, switch to Profiles from the left sidebar. That is where subscription import starts.',
+          helper: 'Do not worry about TUN or system proxy yet. Import the profile first.',
+          visualItems: ['Open Profiles', 'Check that Profile URL and NEW are visible'],
+          ctaLabel: 'Open Profiles',
+          screenshotAlt: 'Clash Verge Profiles page',
+        },
+        step1: {
+          title: 'Create a Remote profile',
+          description: 'Click NEW and create a remote subscription profile.',
+          helper: 'Leave the type as Remote. You do not need a local file here.',
+          visualItems: ['Click NEW', 'Keep Type on Remote'],
+          ctaLabel: 'Create profile',
+          screenshotAlt: 'Clash Verge create profile dialog',
+        },
+        step2: {
+          title: 'Paste the Clash link into Subscription URL',
+          description:
+            'Use any name you can recognize, then paste the Clash-formatted subscription link into Subscription URL.',
+          helper:
+            'Make sure you paste the Clash link here instead of the Shadowrocket / V2Ray link.',
+          visualItems: ['Enter a name', 'Paste the Subscription URL', 'Click SAVE'],
+          ctaLabel: 'Save profile',
+          screenshotAlt: 'Clash Verge paste subscription URL',
+        },
+        step3: {
+          title: 'Confirm the profile was added',
+          description: 'After saving, a new subscription card should appear in Profiles.',
+          helper: 'If the list is still empty, check the URL, format, and network first.',
+          visualItems: ['Confirm the card is visible', 'Refresh it if needed'],
+          ctaLabel: 'Check profile',
+          screenshotAlt: 'Clash Verge subscription card added',
+        },
+        step4: {
+          title: 'Pick a node or proxy group in Proxies',
+          description: 'Switch to Proxies and choose the node or group you want to use.',
+          helper: 'Importing alone does not start routing until a node or group is active.',
+          visualItems: [
+            'Open Proxies',
+            'Choose a node or proxy group',
+            'Confirm the active selection changed',
+          ],
+          ctaLabel: 'Select node',
+          screenshotAlt: 'Clash Verge proxy groups and nodes',
+        },
+        step5: {
+          title: 'Enable System Proxy last',
+          description:
+            'Go back to Home and enable System Proxy so browser and system traffic actually go through Clash Verge.',
+          helper: 'You can explore TUN later, but System Proxy is the cleanest first setup.',
+          visualItems: ['Return to Home', 'Enable System Proxy', 'Reload a page and test'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Clash Verge enable system proxy',
+        },
+      },
+      linux: {
+        note: 'Button labels vary by version, but the import flow is usually in these places.',
+        step0: {
+          title: 'Open Profiles first',
+          description: 'The import entry is usually in Profiles.',
+          helper: 'Allow network or core initialization on first launch.',
+          visualItems: ['Profile list', 'New profile', 'Import entry'],
+          ctaLabel: 'Open Profiles',
+        },
+        step1: {
+          title: 'Switch to Clash and import',
+          description: 'Keep this page on Clash format, then paste the URL.',
+          helper: 'If policy groups do not appear, check the format and refresh.',
+          visualItems: ['Format: Clash', 'Paste URL', 'Refresh'],
+          ctaLabel: 'Import',
+        },
+        step2: {
+          title: 'Refresh, then enable proxy or TUN',
+          description: 'Pick a policy group before enabling proxy or TUN.',
+          helper: 'Import alone does not route traffic until proxy mode is enabled.',
+          visualItems: ['Policy group', 'System proxy', 'TUN'],
+          ctaLabel: 'Connect',
+        },
+      },
+    },
+  },
 } as const;
 
 export type EnUSLocale = typeof enUS;
