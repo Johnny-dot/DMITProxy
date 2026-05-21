@@ -1,0 +1,307 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`reachable generic guides (regression snapshot) > clashVerge × linux × en stays stable 1`] = `
+{
+  "note": "Button labels vary by version, but the import flow is usually in these places.",
+  "recommendedFormat": "clash",
+  "steps": [
+    {
+      "ctaLabel": "Open Profiles",
+      "description": "The import entry is usually in Profiles.",
+      "helper": "Allow network or core initialization on first launch.",
+      "screenshot": undefined,
+      "title": "Open Profiles first",
+      "tone": "launch",
+      "visualItems": [
+        "Profile list",
+        "New profile",
+        "Import entry",
+      ],
+      "visualLabel": "Profiles",
+    },
+    {
+      "ctaLabel": "Import",
+      "description": "Keep this page on Clash format, then paste the URL.",
+      "helper": "If policy groups do not appear, check the format and refresh.",
+      "screenshot": undefined,
+      "title": "Switch to Clash and import",
+      "tone": "import",
+      "visualItems": [
+        "Format: Clash",
+        "Paste URL",
+        "Refresh",
+      ],
+      "visualLabel": "Import from URL",
+    },
+    {
+      "ctaLabel": "Connect",
+      "description": "Pick a policy group before enabling proxy or TUN.",
+      "helper": "Import alone does not route traffic until proxy mode is enabled.",
+      "screenshot": undefined,
+      "title": "Refresh, then enable proxy or TUN",
+      "tone": "connect",
+      "visualItems": [
+        "Policy group",
+        "System proxy",
+        "TUN",
+      ],
+      "visualLabel": "Proxy / TUN",
+    },
+  ],
+}
+`;
+
+exports[`reachable generic guides (regression snapshot) > clashVerge × linux × zh stays stable 1`] = `
+{
+  "note": "不同版本按钮名称会有差异，但导入路径一般都在这些位置。",
+  "recommendedFormat": "clash",
+  "steps": [
+    {
+      "ctaLabel": "进入 Profiles",
+      "description": "导入入口一般在 Profiles。",
+      "helper": "首次打开先允许网络或内核初始化。",
+      "screenshot": undefined,
+      "title": "先开 Profiles",
+      "tone": "launch",
+      "visualItems": [
+        "配置列表",
+        "新建配置",
+        "导入入口",
+      ],
+      "visualLabel": "Profiles",
+    },
+    {
+      "ctaLabel": "导入订阅",
+      "description": "把当前页格式保持为 Clash，再粘贴 URL。",
+      "helper": "看不到策略组时先检查格式和刷新。",
+      "screenshot": undefined,
+      "title": "切到 Clash 格式后导入",
+      "tone": "import",
+      "visualItems": [
+        "格式: Clash",
+        "粘贴链接",
+        "刷新配置",
+      ],
+      "visualLabel": "Import from URL",
+    },
+    {
+      "ctaLabel": "开始连接",
+      "description": "先选策略组，再开系统代理或 TUN。",
+      "helper": "只导入不启用代理时，流量不会真的走过去。",
+      "screenshot": undefined,
+      "title": "刷新后开启代理或 TUN",
+      "tone": "connect",
+      "visualItems": [
+        "策略组",
+        "系统代理",
+        "TUN",
+      ],
+      "visualLabel": "Proxy / TUN",
+    },
+  ],
+}
+`;
+
+exports[`reachable generic guides (regression snapshot) > exclave × android × en stays stable 1`] = `
+{
+  "note": "Exclave stays close to classic Android V2Ray clients, and the Shadowrocket / V2Ray link is usually the safest import path.",
+  "recommendedFormat": "universal",
+  "steps": [
+    {
+      "ctaLabel": "Open entry",
+      "description": "Exclave usually places imports under subscriptions, profiles, or the top-right plus menu.",
+      "helper": "Finish any first-run core setup or permission prompts before importing.",
+      "screenshot": undefined,
+      "title": "Open the subscription or profile entry first",
+      "tone": "launch",
+      "visualItems": [
+        "Subscription list",
+        "Top-right +",
+        "Import entry",
+      ],
+      "visualLabel": "Subscription / Profile",
+    },
+    {
+      "ctaLabel": "Import subscription",
+      "description": "Keep this page on Shadowrocket / V2Ray, then paste the copied subscription link into Exclave.",
+      "helper": "If you just copied the link, URL or clipboard import is usually the fastest path.",
+      "screenshot": undefined,
+      "title": "Prefer the Shadowrocket / V2Ray subscription link",
+      "tone": "import",
+      "visualItems": [
+        "Shadowrocket / V2Ray format",
+        "Paste URL",
+        "Save / Update",
+      ],
+      "visualLabel": "Import by URL",
+    },
+    {
+      "ctaLabel": "Connect",
+      "description": "Make sure the node list has loaded before connecting.",
+      "helper": "If the node list stays empty, refresh the subscription again first.",
+      "screenshot": undefined,
+      "title": "Refresh, pick a node, and allow VPN",
+      "tone": "connect",
+      "visualItems": [
+        "Refresh subscription",
+        "Pick node",
+        "Allow VPN",
+      ],
+      "visualLabel": "VPN permission",
+    },
+  ],
+}
+`;
+
+exports[`reachable generic guides (regression snapshot) > exclave × android × zh stays stable 1`] = `
+{
+  "note": "Exclave 的导入路径和经典安卓 V2Ray 客户端接近，优先用 Shadowrocket / V2Ray 链接会更稳。",
+  "recommendedFormat": "universal",
+  "steps": [
+    {
+      "ctaLabel": "打开入口",
+      "description": "Exclave 一般会把导入入口放在订阅、配置或右上角加号里。",
+      "helper": "第一次启动时，先完成核心初始化或权限提示。",
+      "screenshot": undefined,
+      "title": "先打开订阅或配置入口",
+      "tone": "launch",
+      "visualItems": [
+        "订阅列表",
+        "右上角 +",
+        "导入入口",
+      ],
+      "visualLabel": "订阅 / 配置",
+    },
+    {
+      "ctaLabel": "导入订阅",
+      "description": "保持当前页面为 Shadowrocket / V2Ray，再把复制的订阅链接粘贴到 Exclave。",
+      "helper": "如果你刚复制过链接，优先尝试 URL 或剪贴板导入。",
+      "screenshot": undefined,
+      "title": "优先粘贴 Shadowrocket / V2Ray 订阅链接",
+      "tone": "import",
+      "visualItems": [
+        "Shadowrocket / V2Ray 格式",
+        "粘贴 URL",
+        "保存 / 更新",
+      ],
+      "visualLabel": "URL 导入",
+    },
+    {
+      "ctaLabel": "开始连接",
+      "description": "先确认节点列表已经拉下来，再点连接。",
+      "helper": "节点为空时，先检查订阅是否刷新成功。",
+      "screenshot": undefined,
+      "title": "刷新后选节点并允许 VPN",
+      "tone": "connect",
+      "visualItems": [
+        "刷新订阅",
+        "选择节点",
+        "允许 VPN",
+      ],
+      "visualLabel": "VPN 权限",
+    },
+  ],
+}
+`;
+
+exports[`reachable generic guides (regression snapshot) > singBox × linux × en stays stable 1`] = `
+{
+  "note": "Singbox for Linux works best with the Sing-box format, so switch this page to Sing-box first for the cleanest import path.",
+  "recommendedFormat": "singbox",
+  "steps": [
+    {
+      "ctaLabel": "Open import entry",
+      "description": "Sing-box clients usually place imports under Profiles, Configs, or Servers.",
+      "helper": "On first launch you may need to allow network or VPN permission before importing.",
+      "screenshot": undefined,
+      "title": "Open the profile import entry in Singbox for Linux",
+      "tone": "launch",
+      "visualItems": [
+        "Profiles",
+        "Configs",
+        "Servers",
+      ],
+      "visualLabel": "Profiles / Servers",
+    },
+    {
+      "ctaLabel": "Import profile",
+      "description": "Choose Sing-box on this page first, then import by URL or clipboard inside the client.",
+      "helper": "If the client talks about Profiles or JSON, that is usually the sing-box-native import path.",
+      "screenshot": undefined,
+      "title": "Switch to the Sing-box format before importing",
+      "tone": "import",
+      "visualItems": [
+        "Sing-box format",
+        "URL / Clipboard",
+        "Save",
+      ],
+      "visualLabel": "Import Sing-box profile",
+    },
+    {
+      "ctaLabel": "Connect",
+      "description": "Make sure nodes, DNS, and rule resources have loaded before you hit connect.",
+      "helper": "These clients expose more low-level options, so avoid changing unfamiliar toggles until the import works.",
+      "screenshot": undefined,
+      "title": "Save, switch to the imported profile, then connect",
+      "tone": "connect",
+      "visualItems": [
+        "Select imported profile",
+        "Refresh subscription",
+        "Allow system proxy",
+      ],
+      "visualLabel": "Connect",
+    },
+  ],
+}
+`;
+
+exports[`reachable generic guides (regression snapshot) > singBox × linux × zh stays stable 1`] = `
+{
+  "note": "Singbox for Linux works best with the Sing-box format, so switch this page to Sing-box first for the cleanest import path.",
+  "recommendedFormat": "singbox",
+  "steps": [
+    {
+      "ctaLabel": "Open import entry",
+      "description": "Sing-box clients usually place imports under Profiles, Configs, or Servers.",
+      "helper": "On first launch you may need to allow network or VPN permission before importing.",
+      "screenshot": undefined,
+      "title": "Open the profile import entry in Singbox for Linux",
+      "tone": "launch",
+      "visualItems": [
+        "Profiles",
+        "Configs",
+        "Servers",
+      ],
+      "visualLabel": "Profiles / Servers",
+    },
+    {
+      "ctaLabel": "Import profile",
+      "description": "Choose Sing-box on this page first, then import by URL or clipboard inside the client.",
+      "helper": "If the client talks about Profiles or JSON, that is usually the sing-box-native import path.",
+      "screenshot": undefined,
+      "title": "Switch to the Sing-box format before importing",
+      "tone": "import",
+      "visualItems": [
+        "Sing-box format",
+        "URL / Clipboard",
+        "Save",
+      ],
+      "visualLabel": "Import Sing-box profile",
+    },
+    {
+      "ctaLabel": "Connect",
+      "description": "Make sure nodes, DNS, and rule resources have loaded before you hit connect.",
+      "helper": "These clients expose more low-level options, so avoid changing unfamiliar toggles until the import works.",
+      "screenshot": undefined,
+      "title": "Save, switch to the imported profile, then connect",
+      "tone": "connect",
+      "visualItems": [
+        "Select imported profile",
+        "Refresh subscription",
+        "Allow system proxy",
+      ],
+      "visualLabel": "Connect",
+    },
+  ],
+}
+`;
