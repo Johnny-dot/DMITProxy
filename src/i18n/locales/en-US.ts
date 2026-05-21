@@ -1220,6 +1220,96 @@ export const enUS = {
         },
       },
     },
+    shadowrocket: {
+      ios: {
+        note: 'These steps use real Shadowrocket iPhone screenshots.',
+        sourceLabel: 'Shadowrocket tutorial source',
+        step0: {
+          title: 'Add the subscription from the plus button',
+          description:
+            'Tap the top-right plus button on the Shadowrocket home screen, choose Subscribe, then paste the copied URL.',
+          helper:
+            'The subscription name does not affect connectivity. If the node appears after saving, the import worked.',
+          visualLabel: 'Add subscription',
+          visualItems: [
+            'Tap the top-right plus button',
+            'Choose Subscribe',
+            'Paste the URL and save',
+          ],
+          ctaLabel: 'Add subscription',
+          screenshotAlt: 'Add subscription in Shadowrocket',
+        },
+        step1: {
+          title: 'Return home and enable the node',
+          description:
+            'After saving, go back to the home screen, confirm the node is visible, and turn on the switch to connect.',
+          helper:
+            'If there are multiple nodes, start with the one you use most or the lower-latency one.',
+          visualLabel: 'Connect node',
+          visualItems: [
+            'Return to Home',
+            'Confirm the node was imported',
+            'Turn on the connect switch',
+          ],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Connect a node in Shadowrocket',
+        },
+        step2: {
+          title: 'Enable automatic subscription updates',
+          description:
+            'Open Settings > Subscription and turn on update-on-open and background update so future refreshes are easier.',
+          helper: 'This is optional for first setup, but strongly recommended for long-term use.',
+          visualLabel: 'Auto update',
+          visualItems: ['Open Settings', 'Enter Subscription', 'Enable the update options'],
+          ctaLabel: 'Optimize setup',
+          screenshotAlt: 'Shadowrocket subscription auto-update settings',
+        },
+      },
+      macos: {
+        note: 'These steps use real Shadowrocket iPhone screenshots.',
+        sourceLabel: 'Shadowrocket tutorial source',
+        step0: {
+          title: 'Add the subscription from the plus button',
+          description:
+            'Tap the top-right plus button on the Shadowrocket home screen, choose Subscribe, then paste the copied URL.',
+          helper:
+            'The subscription name does not affect connectivity. If the node appears after saving, the import worked.',
+          visualLabel: 'Add subscription',
+          visualItems: [
+            'Tap the top-right plus button',
+            'Choose Subscribe',
+            'Paste the URL and save',
+          ],
+          ctaLabel: 'Add subscription',
+          screenshotAlt: 'Add subscription in Shadowrocket',
+        },
+        step1: {
+          title: 'Return home and enable the node',
+          description:
+            'After saving, go back to the home screen, confirm the node is visible, and turn on the switch to connect.',
+          helper:
+            'If there are multiple nodes, start with the one you use most or the lower-latency one.',
+          visualLabel: 'Connect node',
+          visualItems: [
+            'Return to Home',
+            'Confirm the node was imported',
+            'Turn on the connect switch',
+          ],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Connect a node in Shadowrocket',
+        },
+        step2: {
+          title: 'Enable automatic subscription updates',
+          description:
+            'Open Settings > Subscription and turn on update-on-open and background update so future refreshes are easier.',
+          helper: 'This is optional for first setup, but strongly recommended for long-term use.',
+          visualLabel: 'Auto update',
+          visualItems: ['Open Settings', 'Enter Subscription', 'Enable the update options'],
+          ctaLabel: 'Optimize setup',
+          screenshotAlt: 'Shadowrocket subscription auto-update settings',
+        },
+      },
+    },
     singBox: {
       android: {
         note: 'These steps use public sing-box for Android screenshots.',

@@ -1123,6 +1123,74 @@ export const zhCN = {
         },
       },
     },
+    shadowrocket: {
+      ios: {
+        note: '这是 Shadowrocket 的真实 iPhone 界面截图流程。',
+        sourceLabel: 'Shadowrocket 图文教程来源',
+        step0: {
+          title: '先用右上角加号添加订阅',
+          description:
+            '在 Shadowrocket 首页点右上角加号，类型选 Subscribe，再把当前页面复制的订阅链接填进 URL。',
+          helper: '订阅名称不影响连接；保存后能看到节点就说明导入成功。',
+          visualLabel: '新增订阅',
+          visualItems: ['点右上角加号', '类型选 Subscribe', '粘贴 URL 并保存'],
+          ctaLabel: '添加订阅',
+          screenshotAlt: 'Shadowrocket 添加订阅',
+        },
+        step1: {
+          title: '回到首页打开开关并连接节点',
+          description: '保存后回到首页，确认节点已经出现，再打开右侧开关开始连接。',
+          helper: '如果列表里有多个节点，先选你最常用或延迟更低的那个。',
+          visualLabel: '连接节点',
+          visualItems: ['回到首页', '确认节点已导入', '打开右侧连接开关'],
+          ctaLabel: '开始连接',
+          screenshotAlt: 'Shadowrocket 首页连接节点',
+        },
+        step2: {
+          title: '顺手把订阅自动更新打开',
+          description:
+            '进设置里的订阅页，把“打开时更新”和“自动后台更新”打开，后续换节点和续费会更省心。',
+          helper: '这一步不是必须，但长期使用强烈建议开。',
+          visualLabel: '自动更新',
+          visualItems: ['进入设置', '打开订阅页', '开启自动更新选项'],
+          ctaLabel: '优化订阅',
+          screenshotAlt: 'Shadowrocket 订阅自动更新设置',
+        },
+      },
+      macos: {
+        note: '这是 Shadowrocket 的真实 iPhone 界面截图流程。',
+        sourceLabel: 'Shadowrocket 图文教程来源',
+        step0: {
+          title: '先用右上角加号添加订阅',
+          description:
+            '在 Shadowrocket 首页点右上角加号，类型选 Subscribe，再把当前页面复制的订阅链接填进 URL。',
+          helper: '订阅名称不影响连接；保存后能看到节点就说明导入成功。',
+          visualLabel: '新增订阅',
+          visualItems: ['点右上角加号', '类型选 Subscribe', '粘贴 URL 并保存'],
+          ctaLabel: '添加订阅',
+          screenshotAlt: 'Shadowrocket 添加订阅',
+        },
+        step1: {
+          title: '回到首页打开开关并连接节点',
+          description: '保存后回到首页，确认节点已经出现，再打开右侧开关开始连接。',
+          helper: '如果列表里有多个节点，先选你最常用或延迟更低的那个。',
+          visualLabel: '连接节点',
+          visualItems: ['回到首页', '确认节点已导入', '打开右侧连接开关'],
+          ctaLabel: '开始连接',
+          screenshotAlt: 'Shadowrocket 首页连接节点',
+        },
+        step2: {
+          title: '顺手把订阅自动更新打开',
+          description:
+            '进设置里的订阅页，把“打开时更新”和“自动后台更新”打开，后续换节点和续费会更省心。',
+          helper: '这一步不是必须，但长期使用强烈建议开。',
+          visualLabel: '自动更新',
+          visualItems: ['进入设置', '打开订阅页', '开启自动更新选项'],
+          ctaLabel: '优化订阅',
+          screenshotAlt: 'Shadowrocket 订阅自动更新设置',
+        },
+      },
+    },
     singBox: {
       android: {
         note: '这组步骤使用公开的 sing-box for Android 真机截图。',
