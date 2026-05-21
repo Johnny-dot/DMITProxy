@@ -1368,6 +1368,71 @@ export const enUS = {
         },
       },
     },
+    v2rayNG: {
+      android: {
+        note: 'These steps use real v2rayNG Android screenshots so you can follow the exact flow.',
+        sourceLabel: 'Original v2rayNG walkthrough',
+        step0: {
+          title: 'Open subscription settings first',
+          description:
+            'Use the top-left menu to open Subscription settings. That is where you add the subscription URL.',
+          helper:
+            'If this is your first time in v2rayNG, do not connect yet. Add the subscription first.',
+          visualLabel: 'Subscription settings',
+          visualItems: ['Open the top-left menu', 'Enter Subscription settings'],
+          ctaLabel: 'Open menu',
+          screenshotAlt: 'Open subscription settings in v2rayNG',
+        },
+        step1: {
+          title: 'Add a new subscription entry',
+          description:
+            'Tap the plus button in Subscription settings and create a new subscription item.',
+          helper: 'It is cleaner to keep one subscription entry per account.',
+          visualLabel: 'Add subscription',
+          visualItems: ['Tap the plus button', 'Prepare the remark and URL'],
+          ctaLabel: 'Add subscription',
+          screenshotAlt: 'Add subscription entry in v2rayNG',
+        },
+        step2: {
+          title: 'Update the subscription from the main page',
+          description:
+            'After saving, return to the config page and run Update subscription from the top-right menu.',
+          helper: 'The node list will not load until you refresh the subscription once.',
+          visualLabel: 'Update subscription',
+          visualItems: [
+            'Return to the main page',
+            'Open the three-dot menu',
+            'Tap Update subscription',
+          ],
+          ctaLabel: 'Refresh nodes',
+          screenshotAlt: 'Update subscription in v2rayNG',
+        },
+        step3: {
+          title: 'Pick the node you want to use',
+          description: 'After refresh finishes, choose the node you want from the config list.',
+          helper: 'Start with a clearer, lower-latency node instead of guessing.',
+          visualLabel: 'Node list',
+          visualItems: [
+            'Wait for the node list to appear',
+            'Tap the node you want',
+            'Confirm the active node changed',
+          ],
+          ctaLabel: 'Select node',
+          screenshotAlt: 'v2rayNG node list',
+        },
+        step4: {
+          title: 'Accept the Android VPN request',
+          description:
+            'When you start the proxy, Android shows a VPN permission dialog. Accept it to route traffic.',
+          helper:
+            'If import worked but the browser is still direct, this permission is usually the missing step.',
+          visualLabel: 'VPN permission',
+          visualItems: ['Tap connect', 'Allow the VPN request', 'Return to the browser and test'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Confirm VPN request in v2rayNG',
+        },
+      },
+    },
     exclave: {
       android: {
         note: 'Exclave stays close to classic Android V2Ray clients, and the Shadowrocket / V2Ray link is usually the safest import path.',
