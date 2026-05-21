@@ -1482,6 +1482,43 @@ export const enUS = {
         },
       },
     },
+    clashBox: {
+      harmonyos: {
+        note: 'These steps use public ClashBox screenshots and follow the normal Clash-style import flow on HarmonyOS NEXT.',
+        sourceLabel: 'ClashBox tutorial source',
+        step0: {
+          title: 'Open the ClashBox home screen first',
+          description: 'Inside ClashBox, start from the Profiles, configuration, or import entry.',
+          helper: 'If HarmonyOS NEXT shows a first-run prompt, finish that first.',
+          visualLabel: 'Home screen',
+          visualItems: ['Profiles', 'Config screen', 'Import entry'],
+          ctaLabel: 'Open home',
+          screenshotAlt: 'ClashBox home screen',
+        },
+        step1: {
+          title: 'Switch this page to Clash and save the profile',
+          description:
+            'Copy the Clash link from here, paste it into ClashBox, then save the remote profile.',
+          helper:
+            'ClashBox is most reliable when you start with the Clash format instead of the Shadowrocket / V2Ray link.',
+          visualLabel: 'Profile import',
+          visualItems: ['Clash format', 'Paste URL', 'Save profile'],
+          ctaLabel: 'Save profile',
+          screenshotAlt: 'ClashBox profile import screen',
+        },
+        step2: {
+          title: 'Start the profile and allow system takeover',
+          description:
+            'Once the profile has loaded, start the connection so ClashBox takes over network traffic.',
+          helper:
+            'If import succeeds but traffic still fails, check system permissions or proxy takeover first.',
+          visualLabel: 'Connect',
+          visualItems: ['Start profile', 'Allow system permission', 'Test in browser'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Start the connection in ClashBox',
+        },
+      },
+    },
     exclave: {
       android: {
         note: 'Exclave stays close to classic Android V2Ray clients, and the Shadowrocket / V2Ray link is usually the safest import path.',

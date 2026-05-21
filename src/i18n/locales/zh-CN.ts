@@ -1336,6 +1336,40 @@ export const zhCN = {
         },
       },
     },
+    clashBox: {
+      harmonyos: {
+        note: '这组步骤使用公开的 ClashBox 真机截图，适合 HarmonyOS NEXT 直接按 Clash 流程导入。',
+        sourceLabel: 'ClashBox 图文教程来源',
+        step0: {
+          title: '先打开 ClashBox 主界面',
+          description: '进入 ClashBox 后，先找到 Profiles、配置或导入入口。',
+          helper: 'HarmonyOS NEXT 上第一次启动如果有系统提示，先完成。',
+          visualLabel: '主界面',
+          visualItems: ['Profiles', '配置页', '导入入口'],
+          ctaLabel: '打开主界面',
+          screenshotAlt: 'ClashBox 主界面',
+        },
+        step1: {
+          title: '切到 Clash 格式并保存订阅',
+          description:
+            '先复制当前页面的 Clash 链接，再粘贴到 ClashBox 的配置或订阅输入框里并保存。',
+          helper: 'ClashBox 最稳妥的导入方式还是 Clash 格式，不要先贴 Shadowrocket / V2Ray。',
+          visualLabel: '导入配置',
+          visualItems: ['Clash 格式', '粘贴 URL', '保存配置'],
+          ctaLabel: '保存订阅',
+          screenshotAlt: 'ClashBox 配置和订阅页面',
+        },
+        step2: {
+          title: '最后启动并允许系统接管',
+          description: '确认配置加载完成后再点击启动，让 ClashBox 接管网络流量。',
+          helper: '如果导入成功但网络不通，优先检查系统权限或代理接管状态。',
+          visualLabel: '开始连接',
+          visualItems: ['启动配置', '允许系统权限', '回到浏览器测试'],
+          ctaLabel: '开始连接',
+          screenshotAlt: 'ClashBox 开始连接',
+        },
+      },
+    },
     exclave: {
       android: {
         note: 'Exclave 的导入路径和经典安卓 V2Ray 客户端接近，优先用 Shadowrocket / V2Ray 链接会更稳。',
