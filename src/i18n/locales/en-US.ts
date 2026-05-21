@@ -947,6 +947,140 @@ export const enUS = {
         },
       },
     },
+    sparkle: {
+      windows: {
+        note: 'These screenshots come from real Sparkle Windows builds posted in the official repository issues. Button order may shift by version, but the flow stays the same: subscription management, import, remote config, then system proxy.',
+        sourceLabel: 'Sparkle official issue screenshot source',
+        step0: {
+          title: 'Open subscription management first',
+          description:
+            'Launch Sparkle, then open the subscription management page and confirm the rule area plus the top import entry are visible.',
+          helper:
+            'If first-run prompts show up for permissions, certificates, or the core, clear those before importing.',
+          visualLabel: 'Subscription management',
+          visualItems: ['Rule area', 'Subscription card', 'Top import button'],
+          ctaLabel: 'Open subscriptions',
+          screenshotAlt: 'Sparkle Windows subscription management',
+        },
+        step1: {
+          title: 'Open Import and choose remote config',
+          description:
+            'Use the Import button in the top-right corner, then choose the remote-config entry.',
+          helper:
+            'If your build shows a plus button as well, it still creates the profile from the same area.',
+          visualLabel: 'Import menu',
+          visualItems: ['Import', 'Remote config', 'New profile'],
+          ctaLabel: 'Open remote import',
+          screenshotAlt: 'Sparkle Windows remote import menu',
+        },
+        step2: {
+          title: 'Paste the Clash link from this page and import',
+          description:
+            'Paste the Clash subscription link from this page into the remote-config URL field, then import and refresh the subscription once.',
+          helper:
+            'Sparkle expects a Mihomo / Clash profile here, so do not switch this page to Sing-box or V2Ray for this step.',
+          visualLabel: 'Remote config URL',
+          visualItems: ['Clash format', 'Paste URL', 'Import / Refresh'],
+          ctaLabel: 'Import and refresh',
+          screenshotAlt: 'Sparkle Windows remote config URL field',
+        },
+        step3: {
+          title: 'Return home and enable system proxy',
+          description:
+            'After the subscription refreshes, go back to the rule view and enable System Proxy. Turn on the virtual NIC only if you actually need full-device capture.',
+          helper:
+            'For the first test, system proxy is the cleanest path. Confirm the node or group works before enabling more advanced modes.',
+          visualLabel: 'System proxy',
+          visualItems: ['Return to rules', 'Enable System Proxy', 'Reload a page and test'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Sparkle Windows system proxy toggle',
+        },
+      },
+      macos: {
+        note: 'Sparkle does not currently have a complete public import screenshot set for macOS. To avoid mixing in Windows or third-party client UI, this guide intentionally stays text-only for now.',
+        step0: {
+          title: 'Open the subscription or profile area first',
+          description:
+            'After Sparkle launches, go to the subscriptions, configs, or Profiles area and confirm the import entry is available.',
+          helper:
+            'The exact sidebar label may vary, but the remote-subscription entry normally stays there.',
+          visualLabel: 'Subscription entry',
+          visualItems: ['Subscriptions', 'Configs', 'Profiles'],
+          ctaLabel: 'Open import entry',
+        },
+        step1: {
+          title: 'Choose remote config and keep this page on Clash',
+          description:
+            'Keep this portal page on the Clash format, then use Sparkle to import a remote config by URL.',
+          helper:
+            'If policy groups do not appear after import, the first thing to check is whether the wrong format was used.',
+          visualLabel: 'Remote import',
+          visualItems: ['Clash format', 'Remote config', 'Paste URL'],
+          ctaLabel: 'Import Clash profile',
+        },
+        step2: {
+          title: 'Refresh the subscription and choose a group',
+          description:
+            'Once the import succeeds, refresh the subscription manually and confirm the active node or policy group is usable.',
+          helper: 'Importing alone is not enough if no active group is selected afterwards.',
+          visualLabel: 'Policy group',
+          visualItems: ['Refresh subscription', 'Choose node', 'Confirm active group'],
+          ctaLabel: 'Confirm node',
+        },
+        step3: {
+          title: 'Enable system proxy last',
+          description:
+            'After the subscription is confirmed, enable System Proxy. Turn on the virtual NIC or TUN only if you actually need fuller traffic capture.',
+          helper:
+            'For the first test, system proxy is the safest path. Add other modes later if needed.',
+          visualLabel: 'Connection toggle',
+          visualItems: ['System Proxy', 'Virtual NIC / TUN', 'Retest network'],
+          ctaLabel: 'Connect',
+        },
+      },
+      linux: {
+        note: 'Sparkle does not currently have a complete public import screenshot set for Linux. To avoid mixing in Windows or third-party client UI, this guide intentionally stays text-only for now.',
+        step0: {
+          title: 'Open the subscription or profile area first',
+          description:
+            'After Sparkle launches, go to the subscriptions, configs, or Profiles area and confirm the import entry is available.',
+          helper:
+            'The exact sidebar label may vary, but the remote-subscription entry normally stays there.',
+          visualLabel: 'Subscription entry',
+          visualItems: ['Subscriptions', 'Configs', 'Profiles'],
+          ctaLabel: 'Open import entry',
+        },
+        step1: {
+          title: 'Choose remote config and keep this page on Clash',
+          description:
+            'Keep this portal page on the Clash format, then use Sparkle to import a remote config by URL.',
+          helper:
+            'If policy groups do not appear after import, the first thing to check is whether the wrong format was used.',
+          visualLabel: 'Remote import',
+          visualItems: ['Clash format', 'Remote config', 'Paste URL'],
+          ctaLabel: 'Import Clash profile',
+        },
+        step2: {
+          title: 'Refresh the subscription and choose a group',
+          description:
+            'Once the import succeeds, refresh the subscription manually and confirm the active node or policy group is usable.',
+          helper: 'Importing alone is not enough if no active group is selected afterwards.',
+          visualLabel: 'Policy group',
+          visualItems: ['Refresh subscription', 'Choose node', 'Confirm active group'],
+          ctaLabel: 'Confirm node',
+        },
+        step3: {
+          title: 'Enable system proxy last',
+          description:
+            'After the subscription is confirmed, enable System Proxy. Turn on the virtual NIC or TUN only if you actually need fuller traffic capture.',
+          helper:
+            'For the first test, system proxy is the safest path. Add other modes later if needed.',
+          visualLabel: 'Connection toggle',
+          visualItems: ['System Proxy', 'Virtual NIC / TUN', 'Retest network'],
+          ctaLabel: 'Connect',
+        },
+      },
+    },
   },
 } as const;
 
