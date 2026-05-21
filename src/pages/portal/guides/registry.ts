@@ -8,6 +8,7 @@ import { shadowrocketGuide } from './clients/shadowrocket';
 import { exclaveGuide } from './clients/exclave';
 import { surgeGuide } from './clients/surge';
 import { v2rayNGGuide } from './clients/v2rayNG';
+import { clashMetaGuide } from './clients/clashMeta';
 
 export const CLIENT_GUIDE_REGISTRY: Partial<Record<ClientId, ClientGuideDef>> = {
   clashVerge: clashVergeGuide,
@@ -19,4 +20,5 @@ export const CLIENT_GUIDE_REGISTRY: Partial<Record<ClientId, ClientGuideDef>> = 
   exclave: exclaveGuide,
   surge: surgeGuide,
   v2rayNG: v2rayNGGuide,
+  clashMeta: clashMetaGuide,
 };

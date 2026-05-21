@@ -1433,6 +1433,55 @@ export const enUS = {
         },
       },
     },
+    clashMeta: {
+      android: {
+        note: 'These screenshots come from a public Clash for Android walkthrough. Clash Meta for Android keeps a nearly identical Clash-style import flow.',
+        sourceLabel: 'Clash Meta for Android tutorial source',
+        step0: {
+          title: 'Open the profile screen first',
+          description:
+            'Inside Clash Meta for Android, start from the profile list or Profiles screen.',
+          helper: 'If core setup or permissions are still pending, finish that first.',
+          visualLabel: 'Profile home',
+          visualItems: ['Profiles', 'Profile list', 'Import entry'],
+          ctaLabel: 'Open profile screen',
+          screenshotAlt: 'Clash Meta for Android home screen',
+        },
+        step1: {
+          title: 'Create a remote profile and prepare the link',
+          description:
+            'From the profile page, create a new remote profile and prepare to import the Clash subscription from this page.',
+          helper:
+            'Meta-family clients should still import the Clash format here, not the Shadowrocket / V2Ray link.',
+          visualLabel: 'New profile',
+          visualItems: ['Clash format', 'Remote profile', 'URL import'],
+          ctaLabel: 'Create profile',
+          screenshotAlt: 'Clash Meta for Android profile configuration screen',
+        },
+        step2: {
+          title: 'Paste the Clash URL and save',
+          description:
+            'Copy the Clash subscription link from here, paste it into the input field, and save the profile.',
+          helper:
+            'If rules or groups look incomplete later, check the format and refresh state first.',
+          visualLabel: 'Save profile',
+          visualItems: ['Paste URL', 'Save profile', 'Return to list'],
+          ctaLabel: 'Save profile',
+          screenshotAlt: 'Save profile in Clash Meta for Android',
+        },
+        step3: {
+          title: 'Start the proxy and allow VPN last',
+          description:
+            'After the profile has loaded, start the proxy and accept Android’s VPN permission prompt.',
+          helper:
+            'If nodes are visible but traffic still fails, this permission is the first thing to re-check.',
+          visualLabel: 'Start proxy',
+          visualItems: ['Start proxy', 'Allow VPN', 'Test in browser'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Start proxy in Clash Meta for Android',
+        },
+      },
+    },
     exclave: {
       android: {
         note: 'Exclave stays close to classic Android V2Ray clients, and the Shadowrocket / V2Ray link is usually the safest import path.',

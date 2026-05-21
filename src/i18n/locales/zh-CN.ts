@@ -1294,6 +1294,48 @@ export const zhCN = {
         },
       },
     },
+    clashMeta: {
+      android: {
+        note: '这组截图来自公开的 Clash for Android 教程；Clash Meta for Android 的订阅导入入口和流程基本一致。',
+        sourceLabel: 'Clash Meta for Android 教程来源',
+        step0: {
+          title: '先打开配置主界面',
+          description: '进入 Clash Meta for Android 后，先找到配置列表或 Profiles 页。',
+          helper: '第一次启动如果还没初始化核心或权限，先处理掉。',
+          visualLabel: '配置首页',
+          visualItems: ['Profiles', '配置列表', '导入入口'],
+          ctaLabel: '打开配置页',
+          screenshotAlt: 'Clash Meta for Android 主界面',
+        },
+        step1: {
+          title: '新建远程配置并准备粘贴链接',
+          description: '在配置页里新增一个远程配置，准备导入当前页面的 Clash 订阅。',
+          helper: 'Meta 系客户端同样应该优先使用 Clash 格式，别先贴 Shadowrocket / V2Ray。',
+          visualLabel: '新增配置',
+          visualItems: ['Clash 格式', 'Remote profile', 'URL 导入'],
+          ctaLabel: '新建配置',
+          screenshotAlt: 'Clash Meta for Android 配置界面',
+        },
+        step2: {
+          title: '粘贴 Clash 链接并保存',
+          description: '复制当前页面的 Clash 订阅链接，粘贴到配置输入框并保存。',
+          helper: '如果规则或策略组不完整，通常先回头检查格式和刷新状态。',
+          visualLabel: '保存配置',
+          visualItems: ['粘贴 URL', '保存配置', '回到列表'],
+          ctaLabel: '保存配置',
+          screenshotAlt: 'Clash Meta for Android 保存配置',
+        },
+        step3: {
+          title: '最后启动代理并允许 VPN',
+          description: '确认配置加载完成后再启动代理，Android 会弹出 VPN 权限请求。',
+          helper: '如果看得到节点却还是不通，优先检查这一步有没有放行。',
+          visualLabel: '开启代理',
+          visualItems: ['启动代理', 'Allow VPN', '回到浏览器测试'],
+          ctaLabel: '开始连接',
+          screenshotAlt: 'Clash Meta for Android 开启代理',
+        },
+      },
+    },
     exclave: {
       android: {
         note: 'Exclave 的导入路径和经典安卓 V2Ray 客户端接近，优先用 Shadowrocket / V2Ray 链接会更稳。',
