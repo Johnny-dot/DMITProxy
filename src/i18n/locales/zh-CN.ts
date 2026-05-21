@@ -1191,6 +1191,58 @@ export const zhCN = {
         },
       },
     },
+    surge: {
+      ios: {
+        note: '这组步骤使用公开的 Surge 真机截图，直接按 Surge 配置导入流程走即可。',
+        sourceLabel: 'Surge 图文教程来源',
+        step0: {
+          title: '先打开导入或下载配置入口',
+          description:
+            '进入 Surge 后，先从下拉菜单或配置页进入 Download Configuration 一类的入口。',
+          helper: '第一次使用先不用折腾脚本和模块，先把订阅导入成功。',
+          visualLabel: '导入入口',
+          visualItems: ['下拉菜单', 'Profiles', 'Download Configuration'],
+          ctaLabel: '打开导入入口',
+          screenshotAlt: 'Surge 下拉菜单',
+        },
+        step1: {
+          title: '新建远程配置',
+          description: '点击下载配置或新增配置，让 Surge 准备接收一个新的远程订阅。',
+          helper: 'Surge 更适合直接使用 Surge 格式订阅，不建议这里贴 Shadowrocket / V2Ray。',
+          visualLabel: '新建配置',
+          visualItems: ['Download Configuration', 'Remote profile', '配置列表'],
+          ctaLabel: '新建配置',
+          screenshotAlt: 'Surge 下载配置入口',
+        },
+        step2: {
+          title: '粘贴当前页面的 Surge 订阅链接',
+          description: '先把当前页面切到 Surge，再把复制好的订阅地址粘贴到 Surge 的输入框里。',
+          helper: '如果规则组看起来不完整，优先检查是不是用了错误格式的链接。',
+          visualLabel: '订阅链接',
+          visualItems: ['Surge 格式', '粘贴 URL', '保存配置'],
+          ctaLabel: '导入配置',
+          screenshotAlt: 'Surge 粘贴订阅链接',
+        },
+        step3: {
+          title: '确认配置文件已经生成并刷新',
+          description: '保存后回到配置文件列表，确认刚才的配置已经出现，必要时手动刷新一次。',
+          helper: '导入后先确认规则和策略组都正常加载，再去启动。',
+          visualLabel: '配置文件',
+          visualItems: ['配置已生成', '刷新配置', '等待资源完成'],
+          ctaLabel: '检查配置',
+          screenshotAlt: 'Surge 配置文件列表',
+        },
+        step4: {
+          title: '最后启动并允许 VPN',
+          description: '确认配置可用后点击启动，iPhone / iPad 会弹出 VPN 权限确认。',
+          helper: '如果导入成功但网络仍然直连，通常是这里的 VPN 权限还没放行。',
+          visualLabel: '开始连接',
+          visualItems: ['启动配置', '允许 VPN', '回到应用测试'],
+          ctaLabel: '开始连接',
+          screenshotAlt: 'Surge 启动连接',
+        },
+      },
+    },
     exclave: {
       android: {
         note: 'Exclave 的导入路径和经典安卓 V2Ray 客户端接近，优先用 Shadowrocket / V2Ray 链接会更稳。',

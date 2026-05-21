@@ -1310,6 +1310,64 @@ export const enUS = {
         },
       },
     },
+    surge: {
+      ios: {
+        note: 'These steps use public Surge screenshots and follow the normal Surge profile import flow.',
+        sourceLabel: 'Surge tutorial source',
+        step0: {
+          title: 'Open the import or download profile entry first',
+          description:
+            'Inside Surge, start from the dropdown menu or profile screen and open Download Configuration.',
+          helper: 'Ignore scripts and modules for now. Get the subscription imported first.',
+          visualLabel: 'Import entry',
+          visualItems: ['Dropdown menu', 'Profiles', 'Download Configuration'],
+          ctaLabel: 'Open import entry',
+          screenshotAlt: 'Surge dropdown menu',
+        },
+        step1: {
+          title: 'Create a new remote profile',
+          description:
+            'Use the download configuration flow to add a new remote subscription profile.',
+          helper:
+            'Surge works best with the Surge format here instead of the Shadowrocket / V2Ray link.',
+          visualLabel: 'New profile',
+          visualItems: ['Download Configuration', 'Remote profile', 'Profile list'],
+          ctaLabel: 'Create profile',
+          screenshotAlt: 'Surge download configuration screen',
+        },
+        step2: {
+          title: 'Paste the Surge subscription URL from this page',
+          description: 'Switch this page to Surge first, then paste the copied link into Surge.',
+          helper:
+            'If groups or fields look incomplete after import, the wrong format is the first thing to check.',
+          visualLabel: 'Subscription URL',
+          visualItems: ['Surge format', 'Paste URL', 'Save profile'],
+          ctaLabel: 'Import profile',
+          screenshotAlt: 'Paste subscription URL into Surge',
+        },
+        step3: {
+          title: 'Confirm the profile exists and refresh it',
+          description:
+            'Return to the profile list, confirm the new configuration file is present, and refresh if needed.',
+          helper: 'Make sure rules and policy groups have loaded before you start the connection.',
+          visualLabel: 'Profile file',
+          visualItems: ['Profile created', 'Refresh profile', 'Wait for resources'],
+          ctaLabel: 'Check profile',
+          screenshotAlt: 'Surge configuration file list',
+        },
+        step4: {
+          title: 'Start the profile and allow VPN',
+          description:
+            'Once the profile looks correct, start it and accept the iOS VPN permission prompt.',
+          helper:
+            'If import succeeded but traffic stays direct, this VPN permission is usually the missing step.',
+          visualLabel: 'Connect',
+          visualItems: ['Start profile', 'Allow VPN', 'Test in the app or browser'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Start the connection in Surge',
+        },
+      },
+    },
     exclave: {
       android: {
         note: 'Exclave stays close to classic Android V2Ray clients, and the Shadowrocket / V2Ray link is usually the safest import path.',
