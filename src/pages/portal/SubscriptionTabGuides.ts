@@ -232,69 +232,7 @@ export function buildClientGuide(
     };
   }
 
-  return {
-    recommendedFormat: 'universal',
-    note,
-    steps: isZh
-      ? [
-          createStep(
-            'launch',
-            `先打开 ${platformLabel} 上的客户端并找到导入入口`,
-            '导入入口通常会在首页、订阅页、配置页或者右上角加号附近。',
-            '第一次启动如果先弹初始化、权限或欢迎页，先完成它们再继续。',
-            platformLabel,
-            ['首页', '订阅 / 配置', '导入入口'],
-            '找到导入入口',
-          ),
-          createStep(
-            'import',
-            '优先导入当前页面匹配好的订阅链接',
-            '如果客户端支持 URL 导入，就优先粘贴当前页面生成的订阅链接；支持一键导入时也可以直接唤起。',
-            '如果规则、节点或分组显示不完整，先回到这里确认订阅格式选对了。',
-            'Import profile',
-            ['匹配的订阅格式', 'URL / 剪贴板 / 一键导入', '保存或更新配置'],
-            '导入订阅',
-          ),
-          createStep(
-            'connect',
-            '保存后刷新配置、选择节点，再开启连接',
-            '先确认节点、策略组或配置资源已经加载出来，再打开系统代理、VPN 或连接开关。',
-            '如果导入成功但浏览器还是直连，通常就是这一步的系统权限还没放行。',
-            'Connect',
-            ['刷新配置', '选择节点', '允许系统权限并连接'],
-            '连接并测试',
-          ),
-        ]
-      : [
-          createStep(
-            'launch',
-            `Open the client on ${platformLabel} and find its import entry`,
-            'The import entry usually lives on the home screen, profiles page, config page, or behind a plus button.',
-            'If the app starts with a welcome flow, permissions, or initialization, finish that first.',
-            platformLabel,
-            ['Home', 'Profiles / Config', 'Import entry'],
-            'Find import entry',
-          ),
-          createStep(
-            'import',
-            'Import the matched subscription link first',
-            'If the client supports URL import, paste the matched subscription link from this page. If it supports one-click import, you can launch it directly from here instead.',
-            'If nodes, groups, or rules look incomplete afterward, the first thing to re-check is the selected format.',
-            'Import profile',
-            ['Matched format', 'URL / Clipboard / One-click import', 'Save or update profile'],
-            'Import subscription',
-          ),
-          createStep(
-            'connect',
-            'Refresh, pick a node, then connect',
-            'Make sure profiles, nodes, or rule resources have loaded before enabling system proxy, VPN, or the main connect switch.',
-            'If import worked but traffic is still direct, the missing step is usually the system permission or proxy toggle.',
-            'Connect',
-            ['Refresh profile', 'Select node', 'Allow permission and connect'],
-            'Connect and test',
-          ),
-        ],
-  };
+  return MINIMAL_FALLBACK_GUIDE;
 }
 
 export function buildRealV2RayNGuide(isZh: boolean): ClientGuide {
