@@ -736,6 +736,217 @@ export const enUS = {
         },
       },
     },
+    flClash: {
+      windows: {
+        note: 'These steps use public FlClash screenshots. The Windows layout may differ slightly, but the import flow stays effectively the same.',
+        sourceLabel: 'FlClash tutorial source',
+        step0: {
+          title: 'Open the config screen and prepare a new profile',
+          description: 'Go to Configs or Profiles and find the new configuration entry.',
+          helper: 'If first launch prompts for core setup or permissions, finish that first.',
+          visualLabel: 'Config screen',
+          visualItems: ['Configs / Profiles', 'New Configuration', 'Import entry'],
+          ctaLabel: 'Open config screen',
+          screenshotAlt: 'FlClash new configuration entry',
+        },
+        step1: {
+          title: 'Switch this page to Clash, then paste the subscription URL',
+          description: 'Copy the Clash link from here first, then import it by URL inside FlClash.',
+          helper:
+            'If the format is wrong, policy groups are usually the first thing to look broken.',
+          visualLabel: 'URL import',
+          visualItems: ['Clash format', 'Paste URL', 'Save profile'],
+          ctaLabel: 'Import subscription',
+          screenshotAlt: 'FlClash URL import screen',
+        },
+        step2: {
+          title: 'Confirm the profile exists and refresh once',
+          description:
+            'After saving, return to the profile card and make sure the imported config is visible.',
+          helper: 'If the node list stays empty, check whether the profile was refreshed.',
+          visualLabel: 'Profile card',
+          visualItems: ['Imported config', 'Refresh profile', 'Wait for resources'],
+          ctaLabel: 'Check profile',
+          screenshotAlt: 'FlClash profile details',
+        },
+        step3: {
+          title: 'Pick a node or policy group first',
+          description:
+            'Open Proxy and confirm nodes and policy groups have loaded before switching.',
+          helper: 'Choosing the node before enabling proxy makes troubleshooting much simpler.',
+          visualLabel: 'Node selection',
+          visualItems: ['Open Proxy', 'Choose a node', 'Confirm it switched'],
+          ctaLabel: 'Select node',
+          screenshotAlt: 'FlClash node selection',
+        },
+        step4: {
+          title: 'Enable proxy or system proxy last',
+          description:
+            'Turn on the proxy switch from the main screen; on desktop also confirm system proxy is active.',
+          helper:
+            'Importing alone does not move browser or system traffic until proxy mode is enabled.',
+          visualLabel: 'Connect',
+          visualItems: ['Enable proxy', 'Allow permissions', 'Test in the browser'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Enable proxy in FlClash',
+        },
+      },
+      macos: {
+        note: 'These steps use real FlClash screenshots from the macOS flow, so the window chrome and layout match the platform.',
+        sourceLabel: 'FlClash macOS tutorial source',
+        step0: {
+          title: 'Open the FlClash main screen first',
+          description:
+            'Make sure the app is installed correctly and opens to the dashboard before importing anything.',
+          helper:
+            'If macOS still blocks the app on first launch, allow it in Privacy & Security first.',
+          visualLabel: 'Main screen',
+          visualItems: [
+            'Open FlClash',
+            'Confirm the dashboard is visible',
+            'Prepare to enter Config',
+          ],
+          ctaLabel: 'Open client',
+          screenshotAlt: 'FlClash macOS main screen',
+        },
+        step1: {
+          title: 'Go to Config and import by URL',
+          description:
+            'Open the config page, click the plus button, choose URL import, and paste the Clash subscription link from this page.',
+          helper: 'Use the Clash-formatted link here, not the Shadowrocket / V2Ray link.',
+          visualLabel: 'Config import',
+          visualItems: ['Open Config', 'Click +', 'Choose URL and paste the subscription'],
+          ctaLabel: 'Import subscription',
+          screenshotAlt: 'FlClash macOS URL import flow',
+        },
+        step2: {
+          title: 'Choose a node on the Proxy page',
+          description:
+            'After the subscription loads, switch to Proxy and select the node or policy group you want to use.',
+          helper:
+            'Selecting the node before enabling system proxy makes troubleshooting much easier.',
+          visualLabel: 'Node selection',
+          visualItems: ['Open Proxy', 'Choose a node or group', 'Confirm the active node changed'],
+          ctaLabel: 'Select node',
+          screenshotAlt: 'FlClash macOS node selection',
+        },
+        step3: {
+          title: 'Enable system proxy and click Run last',
+          description:
+            'Return to the dashboard, enable System Proxy, then click the Run button so browser and system traffic actually go through FlClash.',
+          helper:
+            'Importing the subscription alone does not route traffic until proxy mode is enabled.',
+          visualLabel: 'Connect',
+          visualItems: ['Enable System Proxy', 'Click Run', 'Test again in the browser'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Enable system proxy and run FlClash on macOS',
+        },
+      },
+      linux: {
+        note: 'These steps use public FlClash screenshots. The Linux layout may differ slightly, but the import flow stays effectively the same.',
+        sourceLabel: 'FlClash tutorial source',
+        step0: {
+          title: 'Open the config screen and prepare a new profile',
+          description: 'Go to Configs or Profiles and find the new configuration entry.',
+          helper: 'If first launch prompts for core setup or permissions, finish that first.',
+          visualLabel: 'Config screen',
+          visualItems: ['Configs / Profiles', 'New Configuration', 'Import entry'],
+          ctaLabel: 'Open config screen',
+          screenshotAlt: 'FlClash new configuration entry',
+        },
+        step1: {
+          title: 'Switch this page to Clash, then paste the subscription URL',
+          description: 'Copy the Clash link from here first, then import it by URL inside FlClash.',
+          helper:
+            'If the format is wrong, policy groups are usually the first thing to look broken.',
+          visualLabel: 'URL import',
+          visualItems: ['Clash format', 'Paste URL', 'Save profile'],
+          ctaLabel: 'Import subscription',
+          screenshotAlt: 'FlClash URL import screen',
+        },
+        step2: {
+          title: 'Confirm the profile exists and refresh once',
+          description:
+            'After saving, return to the profile card and make sure the imported config is visible.',
+          helper: 'If the node list stays empty, check whether the profile was refreshed.',
+          visualLabel: 'Profile card',
+          visualItems: ['Imported config', 'Refresh profile', 'Wait for resources'],
+          ctaLabel: 'Check profile',
+          screenshotAlt: 'FlClash profile details',
+        },
+        step3: {
+          title: 'Pick a node or policy group first',
+          description:
+            'Open Proxy and confirm nodes and policy groups have loaded before switching.',
+          helper: 'Choosing the node before enabling proxy makes troubleshooting much simpler.',
+          visualLabel: 'Node selection',
+          visualItems: ['Open Proxy', 'Choose a node', 'Confirm it switched'],
+          ctaLabel: 'Select node',
+          screenshotAlt: 'FlClash node selection',
+        },
+        step4: {
+          title: 'Enable proxy or system proxy last',
+          description:
+            'Turn on the proxy switch from the main screen; on desktop also confirm system proxy is active.',
+          helper:
+            'Importing alone does not move browser or system traffic until proxy mode is enabled.',
+          visualLabel: 'Connect',
+          visualItems: ['Enable proxy', 'Allow permissions', 'Test in the browser'],
+          ctaLabel: 'Connect',
+          screenshotAlt: 'Enable proxy in FlClash',
+        },
+      },
+      android: {
+        note: 'These steps use real FlClash Android screenshots, so the import entry, node selection, and connect flow match the app.',
+        sourceLabel: 'FlClash Android tutorial source',
+        step0: {
+          title: 'Open Config first, then tap the plus button',
+          description:
+            'After FlClash opens, switch to Config. The floating plus button is the entry for creating or importing a subscription.',
+          helper:
+            'If first launch still asks for core initialization or permissions, finish that before importing.',
+          visualLabel: 'Config entry',
+          visualItems: [
+            'Open Config',
+            'Confirm the plus button is visible',
+            'Prepare to add a profile',
+          ],
+          ctaLabel: 'Open config entry',
+          screenshotAlt: 'FlClash Android config page and add entry',
+        },
+        step1: {
+          title: 'Choose URL import and paste the Clash subscription link',
+          description:
+            'Tap the plus button, choose URL, then paste the Clash-formatted subscription link from this page.',
+          helper: 'Use the Clash link here instead of the Shadowrocket / V2Ray link.',
+          visualLabel: 'URL import',
+          visualItems: ['Tap URL', 'Paste the Clash link', 'Submit import'],
+          ctaLabel: 'Import subscription',
+          screenshotAlt: 'FlClash Android URL import flow',
+        },
+        step2: {
+          title: 'Confirm the profile loaded, then choose a node on Proxy',
+          description:
+            'After import finishes, make sure the profile appears, then switch to Proxy and select the node or policy group you want.',
+          helper: 'Choosing the node before starting the proxy makes troubleshooting much easier.',
+          visualLabel: 'Node selection',
+          visualItems: ['Confirm the profile is visible', 'Open Proxy', 'Choose a node or group'],
+          ctaLabel: 'Select node',
+          screenshotAlt: 'FlClash Android imported profile and proxy page',
+        },
+        step3: {
+          title: 'Return to Dashboard and start the proxy last',
+          description:
+            'Once the node is selected, go back to Dashboard and tap the start button. If Android shows a VPN permission prompt, allow it.',
+          helper:
+            'Importing the subscription alone does not route traffic until the proxy is actually started.',
+          visualLabel: 'Connect',
+          visualItems: ['Return to Dashboard', 'Tap the start button', 'Allow VPN and test again'],
+          ctaLabel: 'Start proxy',
+          screenshotAlt: 'Start the proxy in FlClash on Android',
+        },
+      },
+    },
   },
 } as const;
 

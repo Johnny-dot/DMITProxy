@@ -8,7 +8,10 @@ export interface StepDef {
   titleKey: string;
   descriptionKey: string;
   helperKey: string;
+  /** Hardcoded English UI label; overridden by visualLabelKey when locale-specific labels are needed */
   visualLabel: string;
+  /** When present, resolved from locale instead of using the hardcoded visualLabel */
+  visualLabelKey?: string;
   visualItemsKey: string;
   ctaLabelKey: string;
   screenshot?: { src: string; altKey: string };

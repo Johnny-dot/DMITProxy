@@ -57,7 +57,9 @@ function resolveStep(step: StepDef, locale: Record<string, unknown>) {
     title: resolveStringKey(locale, step.titleKey),
     description: resolveStringKey(locale, step.descriptionKey),
     helper: resolveStringKey(locale, step.helperKey),
-    visualLabel: step.visualLabel,
+    visualLabel: step.visualLabelKey
+      ? resolveStringKey(locale, step.visualLabelKey)
+      : step.visualLabel,
     visualItems: resolveStringArrayKey(locale, step.visualItemsKey),
     ctaLabel: resolveStringKey(locale, step.ctaLabelKey),
     screenshot: step.screenshot
