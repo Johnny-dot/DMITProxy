@@ -9,7 +9,6 @@ import React, {
 } from 'react';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
-import { motion, AnimatePresence } from 'motion/react';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -18,6 +17,7 @@ interface Toast {
   message: string;
   type: ToastType;
   duration: number;
+  exiting?: boolean;
 }
 
 interface ToastContextType {
@@ -30,19 +30,29 @@ const DEFAULT_DURATIONS: Record<ToastType, number> = {
   error: 6000,
 };
 
+// Matches the .anim-toast[data-exiting='true'] animation duration in index.css.
+const EXIT_ANIM_MS = 180;
+
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const timersRef = useRef<Map<string, number>>(new Map());
+  const exitTimersRef = useRef<Map<string, number>>(new Map());
 
   const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-    const handle = timersRef.current.get(id);
-    if (handle !== undefined) {
-      window.clearTimeout(handle);
+    // Mark as exiting so the CSS exit animation plays, then drop it from state.
+    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
+    const dismissHandle = timersRef.current.get(id);
+    if (dismissHandle !== undefined) {
+      window.clearTimeout(dismissHandle);
       timersRef.current.delete(id);
     }
+    const exitHandle = window.setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+      exitTimersRef.current.delete(id);
+    }, EXIT_ANIM_MS);
+    exitTimersRef.current.set(id, exitHandle);
   }, []);
 
   const scheduleAutoDismiss = useCallback(
@@ -75,7 +85,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       if (timersRef.current.has(id)) return;
       const target = toasts.find((t) => t.id === id);
-      if (!target) return;
+      if (!target || target.exiting) return;
       // Give a slightly shortened duration on resume so a moused-over toast still
       // disappears in a reasonable time after the cursor leaves.
       const remaining = Math.max(1500, Math.floor(target.duration / 2));
@@ -85,9 +95,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    const dismissTimers = timersRef.current;
+    const exitTimers = exitTimersRef.current;
     return () => {
-      timersRef.current.forEach((handle) => window.clearTimeout(handle));
-      timersRef.current.clear();
+      dismissTimers.forEach((handle) => window.clearTimeout(handle));
+      dismissTimers.clear();
+      exitTimers.forEach((handle) => window.clearTimeout(handle));
+      exitTimers.clear();
     };
   }, []);
 
@@ -99,43 +113,39 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         aria-live="polite"
         aria-atomic="false"
       >
-        <AnimatePresence>
-          {toasts.map((t) => (
-            <motion.div
-              key={t.id}
-              role={t.type === 'error' ? 'alert' : 'status'}
-              onMouseEnter={() => pauseToast(t.id)}
-              onMouseLeave={() => resumeToast(t.id)}
-              onFocus={() => pauseToast(t.id)}
-              onBlur={() => resumeToast(t.id)}
-              initial={{ opacity: 0, y: 10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.18 } }}
-              className={cn(
-                'pointer-events-auto flex w-full items-center gap-3 rounded-[22px] border px-4 py-3 shadow-[var(--shadow-card)] backdrop-blur-xl sm:min-w-[300px] sm:max-w-md',
-                t.type === 'success' &&
-                  'border-transparent bg-[var(--success-soft)] text-[var(--success)]',
-                t.type === 'error' &&
-                  'border-transparent bg-[var(--danger-soft)] text-[var(--danger)]',
-                t.type === 'info' &&
-                  'border-[color:var(--border-subtle)] bg-[var(--surface-card-strong)] text-[var(--text-primary)]',
-              )}
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            role={t.type === 'error' ? 'alert' : 'status'}
+            data-exiting={t.exiting ? 'true' : 'false'}
+            onMouseEnter={() => pauseToast(t.id)}
+            onMouseLeave={() => resumeToast(t.id)}
+            onFocus={() => pauseToast(t.id)}
+            onBlur={() => resumeToast(t.id)}
+            className={cn(
+              'anim-toast pointer-events-auto flex w-full items-center gap-3 rounded-[22px] border px-4 py-3 shadow-[var(--shadow-card)] backdrop-blur-xl sm:min-w-[300px] sm:max-w-md',
+              t.type === 'success' &&
+                'border-transparent bg-[var(--success-soft)] text-[var(--success)]',
+              t.type === 'error' &&
+                'border-transparent bg-[var(--danger-soft)] text-[var(--danger)]',
+              t.type === 'info' &&
+                'border-[color:var(--border-subtle)] bg-[var(--surface-card-strong)] text-[var(--text-primary)]',
+            )}
+          >
+            {t.type === 'success' && <CheckCircle2 className="h-5 w-5" aria-hidden="true" />}
+            {t.type === 'error' && <AlertCircle className="h-5 w-5" aria-hidden="true" />}
+            {t.type === 'info' && <Info className="h-5 w-5" aria-hidden="true" />}
+            <span className="flex-1 text-sm font-medium">{t.message}</span>
+            <button
+              type="button"
+              onClick={() => removeToast(t.id)}
+              aria-label="Dismiss notification"
+              className="rounded-full p-1 transition-colors hover:bg-[var(--surface-panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
             >
-              {t.type === 'success' && <CheckCircle2 className="h-5 w-5" aria-hidden="true" />}
-              {t.type === 'error' && <AlertCircle className="h-5 w-5" aria-hidden="true" />}
-              {t.type === 'info' && <Info className="h-5 w-5" aria-hidden="true" />}
-              <span className="flex-1 text-sm font-medium">{t.message}</span>
-              <button
-                type="button"
-                onClick={() => removeToast(t.id)}
-                aria-label="Dismiss notification"
-                className="rounded-full p-1 transition-colors hover:bg-[var(--surface-panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
-              >
-                <X className="h-4 w-4 opacity-50 hover:opacity-100" aria-hidden="true" />
-              </button>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              <X className="h-4 w-4 opacity-50 hover:opacity-100" aria-hidden="true" />
+            </button>
+          </div>
+        ))}
       </div>
     </ToastContext.Provider>
   );

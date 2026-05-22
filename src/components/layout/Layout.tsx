@@ -1,23 +1,15 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Menu } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 import { Button } from '../ui/Button';
+import { useDelayedUnmount } from '@/src/utils/useDelayedUnmount';
 
 export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const reducedMotion = useReducedMotion();
-
-  const outletMotion = reducedMotion
-    ? { initial: false, animate: { opacity: 1 }, exit: { opacity: 1 } }
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -4, transition: { duration: 0.12, ease: 'easeIn' } },
-      };
+  const mobileMenu = useDelayedUnmount(isMobileMenuOpen, 180);
 
   return (
     <div className="relative h-svh min-h-screen overflow-hidden text-[var(--text-primary)]">
@@ -32,36 +24,28 @@ export function Layout() {
           <Sidebar />
         </div>
 
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="fixed inset-0 z-[60] bg-[color:var(--overlay)] backdrop-blur-sm md:hidden"
+        {mobileMenu.mounted && (
+          <>
+            <div
+              data-anim-state={mobileMenu.animState}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="anim-backdrop fixed inset-0 z-[60] bg-[color:var(--overlay)] backdrop-blur-sm md:hidden"
+            />
+            <div
+              data-anim-state={mobileMenu.animState}
+              className="anim-side-panel-left fixed inset-y-4 left-4 z-[70] w-[300px] md:hidden"
+              style={{
+                paddingTop: 'env(safe-area-inset-top)',
+                paddingBottom: 'env(safe-area-inset-bottom)',
+              }}
+            >
+              <Sidebar
+                onNavigate={() => setIsMobileMenuOpen(false)}
+                onClose={() => setIsMobileMenuOpen(false)}
               />
-              <motion.div
-                initial={{ x: -24, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: -24, opacity: 0 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
-                className="fixed inset-y-4 left-4 z-[70] w-[300px] md:hidden"
-                style={{
-                  paddingTop: 'env(safe-area-inset-top)',
-                  paddingBottom: 'env(safe-area-inset-bottom)',
-                }}
-              >
-                <Sidebar
-                  onNavigate={() => setIsMobileMenuOpen(false)}
-                  onClose={() => setIsMobileMenuOpen(false)}
-                />
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+            </div>
+          </>
+        )}
 
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden pb-4">
           <div className="content-shell-wide shrink-0 px-4 pb-4 pt-4 md:px-6 md:pb-6 md:pt-6 xl:px-8">
@@ -83,15 +67,12 @@ export function Layout() {
           </div>
 
           <main className="min-h-0 flex-1 overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={location.pathname + location.search}
-                {...outletMotion}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
-              >
-                <Outlet />
-              </motion.div>
-            </AnimatePresence>
+            {/* Route key remounts the wrapper so the enter animation plays on
+                each navigation. We drop the exit animation that AnimatePresence
+                used to provide — the new route renders immediately. */}
+            <div key={location.pathname + location.search} className="anim-route-enter">
+              <Outlet />
+            </div>
           </main>
         </div>
       </div>

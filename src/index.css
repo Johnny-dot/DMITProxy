@@ -438,3 +438,171 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
 }
+
+/* === Motion-less animation utilities ===
+ * CSS replacements for motion/react entry/exit animations.
+ * Drive exit timing via React state + data-anim-state="open" | "closed".
+ * See src/utils/useDelayedUnmount.ts.
+ */
+
+@keyframes anim-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes anim-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes anim-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes anim-toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+@keyframes anim-modal-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes anim-modal-panel-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+@keyframes anim-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes anim-slide-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@keyframes anim-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes anim-slide-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes anim-route-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-toast {
+  animation: anim-toast-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-toast[data-exiting='true'] {
+  animation: anim-toast-out 180ms ease-out forwards;
+}
+
+.anim-backdrop {
+  animation: anim-fade-in 180ms ease-out;
+}
+.anim-backdrop[data-anim-state='closed'] {
+  animation: anim-fade-out 150ms ease-out forwards;
+}
+
+.anim-modal-panel {
+  animation: anim-modal-panel-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-modal-panel[data-anim-state='closed'] {
+  animation: anim-modal-panel-out 150ms ease-out forwards;
+}
+
+.anim-side-panel-left {
+  animation: anim-slide-in-left 180ms ease-out;
+}
+.anim-side-panel-left[data-anim-state='closed'] {
+  animation: anim-slide-out-left 180ms ease-out forwards;
+}
+
+.anim-side-panel-right {
+  animation: anim-slide-in-right 180ms ease-out;
+}
+.anim-side-panel-right[data-anim-state='closed'] {
+  animation: anim-slide-out-right 180ms ease-out forwards;
+}
+
+.anim-route-enter {
+  animation: anim-route-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-toast,
+  .anim-toast[data-exiting='true'],
+  .anim-backdrop,
+  .anim-backdrop[data-anim-state='closed'],
+  .anim-modal-panel,
+  .anim-modal-panel[data-anim-state='closed'],
+  .anim-side-panel-left,
+  .anim-side-panel-left[data-anim-state='closed'],
+  .anim-side-panel-right,
+  .anim-side-panel-right[data-anim-state='closed'],
+  .anim-route-enter {
+    animation: none;
+  }
+}

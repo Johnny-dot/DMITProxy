@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useId, useRef } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { cn } from '@/src/utils/cn';
+import { useDelayedUnmount } from '@/src/utils/useDelayedUnmount';
 
 interface ModalProps {
   open: boolean;
@@ -47,18 +47,19 @@ export function Modal({
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  const reducedMotion = useReducedMotion();
   const fallbackLabelId = useId();
+  // 150ms matches the .anim-modal-panel exit animation in index.css.
+  const { mounted, animState } = useDelayedUnmount(open, 150);
 
-  // Lock body scroll while open, restore on close.
+  // Lock body scroll while mounted, restore on unmount.
   useEffect(() => {
-    if (!open) return;
+    if (!mounted) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [open]);
+  }, [mounted]);
 
   // Save previous focus, move focus into modal, restore on close.
   useEffect(() => {
@@ -111,46 +112,28 @@ export function Modal({
     [closeOnBackdrop, onClose],
   );
 
-  const motionProps = reducedMotion
-    ? { initial: false, animate: { opacity: 1 }, exit: { opacity: 0 } }
-    : {
-        initial: { opacity: 0 },
-        animate: { opacity: 1 },
-        exit: { opacity: 0, transition: { duration: 0.15 } },
-      };
-
-  const panelMotion = reducedMotion
-    ? { initial: false, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 1 } }
-    : {
-        initial: { opacity: 0, scale: 0.97, y: 8 },
-        animate: { opacity: 1, scale: 1, y: 0 },
-        exit: { opacity: 0, scale: 0.98, y: 4, transition: { duration: 0.15 } },
-      };
+  if (!mounted) return null;
 
   return (
-    <AnimatePresence>
-      {open ? (
-        <motion.div
-          {...motionProps}
-          className="fixed inset-0 z-[105] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
-          onClick={handleBackdropClick}
-        >
-          <motion.div
-            {...panelMotion}
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={labelledBy}
-            aria-describedby={describedBy}
-            aria-label={!labelledBy ? (ariaLabel ?? undefined) : undefined}
-            id={!labelledBy && !ariaLabel ? fallbackLabelId : undefined}
-            tabIndex={-1}
-            className={cn('focus:outline-none', panelClassName)}
-          >
-            {children}
-          </motion.div>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+    <div
+      data-anim-state={animState}
+      className="anim-backdrop fixed inset-0 z-[105] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
+      onClick={handleBackdropClick}
+    >
+      <div
+        data-anim-state={animState}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        aria-describedby={describedBy}
+        aria-label={!labelledBy ? (ariaLabel ?? undefined) : undefined}
+        id={!labelledBy && !ariaLabel ? fallbackLabelId : undefined}
+        tabIndex={-1}
+        className={cn('anim-modal-panel focus:outline-none', panelClassName)}
+      >
+        {children}
+      </div>
+    </div>
   );
 }
