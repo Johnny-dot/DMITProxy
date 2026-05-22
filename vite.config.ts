@@ -60,7 +60,7 @@ export default defineConfig(({ mode }) => {
           target: localBackend,
           changeOrigin: true,
         },
-        '/sub': {
+        '/sub/': {
           target: localBackend,
           changeOrigin: true,
         },
