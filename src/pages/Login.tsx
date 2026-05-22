@@ -91,13 +91,9 @@ export function LoginPage() {
 
   return (
     <PublicAuthLayout
-      eyebrow={isZh ? '账号登录' : 'Account sign-in'}
-      title={isZh ? '登录后，继续使用你的服务。' : 'Sign in and continue using your service.'}
-      description={
-        isZh
-          ? '登录后可以查看订阅、使用教程和社区信息。'
-          : 'After sign-in, you can open your subscription, setup guide, and community links.'
-      }
+      eyebrow={isZh ? '登录' : 'Sign in'}
+      title={isZh ? '登录,继续使用。' : 'Sign in to continue.'}
+      description={isZh ? '订阅、教程、社群。' : 'Subscriptions, guides, community.'}
     >
       <div className="space-y-8" data-testid="login-page">
         <div className="space-y-3">
@@ -206,9 +202,7 @@ export function LoginPage() {
               {isZh ? '有邀请码？' : 'Have an invite code?'}
             </p>
             <p className="text-sm leading-6 text-zinc-400">
-              {isZh
-                ? '先注册，再直接进入你的订阅页。'
-                : 'Register first, then go straight to your subscription page.'}
+              {isZh ? '注册后直接进订阅页。' : 'Register, then jump to your subscriptions.'}
             </p>
           </div>
           <Link to="/register" data-testid="login-register-link">

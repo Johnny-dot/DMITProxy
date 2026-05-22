@@ -70,7 +70,7 @@ export function HomeTab({
           <div className="space-y-3">
             <p className="section-kicker">{isZh ? '管理视图' : 'Management overview'}</p>
             <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-              {isZh ? '统一用户中心与管理入口' : 'Unified user center with management access'}
+              {isZh ? '用户中心与管理入口' : 'User center with management access'}
             </h2>
             <p className="max-w-2xl text-sm leading-6 text-zinc-400">
               {isZh
@@ -210,12 +210,12 @@ function OverviewCard({
       <div className="space-y-3">
         <p className="section-kicker">{isZh ? '账户概览' : 'Account overview'}</p>
         <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-          {isZh ? '你的账号和线路状态。' : 'Your account and route status.'}
+          {isZh ? '账号与线路状态。' : 'Account and route status.'}
         </h2>
         <p className="max-w-2xl text-sm leading-6 text-zinc-400">
           {isZh
-            ? '先看看订阅是否可用、流量还有多少，再继续复制链接或下载客户端。'
-            : 'Check whether your subscription is ready and how much traffic is left before copying links or downloading a client.'}
+            ? '确认订阅可用、流量余量，再复制链接或下载客户端。'
+            : 'Check that your subscription is ready and traffic is available before copying links or downloading.'}
         </p>
       </div>
 
@@ -276,7 +276,7 @@ function TrafficStatsCard({
   const trafficHelpText = isZh
     ? '这里可以看已用流量和总量；如果显示不限，说明当前没有总流量上限。'
     : 'This compares your used traffic with the total. If it says Unlimited, there is no traffic cap right now.';
-  const uploadHelpText = isZh ? '这是你已经上传的流量。' : 'This is the traffic you have uploaded.';
+  const uploadHelpText = isZh ? '已上传流量。' : "Traffic you've uploaded.";
   const downloadHelpText = isZh
     ? '这是你已经下载的流量。'
     : 'This is the traffic you have downloaded.';
@@ -313,7 +313,7 @@ function TrafficStatsCard({
       <div className="space-y-2">
         <p className="section-kicker">{isZh ? '使用情况' : 'Usage'}</p>
         <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
-          {isZh ? '当前流量、到期时间与连接状态' : 'Traffic, expiry, and connection status'}
+          {isZh ? '流量、到期时间与连接状态' : 'Traffic, expiry, and connection status'}
         </h2>
       </div>
 
@@ -329,7 +329,7 @@ function TrafficStatsCard({
         </div>
       ) : !stats ? (
         <p className="text-sm leading-6 text-zinc-500">
-          {isZh ? '暂时没有可用的流量数据，请稍后再试。' : 'No usage data is available yet.'}
+          {isZh ? '暂无流量数据，稍后再试。' : 'No usage data yet.'}
         </p>
       ) : (
         <div className="space-y-4">
@@ -491,7 +491,7 @@ function AdminMessagesCard({
         </div>
       ) : (
         <p className="text-sm leading-6 text-zinc-500">
-          {isZh ? '暂时还没有新的说明。' : 'No new notes yet.'}
+          {isZh ? '暂无新说明。' : 'No new notes yet.'}
         </p>
       )}
 

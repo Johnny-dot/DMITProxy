@@ -34,22 +34,20 @@ export function PublicAuthLayout({ eyebrow, title, description, children }: Publ
       icon: PanelsTopLeft,
       title: isZh ? '常用操作，一眼找到' : 'Common tasks, easy to find',
       description: isZh
-        ? '登录后，常用入口会放在顺手的位置。'
-        : 'The links you use most stay close at hand after sign-in.',
+        ? '登录后，常用入口触手可及。'
+        : 'Your most-used links, right at hand after sign-in.',
     },
     {
       icon: ShieldCheck,
       title: isZh ? '状态清楚，少走弯路' : 'Clear status, fewer detours',
       description: isZh
-        ? '哪些已经准备好、下一步该做什么，都能快速看明白。'
-        : 'You can see what is ready and what to do next at a glance.',
+        ? '哪些已就绪、下一步做什么，一眼看清。'
+        : "See what's ready and what's next at a glance.",
     },
     {
       icon: Waypoints,
       title: isZh ? '第一次来，也能跟着走' : 'Easy even on the first visit',
-      description: isZh
-        ? '按提示一步步完成，不用先理解太多术语。'
-        : 'Follow the prompts step by step without learning too much jargon first.',
+      description: isZh ? '按提示操作，无需熟悉术语。' : 'Follow the prompts — no jargon needed.',
     },
   ];
 

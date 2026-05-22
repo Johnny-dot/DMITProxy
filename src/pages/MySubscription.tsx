@@ -182,7 +182,7 @@ export function MySubscriptionPage() {
     if (activeTab === 'home') {
       return {
         kicker: isZh ? '账户概览' : 'Account overview',
-        title: isZh ? '先确认你的账户状态。' : 'Check your account status first.',
+        title: isZh ? '确认账户状态。' : 'Check account status.',
         description: isZh
           ? '订阅是否可用、流量还剩多少、当前线路表现如何，都能先在这里看到。'
           : 'See whether your subscription is ready, how much traffic is left, and how your current route is performing.',
@@ -192,7 +192,7 @@ export function MySubscriptionPage() {
     if (activeTab === 'setup') {
       return {
         kicker: isZh ? '使用订阅' : 'Set up',
-        title: isZh ? '选好设备，跟着步骤接入。' : 'Pick your device and follow the setup.',
+        title: isZh ? '选设备，按步骤接入。' : 'Pick a device and follow the steps.',
         description: isZh
           ? '页面会带你完成客户端下载、链接复制和导入连接。'
           : 'This page walks you through the client download, link copy, and import steps.',
@@ -213,7 +213,7 @@ export function MySubscriptionPage() {
 
     return {
       kicker: isZh ? '社区' : 'Community',
-      title: isZh ? '找到你的群组和加入方式。' : 'Find your group links and join details.',
+      title: isZh ? '群组与加入方式。' : 'Group links and join details.',
       description: isZh
         ? '常用社区链接、二维码和加入说明都会放在这里。'
         : 'Common community links, QR codes, and join notes are collected here.',

@@ -237,7 +237,7 @@ export function NodeQualityCard({
         </div>
       ) : !hasDetails ? (
         <p className="text-sm leading-6 text-zinc-500">
-          {isZh ? '现在还没有可以展示的检测结果。' : 'There are no check results to show yet.'}
+          {isZh ? '暂无检测结果。' : 'No check results yet.'}
         </p>
       ) : null}
     </section>

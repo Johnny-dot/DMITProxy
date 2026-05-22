@@ -132,9 +132,7 @@ export function MirrorDownloadDialog({
       setStatus(next);
     } catch {
       setStatus(null);
-      setStatusError(
-        isZh ? '暂时无法获取当前镜像状态。' : 'Unable to load the current mirror status.',
-      );
+      setStatusError(isZh ? '无法获取镜像状态。' : 'Unable to load mirror status.');
     } finally {
       setIsLoadingStatus(false);
     }
@@ -176,7 +174,7 @@ export function MirrorDownloadDialog({
   const statusMessage = managed
     ? status
       ? getManagedMirrorStatusToast(status, isZh).message
-      : statusError || (isZh ? '正在检查镜像状态。' : 'Checking the mirror status.')
+      : statusError || (isZh ? '正在检查镜像状态。' : 'Checking mirror status.')
     : isZh
       ? '这是一个已配置的镜像下载地址，点击后会在新标签页开始下载。'
       : 'This mirror uses a configured download URL and will open in a new tab.';
@@ -257,8 +255,7 @@ export function MirrorDownloadDialog({
                 ) : null}
               </div>
               <p className="mt-2 break-all text-sm font-medium text-[var(--text-primary)]">
-                {status?.fileName ||
-                  (isZh ? '首次请求时由服务器准备' : 'Prepared by the server on first request')}
+                {status?.fileName || (isZh ? '首次请求时服务器准备' : 'Built on first request')}
               </p>
               <p className="mt-2 text-xs leading-6 text-[var(--text-secondary)]">
                 {isZh ? '最近缓存时间：' : 'Last cached: '}

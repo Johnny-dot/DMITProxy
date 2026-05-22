@@ -89,19 +89,19 @@ function getCommunityDescription(entry: CommunityLink, isZh: boolean, hasQrImage
 
   if (entry.url.trim()) {
     return isZh
-      ? '可以直接点击链接，或扫描右侧二维码加入。'
+      ? '点击链接或扫描二维码加入。'
       : 'Open the invite link or scan the QR code to join.';
   }
 
   if (hasQrImage) {
-    return isZh ? '使用二维码加入。' : 'Use the QR code to join.';
+    return isZh ? '扫码加入。' : 'Scan the QR to join.';
   }
 
   if (entry.qrContent.trim()) {
     return isZh ? '支持通过二维码内容加入。' : 'Join with the QR content.';
   }
 
-  return isZh ? '社区入口即将开放。' : 'This entry will open soon.';
+  return isZh ? '社区入口即将开放。' : 'Coming soon.';
 }
 
 function getCommunityQrHint(entry: CommunityLink, isZh: boolean, hasQrImage: boolean) {
@@ -172,10 +172,10 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
             <h2 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">
-              {isZh ? '暂时还没有开放的社群入口。' : 'No community links are available yet.'}
+              {isZh ? '暂无社群入口。' : 'No community links yet.'}
             </h2>
             <p className="text-sm leading-7 text-[var(--text-secondary)]">
-              {isZh ? '发布后会直接显示在这里。' : 'Published community links will appear here.'}
+              {isZh ? '发布后显示在这里。' : 'Published links will appear here.'}
             </p>
           </div>
 

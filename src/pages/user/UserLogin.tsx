@@ -55,11 +55,11 @@ export function UserLoginPage() {
   return (
     <PublicAuthLayout
       eyebrow={isZh ? '个人入口' : 'Personal sign-in'}
-      title={isZh ? '回到你的页面，继续就好。' : 'A simple way back to your own page.'}
+      title={isZh ? '回来了，继续就好。' : 'Back to your page.'}
       description={
         isZh
-          ? '登录后会直接回到常用的订阅、下载和帮助页面。'
-          : 'Sign in and go straight back to your usual links, downloads, and help.'
+          ? '登录后直达订阅、下载、帮助。'
+          : 'Sign in to reach subscriptions, downloads, and help.'
       }
     >
       <div className="space-y-8">
@@ -71,8 +71,8 @@ export function UserLoginPage() {
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-400">
               {isZh
-                ? '登录后可以查看订阅、下载客户端和社区入口。'
-                : 'Sign in to access your subscription, downloads, and community links.'}
+                ? '登录后直达订阅、下载与社区。'
+                : 'Sign in for subscriptions, downloads, and community links.'}
             </p>
           </div>
         </div>

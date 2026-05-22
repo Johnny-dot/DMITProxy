@@ -63,11 +63,11 @@ export function UserRegisterPage() {
   return (
     <PublicAuthLayout
       eyebrow={isZh ? '邀请码注册' : 'Invite registration'}
-      title={isZh ? '先完成注册，再开始使用。' : 'Create your account and get started.'}
+      title={isZh ? '完成注册，开始使用。' : 'Create your account and get started.'}
       description={
         isZh
-          ? '准备好邀请码、用户名和密码，注册后会直接进入你的页面。'
-          : 'Use your invite code, username, and password, then continue straight to your page.'
+          ? '邀请码、用户名、密码，注册后直达个人页。'
+          : 'Invite code, username, password — then straight to your page.'
       }
     >
       <div className="space-y-8" data-testid="register-page">
