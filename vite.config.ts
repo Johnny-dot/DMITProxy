@@ -48,6 +48,30 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          // Split vendor packages out of the main bundle so users only re-download
+          // app code when the app changes. Recharts is already lazy-loaded via the
+          // pages that use it (Dashboard, Traffic), so we don't list it here.
+          manualChunks: (id) => {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('react-router')) return 'vendor-router';
+            if (
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/scheduler/')
+            )
+              return 'vendor-react';
+            if (id.includes('node_modules/motion/') || id.includes('node_modules/framer-motion/'))
+              return 'vendor-motion';
+            if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
+            if (id.includes('node_modules/date-fns/')) return 'vendor-datefns';
+            return undefined;
+          },
+        },
+      },
+    },
     server: {
       // Allow disabling HMR when editing through remote or constrained environments.
       hmr: process.env.DISABLE_HMR !== 'true',
