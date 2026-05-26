@@ -1,5 +1,12 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
-import { upsertDmitTraffic } from '../dmit-traffic-store.js';
+import { listBillingConfigs, setBillingDay } from '../xui-billing.js';
+import {
+  getDmitTrafficSnapshot,
+  markAutoAppliedBillingDay,
+  upsertDmitTraffic,
+} from '../dmit-traffic-store.js';
+import { loginAndListInbounds, getXuiCredentials } from '../xui-admin.js';
+import { decideBillingDayAction, type BillingDayAction } from '../dmit-billing-sync.js';
 
 const router = Router();
 
@@ -64,7 +71,7 @@ function asOptionalFutureMs(value: unknown, now: number): number | null {
   return Math.floor(value);
 }
 
-router.post('/traffic', requireSyncToken, (req: Request, res: Response) => {
+router.post('/traffic', requireSyncToken, async (req: Request, res: Response) => {
   const body = (req.body ?? {}) as SyncBody;
   const expectedServiceId = getServiceId();
   if (expectedServiceId == null) {
@@ -81,6 +88,9 @@ router.post('/traffic', requireSyncToken, (req: Request, res: Response) => {
   }
 
   const now = Date.now();
+  const nextResetDay = asOptionalBillingDay(body.next_reset_day);
+  const nextResetAt = asOptionalFutureMs(body.next_reset_at, now);
+
   upsertDmitTraffic({
     serviceId: expectedServiceId,
     bwusageMb: body.bwusage,
@@ -88,13 +98,44 @@ router.post('/traffic', requireSyncToken, (req: Request, res: Response) => {
     bwusageInMb: asOptionalNonNegInt(body.bwusage_in),
     bwusageOutMb: asOptionalNonNegInt(body.bwusage_out),
     usagePercentage: asOptionalNumber(body.usage_percentage),
-    nextResetDay: asOptionalBillingDay(body.next_reset_day),
-    nextResetAt: asOptionalFutureMs(body.next_reset_at, now),
+    nextResetDay,
+    nextResetAt,
     source: 'tampermonkey',
     now,
   });
 
-  return res.json({ ok: true, updated_at: now, billing_day_action: 'noop' });
+  let billingDayAction: BillingDayAction = 'noop';
+  const snapshot = getDmitTrafficSnapshot(expectedServiceId);
+  const currentBillingDays = listBillingConfigs().map((c) => c.billingDay);
+  const decision = decideBillingDayAction({
+    nextResetDay,
+    autoAppliedBillingDay: snapshot?.autoAppliedBillingDay ?? null,
+    currentBillingDays,
+  });
+
+  if (decision.action === 'applied' && decision.applyTo != null) {
+    const creds = getXuiCredentials();
+    if (creds) {
+      try {
+        const inbounds = await loginAndListInbounds(creds.username, creds.password);
+        const configured = new Set(listBillingConfigs().map((c) => c.inboundId));
+        for (const inbound of inbounds) {
+          if (configured.has(inbound.id)) continue; // respect manual config
+          setBillingDay(inbound.id, decision.applyTo);
+        }
+        markAutoAppliedBillingDay(expectedServiceId, decision.applyTo);
+        billingDayAction = 'applied';
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : 'Unknown error';
+        console.warn(`[dmit] auto-apply billing day failed: ${detail}`);
+        billingDayAction = 'noop';
+      }
+    }
+  } else {
+    billingDayAction = decision.action;
+  }
+
+  return res.json({ ok: true, updated_at: now, billing_day_action: billingDayAction });
 });
 
 export default router;

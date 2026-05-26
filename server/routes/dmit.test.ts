@@ -107,3 +107,122 @@ describe('POST /local/dmit/traffic', () => {
     expect(snap!.source).toBe('tampermonkey');
   });
 });
+
+describe('POST /local/dmit/traffic — billing day auto-sync', () => {
+  it('returns billing_day_action: applied on first sync and writes billing day to xui_inbound_billing', async () => {
+    const { app } = await bootApp({
+      DMIT_SYNC_TOKEN: VALID_TOKEN,
+      DMIT_SERVICE_ID: String(SERVICE_ID),
+    });
+
+    // Mock the 3X-UI fetch so the handler can enumerate inbounds without network.
+    const xuiAdmin = await import('../xui-admin.js');
+    vi.spyOn(xuiAdmin, 'getXuiCredentials').mockReturnValue({
+      username: 'u',
+      password: 'p',
+    });
+    vi.spyOn(xuiAdmin, 'loginAndListInbounds').mockResolvedValue([
+      { id: 11, enable: true } as never,
+      { id: 12, enable: true } as never,
+    ]);
+
+    const r = await request(app)
+      .post('/local/dmit/traffic')
+      .set('Authorization', `Bearer ${VALID_TOKEN}`)
+      .send({
+        service_id: SERVICE_ID,
+        bwusage: 100,
+        bwlimit: 1024000,
+        next_reset_day: 3,
+        next_reset_at: Date.now() + 8 * 86400_000,
+      });
+
+    expect(r.status).toBe(200);
+    expect(r.body.billing_day_action).toBe('applied');
+
+    const { listBillingConfigs } = await import('../xui-billing.js');
+    const configs = listBillingConfigs();
+    expect(configs.find((c) => c.inboundId === 11)?.billingDay).toBe(3);
+    expect(configs.find((c) => c.inboundId === 12)?.billingDay).toBe(3);
+
+    const { getDmitTrafficSnapshot } = await import('../dmit-traffic-store.js');
+    expect(getDmitTrafficSnapshot(SERVICE_ID)!.autoAppliedBillingDay).toBe(3);
+  });
+
+  it('does not overwrite an inbound that already has billing_day set', async () => {
+    const { app } = await bootApp({
+      DMIT_SYNC_TOKEN: VALID_TOKEN,
+      DMIT_SERVICE_ID: String(SERVICE_ID),
+    });
+
+    // Pre-configure inbound 11 with billing day = 7
+    const { setBillingDay, listBillingConfigs } = await import('../xui-billing.js');
+    setBillingDay(11, 7);
+
+    const xuiAdmin = await import('../xui-admin.js');
+    vi.spyOn(xuiAdmin, 'getXuiCredentials').mockReturnValue({
+      username: 'u',
+      password: 'p',
+    });
+    vi.spyOn(xuiAdmin, 'loginAndListInbounds').mockResolvedValue([
+      { id: 11, enable: true } as never,
+      { id: 12, enable: true } as never,
+    ]);
+
+    await request(app)
+      .post('/local/dmit/traffic')
+      .set('Authorization', `Bearer ${VALID_TOKEN}`)
+      .send({
+        service_id: SERVICE_ID,
+        bwusage: 100,
+        bwlimit: 1024000,
+        next_reset_day: 3,
+        next_reset_at: Date.now() + 8 * 86400_000,
+      });
+
+    const configs = listBillingConfigs();
+    expect(configs.find((c) => c.inboundId === 11)?.billingDay).toBe(7); // untouched
+    expect(configs.find((c) => c.inboundId === 12)?.billingDay).toBe(3); // newly applied
+  });
+
+  it('returns billing_day_action: mismatch on subsequent sync when DMIT changes day', async () => {
+    const { app } = await bootApp({
+      DMIT_SYNC_TOKEN: VALID_TOKEN,
+      DMIT_SERVICE_ID: String(SERVICE_ID),
+    });
+    const xuiAdmin = await import('../xui-admin.js');
+    vi.spyOn(xuiAdmin, 'getXuiCredentials').mockReturnValue({
+      username: 'u',
+      password: 'p',
+    });
+    vi.spyOn(xuiAdmin, 'loginAndListInbounds').mockResolvedValue([
+      { id: 11, enable: true } as never,
+    ]);
+
+    // First sync — applied
+    await request(app)
+      .post('/local/dmit/traffic')
+      .set('Authorization', `Bearer ${VALID_TOKEN}`)
+      .send({
+        service_id: SERVICE_ID,
+        bwusage: 100,
+        bwlimit: 1024000,
+        next_reset_day: 3,
+        next_reset_at: Date.now() + 8 * 86400_000,
+      });
+
+    // Second sync with a different reset day
+    const r = await request(app)
+      .post('/local/dmit/traffic')
+      .set('Authorization', `Bearer ${VALID_TOKEN}`)
+      .send({
+        service_id: SERVICE_ID,
+        bwusage: 200,
+        bwlimit: 1024000,
+        next_reset_day: 5,
+        next_reset_at: Date.now() + 8 * 86400_000,
+      });
+
+    expect(r.body.billing_day_action).toBe('mismatch');
+  });
+});
