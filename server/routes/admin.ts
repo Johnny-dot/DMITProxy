@@ -34,6 +34,13 @@ import {
   removeAnnouncementHistoryEntry,
 } from '../announcement-history.js';
 import { clearBillingDay, listBillingConfigs, setBillingDay } from '../xui-billing.js';
+import {
+  getDmitTrafficSnapshot,
+  upsertDmitTraffic,
+  markAutoAppliedBillingDay,
+  type DmitTrafficSnapshot,
+} from '../dmit-traffic-store.js';
+import { getXuiCredentials, loginAndListInbounds } from '../xui-admin.js';
 import { getServerVersion } from '../app-version.js';
 
 const router = Router();
@@ -512,6 +519,32 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+function dmitServiceIdFromEnv(): number | null {
+  const raw = (process.env.DMIT_SERVICE_ID ?? '').trim();
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+const DMIT_STALE_THRESHOLD_MS = 7 * 24 * 3600 * 1000;
+
+function serializeDmitSnapshot(snap: DmitTrafficSnapshot, now: number) {
+  const MB = 1024 * 1024;
+  return {
+    service_id: snap.serviceId,
+    bwusage_mb: Math.round(snap.bwusageBytes / MB),
+    bwlimit_mb: Math.round(snap.bwlimitBytes / MB),
+    bwusage_in_mb: snap.bwusageInBytes == null ? null : Math.round(snap.bwusageInBytes / MB),
+    bwusage_out_mb: snap.bwusageOutBytes == null ? null : Math.round(snap.bwusageOutBytes / MB),
+    usage_percentage: snap.usagePercentage,
+    next_reset_day: snap.nextResetDay,
+    next_reset_at: snap.nextResetAt,
+    auto_applied_billing_day: snap.autoAppliedBillingDay,
+    updated_at: snap.updatedAt,
+    source: snap.source,
+    is_stale: now - snap.updatedAt > DMIT_STALE_THRESHOLD_MS,
+  };
+}
+
 // GET /local/admin/invite — list invite codes (most recent first, max 500)
 router.get('/invite', requireAdmin, (_req, res) => {
   const codes = db
@@ -837,6 +870,111 @@ router.put('/xui-inbounds/:id/billing-day', requireAdmin, (req, res) => {
     return res.status(400).json({ error: detail });
   }
   return res.json({ ok: true, billingDay: day });
+});
+
+// GET /local/admin/dmit/traffic — current DMIT snapshot for the configured service id
+router.get('/dmit/traffic', requireAdmin, (_req, res) => {
+  const serviceId = dmitServiceIdFromEnv();
+  if (serviceId == null) {
+    return res.json({ exists: false, configured: false });
+  }
+  const snap = getDmitTrafficSnapshot(serviceId);
+  if (!snap) {
+    return res.json({ exists: false, configured: true, service_id: serviceId });
+  }
+  return res.json({
+    exists: true,
+    configured: true,
+    data: serializeDmitSnapshot(snap, Date.now()),
+  });
+});
+
+// POST /local/admin/dmit/traffic/manual — admin pastes traffic numbers as a fallback
+router.post('/dmit/traffic/manual', requireAdmin, (req, res) => {
+  const serviceId = dmitServiceIdFromEnv();
+  if (serviceId == null) {
+    return res.status(400).json({ error: 'DMIT_SERVICE_ID is not configured' });
+  }
+  const body = (req.body ?? {}) as {
+    bwusage?: unknown;
+    bwlimit?: unknown;
+    bwusage_in?: unknown;
+    bwusage_out?: unknown;
+    usage_percentage?: unknown;
+  };
+  const bwusage = Number(body.bwusage);
+  const bwlimit = Number(body.bwlimit);
+  if (!Number.isFinite(bwusage) || !Number.isFinite(bwlimit) || bwusage < 0 || bwlimit <= 0) {
+    return res.status(400).json({ error: 'bwusage and bwlimit must be valid (MB)' });
+  }
+  upsertDmitTraffic({
+    serviceId,
+    bwusageMb: Math.round(bwusage),
+    bwlimitMb: Math.round(bwlimit),
+    bwusageInMb: Number.isFinite(Number(body.bwusage_in))
+      ? Math.round(Number(body.bwusage_in))
+      : null,
+    bwusageOutMb: Number.isFinite(Number(body.bwusage_out))
+      ? Math.round(Number(body.bwusage_out))
+      : null,
+    usagePercentage: Number.isFinite(Number(body.usage_percentage))
+      ? Number(body.usage_percentage)
+      : null,
+    source: 'manual',
+  });
+  return res.json({ ok: true });
+});
+
+// POST /local/admin/dmit/billing-day/sync — force-apply DMIT reset day to all inbounds
+router.post('/dmit/billing-day/sync', requireAdmin, async (_req, res) => {
+  const serviceId = dmitServiceIdFromEnv();
+  if (serviceId == null) {
+    return res.status(400).json({ error: 'DMIT_SERVICE_ID is not configured' });
+  }
+  const snap = getDmitTrafficSnapshot(serviceId);
+  if (!snap || snap.nextResetDay == null) {
+    return res
+      .status(400)
+      .json({ error: 'No DMIT next_reset_day available; sync from Tampermonkey first' });
+  }
+  const creds = getXuiCredentials();
+  if (!creds) return res.status(400).json({ error: 'XUI credentials missing' });
+
+  try {
+    const inbounds = await loginAndListInbounds(creds.username, creds.password);
+    let updated = 0;
+    for (const inbound of inbounds) {
+      setBillingDay(inbound.id, snap.nextResetDay);
+      updated += 1;
+    }
+    markAutoAppliedBillingDay(serviceId, snap.nextResetDay);
+    return res.json({ ok: true, updated, billing_day: snap.nextResetDay });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'Unknown error';
+    return res.status(500).json({ error: detail });
+  }
+});
+
+// GET /local/admin/dmit/userscript — render the Tampermonkey script with token / serviceId / backend URL filled in
+router.get('/dmit/userscript', requireAdmin, (req, res) => {
+  const token = (process.env.DMIT_SYNC_TOKEN ?? '').trim();
+  const serviceId = dmitServiceIdFromEnv();
+  if (!token || serviceId == null) {
+    return res.status(400).json({ error: 'DMIT_SYNC_TOKEN or DMIT_SERVICE_ID is not configured' });
+  }
+  const proto = (req.header('x-forwarded-proto') ?? req.protocol).split(',')[0]?.trim() || 'https';
+  const host = req.header('x-forwarded-host') ?? req.header('host') ?? '';
+  const backend = `${proto}://${host}/local/dmit/traffic`;
+  const template = fs.readFileSync(
+    path.join(process.cwd(), 'scripts/userscripts/dmit-traffic-sync.user.js'),
+    'utf8',
+  );
+  const rendered = template
+    .replace(/__DMIT_BACKEND_URL__/g, backend)
+    .replace(/__DMIT_SERVICE_ID__/g, String(serviceId))
+    .replace(/__DMIT_SYNC_TOKEN__/g, token)
+    .replace(/__DMIT_BACKEND_HOST__/g, host);
+  res.type('application/javascript; charset=utf-8').send(rendered);
 });
 
 export default router;
