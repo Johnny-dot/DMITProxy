@@ -13,6 +13,7 @@ import {
 import { getBillingConfig } from './xui-billing.js';
 import { db } from './db.js';
 import { getDmitTrafficSnapshot } from './dmit-traffic-store.js';
+import { getDmitServiceId } from './dmit-config.js';
 import {
   buildSubscriptionDecorations,
   getClientTrafficBreakdown,
@@ -400,12 +401,6 @@ function resolveAddress(inbound: XuiInbound): string {
   }
 }
 
-function getConfiguredDmitServiceId(): number | null {
-  const raw = (process.env.DMIT_SERVICE_ID ?? '').trim();
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
 /**
  * Build subscription payload (newline-separated protocol links) for a given subId
  * by querying the 3X-UI admin API directly.
@@ -418,7 +413,7 @@ export async function buildSubscriptionPayload(subId: string): Promise<string> {
 
   const inbounds = await loginAndListInbounds(creds.username, creds.password);
 
-  const dmitServiceId = getConfiguredDmitServiceId();
+  const dmitServiceId = getDmitServiceId();
   const dmitSnapshot = dmitServiceId != null ? getDmitTrafficSnapshot(dmitServiceId) : null;
 
   const links: string[] = [];

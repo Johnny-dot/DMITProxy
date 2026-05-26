@@ -40,6 +40,7 @@ import {
   markAutoAppliedBillingDay,
   type DmitTrafficSnapshot,
 } from '../dmit-traffic-store.js';
+import { getDmitServiceId, getDmitSyncToken } from '../dmit-config.js';
 import { getXuiCredentials, loginAndListInbounds } from '../xui-admin.js';
 import { getServerVersion } from '../app-version.js';
 
@@ -519,12 +520,6 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-function dmitServiceIdFromEnv(): number | null {
-  const raw = (process.env.DMIT_SERVICE_ID ?? '').trim();
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
 const DMIT_STALE_THRESHOLD_MS = 7 * 24 * 3600 * 1000;
 
 function serializeDmitSnapshot(snap: DmitTrafficSnapshot, now: number) {
@@ -874,7 +869,7 @@ router.put('/xui-inbounds/:id/billing-day', requireAdmin, (req, res) => {
 
 // GET /local/admin/dmit/traffic — current DMIT snapshot for the configured service id
 router.get('/dmit/traffic', requireAdmin, (_req, res) => {
-  const serviceId = dmitServiceIdFromEnv();
+  const serviceId = getDmitServiceId();
   if (serviceId == null) {
     return res.json({ exists: false, configured: false });
   }
@@ -891,7 +886,7 @@ router.get('/dmit/traffic', requireAdmin, (_req, res) => {
 
 // POST /local/admin/dmit/traffic/manual — admin pastes traffic numbers as a fallback
 router.post('/dmit/traffic/manual', requireAdmin, (req, res) => {
-  const serviceId = dmitServiceIdFromEnv();
+  const serviceId = getDmitServiceId();
   if (serviceId == null) {
     return res.status(400).json({ error: 'DMIT_SERVICE_ID is not configured' });
   }
@@ -927,7 +922,7 @@ router.post('/dmit/traffic/manual', requireAdmin, (req, res) => {
 
 // POST /local/admin/dmit/billing-day/sync — force-apply DMIT reset day to all inbounds
 router.post('/dmit/billing-day/sync', requireAdmin, async (_req, res) => {
-  const serviceId = dmitServiceIdFromEnv();
+  const serviceId = getDmitServiceId();
   if (serviceId == null) {
     return res.status(400).json({ error: 'DMIT_SERVICE_ID is not configured' });
   }
@@ -957,23 +952,31 @@ router.post('/dmit/billing-day/sync', requireAdmin, async (_req, res) => {
 
 // GET /local/admin/dmit/userscript — render the Tampermonkey script with token / serviceId / backend URL filled in
 router.get('/dmit/userscript', requireAdmin, (req, res) => {
-  const token = (process.env.DMIT_SYNC_TOKEN ?? '').trim();
-  const serviceId = dmitServiceIdFromEnv();
+  const token = getDmitSyncToken();
+  const serviceId = getDmitServiceId();
   if (!token || serviceId == null) {
     return res.status(400).json({ error: 'DMIT_SYNC_TOKEN or DMIT_SERVICE_ID is not configured' });
   }
   const proto = (req.header('x-forwarded-proto') ?? req.protocol).split(',')[0]?.trim() || 'https';
   const host = req.header('x-forwarded-host') ?? req.header('host') ?? '';
   const backend = `${proto}://${host}/local/dmit/traffic`;
-  const template = fs.readFileSync(
-    path.join(process.cwd(), 'scripts/userscripts/dmit-traffic-sync.user.js'),
-    'utf8',
-  );
+  let template: string;
+  try {
+    template = fs.readFileSync(
+      path.join(process.cwd(), 'scripts/userscripts/dmit-traffic-sync.user.js'),
+      'utf8',
+    );
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'Unknown error';
+    console.error(`[admin] userscript template unavailable: ${detail}`);
+    return res.status(500).json({ error: 'userscript template unavailable' });
+  }
   const rendered = template
     .replace(/__DMIT_BACKEND_URL__/g, backend)
     .replace(/__DMIT_SERVICE_ID__/g, String(serviceId))
     .replace(/__DMIT_SYNC_TOKEN__/g, token)
     .replace(/__DMIT_BACKEND_HOST__/g, host);
+  res.setHeader('Cache-Control', 'no-store');
   res.type('application/javascript; charset=utf-8').send(rendered);
 });
 

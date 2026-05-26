@@ -7,22 +7,12 @@ import {
 } from '../dmit-traffic-store.js';
 import { loginAndListInbounds, getXuiCredentials } from '../xui-admin.js';
 import { decideBillingDayAction, type BillingDayAction } from '../dmit-billing-sync.js';
+import { getDmitServiceId, getDmitSyncToken } from '../dmit-config.js';
 
 const router = Router();
 
-function getSyncToken(): string | null {
-  const raw = (process.env.DMIT_SYNC_TOKEN ?? '').trim();
-  return raw.length > 0 ? raw : null;
-}
-
-function getServiceId(): number | null {
-  const raw = (process.env.DMIT_SERVICE_ID ?? '').trim();
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
 function requireSyncToken(req: Request, res: Response, next: NextFunction) {
-  const token = getSyncToken();
+  const token = getDmitSyncToken();
   if (!token) {
     return res.status(503).json({ error: 'DMIT sync is not configured' });
   }
@@ -73,7 +63,7 @@ function asOptionalFutureMs(value: unknown, now: number): number | null {
 
 router.post('/traffic', requireSyncToken, async (req: Request, res: Response) => {
   const body = (req.body ?? {}) as SyncBody;
-  const expectedServiceId = getServiceId();
+  const expectedServiceId = getDmitServiceId();
   if (expectedServiceId == null) {
     return res.status(400).json({ error: 'DMIT_SERVICE_ID is not configured' });
   }
