@@ -3,3 +3,4 @@ export * from './base';
 export * from './xui';
 export * from './admin';
 export * from './portal';
+export * from './dmit';
