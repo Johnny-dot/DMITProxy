@@ -9,6 +9,7 @@ import {
 } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
+import { Skeleton } from '@/src/components/ui/Skeleton';
 import { useToast } from '@/src/components/ui/Toast';
 import {
   getAdminDmitTraffic,
@@ -38,6 +39,10 @@ export function DmitSyncPage() {
   const [exists, setExists] = useState(false);
   const [configured, setConfigured] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [initialLoaded, setInitialLoaded] = useState(false);
+  const [savingManual, setSavingManual] = useState(false);
+  const [syncingBilling, setSyncingBilling] = useState(false);
+  const [copyingScript, setCopyingScript] = useState(false);
   const [manual, setManual] = useState({
     bwusage: '',
     bwlimit: '',
@@ -57,6 +62,7 @@ export function DmitSyncPage() {
       toast(err instanceof Error ? err.message : 'load failed', 'error');
     } finally {
       setLoading(false);
+      setInitialLoaded(true);
     }
   }, [toast]);
 
@@ -66,12 +72,14 @@ export function DmitSyncPage() {
 
   async function onSubmitManual(e: React.FormEvent) {
     e.preventDefault();
+    if (savingManual) return;
     const bwusage = Number(manual.bwusage) * MB_PER_GB;
     const bwlimit = Number(manual.bwlimit) * MB_PER_GB;
     if (!Number.isFinite(bwusage) || !Number.isFinite(bwlimit) || bwlimit <= 0) {
       toast('请填写合法的 GB 值', 'error');
       return;
     }
+    setSavingManual(true);
     try {
       await postAdminDmitTrafficManual({
         bwusage: Math.round(bwusage),
@@ -87,20 +95,28 @@ export function DmitSyncPage() {
       void refresh();
     } catch (err) {
       toast(err instanceof Error ? err.message : 'save failed', 'error');
+    } finally {
+      setSavingManual(false);
     }
   }
 
   async function onForceBillingSync() {
+    if (syncingBilling) return;
+    setSyncingBilling(true);
     try {
       const r = await postAdminDmitBillingSync();
       toast(`已为 ${r.updated} 个 inbound 设置 billing_day = ${r.billing_day}`, 'success');
       void refresh();
     } catch (err) {
       toast(err instanceof Error ? err.message : 'sync failed', 'error');
+    } finally {
+      setSyncingBilling(false);
     }
   }
 
   async function onCopyScript() {
+    if (copyingScript) return;
+    setCopyingScript(true);
     try {
       const r = await fetch(ADMIN_DMIT_USERSCRIPT_URL, { credentials: 'include' });
       if (!r.ok) throw new Error(`fetch failed: ${r.status}`);
@@ -109,10 +125,12 @@ export function DmitSyncPage() {
       toast('Tampermonkey 脚本已复制', 'success');
     } catch (err) {
       toast(err instanceof Error ? err.message : 'copy failed', 'error');
+    } finally {
+      setCopyingScript(false);
     }
   }
 
-  if (!configured) {
+  if (initialLoaded && !configured) {
     return (
       <div className="content-shell-wide px-4 pb-6 md:px-6 xl:px-8">
         <Card>
@@ -134,11 +152,15 @@ export function DmitSyncPage() {
           <div className="flex-1 space-y-2">
             <CardTitle>DMIT 流量同步</CardTitle>
             <CardDescription>
-              {exists && data
-                ? `最后同步：${relativeTime(data.updated_at)}（${data.source}）${
-                    data.is_stale ? ' ⚠ 已超过 7 天' : ''
-                  }`
-                : '尚未同步过任何数据'}
+              {!initialLoaded ? (
+                <Skeleton className="h-4 w-48" />
+              ) : exists && data ? (
+                `最后同步：${relativeTime(data.updated_at)}（${data.source}）${
+                  data.is_stale ? ' ⚠ 已超过 7 天' : ''
+                }`
+              ) : (
+                '尚未同步过任何数据'
+              )}
             </CardDescription>
           </div>
           <Button variant="outline" onClick={() => void refresh()} disabled={loading}>
@@ -146,14 +168,21 @@ export function DmitSyncPage() {
             刷新
           </Button>
         </CardHeader>
-        {exists && data && (
+        {!initialLoaded ? (
+          <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </CardContent>
+        ) : exists && data ? (
           <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <Stat label="已用" value={formatGB(data.bwusage_mb)} />
             <Stat label="总量" value={formatGB(data.bwlimit_mb)} />
             <Stat label="入站" value={formatGB(data.bwusage_in_mb)} />
             <Stat label="出站" value={formatGB(data.bwusage_out_mb)} />
           </CardContent>
-        )}
+        ) : null}
       </Card>
 
       {exists && data && data.next_reset_day != null && (
@@ -168,7 +197,7 @@ export function DmitSyncPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => void onForceBillingSync()}>
+            <Button onClick={() => void onForceBillingSync()} disabled={syncingBilling}>
               <ShieldAlert className="mr-2 h-4 w-4" />
               强制同步所有 inbound 的 billing_day
             </Button>
@@ -184,7 +213,7 @@ export function DmitSyncPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => void onCopyScript()}>
+          <Button onClick={() => void onCopyScript()} disabled={copyingScript}>
             <Copy className="mr-2 h-4 w-4" />
             复制脚本到剪贴板
           </Button>
@@ -222,7 +251,7 @@ export function DmitSyncPage() {
               onChange={(v) => setManual((m) => ({ ...m, bwusage_out: v }))}
             />
             <div className="md:col-span-2">
-              <Button type="submit">
+              <Button type="submit" disabled={savingManual}>
                 <Save className="mr-2 h-4 w-4" />
                 保存
               </Button>
