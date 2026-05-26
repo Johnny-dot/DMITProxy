@@ -81,6 +81,20 @@ db.exec(`
     billing_day INTEGER NOT NULL CHECK (billing_day BETWEEN 1 AND 31),
     last_reset_date TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS dmit_traffic (
+    service_id              INTEGER PRIMARY KEY,
+    bwusage_mb              INTEGER NOT NULL,
+    bwlimit_mb              INTEGER NOT NULL,
+    bwusage_in_mb           INTEGER,
+    bwusage_out_mb          INTEGER,
+    usage_percentage        REAL,
+    next_reset_day          INTEGER,
+    next_reset_at           INTEGER,
+    auto_applied_billing_day INTEGER,
+    updated_at              INTEGER NOT NULL,
+    source                  TEXT NOT NULL CHECK (source IN ('tampermonkey','manual'))
+  );
 `);
 
 function ensureUserProfileColumns() {
