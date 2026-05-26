@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import authRouter from './routes/auth.js';
 import adminRouter from './routes/admin.js';
 import downloadsRouter from './routes/downloads.js';
+import dmitRouter from './routes/dmit.js';
 import {
   buildXuiPath,
   getXuiPathCandidates,
@@ -179,6 +180,11 @@ export function createApp() {
   app.use('/local/auth/portal/node-quality/refresh', refreshLimiter);
   app.use('/local/auth', authRouter);
   app.use('/local/admin', adminLimiter, adminRouter);
+  app.use(
+    '/local/dmit',
+    cors({ origin: ['https://www.dmit.io'], methods: ['POST'], credentials: false }),
+    dmitRouter,
+  );
 
   // Subscription format conversion: fetch from upstream, convert to Clash YAML etc.
   const subLimiter = rateLimit({
