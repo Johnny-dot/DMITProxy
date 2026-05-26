@@ -8,6 +8,7 @@ const ADMIN_ALLOWED_PATHS = [
   '/traffic',
   '/subscriptions',
   '/settings',
+  '/admin/dmit-sync',
   '/profile',
 ];
 const USER_ALLOWED_PATHS = ['/my-subscription', '/profile'];

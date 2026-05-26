@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Link as LinkIcon,
+  Satellite,
   Server,
   Settings,
   ShieldCheck,
@@ -44,6 +45,7 @@ export function Sidebar({
     { icon: ShieldCheck, label: t('nav.inbounds'), path: '/inbounds' },
     { icon: Users, label: userCenterLabel, path: '/users' },
     { icon: BarChart3, label: t('nav.traffic'), path: '/traffic' },
+    { icon: Satellite, label: isZh ? 'DMIT 同步' : 'DMIT Sync', path: '/admin/dmit-sync' },
     { icon: Settings, label: t('nav.settings'), path: '/settings' },
   ];
 

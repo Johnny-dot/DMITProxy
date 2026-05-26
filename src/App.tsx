@@ -32,6 +32,9 @@ const SubscriptionsPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('./pages/Settings').then((m) => ({ default: m.SettingsPage })),
 );
+const DmitSyncPage = lazy(() =>
+  import('./pages/DmitSync').then((m) => ({ default: m.DmitSyncPage })),
+);
 const DashboardPage = lazy(() =>
   import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
 );
@@ -102,6 +105,7 @@ export default function App() {
                   <Route path="traffic" element={<TrafficPage />} />
                   <Route path="subscriptions" element={<SubscriptionsPage />} />
                   <Route path="settings" element={<SettingsPage />} />
+                  <Route path="admin/dmit-sync" element={<DmitSyncPage />} />
                   <Route path="profile" element={<ProfilePage />} />
                   <Route path="my-subscription" element={<MySubscriptionPage />} />
                 </Route>
