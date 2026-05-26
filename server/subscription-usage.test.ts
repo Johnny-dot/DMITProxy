@@ -43,6 +43,66 @@ describe('buildSubscriptionUsageSummary', () => {
       machineTotal,
     });
   });
+
+  it('overrides machineRemaining/machineTotal when DMIT machine fields are provided', () => {
+    const ownUp = Math.trunc(12.34 * GB);
+    const ownDown = Math.trunc(177.34 * GB);
+    const totalUp = Math.trunc(132.34 * GB);
+    const totalDown = Math.trunc(449.95 * GB);
+    const xuiMachineTotal = 1000 * GB;
+    const dmitMachineTotal = 1000 * GB;
+    const dmitMachineUsed = Math.trunc(695.32 * GB);
+
+    const summary = buildSubscriptionUsageSummary({
+      resetDay: 3,
+      expiryTime: null,
+      ownUp,
+      ownDown,
+      allClientUp: totalUp,
+      allClientDown: totalDown,
+      machineTotal: xuiMachineTotal,
+      dmitMachineUsed,
+      dmitMachineTotal,
+    });
+
+    // own/others remain on 3X-UI numbers
+    expect(summary.ownUp).toBe(ownUp);
+    expect(summary.ownDown).toBe(ownDown);
+    expect(summary.otherUsersUp).toBe(totalUp - ownUp);
+    expect(summary.otherUsersDown).toBe(totalDown - ownDown);
+
+    // machine fields come from DMIT
+    expect(summary.machineTotal).toBe(dmitMachineTotal);
+    expect(summary.machineRemaining).toBe(dmitMachineTotal - dmitMachineUsed);
+  });
+
+  it('falls back to 3X-UI machineTotal when dmitMachineTotal is undefined', () => {
+    const summary = buildSubscriptionUsageSummary({
+      resetDay: 3,
+      expiryTime: null,
+      ownUp: 0,
+      ownDown: 0,
+      allClientUp: 0,
+      allClientDown: 0,
+      machineTotal: 500 * GB,
+    });
+    expect(summary.machineTotal).toBe(500 * GB);
+    expect(summary.machineRemaining).toBe(500 * GB);
+  });
+
+  it('clamps machineRemaining to 0 when DMIT used exceeds DMIT total', () => {
+    const summary = buildSubscriptionUsageSummary({
+      resetDay: null,
+      ownUp: 0,
+      ownDown: 0,
+      allClientUp: 0,
+      allClientDown: 0,
+      machineTotal: 0,
+      dmitMachineUsed: 1100 * GB,
+      dmitMachineTotal: 1000 * GB,
+    });
+    expect(summary.machineRemaining).toBe(0);
+  });
 });
 
 describe('buildSubscriptionDecorations', () => {

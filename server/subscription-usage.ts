@@ -27,6 +27,10 @@ export interface SubscriptionUsageSummaryInput {
   allClientUp: number;
   allClientDown: number;
   machineTotal: number;
+  /** Bytes consumed at DMIT (network-layer) — overrides totalUsed when present. */
+  dmitMachineUsed?: number;
+  /** Bytes of DMIT plan total — overrides machineTotal when present. */
+  dmitMachineTotal?: number;
 }
 
 export interface TrafficBreakdown {
@@ -91,7 +95,14 @@ export function buildSubscriptionUsageSummary(
   const totalDown = safeNonNegativeInt(input.allClientDown);
   const ownUsed = ownUp + ownDown;
   const totalUsed = totalUp + totalDown;
-  const machineTotal = safeNonNegativeInt(input.machineTotal);
+
+  const machineTotal =
+    input.dmitMachineTotal !== undefined
+      ? safeNonNegativeInt(input.dmitMachineTotal)
+      : safeNonNegativeInt(input.machineTotal);
+
+  const usedForRemaining =
+    input.dmitMachineUsed !== undefined ? safeNonNegativeInt(input.dmitMachineUsed) : totalUsed;
 
   return {
     resetDay: Number.isInteger(input.resetDay) && (input.resetDay ?? 0) > 0 ? input.resetDay : null,
@@ -105,7 +116,7 @@ export function buildSubscriptionUsageSummary(
     totalUp,
     totalDown,
     totalUsed,
-    machineRemaining: Math.max(0, machineTotal - totalUsed),
+    machineRemaining: Math.max(0, machineTotal - usedForRemaining),
     machineTotal,
   };
 }
