@@ -14,6 +14,7 @@ HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1:3001}"
 HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-30}"
 HEALTHCHECK_DELAY_SEC="${HEALTHCHECK_DELAY_SEC:-1}"
 SUBCONVERTER_SMOKE_BASE_URL="${SUBCONVERTER_SMOKE_BASE_URL:-http://127.0.0.1:3001}"
+SERVER_PORT="${SERVER_PORT:-3001}"
 PROTECTED_FILES=(
   "server/app.ts"
   "server/index.ts"
@@ -26,6 +27,22 @@ log() {
 section() {
   echo
   log "== $* =="
+}
+
+free_port() {
+  # Kill anything still listening on SERVER_PORT (e.g. a process that escaped pm2) so the
+  # freshly-started managed process can bind it. Best-effort.
+  if command -v fuser >/dev/null 2>&1; then
+    fuser -k "${SERVER_PORT}/tcp" 2>/dev/null || true
+  else
+    local pids
+    pids="$(ss -ltnHp 2>/dev/null | grep -E ":${SERVER_PORT}\b" | grep -oE 'pid=[0-9]+' | cut -d= -f2 | sort -u)"
+    [[ -n "$pids" ]] && kill $pids 2>/dev/null || true
+  fi
+}
+
+served_commit() {
+  curl -fsS "${HEALTHCHECK_URL}/local/version" 2>/dev/null | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p'
 }
 
 if [[ ! -d "$APP_DIR/.git" ]]; then
@@ -99,6 +116,11 @@ section "restart"
 # Use `pm2 start` (not `restart`) so the ecosystem file is the source of truth:
 #   - registers any newly-added apps (e.g. dmit-subconverter)
 #   - restarts existing apps with the latest config from the file
+# Stop the managed app and free the port first, so a stray/orphan process (one that
+# escaped pm2) can't keep holding the port and force the new process to serve stale code.
+"$PM2_BIN" stop "$PM2_NAME" 2>/dev/null || true
+free_port
+sleep 1
 # Run under a scrubbed environment so the caller's SSH/session variables do
 # not leak into the app process.
 env -i \
@@ -141,6 +163,35 @@ if [[ $healthcheck_ok -ne 1 ]]; then
   log "healthcheck failed after ${HEALTHCHECK_RETRIES} attempts: $HEALTHCHECK_URL" >&2
   exit 1
 fi
+
+section "version check"
+# The healthcheck above only proves SOMETHING answers on the port — it can be a stale
+# process serving old code. Assert the served commit matches what we just deployed; if not,
+# a stray process is holding the port. Remediate once (free port + restart), then fail loud.
+DEPLOYED_SHA="$(git rev-parse --short HEAD)"
+SERVED_SHA="$(served_commit)"
+if [[ "$SERVED_SHA" != "$DEPLOYED_SHA" ]]; then
+  log "served commit '${SERVED_SHA:-none}' != deployed '$DEPLOYED_SHA' — stale process on :${SERVER_PORT}; remediating once" >&2
+  "$PM2_BIN" stop "$PM2_NAME" 2>/dev/null || true
+  free_port
+  sleep 1
+  env -i \
+    HOME="${HOME:-/home/ubuntu}" \
+    USER="${USER:-ubuntu}" \
+    LOGNAME="${LOGNAME:-ubuntu}" \
+    SHELL="${SHELL:-/bin/bash}" \
+    LANG="${LANG:-C.UTF-8}" \
+    PATH="$PATH" \
+    PM2_HOME="$PM2_HOME" \
+    "$PM2_BIN" start ecosystem.config.cjs --update-env
+  sleep 3
+  SERVED_SHA="$(served_commit)"
+  if [[ "$SERVED_SHA" != "$DEPLOYED_SHA" ]]; then
+    log "still serving '${SERVED_SHA:-none}' after remediation (deployed '$DEPLOYED_SHA'); likely a rogue pm2 daemon respawning a stale process — aborting" >&2
+    exit 1
+  fi
+fi
+log "version check ok: serving $SERVED_SHA"
 
 section "subconverter smoke"
 if [[ -n "${SUBCONVERTER_SMOKE_SUB_ID:-}" ]]; then

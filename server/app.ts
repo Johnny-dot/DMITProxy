@@ -9,6 +9,7 @@ import authRouter from './routes/auth.js';
 import adminRouter from './routes/admin.js';
 import downloadsRouter from './routes/downloads.js';
 import dmitRouter from './routes/dmit.js';
+import { getServerVersion } from './app-version.js';
 import {
   buildXuiPath,
   getXuiPathCandidates,
@@ -185,6 +186,13 @@ export function createApp() {
     cors({ origin: ['https://www.dmit.io'], methods: ['POST'], credentials: false }),
     dmitRouter,
   );
+
+  // Public version probe: returns the git commit this process was LAUNCHED from (frozen at
+  // startup). The deploy script asserts this equals the just-pulled HEAD so a stale/orphan
+  // process holding the port can no longer make a deploy silently "succeed" against old code.
+  app.get('/local/version', (_req, res) => {
+    res.json(getServerVersion());
+  });
 
   // Subscription format conversion: fetch from upstream, convert to Clash YAML etc.
   const subLimiter = rateLimit({
