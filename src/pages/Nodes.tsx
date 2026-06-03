@@ -281,7 +281,7 @@ export function NodesPage() {
   );
 
   return (
-    <div className="content-shell-wide w-full min-w-0 space-y-6 px-4 md:px-6 xl:px-8">
+    <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 md:px-6 xl:px-8">
       <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
         <div className="space-y-3">
           <p className="section-kicker">{t('nodes.title')}</p>

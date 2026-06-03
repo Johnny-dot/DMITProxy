@@ -337,7 +337,7 @@ export function UserPortalPage() {
         onLogout={handleLogout}
       />
 
-      <main className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+      <main className="reveal-stagger w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
         {/* Hero section */}
         <section className="surface-card p-6 md:p-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">

@@ -16,11 +16,7 @@ import { useToast } from '@/src/components/ui/Toast';
 import { Activity, RefreshCw, XCircle, Users as UsersIcon, Copy } from 'lucide-react';
 import { getInbounds, getOnlineClients, Inbound } from '@/src/api/client';
 import { cn } from '@/src/utils/cn';
-import {
-  flattenInboundClients,
-  formatExpiry,
-  formatTraffic,
-} from '@/src/utils/xuiClients';
+import { flattenInboundClients, formatExpiry, formatTraffic } from '@/src/utils/xuiClients';
 import { useI18n } from '@/src/context/I18nContext';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
@@ -44,7 +40,9 @@ export function OnlineUsersPage({ embedded = false }: OnlineUsersPageProps) {
         getOnlineClients().catch(() => null),
       ]);
       setInbounds(data);
-      setOnlineEmailSet(new Set((onlineList ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean)));
+      setOnlineEmailSet(
+        new Set((onlineList ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean)),
+      );
       if (showSuccess) toast(t('online.listUpdated'), 'success');
     } catch {
       toast(t('online.failedLoad'), 'error');
@@ -85,7 +83,7 @@ export function OnlineUsersPage({ embedded = false }: OnlineUsersPageProps) {
   };
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <div className="reveal-stagger w-full min-w-0 space-y-6">
       {!embedded ? (
         <div className="flex items-center justify-between">
           <div>

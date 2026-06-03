@@ -551,7 +551,7 @@ export function ProfilePage() {
   const isAdmin = role !== 'user';
 
   return (
-    <div className="content-shell-wide w-full min-w-0 space-y-8 px-4 md:px-6 xl:px-8">
+    <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-8 px-4 md:px-6 xl:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t('profile.title')}</h1>

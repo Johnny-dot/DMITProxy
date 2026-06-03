@@ -712,7 +712,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="content-shell-wide w-full min-w-0 space-y-6 px-4 pb-10 md:px-6 xl:px-8">
+    <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 pb-10 md:px-6 xl:px-8">
       <section className="surface-card overflow-hidden p-6 md:p-7">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div className="space-y-3">

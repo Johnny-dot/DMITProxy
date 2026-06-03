@@ -74,7 +74,7 @@ export function UsersCenterPage({ embedded = false }: { embedded?: boolean }) {
     <div
       className={cn(
         'w-full min-w-0 space-y-6',
-        !embedded && 'content-shell-wide px-4 md:px-6 xl:px-8',
+        !embedded && 'content-shell-wide reveal-stagger px-4 md:px-6 xl:px-8',
       )}
     >
       <section className="surface-card space-y-3 p-6 md:p-7">
