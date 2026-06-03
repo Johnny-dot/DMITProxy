@@ -59,3 +59,18 @@ export function postAdminDmitBillingSync(): Promise<AdminDmitBillingSyncResponse
 
 /** URL to fetch the rendered Tampermonkey script (admin-only). */
 export const ADMIN_DMIT_USERSCRIPT_URL = '/local/admin/dmit/userscript';
+
+export interface MachineUsage {
+  usedBytes: number;
+  totalBytes: number;
+  source: 'dmit' | 'xui';
+  /** DMIT last-sync time when source === 'dmit'; null for the 3X-UI fallback. */
+  updatedAt: number | null;
+}
+
+/** Unified machine-level traffic: DMIT real billing number, else 3X-UI client-sum. */
+export function getAdminMachineUsage(): Promise<MachineUsage> {
+  return localFetch<MachineUsage>('/local/admin/machine-usage', {
+    fallbackError: 'Failed to load machine usage',
+  });
+}

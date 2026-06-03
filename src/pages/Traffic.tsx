@@ -14,7 +14,7 @@ import {
   Cell,
 } from 'recharts';
 import { getInbounds, Inbound } from '@/src/api/client';
-import { flattenInboundClients, formatTraffic } from '@/src/utils/xuiClients';
+import { flattenInboundClients, formatTraffic, inboundClientTraffic } from '@/src/utils/xuiClients';
 import { useToast } from '@/src/components/ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
@@ -47,12 +47,15 @@ export function TrafficPage() {
   }, [clients]);
 
   const inboundUsage = useMemo(() => {
-    const rows = inbounds.map((inbound) => ({
-      name: inbound.remark || `Inbound-${inbound.id}`,
-      usedBytes: inbound.up + inbound.down,
-      uploadGB: Number((inbound.up / (1024 * 1024 * 1024)).toFixed(2)),
-      downloadGB: Number((inbound.down / (1024 * 1024 * 1024)).toFixed(2)),
-    }));
+    const rows = inbounds.map((inbound) => {
+      const ct = inboundClientTraffic(inbound);
+      return {
+        name: inbound.remark || `Inbound-${inbound.id}`,
+        usedBytes: ct.total,
+        uploadGB: Number((ct.up / (1024 * 1024 * 1024)).toFixed(2)),
+        downloadGB: Number((ct.down / (1024 * 1024 * 1024)).toFixed(2)),
+      };
+    });
     return rows.sort((a, b) => b.usedBytes - a.usedBytes);
   }, [inbounds]);
 
@@ -60,7 +63,7 @@ export function TrafficPage() {
     const map = new Map<string, number>();
     for (const inbound of inbounds) {
       const key = inbound.protocol.toUpperCase();
-      map.set(key, (map.get(key) ?? 0) + inbound.up + inbound.down);
+      map.set(key, (map.get(key) ?? 0) + inboundClientTraffic(inbound).total);
     }
     return Array.from(map.entries()).map(([name, bytes]) => ({
       name,

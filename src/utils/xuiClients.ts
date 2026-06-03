@@ -166,6 +166,44 @@ function uniqueRows(rows: XuiClientRow[]): XuiClientRow[] {
   return Array.from(deduped.values());
 }
 
+/**
+ * Sum of per-client counters (up/down) for one inbound. Unlike `inbound.up + inbound.down`
+ * (the inbound aggregate, which the monthly billing reset does NOT touch), this sum is
+ * zeroed by `resetAllClientTraffics`, so it tracks the billing cycle.
+ */
+export function inboundClientTraffic(inbound: Inbound): {
+  up: number;
+  down: number;
+  total: number;
+} {
+  const stats = Array.isArray(inbound.clientStats) ? inbound.clientStats : [];
+  let up = 0;
+  let down = 0;
+  for (const stat of stats) {
+    up += Math.max(0, Number(stat.up) || 0);
+    down += Math.max(0, Number(stat.down) || 0);
+  }
+  return { up, down, total: up + down };
+}
+
+/**
+ * Resolve the machine-level used/total bytes for a single inbound's gauge.
+ * With exactly one inbound (single-VPS) the inbound IS the machine, so the unified machine
+ * usage (DMIT real, else client-sum) applies directly. With multiple inbounds the per-machine
+ * number can't be split per-inbound, so fall back to that inbound's own client-sum — never
+ * the stale aggregate.
+ */
+export function resolveInboundMachineUsage(
+  inbound: Inbound,
+  inboundCount: number,
+  usage: { usedBytes: number; totalBytes: number } | null,
+): { used: number; total: number } {
+  if (usage && inboundCount === 1) {
+    return { used: usage.usedBytes, total: usage.totalBytes };
+  }
+  return { used: inboundClientTraffic(inbound).total, total: inbound.total ?? 0 };
+}
+
 export function flattenInboundClients(inbounds: Inbound[]): XuiClientRow[] {
   const rows: XuiClientRow[] = [];
 

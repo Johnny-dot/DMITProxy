@@ -29,6 +29,8 @@ import {
   type InboundBillingConfig,
 } from '@/src/api/admin';
 import { cn } from '@/src/utils/cn';
+import { resolveInboundMachineUsage } from '@/src/utils/xuiClients';
+import { useMachineUsage } from '@/src/hooks/useMachineUsage';
 import { useI18n } from '@/src/context/I18nContext';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 
@@ -45,6 +47,7 @@ export function InboundsPage() {
   const [isSavingInbound, setIsSavingInbound] = useState(false);
   const { toast } = useToast();
   const { t } = useI18n();
+  const { usage } = useMachineUsage();
 
   const trafficResetOptions: Array<{ value: TrafficResetPeriod; label: string }> = [
     { value: 'never', label: t('inbounds.trafficResetNever') },
@@ -277,7 +280,11 @@ export function InboundsPage() {
               </TableHeader>
               <TableBody>
                 {filteredInbounds.map((inbound) => {
-                  const used = inbound.up + inbound.down;
+                  const { used, total } = resolveInboundMachineUsage(
+                    inbound,
+                    inbounds.length,
+                    usage,
+                  );
                   const clientCount = inbound.clientStats?.length ?? 0;
                   return (
                     <TableRow key={inbound.id}>
@@ -299,19 +306,16 @@ export function InboundsPage() {
                         <div className="flex flex-col gap-1 min-w-[100px]">
                           <div className="flex justify-between text-[10px] text-zinc-500">
                             <span>{formatTraffic(used)}</span>
-                            <span>{formatTraffic(inbound.total)}</span>
+                            <span>{formatTraffic(total)}</span>
                           </div>
                           <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
                             <div
                               className={cn(
                                 'h-full rounded-full',
-                                inbound.total > 0 && used / inbound.total > 0.9
-                                  ? 'bg-red-500'
-                                  : 'bg-indigo-500',
+                                total > 0 && used / total > 0.9 ? 'bg-red-500' : 'bg-indigo-500',
                               )}
                               style={{
-                                width:
-                                  inbound.total > 0 ? `${(used / inbound.total) * 100}%` : '0%',
+                                width: total > 0 ? `${(used / total) * 100}%` : '0%',
                               }}
                             />
                           </div>

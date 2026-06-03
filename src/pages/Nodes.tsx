@@ -15,7 +15,8 @@ import {
 } from '@/src/api/client';
 import { cn } from '@/src/utils/cn';
 import { useToast } from '@/src/components/ui/Toast';
-import { formatTraffic } from '@/src/utils/xuiClients';
+import { formatTraffic, resolveInboundMachineUsage } from '@/src/utils/xuiClients';
+import { useMachineUsage } from '@/src/hooks/useMachineUsage';
 import { useI18n } from '@/src/context/I18nContext';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import {
@@ -194,6 +195,7 @@ export function NodesPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, language } = useI18n();
+  const { usage } = useMachineUsage();
   const isZh = language === 'zh-CN';
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshingNodeId, setIsRefreshingNodeId] = useState<number | null>(null);
@@ -229,9 +231,12 @@ export function NodesPage() {
 
   const nodeCards = useMemo(() => {
     return inbounds.map((inbound) => {
-      const trafficUsed = inbound.up + inbound.down;
-      const usagePercent =
-        inbound.total > 0 ? Math.min((trafficUsed / inbound.total) * 100, 100) : 0;
+      const { used: trafficUsed, total: trafficLimit } = resolveInboundMachineUsage(
+        inbound,
+        inbounds.length,
+        usage,
+      );
+      const usagePercent = trafficLimit > 0 ? Math.min((trafficUsed / trafficLimit) * 100, 100) : 0;
       return {
         id: inbound.id,
         name: inbound.remark || `Inbound-${inbound.id}`,
@@ -239,13 +244,13 @@ export function NodesPage() {
         port: inbound.port,
         status: inbound.enable ? 'online' : 'offline',
         trafficUsed,
-        trafficLimit: inbound.total,
+        trafficLimit,
         usagePercent,
         clientCount: inbound.clientStats?.length ?? 0,
         profile: profiles[inbound.id] ?? null,
       };
     });
-  }, [inbounds, profiles]);
+  }, [inbounds, profiles, usage]);
 
   const selectedNode = nodeCards.find((node) => node.id === selectedNodeId) ?? nodeCards[0] ?? null;
 

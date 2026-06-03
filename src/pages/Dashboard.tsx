@@ -12,7 +12,13 @@ import {
 } from 'recharts';
 import { getInbounds, getServerStatus, Inbound, ServerStatus } from '@/src/api/client';
 import { Skeleton } from '@/src/components/ui/Skeleton';
-import { flattenInboundClients, formatTraffic, getClientStatus } from '@/src/utils/xuiClients';
+import {
+  flattenInboundClients,
+  formatTraffic,
+  getClientStatus,
+  inboundClientTraffic,
+} from '@/src/utils/xuiClients';
+import { useMachineUsage } from '@/src/hooks/useMachineUsage';
 import { useToast } from '@/src/components/ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
@@ -29,6 +35,7 @@ function isAbortError(error: unknown): boolean {
 export function Dashboard() {
   const { toast } = useToast();
   const { t } = useI18n();
+  const { usage } = useMachineUsage();
   const [isLoading, setIsLoading] = useState(true);
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
@@ -132,18 +139,23 @@ export function Dashboard() {
 
   const inboundTrafficData = useMemo(() => {
     return inbounds
-      .map((inbound) => ({
-        name: inbound.remark || `Inbound-${inbound.id}`,
-        downloadMB: Number((inbound.down / (1024 * 1024)).toFixed(1)),
-        uploadMB: Number((inbound.up / (1024 * 1024)).toFixed(1)),
-      }))
+      .map((inbound) => {
+        const ct = inboundClientTraffic(inbound);
+        return {
+          name: inbound.remark || `Inbound-${inbound.id}`,
+          downloadMB: Number((ct.down / (1024 * 1024)).toFixed(1)),
+          uploadMB: Number((ct.up / (1024 * 1024)).toFixed(1)),
+        };
+      })
       .sort((a, b) => b.downloadMB + b.uploadMB - (a.downloadMB + a.uploadMB))
       .slice(0, 8);
   }, [inbounds]);
 
   const totalInboundTraffic = useMemo(() => {
-    return inbounds.reduce((sum, inbound) => sum + inbound.up + inbound.down, 0);
-  }, [inbounds]);
+    return usage
+      ? usage.usedBytes
+      : inbounds.reduce((sum, inbound) => sum + inboundClientTraffic(inbound).total, 0);
+  }, [inbounds, usage]);
 
   const stats = [
     {
