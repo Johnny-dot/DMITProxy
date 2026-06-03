@@ -199,7 +199,7 @@ export function Dashboard() {
   ] as const;
 
   return (
-    <div className="content-shell-wide w-full min-w-0 space-y-8 px-4 md:px-6 xl:px-8">
+    <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-8 px-4 md:px-6 xl:px-8">
       <section className="surface-card relative overflow-hidden p-6 md:p-7">
         <div className="pointer-events-none absolute right-[-5rem] top-[-4rem] h-32 w-32 rounded-full bg-[radial-gradient(circle,_rgba(111,154,255,0.3)_0%,_rgba(111,154,255,0)_72%)] blur-2xl" />
         <p className="section-kicker">{t('dashboard.title')}</p>

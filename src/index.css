@@ -591,6 +591,33 @@
   animation: anim-route-in 180ms ease-out;
 }
 
+/* Opt-in staggered reveal: a page adds `reveal-stagger` to a section container and its
+ * direct children cascade in on load. Shared so every page polishes consistently. */
+.reveal-stagger > * {
+  animation: anim-route-in 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.reveal-stagger > *:nth-child(1) {
+  animation-delay: 40ms;
+}
+.reveal-stagger > *:nth-child(2) {
+  animation-delay: 110ms;
+}
+.reveal-stagger > *:nth-child(3) {
+  animation-delay: 180ms;
+}
+.reveal-stagger > *:nth-child(4) {
+  animation-delay: 250ms;
+}
+.reveal-stagger > *:nth-child(5) {
+  animation-delay: 320ms;
+}
+.reveal-stagger > *:nth-child(6) {
+  animation-delay: 390ms;
+}
+.reveal-stagger > *:nth-child(n + 7) {
+  animation-delay: 460ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim-toast,
   .anim-toast[data-exiting='true'],
@@ -602,7 +629,8 @@
   .anim-side-panel-left[data-anim-state='closed'],
   .anim-side-panel-right,
   .anim-side-panel-right[data-anim-state='closed'],
-  .anim-route-enter {
+  .anim-route-enter,
+  .reveal-stagger > * {
     animation: none;
   }
 }

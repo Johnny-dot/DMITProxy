@@ -262,7 +262,7 @@ export function SubscriptionsPage() {
     SUBSCRIPTION_LINK_TABS.find((item) => item.key === activeSubTab)?.label ?? activeSubTab;
 
   return (
-    <div className="content-shell-wide w-full min-w-0 space-y-10 px-4 pb-20 md:px-6 xl:px-8">
+    <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-10 px-4 pb-20 md:px-6 xl:px-8">
       <section className="surface-card flex flex-col gap-4 p-6 md:flex-row md:items-end md:justify-between md:p-7">
         <div className="space-y-3">
           <p className="section-kicker">{t('subscriptions.title')}</p>
