@@ -108,6 +108,10 @@ if [[ $RESTORE_STASH -eq 1 ]]; then
 fi
 
 section "build"
+# `npm ci`'s own node_modules teardown is flaky on this host's filesystem (intermittent
+# ENOTEMPTY, or a half-installed react that breaks the vite build). Force-remove first with
+# `rm -rf` (handles non-empty dirs npm's rmdir chokes on) so every install starts clean.
+rm -rf node_modules
 npm ci
 bash scripts/install-subconverter.sh
 npm run build
