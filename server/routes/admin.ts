@@ -42,6 +42,7 @@ import {
 } from '../dmit-traffic-store.js';
 import { getDmitServiceId, getDmitSyncToken } from '../dmit-config.js';
 import { getXuiCredentials, loginAndListInbounds } from '../xui-admin.js';
+import { computeMachineUsage } from '../machine-usage.js';
 import { getServerVersion } from '../app-version.js';
 
 const router = Router();
@@ -978,6 +979,27 @@ router.get('/dmit/userscript', requireAdmin, (req, res) => {
     .replace(/__DMIT_BACKEND_HOST__/g, host);
   res.setHeader('Cache-Control', 'no-store');
   res.type('application/javascript; charset=utf-8').send(rendered);
+});
+
+// GET /local/admin/machine-usage — unified machine traffic for all admin pages.
+// Prefers DMIT's real billing number; falls back to the 3X-UI per-client sum (which
+// resets monthly), never the raw inbound aggregate. This is the single source the
+// dashboard / nodes / inbounds / traffic pages read so they agree with the user portal.
+router.get('/machine-usage', requireAdmin, async (_req, res) => {
+  const creds = getXuiCredentials();
+  if (!creds) {
+    return res.status(400).json({ error: 'XUI credentials missing' });
+  }
+  let inbounds;
+  try {
+    inbounds = await loginAndListInbounds(creds.username, creds.password);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'Unknown error';
+    return res.status(502).json({ error: detail });
+  }
+  const serviceId = getDmitServiceId();
+  const dmit = serviceId != null ? getDmitTrafficSnapshot(serviceId) : null;
+  return res.json(computeMachineUsage(inbounds, dmit));
 });
 
 export default router;
