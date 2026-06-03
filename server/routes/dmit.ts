@@ -8,6 +8,7 @@ import {
 import { loginAndListInbounds, getXuiCredentials } from '../xui-admin.js';
 import { decideBillingDayAction, type BillingDayAction } from '../dmit-billing-sync.js';
 import { getDmitServiceId, getDmitSyncToken } from '../dmit-config.js';
+import { deriveNextReset, parseDaysUntilReset } from '../dmit-reset.js';
 
 const router = Router();
 
@@ -31,6 +32,11 @@ interface SyncBody {
   bwusage_in?: unknown;
   bwusage_out?: unknown;
   usage_percentage?: unknown;
+  // Preferred: raw DMIT `auto_min_days_until_due` value (e.g. "8.57 天"). The server
+  // parses + derives the reset day so the fragile midnight math is unit-tested, not
+  // duplicated in the (untestable) userscript.
+  days_until_reset_text?: unknown;
+  // Legacy/explicit fallback (still accepted for backward compatibility).
   next_reset_at?: unknown;
   next_reset_day?: unknown;
 }
@@ -78,8 +84,13 @@ router.post('/traffic', requireSyncToken, async (req: Request, res: Response) =>
   }
 
   const now = Date.now();
-  const nextResetDay = asOptionalBillingDay(body.next_reset_day);
-  const nextResetAt = asOptionalFutureMs(body.next_reset_at, now);
+  // Prefer server-side derivation from DMIT's raw "X.XX 天" string (unit-tested,
+  // snaps to UTC midnight). Fall back to explicit fields when the text is absent.
+  const daysText =
+    typeof body.days_until_reset_text === 'string' ? body.days_until_reset_text : null;
+  const derived = deriveNextReset(parseDaysUntilReset(daysText), now);
+  const nextResetDay = derived.nextResetDay ?? asOptionalBillingDay(body.next_reset_day);
+  const nextResetAt = derived.nextResetAt ?? asOptionalFutureMs(body.next_reset_at, now);
 
   upsertDmitTraffic({
     serviceId: expectedServiceId,

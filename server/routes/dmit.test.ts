@@ -225,4 +225,35 @@ describe('POST /local/dmit/traffic — billing day auto-sync', () => {
 
     expect(r.body.billing_day_action).toBe('mismatch');
   });
+
+  it('derives next_reset_day server-side from days_until_reset_text (snapped to midnight)', async () => {
+    const { app } = await bootApp({
+      DMIT_SYNC_TOKEN: VALID_TOKEN,
+      DMIT_SERVICE_ID: String(SERVICE_ID),
+    });
+    const xuiAdmin = await import('../xui-admin.js');
+    vi.spyOn(xuiAdmin, 'getXuiCredentials').mockReturnValue({ username: 'u', password: 'p' });
+    vi.spyOn(xuiAdmin, 'loginAndListInbounds').mockResolvedValue([
+      { id: 11, enable: true } as never,
+    ]);
+
+    const r = await request(app)
+      .post('/local/dmit/traffic')
+      .set('Authorization', `Bearer ${VALID_TOKEN}`)
+      .send({
+        service_id: SERVICE_ID,
+        bwusage: 100,
+        bwlimit: 1024000,
+        days_until_reset_text: '8.57 天',
+      });
+    expect(r.status).toBe(200);
+
+    const { getDmitTrafficSnapshot } = await import('../dmit-traffic-store.js');
+    const snap = getDmitTrafficSnapshot(SERVICE_ID)!;
+    // Server derived a real day-of-month (1-31) from the raw string, and it landed on a
+    // UTC-midnight instant — not a few minutes before it (the old client-side bug).
+    expect(snap.nextResetDay).toBeGreaterThanOrEqual(1);
+    expect(snap.nextResetDay).toBeLessThanOrEqual(31);
+    expect(snap.nextResetAt! % 86400_000).toBe(0);
+  });
 });

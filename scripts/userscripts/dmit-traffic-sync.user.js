@@ -28,20 +28,19 @@
 
     const t = j.data.traffic_info;
 
-    let next_reset_at = null;
-    let next_reset_day = null;
+    // Forward DMIT's raw "auto_min_days_until_due" string (e.g. "8.57 天") and let the
+    // backend parse + derive the reset day. The day-from-days math is fragile near the
+    // midnight boundary, so it lives server-side where it is unit-tested — this script
+    // only locates the condition, it does no date arithmetic.
+    let days_until_reset_text = null;
     const rules = Array.isArray(j.data.rules) ? j.data.rules : [];
     for (const rule of rules) {
       const conds = Array.isArray(rule.conditions) ? rule.conditions : [];
       const cond = conds.find((c) => c && c.key === 'auto_min_days_until_due');
-      if (!cond) continue;
-      const m = typeof cond.current === 'string' && cond.current.match(/^([\d.]+)\s*天/);
-      if (!m) continue;
-      const days = parseFloat(m[1]);
-      if (!Number.isFinite(days) || days < 0) continue;
-      next_reset_at = Date.now() + Math.round(days * 86400000);
-      next_reset_day = new Date(next_reset_at).getUTCDate();
-      break;
+      if (cond && typeof cond.current === 'string') {
+        days_until_reset_text = cond.current;
+        break;
+      }
     }
 
     GM_xmlhttpRequest({
@@ -58,8 +57,7 @@
         bwusage_in: t.bwusage_in,
         bwusage_out: t.bwusage_out,
         usage_percentage: t.usage_percentage,
-        next_reset_at,
-        next_reset_day,
+        days_until_reset_text,
       }),
       onload: function (res) {
         if (res.status === 200) {

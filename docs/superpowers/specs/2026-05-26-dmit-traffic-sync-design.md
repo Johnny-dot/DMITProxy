@@ -204,17 +204,20 @@ export function upsertDmitTraffic(input: DmitTrafficInput): void;
 
 ## Billing Day 自动同步
 
-DMIT API 返回的 `rules[].conditions` 里有 `auto_min_days_until_due` 条件，`current` 字段形如 `"8.57 天"`。Tampermonkey 端在前端解析并算出：
+DMIT API 返回的 `rules[].conditions` 里有 `auto_min_days_until_due` 条件，`current` 字段形如 `"8.57 天"`。
+
+> **⚠️ 推导必须在服务端做（午夜吸附）。** 早期设计让 Tampermonkey 端用 `new Date(now + days*86400000).getUTCDate()` 直接算 `next_reset_day`，这是错的：DMIT 把天数截断到 2 位小数(`8.57`)、且重置时刻正好在 UTC 午夜，于是 `now + 8.57天` 落在 `06-02 23:54`，`getUTCDate()` 得到 **2** 而真实重置日是 **3**；同时随 `now` 推进会在日界抖动，产生虚假 mismatch。
+>
+> 正确做法：Tampermonkey **只转发原始字符串** `days_until_reset_text: cond.current`，服务端用纯函数 `server/dmit-reset.ts` 的 `parseDaysUntilReset` + `deriveNextReset` 解析并**吸附到最近的 UTC 午夜**再取 `getUTCDate()`。该逻辑由 `server/dmit-reset.test.ts` 单测覆盖（含 `8.57天 → 3` 回归用例）。
 
 ```js
-const cond = rules?.[0]?.conditions?.find((c) => c.key === 'auto_min_days_until_due');
-const match = cond?.current?.match(/^([\d.]+)\s*天/);
-const days = match ? parseFloat(match[1]) : null;
-const next_reset_at = days != null ? Date.now() + days * 86400_000 : null;
-const next_reset_day = next_reset_at ? new Date(next_reset_at).getUTCDate() : null;
+// server/dmit-reset.ts
+const raw = nowMs + daysUntilReset * 86_400_000;
+const snapped = Math.round(raw / 86_400_000) * 86_400_000; // 最近的 UTC 午夜
+const nextResetDay = new Date(snapped).getUTCDate();
 ```
 
-把 `next_reset_at` 和 `next_reset_day` 一并 POST 到 backend。
+POST body 携带 `days_until_reset_text`（原始 `"8.57 天"`）。服务端解析失败或缺失时，`next_reset_day` 为 null，跳过 billing day 同步。（旧字段 `next_reset_day`/`next_reset_at` 仍作为兼容回退被接受。）
 
 ### 后端处理逻辑（POST `/local/dmit/traffic` 内）
 
