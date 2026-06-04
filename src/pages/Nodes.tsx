@@ -44,6 +44,10 @@ type NodeCardProps = {
   isZh: boolean;
   isRefreshing: boolean;
   isSelected: boolean;
+  /** Compact list-item form for the master-detail layout (drops the duplicated probe panel). */
+  compact?: boolean;
+  /** Render the "view details" select button (only meaningful when there are multiple nodes). */
+  canSelect?: boolean;
   t: (key: string, opts?: Record<string, unknown>) => string;
   formatCheckedAt: (value: number | null | undefined) => string;
   onSelect: () => void;
@@ -55,6 +59,8 @@ const NodeCard = memo(function NodeCard({
   isZh,
   isRefreshing,
   isSelected,
+  compact = false,
+  canSelect = true,
   t,
   formatCheckedAt,
   onSelect,
@@ -64,7 +70,14 @@ const NodeCard = memo(function NodeCard({
   const unlockItems = getNodeQualityServiceItems(node.profile);
 
   return (
-    <Card className="group transition-all hover:border-white/20">
+    <Card
+      className={cn(
+        'group transition-all hover:border-white/20',
+        isSelected &&
+          canSelect &&
+          'border-[var(--accent-border)] ring-1 ring-[var(--accent-border)]/60',
+      )}
+    >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-3">
           <div
@@ -130,55 +143,76 @@ const NodeCard = memo(function NodeCard({
           </div>
         </div>
 
-        <div className="surface-panel space-y-3 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-              {isZh ? '自动探测结果' : 'Auto probe'}
-            </p>
-            <span className={cn('text-xs font-medium', fraudMeta.className)}>
-              {fraudMeta.label}
+        {compact ? (
+          <div className="surface-panel flex items-center justify-between gap-3 px-4 py-3">
+            <span className="inline-flex items-center gap-2">
+              <span className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                {isZh ? '风险' : 'Risk'}
+              </span>
+              <span className={cn('text-sm font-medium', fraudMeta.className)}>
+                {fraudMeta.label}
+              </span>
+            </span>
+            <span className="truncate text-xs text-zinc-500">
+              {formatCheckedAt(node.profile?.updatedAt)}
             </span>
           </div>
-          <p className="text-sm leading-6 text-zinc-300">
-            {node.profile?.summary ||
-              (isZh
-                ? '暂无探测结果。点击刷新后会写入最新状态。'
-                : 'No probe result yet. Refresh to write the latest status.')}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {unlockItems.map((item) => {
-              const meta = getUnlockStatusMeta(item.status, isZh);
-              return (
-                <Badge key={item.id} className={cn('border', meta.className)}>
-                  <span className="inline-flex items-center gap-1.5">
-                    <UnlockServiceIcon service={item.id} className="h-5 w-5 rounded-lg border-0" />
-                    <span>
-                      {item.label}: {meta.label}
+        ) : (
+          <div className="surface-panel space-y-3 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                {isZh ? '自动探测结果' : 'Auto probe'}
+              </p>
+              <span className={cn('text-xs font-medium', fraudMeta.className)}>
+                {fraudMeta.label}
+              </span>
+            </div>
+            <p className="text-sm leading-6 text-zinc-300">
+              {node.profile?.summary ||
+                (isZh
+                  ? '暂无探测结果。点击刷新后会写入最新状态。'
+                  : 'No probe result yet. Refresh to write the latest status.')}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {unlockItems.map((item) => {
+                const meta = getUnlockStatusMeta(item.status, isZh);
+                return (
+                  <Badge key={item.id} className={cn('border', meta.className)}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <UnlockServiceIcon
+                        service={item.id}
+                        className="h-5 w-5 rounded-lg border-0"
+                      />
+                      <span>
+                        {item.label}: {meta.label}
+                      </span>
                     </span>
-                  </span>
-                </Badge>
-              );
-            })}
+                  </Badge>
+                );
+              })}
+            </div>
+            <p className="text-xs text-zinc-500">
+              {isZh ? '最近检测：' : 'Last checked: '}
+              {formatCheckedAt(node.profile?.updatedAt)}
+            </p>
           </div>
-          <p className="text-xs text-zinc-500">
-            {isZh ? '最近检测：' : 'Last checked: '}
-            {formatCheckedAt(node.profile?.updatedAt)}
-          </p>
-        </div>
+        )}
 
         <div className="flex gap-2">
-          <Button
-            variant={isSelected ? 'secondary' : 'outline'}
-            size="sm"
-            className="flex-1"
-            onClick={onSelect}
-          >
-            {isZh ? '查看详情' : 'View details'}
-          </Button>
+          {canSelect && (
+            <Button
+              variant={isSelected ? 'secondary' : 'outline'}
+              size="sm"
+              className="flex-1"
+              onClick={onSelect}
+            >
+              {isZh ? '查看详情' : 'View details'}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 gap-2"
+            className={cn('gap-2', canSelect ? 'flex-1' : 'w-full')}
             onClick={onRefresh}
             disabled={isRefreshing}
           >
@@ -304,53 +338,61 @@ export function NodesPage() {
       </section>
 
       {isLoading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((item) => (
-            <Card key={item}>
-              <CardHeader>
-                <Skeleton className="h-5 w-40" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </CardContent>
-            </Card>
-          ))}
+        <div className="grid gap-6 2xl:grid-cols-[minmax(320px,380px)_minmax(0,1fr)] 2xl:items-start">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-40" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-56" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-16 w-full" />
+            </CardContent>
+          </Card>
         </div>
+      ) : nodeCards.length === 0 ? (
+        <Card>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={ShieldCheck}
+              title={t('nodes.noNodesFound')}
+              description=""
+              illustration="empty-nodes.webp"
+            />
+          </CardContent>
+        </Card>
       ) : (
-        <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 2xl:grid-cols-[minmax(320px,380px)_minmax(0,1fr)] 2xl:items-start">
+          {/* Master: the node list. One compact, selectable card per inbound. */}
+          <div className="space-y-4">
             {nodeCards.map((node) => (
               <NodeCard
                 key={node.id}
                 node={node}
                 isZh={isZh}
                 isRefreshing={isRefreshingNodeId === node.id}
-                isSelected={selectedNodeId === node.id}
+                isSelected={selectedNode?.id === node.id}
+                compact
+                canSelect={nodeCards.length > 1}
                 t={t}
                 formatCheckedAt={formatCheckedAt}
                 onSelect={() => setSelectedNodeId(node.id)}
                 onRefresh={() => void handleRefresh(node.id)}
               />
             ))}
-
-            {nodeCards.length === 0 && (
-              <div className="md:col-span-2 lg:col-span-3">
-                <Card>
-                  <CardContent className="p-0">
-                    <EmptyState
-                      icon={ShieldCheck}
-                      title={t('nodes.noNodesFound')}
-                      description=""
-                      illustration="empty-nodes.webp"
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            )}
           </div>
 
+          {/* Detail: the full quality report for the selected node — fills the wide column. */}
           {selectedNode && (
             <NodeQualityCard
               isZh={isZh}
@@ -360,7 +402,7 @@ export function NodesPage() {
               isRefreshing={isRefreshingNodeId === selectedNode.id}
             />
           )}
-        </>
+        </div>
       )}
     </div>
   );
