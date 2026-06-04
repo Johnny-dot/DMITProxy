@@ -78,8 +78,11 @@ export function UsersCenterPage({ embedded = false }: { embedded?: boolean }) {
       )}
     >
       <section className="surface-card space-y-3 p-6 md:p-7">
-        <h1 className="text-3xl font-bold tracking-tight">{isZh ? '用户中心' : 'User Center'}</h1>
-        <p className="mt-1 text-[var(--text-secondary)]">
+        <p className="section-kicker">{isZh ? '用户中心' : 'User Center'}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {isZh ? '用户中心' : 'User Center'}
+        </h1>
+        <p className="max-w-3xl text-sm leading-7 text-zinc-400">
           {isZh
             ? '在一个页面里统一管理用户、在线状态和邀请码。'
             : 'Manage users, online activity, and invite accounts in one workspace.'}

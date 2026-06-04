@@ -288,13 +288,13 @@ function UserProfileView() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-lg border border-white/10 bg-zinc-900/40 p-3">
+            <div className="surface-panel p-3">
               <p className="text-[11px] uppercase tracking-wider text-zinc-500">
                 {isZh ? '当前显示' : 'Currently shown'}
               </p>
               <p className="mt-1 text-sm">{resolvedPreviewName}</p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-zinc-900/40 p-3">
+            <div className="surface-panel p-3">
               <p className="text-[11px] uppercase tracking-wider text-zinc-500">
                 {isZh ? '登录账号' : 'Username'}
               </p>
@@ -445,25 +445,25 @@ function AdminProfileView() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-lg border border-white/10 bg-zinc-900/40 p-3">
+            <div className="surface-panel p-3">
               <p className="text-[11px] uppercase tracking-wider text-zinc-500">
                 {t('profile.sessionMode')}
               </p>
               <p className="text-sm mt-1">{t('profile.sessionModeValue')}</p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-zinc-900/40 p-3">
+            <div className="surface-panel p-3">
               <p className="text-[11px] uppercase tracking-wider text-zinc-500">
                 {t('profile.username')}
               </p>
               <p className="text-sm mt-1 break-all">{profile?.username || '-'}</p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-zinc-900/40 p-3 md:col-span-2">
+            <div className="surface-panel p-3 md:col-span-2">
               <p className="text-[11px] uppercase tracking-wider text-zinc-500">
                 {t('profile.xuiServer')}
               </p>
               <p className="text-sm mt-1 break-all">{profile?.xuiServer || '-'}</p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-zinc-900/40 p-3 md:col-span-2">
+            <div className="surface-panel p-3 md:col-span-2">
               <p className="text-[11px] uppercase tracking-wider text-zinc-500">
                 {t('profile.xuiBasePath')}
               </p>
@@ -553,11 +553,12 @@ export function ProfilePage() {
   const isAdmin = role !== 'user';
 
   return (
-    <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-8 px-4 md:px-6 xl:px-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('profile.title')}</h1>
-          <p className="text-zinc-400 mt-1">
+    <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 md:px-6 xl:px-8">
+      <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
+        <div className="space-y-3">
+          <p className="section-kicker">{t('profile.title')}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('profile.title')}</h1>
+          <p className="max-w-3xl text-sm leading-7 text-zinc-400">
             {isAdmin
               ? t('profile.subtitle')
               : isZh
@@ -566,11 +567,16 @@ export function ProfilePage() {
           </p>
         </div>
         {isAdmin && (
-          <Button variant="outline" size="icon" onClick={() => window.location.reload()}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="self-start sm:self-auto"
+            onClick={() => window.location.reload()}
+          >
             <RefreshCw className="w-4 h-4" />
           </Button>
         )}
-      </div>
+      </section>
 
       {isAdmin ? <AdminProfileView /> : <UserProfileView />}
 

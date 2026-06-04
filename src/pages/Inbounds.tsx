@@ -201,10 +201,11 @@ export function InboundsPage() {
 
   return (
     <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 md:px-6 xl:px-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('inbounds.title')}</h1>
-          <p className="text-zinc-400 mt-1">{t('inbounds.subtitle')}</p>
+      <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
+        <div className="space-y-3">
+          <p className="section-kicker">{t('inbounds.title')}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('inbounds.title')}</h1>
+          <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('inbounds.subtitle')}</p>
         </div>
         <Button
           className="gap-2 self-start sm:self-auto"
@@ -213,7 +214,7 @@ export function InboundsPage() {
           <Plus className="w-4 h-4" />
           {t('inbounds.addInbound')}
         </Button>
-      </div>
+      </section>
 
       <Card>
         <CardHeader>
@@ -398,7 +399,7 @@ export function InboundsPage() {
         </CardContent>
       </Card>
 
-      <div className="bg-zinc-900/30 border border-white/5 rounded-lg p-4 text-sm text-zinc-500">
+      <div className="surface-panel p-4 text-sm text-zinc-500">
         <p>{t('inbounds.note')}</p>
       </div>
 

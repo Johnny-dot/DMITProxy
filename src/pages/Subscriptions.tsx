@@ -262,7 +262,7 @@ export function SubscriptionsPage() {
     SUBSCRIPTION_LINK_TABS.find((item) => item.key === activeSubTab)?.label ?? activeSubTab;
 
   return (
-    <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-10 px-4 pb-20 md:px-6 xl:px-8">
+    <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 pb-20 md:px-6 xl:px-8">
       <section className="surface-card flex flex-col gap-4 p-6 md:flex-row md:items-end md:justify-between md:p-7">
         <div className="space-y-3">
           <p className="section-kicker">{t('subscriptions.title')}</p>
@@ -337,7 +337,7 @@ export function SubscriptionsPage() {
                         <Input
                           value={link || t('subscriptions.waitingSubId')}
                           readOnly
-                          className="font-mono text-xs bg-zinc-900/50 border-white/5"
+                          className="font-mono text-xs"
                         />
                         <Button
                           variant="outline"
@@ -495,7 +495,7 @@ export function SubscriptionsPage() {
                 >
                   <div className="flex items-center gap-2">
                     <proto.icon className={cn('w-4 h-4', proto.color)} />
-                    <span className="font-bold text-sm tracking-wide">{proto.name}</span>
+                    <span className="font-semibold text-sm tracking-wide">{proto.name}</span>
                   </div>
                   <Button
                     variant="ghost"
@@ -774,7 +774,7 @@ export function SubscriptionsPage() {
               <CardDescription>{t('subscriptions.qrFor', { label: qrLabel })}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border border-white/10 bg-zinc-900/50 p-4 flex flex-col items-center justify-center min-h-[280px]">
+              <div className="surface-panel flex min-h-[280px] flex-col items-center justify-center p-4">
                 {qrLoading ? (
                   <div className="flex flex-col items-center gap-3 text-zinc-400 text-sm">
                     <RefreshCw className="w-5 h-5 animate-spin" />
@@ -804,11 +804,7 @@ export function SubscriptionsPage() {
                 )}
               </div>
 
-              <Input
-                value={qrText}
-                readOnly
-                className="font-mono text-xs bg-zinc-900/50 border-white/10"
-              />
+              <Input value={qrText} readOnly className="font-mono text-xs" />
 
               <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
                 <Button

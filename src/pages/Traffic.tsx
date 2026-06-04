@@ -120,11 +120,12 @@ export function TrafficPage() {
 
   return (
     <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 md:px-6 xl:px-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('traffic.title')}</h1>
-        <p className="text-zinc-400 mt-1">{t('traffic.subtitle')}</p>
-        <p className="text-zinc-500 text-xs mt-2">{t('traffic.note')}</p>
-      </div>
+      <section className="surface-card space-y-3 p-6 md:p-7">
+        <p className="section-kicker">{t('traffic.title')}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t('traffic.title')}</h1>
+        <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('traffic.subtitle')}</p>
+        <p className="text-xs text-zinc-500">{t('traffic.note')}</p>
+      </section>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {summaryCards.map((card) => (

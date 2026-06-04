@@ -83,23 +83,29 @@ export function OnlineUsersPage({ embedded = false }: OnlineUsersPageProps) {
   };
 
   return (
-    <div className="reveal-stagger w-full min-w-0 space-y-6">
+    <div
+      className={cn(
+        'reveal-stagger w-full min-w-0 space-y-6',
+        !embedded && 'content-shell-wide px-4 md:px-6 xl:px-8',
+      )}
+    >
       {!embedded ? (
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t('online.title')}</h1>
-            <p className="text-zinc-400 mt-1">{t('online.subtitle')}</p>
+        <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
+          <div className="space-y-3">
+            <p className="section-kicker">{t('online.title')}</p>
+            <h1 className="text-3xl font-semibold tracking-tight">{t('online.title')}</h1>
+            <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('online.subtitle')}</p>
           </div>
           <Button
             variant="outline"
-            className="gap-2"
+            className="gap-2 self-start sm:self-auto"
             onClick={() => load(true)}
             disabled={isLoading}
           >
             <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
             {t('online.refresh')}
           </Button>
-        </div>
+        </section>
       ) : (
         <Button variant="outline" className="gap-2" onClick={() => load(true)} disabled={isLoading}>
           <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />

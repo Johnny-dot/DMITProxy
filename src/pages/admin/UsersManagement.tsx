@@ -5,6 +5,7 @@ import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { Badge } from '@/src/components/ui/Badge';
 import { Skeleton } from '@/src/components/ui/Skeleton';
+import { EmptyState } from '@/src/components/ui/EmptyState';
 import { useToast } from '@/src/components/ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { cn } from '@/src/utils/cn';
@@ -190,12 +191,20 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
   }
 
   return (
-    <div className="w-full min-w-0 space-y-8">
+    <div
+      className={cn(
+        'w-full min-w-0 space-y-6',
+        !embedded && 'content-shell-wide reveal-stagger px-4 md:px-6 xl:px-8',
+      )}
+    >
       <div className={cn(!embedded && 'surface-card space-y-3 p-6 md:p-7')}>
         {!embedded && (
           <>
-            <h1 className="text-3xl font-bold tracking-tight">{t('userAccounts.title')}</h1>
-            <p className="mt-1 text-[var(--text-secondary)]">{t('userAccounts.subtitle')}</p>
+            <p className="section-kicker">{t('userAccounts.title')}</p>
+            <h1 className="text-3xl font-semibold tracking-tight">{t('userAccounts.title')}</h1>
+            <p className="max-w-3xl text-sm leading-7 text-zinc-400">
+              {t('userAccounts.subtitle')}
+            </p>
           </>
         )}
         <div
@@ -247,9 +256,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
               ))}
             </div>
           ) : codes.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[var(--text-secondary)]">
-              {t('userAccounts.noInviteCodes')}
-            </p>
+            <EmptyState icon={Ticket} title={t('userAccounts.noInviteCodes')} description="" />
           ) : (
             <div className="space-y-2">
               {codes.map((code) => (
@@ -329,9 +336,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
               ))}
             </div>
           ) : users.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[var(--text-secondary)]">
-              {t('userAccounts.noUsers')}
-            </p>
+            <EmptyState icon={Users} title={t('userAccounts.noUsers')} description="" />
           ) : (
             <div className="space-y-3">
               {users.map((user) => (
