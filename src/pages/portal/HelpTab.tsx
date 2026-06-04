@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Copy } from 'lucide-react';
+import { Copy, Inbox } from 'lucide-react';
 import { SharedResourceKindIcon } from '@/src/components/icons/SharedResourceKindIcon';
 import { Button } from '@/src/components/ui/Button';
+import { EmptyState } from '@/src/components/ui/EmptyState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/Tabs';
 import type { CommunityLink } from '@/src/types/communityLink';
 import { parseCredentialContent, parseInviteContent } from '@/src/utils/sharedResourceContent';
@@ -42,7 +43,7 @@ function ResourceCopyRow({
     <button
       type="button"
       onClick={onCopy}
-      className="w-full rounded-[20px] border border-[color:var(--border-subtle)] bg-black/10 px-4 py-3 text-left transition hover:border-[color:var(--border-strong)] hover:bg-black/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)]"
+      className="w-full surface-inline px-4 py-3 text-left transition hover:border-[color:var(--border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -173,9 +174,12 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
             className="surface-card space-y-5 p-6 md:p-7"
             data-testid="portal-help-resources"
           >
-            <h3 className="text-xl font-semibold tracking-tight text-zinc-50">
-              {isZh ? '共享资源' : 'Shared resources'}
-            </h3>
+            <div className="space-y-1">
+              <p className="section-kicker">{isZh ? '帮助中心' : 'Help center'}</p>
+              <h3 className="text-xl font-semibold tracking-tight text-zinc-50">
+                {isZh ? '共享资源' : 'Shared resources'}
+              </h3>
+            </div>
 
             {sharedResources.length > 0 ? (
               <div className="grid gap-4 xl:grid-cols-2">
@@ -208,7 +212,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                               <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-300">
                                 {kindLabel}
                               </span>
-                              <span className="rounded-full border border-[color:var(--border-subtle)] bg-black/10 px-2.5 py-1 text-[11px] text-zinc-400">
+                              <span className="glass-pill px-2.5 py-1 text-[11px] text-zinc-400">
                                 {getSharedResourceAccessLabel(resource.access, isZh)}
                               </span>
                             </div>
@@ -272,7 +276,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                           ) : null}
 
                           {credentialNote ? (
-                            <div className="rounded-[20px] border border-[color:var(--border-subtle)] bg-black/10 px-4 py-3">
+                            <div className="surface-inline px-4 py-3">
                               <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
                                 {isZh ? '补充说明' : 'Extra note'}
                               </p>
@@ -298,7 +302,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                           ) : null}
 
                           {inviteNote ? (
-                            <div className="rounded-[20px] border border-[color:var(--border-subtle)] bg-black/10 px-4 py-3">
+                            <div className="surface-inline px-4 py-3">
                               <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
                                 {isZh ? '补充说明' : 'Extra note'}
                               </p>
@@ -311,7 +315,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                       ) : null}
 
                       {shouldShowGenericCopy ? (
-                        <div className="whitespace-pre-wrap rounded-[20px] border border-[color:var(--border-subtle)] bg-black/10 px-4 py-3 font-mono text-xs leading-6 text-zinc-300">
+                        <div className="whitespace-pre-wrap surface-inline px-4 py-3 font-mono text-xs leading-6 text-zinc-300">
                           {resource.content}
                         </div>
                       ) : null}
@@ -320,9 +324,15 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                 })}
               </div>
             ) : (
-              <div className="surface-panel rounded-[24px] p-5 text-sm leading-7 text-zinc-400">
-                {isZh ? '当前没有可用的共享资源。' : 'No shared resources right now.'}
-              </div>
+              <EmptyState
+                icon={Inbox}
+                title={isZh ? '暂无共享资源' : 'No shared resources'}
+                description={
+                  isZh
+                    ? '管理员添加后会显示在这里。'
+                    : 'They will appear here once an admin adds them.'
+                }
+              />
             )}
           </section>
         </TabsContent>

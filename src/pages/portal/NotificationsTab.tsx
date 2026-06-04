@@ -1,8 +1,9 @@
 import React from 'react';
-import { AlertTriangle, Bell } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
+import { EmptyState } from '@/src/components/ui/EmptyState';
 import type { PortalNotification } from './types';
 import { toMillis } from './types';
 
@@ -110,9 +111,15 @@ export function NotificationsTab({
       </div>
 
       {notifications.length === 0 ? (
-        <p className="text-sm leading-6 text-zinc-500">
-          {isZh ? '暂时没有通知。' : 'No notifications yet.'}
-        </p>
+        <EmptyState
+          icon={Bell}
+          title={isZh ? '暂时没有通知' : 'No notifications yet'}
+          description={
+            isZh
+              ? '订阅状态和服务说明会显示在这里。'
+              : 'Subscription and service notices will appear here.'
+          }
+        />
       ) : (
         <div className="space-y-3">
           {notifications.map((item) => {
@@ -124,10 +131,12 @@ export function NotificationsTab({
                 key={item.id}
                 data-testid="subscription-notification-item"
                 className={cn(
-                  'surface-panel space-y-3 p-4',
-                  item.level === 'success' && 'text-emerald-500',
-                  item.level === 'warning' && 'text-amber-500',
-                  item.level === 'info' && 'text-zinc-400',
+                  'surface-panel space-y-3 border-l-2 p-4',
+                  item.level === 'success'
+                    ? 'border-l-emerald-500'
+                    : item.level === 'warning'
+                      ? 'border-l-amber-500'
+                      : 'border-l-[color:var(--accent-border)]',
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -137,8 +146,8 @@ export function NotificationsTab({
                   </div>
 
                   {!isRead && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-medium text-emerald-500">
-                      <AlertTriangle className="h-3 w-3" />
+                    <span className="glass-pill inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-[var(--text-secondary)]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
                       {isZh ? '未读' : 'Unread'}
                     </span>
                   )}
