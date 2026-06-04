@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
+import { Skeleton } from '@/src/components/ui/Skeleton';
 import { Input } from '@/src/components/ui/Input';
 import { Badge } from '@/src/components/ui/Badge';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
@@ -394,8 +395,9 @@ function AdminProfileView() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[40vh] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Skeleton className="h-72 w-full lg:col-span-2" />
+        <Skeleton className="h-72 w-full" />
       </div>
     );
   }
