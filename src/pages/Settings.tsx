@@ -750,24 +750,6 @@ export function SettingsPage() {
         </div>
       </section>
 
-      <nav className="surface-card flex flex-wrap gap-2 p-3">
-        {overviewTiles.map((tile) => (
-          <button
-            key={tile.section}
-            type="button"
-            onClick={() => selectSection(tile.section)}
-            className={cn(
-              'rounded-full border px-4 py-2 text-sm font-medium transition',
-              activeSection === tile.section
-                ? 'border-[color:var(--border-strong)] bg-[var(--surface-strong)] text-[var(--text-primary)]'
-                : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] text-[var(--text-secondary)] hover:border-[color:var(--border-strong)] hover:text-[var(--text-primary)]',
-            )}
-          >
-            {tile.label}
-          </button>
-        ))}
-      </nav>
-
       <div className="min-w-0">
         {activeSection === 'general' ? (
           <Card>

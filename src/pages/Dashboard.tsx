@@ -1,15 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Users, Activity, Zap, Cpu, ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getInbounds, getServerStatus, Inbound, ServerStatus } from '@/src/api/client';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import {
@@ -264,35 +256,32 @@ export function Dashboard() {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={inboundTrafficData}>
-                  <defs>
-                    <linearGradient id="colorDownload" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--success)" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="var(--success)" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorUpload" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="var(--accent)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
+                <BarChart
+                  data={inboundTrafficData}
+                  layout="vertical"
+                  margin={{ left: 8, right: 16, top: 4, bottom: 4 }}
+                >
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke="var(--border-subtle)"
-                    vertical={false}
+                    horizontal={false}
                   />
                   <XAxis
-                    dataKey="name"
-                    stroke="var(--text-tertiary)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
+                    type="number"
                     stroke="var(--text-tertiary)"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(v) => `${v}MB`}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    stroke="var(--text-tertiary)"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    width={120}
                   />
                   <Tooltip
                     contentStyle={{
@@ -309,23 +298,9 @@ export function Dashboard() {
                       name === 'downloadMB' ? t('dashboard.download') : t('dashboard.upload'),
                     ]}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="downloadMB"
-                    stroke="var(--success)"
-                    fillOpacity={1}
-                    fill="url(#colorDownload)"
-                    strokeWidth={2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="uploadMB"
-                    stroke="var(--accent)"
-                    fillOpacity={1}
-                    fill="url(#colorUpload)"
-                    strokeWidth={2}
-                  />
-                </AreaChart>
+                  <Bar dataKey="downloadMB" stackId="io" fill="var(--success)" />
+                  <Bar dataKey="uploadMB" stackId="io" fill="var(--accent)" radius={[0, 6, 6, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
