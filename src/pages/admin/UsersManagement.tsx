@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Check, Users, Ticket, Link as LinkIcon, KeyRound, Copy } from 'lucide-react';
+import { Plus, Trash2, Check, Users, Link as LinkIcon, KeyRound, Copy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
@@ -37,7 +37,8 @@ interface UsersManagementPageProps {
 
 export function UsersManagementPage({ embedded = false }: UsersManagementPageProps) {
   const { toast } = useToast();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const isZh = language === 'zh-CN';
   const [users, setUsers] = useState<User[]>([]);
   const [codes, setCodes] = useState<InviteCode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,6 +53,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
   } | null>(null);
 
   const portalBase = publicBaseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+  const pendingCodes = codes.filter((code) => !code.used_by_username);
 
   async function load() {
     try {
@@ -237,59 +239,55 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
 
       <Card className="w-full">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Ticket className="w-5 h-5 text-[var(--text-secondary)]" />
-              {t('userAccounts.inviteCodes')}
-            </CardTitle>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-3">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-[var(--text-secondary)]" />
+                {isZh ? '用户与邀请' : 'Users & invites'}
+              </CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">
+                  {users.length} {isZh ? '已注册' : 'registered'}
+                </Badge>
+                <Badge variant={pendingCodes.length ? 'success' : 'secondary'}>
+                  {pendingCodes.length} {isZh ? '待接受邀请' : 'pending'}
+                </Badge>
+              </div>
+            </div>
             <Button size="sm" className="gap-2" onClick={createInvite}>
               <Plus className="w-4 h-4" />
               {t('userAccounts.generate')}
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+                <Skeleton key={i} className="h-14 w-full" />
               ))}
             </div>
-          ) : codes.length === 0 ? (
-            <EmptyState icon={Ticket} title={t('userAccounts.noInviteCodes')} description="" />
           ) : (
-            <div className="space-y-2">
-              {codes.map((code) => (
-                <div
-                  key={code.id}
-                  className="surface-panel flex items-center justify-between px-4 py-3"
-                >
-                  <div className="space-y-1.5 min-w-0">
-                    <div className="flex items-center gap-3">
-                      <code className="text-sm font-mono text-emerald-400">{code.code}</code>
-                      {code.used_by_username ? (
-                        <Badge variant="secondary">
-                          {t('userAccounts.usedBy', { username: code.used_by_username })}
-                        </Badge>
-                      ) : (
-                        <Badge variant="success">{t('userAccounts.available')}</Badge>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-[var(--text-secondary)]">
-                      {t('userAccounts.inviteCreatedAt', {
-                        date: new Date(code.created_at * 1000).toLocaleString(),
-                      })}
-                      {' · '}
-                      {code.used_at
-                        ? t('userAccounts.inviteUsedAt', {
-                            date: new Date(code.used_at * 1000).toLocaleString(),
-                          })
-                        : t('userAccounts.inviteUnused')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!code.used_by_username && (
-                      <>
+            <>
+              {pendingCodes.length > 0 && (
+                <div className="space-y-2">
+                  <p className="section-kicker">
+                    {isZh ? '待接受的邀请' : 'Pending invites'} · {pendingCodes.length}
+                  </p>
+                  {pendingCodes.map((code) => (
+                    <div
+                      key={code.id}
+                      className="surface-panel flex items-center justify-between px-4 py-3"
+                    >
+                      <div className="min-w-0 space-y-1.5">
+                        <code className="font-mono text-sm text-emerald-400">{code.code}</code>
+                        <p className="text-[11px] text-[var(--text-secondary)]">
+                          {t('userAccounts.inviteCreatedAt', {
+                            date: new Date(code.created_at * 1000).toLocaleString(),
+                          })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -298,9 +296,9 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                           onClick={() => copyInviteLink(code.code, code.id)}
                         >
                           {copiedId === code.id ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            <Check className="h-3.5 w-3.5 text-emerald-500" />
                           ) : (
-                            <LinkIcon className="w-3.5 h-3.5" />
+                            <LinkIcon className="h-3.5 w-3.5" />
                           )}
                         </Button>
                         <Button
@@ -309,155 +307,152 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                           className="h-8 w-8 text-red-500 hover:bg-red-500/10"
                           onClick={() => deleteCode(code.id)}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
-                      </>
-                    )}
-                  </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              )}
 
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-[var(--text-secondary)]" />
-            {t('userAccounts.registeredUsers')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-14 w-full" />
-              ))}
-            </div>
-          ) : users.length === 0 ? (
-            <EmptyState icon={Users} title={t('userAccounts.noUsers')} description="" />
-          ) : (
-            <div className="space-y-3">
-              {users.map((user) => (
-                <div
-                  key={user.id}
-                  className="surface-panel flex flex-col justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center"
-                >
-                  <div>
-                    <p className="font-medium">{user.username}</p>
-                    <p className="text-xs text-[var(--text-secondary)]">
-                      {t('userAccounts.joined', {
-                        date: new Date(user.created_at * 1000).toLocaleDateString(),
-                      })}
-                    </p>
+              <div className="space-y-3">
+                <p className="section-kicker">
+                  {isZh ? '已注册用户' : 'Registered users'} · {users.length}
+                </p>
+                {users.length === 0 ? (
+                  <EmptyState icon={Users} title={t('userAccounts.noUsers')} description="" />
+                ) : (
+                  <div className="space-y-3">
+                    {users.map((user) => (
+                      <div
+                        key={user.id}
+                        className="surface-panel flex flex-col justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center"
+                      >
+                        <div>
+                          <p className="font-medium">{user.username}</p>
+                          <p className="text-xs text-[var(--text-secondary)]">
+                            {t('userAccounts.joined', {
+                              date: new Date(user.created_at * 1000).toLocaleDateString(),
+                            })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-1 sm:max-w-xs">
+                          {editingSubId?.id === user.id ? (
+                            <>
+                              <Input
+                                className="h-8 text-xs font-mono"
+                                placeholder={t('userAccounts.subIdPlaceholder')}
+                                value={editingSubId.value}
+                                onChange={(e) =>
+                                  setEditingSubId({ id: user.id, value: e.target.value })
+                                }
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                className="h-8 px-3"
+                                onClick={() => saveSubId(user.id, editingSubId.value)}
+                              >
+                                {t('common.save')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 px-3"
+                                onClick={() => setEditingSubId(null)}
+                              >
+                                {t('common.cancel')}
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              {user.sub_id ? (
+                                <code className="flex-1 truncate font-mono text-xs text-[var(--text-secondary)]">
+                                  {user.sub_id}
+                                </code>
+                              ) : (
+                                <span className="flex-1 text-xs text-[var(--text-tertiary)]">
+                                  {t('userAccounts.noSubAssigned')}
+                                </span>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 px-3 text-xs shrink-0"
+                                onClick={() =>
+                                  setEditingSubId({ id: user.id, value: user.sub_id ?? '' })
+                                }
+                              >
+                                {user.sub_id
+                                  ? t('userAccounts.change')
+                                  : t('userAccounts.assignSubId')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 px-3 text-xs shrink-0 gap-1"
+                                onClick={() => generateResetLink(user.id, user.username)}
+                              >
+                                <KeyRound className="w-3.5 h-3.5" />
+                                {t('userAccounts.generateResetLink')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 px-3 text-xs shrink-0 gap-1 text-red-400 border-red-500/30 hover:bg-red-500/10"
+                                onClick={() => deleteUser(user.id, user.username)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                {t('userAccounts.deleteUser')}
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-2 flex-1 sm:max-w-xs">
-                    {editingSubId?.id === user.id ? (
-                      <>
-                        <Input
-                          className="h-8 text-xs font-mono"
-                          placeholder={t('userAccounts.subIdPlaceholder')}
-                          value={editingSubId.value}
-                          onChange={(e) => setEditingSubId({ id: user.id, value: e.target.value })}
-                          autoFocus
-                        />
-                        <Button
-                          size="sm"
-                          className="h-8 px-3"
-                          onClick={() => saveSubId(user.id, editingSubId.value)}
-                        >
-                          {t('common.save')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 px-3"
-                          onClick={() => setEditingSubId(null)}
-                        >
-                          {t('common.cancel')}
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        {user.sub_id ? (
-                          <code className="flex-1 truncate font-mono text-xs text-[var(--text-secondary)]">
-                            {user.sub_id}
-                          </code>
-                        ) : (
-                          <span className="flex-1 text-xs text-[var(--text-tertiary)]">
-                            {t('userAccounts.noSubAssigned')}
-                          </span>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 text-xs shrink-0"
-                          onClick={() => setEditingSubId({ id: user.id, value: user.sub_id ?? '' })}
-                        >
-                          {user.sub_id ? t('userAccounts.change') : t('userAccounts.assignSubId')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 text-xs shrink-0 gap-1"
-                          onClick={() => generateResetLink(user.id, user.username)}
-                        >
-                          <KeyRound className="w-3.5 h-3.5" />
-                          {t('userAccounts.generateResetLink')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 text-xs shrink-0 gap-1 text-red-400 border-red-500/30 hover:bg-red-500/10"
-                          onClick={() => deleteUser(user.id, user.username)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          {t('userAccounts.deleteUser')}
-                        </Button>
-                      </>
-                    )}
+                )}
+              </div>
+
+              <p className="text-xs text-[var(--text-tertiary)]">
+                {t('userAccounts.registrationTip')}
+              </p>
+
+              {latestResetLink && (
+                <div className="surface-panel space-y-2 p-3">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    {t('userAccounts.latestResetLink', {
+                      username: latestResetLink.username,
+                      expiresAt:
+                        latestResetLink.expiresAt > 0
+                          ? new Date(latestResetLink.expiresAt * 1000).toLocaleString()
+                          : '-',
+                    })}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 truncate font-mono text-xs text-[var(--text-primary)]">
+                      {latestResetLink.link}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 shrink-0 gap-1 px-3 text-xs"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(latestResetLink.link);
+                          toast(t('userAccounts.linkCopied'), 'success');
+                        } catch {
+                          toast(t('userAccounts.resetLinkCreateFailed'), 'error');
+                        }
+                      }}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      {t('common.copy')}
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-          <p className="mt-4 text-xs text-[var(--text-tertiary)]">
-            {t('userAccounts.registrationTip')}
-          </p>
-          {latestResetLink && (
-            <div className="surface-panel mt-4 space-y-2 p-3">
-              <p className="text-xs text-[var(--text-secondary)]">
-                {t('userAccounts.latestResetLink', {
-                  username: latestResetLink.username,
-                  expiresAt:
-                    latestResetLink.expiresAt > 0
-                      ? new Date(latestResetLink.expiresAt * 1000).toLocaleString()
-                      : '-',
-                })}
-              </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 truncate font-mono text-xs text-[var(--text-primary)]">
-                  {latestResetLink.link}
-                </code>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 px-3 text-xs shrink-0 gap-1"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(latestResetLink.link);
-                      toast(t('userAccounts.linkCopied'), 'success');
-                    } catch {
-                      toast(t('userAccounts.resetLinkCreateFailed'), 'error');
-                    }
-                  }}
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  {t('common.copy')}
-                </Button>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
