@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, Check, Users, Link as LinkIcon, KeyRound, Copy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
@@ -9,6 +9,8 @@ import { EmptyState } from '@/src/components/ui/EmptyState';
 import { useToast } from '@/src/components/ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { cn } from '@/src/utils/cn';
+import { getInbounds, getOnlineClients, Inbound } from '@/src/api/client';
+import { flattenInboundClients, formatExpiry, formatTraffic } from '@/src/utils/xuiClients';
 
 interface User {
   id: number;
@@ -41,6 +43,8 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
   const isZh = language === 'zh-CN';
   const [users, setUsers] = useState<User[]>([]);
   const [codes, setCodes] = useState<InviteCode[]>([]);
+  const [inbounds, setInbounds] = useState<Inbound[]>([]);
+  const [onlineEmails, setOnlineEmails] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [editingSubId, setEditingSubId] = useState<{ id: number; value: string } | null>(null);
@@ -55,6 +59,70 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
   const portalBase = publicBaseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
   const pendingCodes = codes.filter((code) => !code.used_by_username);
 
+  // Join each portal account to its 3X-UI client(s) by sub_id, so the unified view shows
+  // real usage (online / traffic / expiry) next to the account — no separate "用户" tab needed.
+  const clientStatsBySubId = useMemo(() => {
+    const onlineSet = new Set(onlineEmails.map((e) => e.trim().toLowerCase()).filter(Boolean));
+    const map = new Map<
+      string,
+      { used: number; total: number; expiryTime: number; online: boolean }
+    >();
+    for (const client of flattenInboundClients(inbounds)) {
+      const sid = (client.subId ?? '').trim().toLowerCase();
+      if (!sid) continue;
+      const email = (client.email ?? '').trim().toLowerCase();
+      const prev = map.get(sid) ?? { used: 0, total: 0, expiryTime: 0, online: false };
+      map.set(sid, {
+        used: prev.used + client.up + client.down,
+        total: prev.total + (client.totalGB || 0),
+        expiryTime: prev.expiryTime || client.expiryTime || 0,
+        online: prev.online || (email ? onlineSet.has(email) : false),
+      });
+    }
+    return map;
+  }, [inbounds, onlineEmails]);
+
+  function renderUserStats(user: User) {
+    const sid = user.sub_id?.trim().toLowerCase();
+    const stats = sid ? clientStatsBySubId.get(sid) : undefined;
+    if (!stats) return null;
+    const pct = stats.total > 0 ? Math.min((stats.used / stats.total) * 100, 100) : 0;
+    return (
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--text-secondary)]">
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5',
+            stats.online ? 'text-emerald-500' : 'text-[var(--text-tertiary)]',
+          )}
+        >
+          <span
+            className={cn(
+              'h-1.5 w-1.5 rounded-full',
+              stats.online ? 'bg-emerald-500' : 'bg-[var(--text-tertiary)]',
+            )}
+          />
+          {stats.online ? (isZh ? '在线' : 'Online') : isZh ? '离线' : 'Offline'}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="font-mono">
+            {formatTraffic(stats.used)}
+            {stats.total > 0 ? ` / ${formatTraffic(stats.total)}` : ''}
+          </span>
+          <span className="glass-progress-track h-1 w-16 overflow-hidden">
+            <span
+              className={cn(
+                'block h-full rounded-full',
+                pct < 70 ? 'bg-emerald-500' : pct < 90 ? 'bg-yellow-500' : 'bg-red-500',
+              )}
+              style={{ width: `${pct}%` }}
+            />
+          </span>
+        </span>
+        {stats.expiryTime > 0 && <span>{formatExpiry(stats.expiryTime)}</span>}
+      </div>
+    );
+  }
+
   async function load() {
     try {
       const [usersRes, codesRes] = await Promise.all([
@@ -63,6 +131,13 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
       ]);
       if (usersRes.ok) setUsers(await usersRes.json());
       if (codesRes.ok) setCodes(await codesRes.json());
+
+      const [inboundData, onlineData] = await Promise.all([
+        getInbounds().catch(() => [] as Inbound[]),
+        getOnlineClients().catch(() => [] as string[]),
+      ]);
+      setInbounds(inboundData);
+      setOnlineEmails(onlineData);
 
       const flagsRes = await fetch('/local/admin/system', { credentials: 'include' });
       if (flagsRes.ok) setSystemFlags(await flagsRes.json());
@@ -317,6 +392,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                               date: new Date(user.created_at * 1000).toLocaleDateString(),
                             })}
                           </p>
+                          {renderUserStats(user)}
                         </div>
                         <div className="flex items-center gap-2 flex-1 sm:max-w-xs">
                           {editingSubId?.id === user.id ? (
