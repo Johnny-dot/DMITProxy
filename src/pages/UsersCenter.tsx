@@ -1,74 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Users, UserCog } from 'lucide-react';
-import { Button } from '@/src/components/ui/Button';
-import { cn } from '@/src/utils/cn';
-import { UsersPage } from './Users';
+import React from 'react';
 import { UsersManagementPage } from './admin/UsersManagement';
 import { useI18n } from '@/src/context/I18nContext';
+import { cn } from '@/src/utils/cn';
 
-type UserCenterTab = 'list' | 'accounts';
-
-const VALID_TABS: UserCenterTab[] = ['list', 'accounts'];
-
-function isValidTab(value: string | null): value is UserCenterTab {
-  if (!value) return false;
-  return VALID_TABS.includes(value as UserCenterTab);
-}
-
+// The user center is now a single unified view: registered users (with their live
+// online/traffic/expiry joined from the 3X-UI client list) plus pending invites — no more
+// separate "用户 / 用户与邀请码" tabs. The raw per-client table (src/pages/Users.tsx) is kept
+// in the tree but no longer routed; re-introduce specific client tools onto the rows if needed.
 export function UsersCenterPage({ embedded = false }: { embedded?: boolean }) {
-  const { t, language } = useI18n();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { language } = useI18n();
   const isZh = language === 'zh-CN';
-  const rawTab = searchParams.get('tab');
-  const activeTab: UserCenterTab = isValidTab(rawTab) ? rawTab : 'list';
-
-  const [mountedTabs, setMountedTabs] = useState<Record<UserCenterTab, boolean>>({
-    list: true,
-    accounts: activeTab === 'accounts',
-  });
-
-  useEffect(() => {
-    const next = new URLSearchParams(searchParams);
-    let changed = false;
-
-    if (rawTab !== activeTab) {
-      next.set('tab', activeTab);
-      changed = true;
-    }
-
-    if (next.has('view')) {
-      next.delete('view');
-      changed = true;
-    }
-
-    if (!changed) {
-      return;
-    }
-
-    setSearchParams(next, { replace: true });
-  }, [activeTab, rawTab, searchParams, setSearchParams]);
-
-  useEffect(() => {
-    setMountedTabs((previous) =>
-      previous[activeTab] ? previous : { ...previous, [activeTab]: true },
-    );
-  }, [activeTab]);
-
-  const tabItems = [
-    { key: 'list' as const, label: t('users.title'), icon: Users },
-    { key: 'accounts' as const, label: t('userAccounts.title'), icon: UserCog },
-  ];
-
-  const switchTab = (tab: UserCenterTab) => {
-    if (tab === activeTab) return;
-    const next = new URLSearchParams(searchParams);
-    next.set('tab', tab);
-    if (tab !== 'list') {
-      next.delete('view');
-    }
-    setSearchParams(next, { replace: true });
-  };
 
   return (
     <div
@@ -77,41 +18,21 @@ export function UsersCenterPage({ embedded = false }: { embedded?: boolean }) {
         !embedded && 'content-shell-wide reveal-stagger px-4 md:px-6 xl:px-8',
       )}
     >
-      <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
-        <div className="space-y-3">
+      {!embedded && (
+        <section className="surface-card space-y-3 p-6 md:p-7">
           <p className="section-kicker">{isZh ? '用户中心' : 'User Center'}</p>
           <h1 className="text-3xl font-semibold tracking-tight">
             {isZh ? '用户中心' : 'User Center'}
           </h1>
           <p className="max-w-3xl text-sm leading-7 text-zinc-400">
             {isZh
-              ? '在一个页面里统一管理用户、在线状态和邀请码。'
-              : 'Manage users, online activity, and invite accounts in one workspace.'}
+              ? '在一个页面里统一管理注册用户、邀请码和实时用量。'
+              : 'Manage registered users, invites, and live usage in one place.'}
           </p>
-        </div>
+        </section>
+      )}
 
-        <div className="glass-pill inline-flex flex-wrap items-center gap-2 self-start p-2 sm:self-auto">
-          {tabItems.map((item) => (
-            <Button
-              key={item.key}
-              variant={activeTab === item.key ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-11 gap-2 px-4"
-              onClick={() => switchTab(item.key)}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-            </Button>
-          ))}
-        </div>
-      </section>
-
-      <div className={cn('w-full min-w-0', activeTab === 'list' ? 'block' : 'hidden')}>
-        {mountedTabs.list && <UsersPage embedded onOpenAccounts={() => switchTab('accounts')} />}
-      </div>
-      <div className={cn('w-full min-w-0', activeTab === 'accounts' ? 'block' : 'hidden')}>
-        {mountedTabs.accounts && <UsersManagementPage embedded />}
-      </div>
+      <UsersManagementPage embedded />
     </div>
   );
 }
