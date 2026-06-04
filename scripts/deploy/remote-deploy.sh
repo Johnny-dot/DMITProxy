@@ -108,13 +108,21 @@ if [[ $RESTORE_STASH -eq 1 ]]; then
 fi
 
 section "build"
-# `npm ci`'s own node_modules teardown is flaky on this host's filesystem (intermittent
-# ENOTEMPTY, or a half-installed react that breaks the vite build). Force-remove first with
-# `rm -rf` (handles non-empty dirs npm's rmdir chokes on) so every install starts clean.
+# `npm ci` is unreliable on this host: its node_modules teardown intermittently fails
+# (ENOTEMPTY), and — because package-lock.json is generated off-platform — it can skip the
+# ARM64-specific optional binaries for rollup/esbuild, leaving a tree that installs "OK" but
+# breaks `vite build` (MODULE_NOT_FOUND rollup/dist/native.js, or an unresolvable react).
+# Force-clean first, then fall back to `npm install` (which resolves the host's platform
+# deps) on a build failure, restoring the committed lockfile afterward.
 rm -rf node_modules
 npm ci
 bash scripts/install-subconverter.sh
-npm run build
+if ! npm run build; then
+  log "vite build failed after npm ci — reinstalling with npm install (platform optional deps) and retrying" >&2
+  npm install
+  git checkout -- package-lock.json 2>/dev/null || true
+  npm run build
+fi
 
 section "restart"
 # Use `pm2 start` (not `restart`) so the ecosystem file is the source of truth:
