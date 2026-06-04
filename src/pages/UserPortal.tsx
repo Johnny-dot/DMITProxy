@@ -1,10 +1,11 @@
 ﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LayoutDashboard, ListChecks, Bell, UserCog } from 'lucide-react';
-import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
+import { Badge } from '@/src/components/ui/Badge';
 import { Button } from '@/src/components/ui/Button';
+import { Skeleton } from '@/src/components/ui/Skeleton';
 import { buildSubscriptionUrl } from '@/src/utils/subscription';
 import type { ServerStatus } from '@/src/api/xui';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
@@ -213,7 +214,7 @@ export function UserPortalPage() {
       },
       { replace: true },
     );
-  }, [viewerRole, searchParams, setSearchParams]); // purposely omit searchParams to avoid loop, but since eslint-plugin-react-hooks is not enforcing, we can just remove the suppression comment or add them to the array. Wait, actually adding searchParams will cause the loop... Let's just omit the disable comment completely.
+  }, [viewerRole, searchParams, setSearchParams]);
 
   // Guard invalid tab for role
   useEffect(() => {
@@ -306,15 +307,35 @@ export function UserPortalPage() {
   // -----------------------------------------------------------------------
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
+      <div className="min-h-screen">
+        <PortalHeader
+          siteName={effectiveSettings?.siteName ?? ''}
+          currentUsername={currentUsername}
+          onLogout={handleLogout}
+        />
+        <main className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+          <div className="surface-card space-y-3 p-6 md:p-7">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-8 w-2/3 max-w-md" />
+            <Skeleton className="h-4 w-full max-w-2xl" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-11 w-28" />
+            <Skeleton className="h-11 w-28" />
+            <Skeleton className="h-11 w-28" />
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Skeleton className="h-44 w-full" />
+            <Skeleton className="h-44 w-full" />
+          </div>
+        </main>
       </div>
     );
   }
 
   if (!context && !isAdminView) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-50 p-6 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center p-6">
         <div className="surface-card w-full max-w-md space-y-4 p-6">
           <h2 className="text-lg font-semibold">
             {isZh ? '页面加载失败' : 'Failed to load this page'}
@@ -330,21 +351,19 @@ export function UserPortalPage() {
   // Render: main portal
   // -----------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50">
+    <div className="min-h-screen">
       <PortalHeader
         siteName={effectiveSettings?.siteName ?? ''}
         currentUsername={currentUsername}
         onLogout={handleLogout}
       />
 
-      <main className="reveal-stagger w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+      <main className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
         {/* Hero section */}
-        <section className="surface-card p-6 md:p-8">
+        <section className="surface-card p-6 md:p-7">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div className="space-y-2">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-300/80">
-                {isAdminView ? 'ADMIN VIEW' : 'YOUR PAGE'}
-              </p>
+              <p className="section-kicker">{isAdminView ? 'ADMIN VIEW' : 'YOUR PAGE'}</p>
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
                 {isAdminView
                   ? isZh
@@ -354,7 +373,7 @@ export function UserPortalPage() {
                     ? '把常用内容都放在一起'
                     : 'Keep the usual things in one place'}
               </h1>
-              <p className="max-w-3xl text-sm text-zinc-300">
+              <p className="max-w-3xl text-sm leading-7 text-zinc-400">
                 {isAdminView
                   ? isZh
                     ? '同一页面可查看用户侧内容，并额外进入用户管理、在线状态和邀请码管理。'
@@ -366,7 +385,7 @@ export function UserPortalPage() {
             </div>
 
             {isAdminView ? (
-              <div className="w-full md:w-60 rounded-xl border border-white/10 bg-zinc-950/60 p-4 space-y-3">
+              <div className="surface-panel w-full space-y-3 p-4 md:w-60">
                 <p className="text-xs text-zinc-400">{isZh ? '当前身份' : 'Current role'}</p>
                 <p className="text-sm text-zinc-200">{isZh ? '管理员' : 'Administrator'}</p>
                 <Button size="sm" className="w-full" onClick={() => setSection('management')}>
@@ -374,45 +393,65 @@ export function UserPortalPage() {
                 </Button>
               </div>
             ) : (
-              <div className="w-full md:w-60 rounded-xl border border-white/10 bg-zinc-950/60 p-4 space-y-3">
-                <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <span>{isZh ? '完成进度' : 'Progress'}</span>
-                </div>
+              <div className="surface-panel w-full space-y-3 p-4 md:w-60">
+                <p className="text-xs text-zinc-400">{isZh ? '订阅状态' : 'Subscription'}</p>
+                <p className="text-sm text-zinc-200">
+                  {hasSubscription ? (isZh ? '已就绪' : 'Ready') : isZh ? '待配置' : 'Not set up'}
+                </p>
+                <Button size="sm" className="w-full" onClick={() => setSection('setup')}>
+                  {isZh ? '使用订阅' : 'Set up'}
+                </Button>
               </div>
             )}
           </div>
         </section>
 
         {/* Tab bar */}
-        <section className="flex flex-wrap gap-2">
-          <TabButton
-            icon={<LayoutDashboard className="w-4 h-4" />}
-            label={isZh ? '概览' : 'Overview'}
-            active={activeTab === 'home'}
+        <section className="glass-pill inline-flex flex-wrap items-center gap-2 p-2">
+          <Button
+            variant={activeTab === 'home' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="h-11 gap-2 px-4"
             onClick={() => setSection('home')}
-          />
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            {isZh ? '概览' : 'Overview'}
+          </Button>
           {!isAdminView && (
-            <TabButton
-              icon={<ListChecks className="w-4 h-4" />}
-              label={isZh ? '使用订阅' : 'Set up'}
-              active={activeTab === 'setup'}
+            <Button
+              variant={activeTab === 'setup' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-11 gap-2 px-4"
               onClick={() => setSection('setup')}
-            />
+            >
+              <ListChecks className="h-4 w-4" />
+              {isZh ? '使用订阅' : 'Set up'}
+            </Button>
           )}
-          <TabButton
-            icon={<Bell className="w-4 h-4" />}
-            label={isZh ? '通知' : 'Notifications'}
-            active={activeTab === 'notifications'}
+          <Button
+            variant={activeTab === 'notifications' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="h-11 gap-2 px-4"
             onClick={() => setSection('notifications')}
-            badge={unreadCount > 0 ? unreadCount : undefined}
-          />
+          >
+            <Bell className="h-4 w-4" />
+            {isZh ? '通知' : 'Notifications'}
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="ml-0.5">
+                {unreadCount}
+              </Badge>
+            )}
+          </Button>
           {isAdminView && (
-            <TabButton
-              icon={<UserCog className="w-4 h-4" />}
-              label={isZh ? '管理功能' : 'Management'}
-              active={activeTab === 'management'}
+            <Button
+              variant={activeTab === 'management' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-11 gap-2 px-4"
               onClick={() => setSection('management')}
-            />
+            >
+              <UserCog className="h-4 w-4" />
+              {isZh ? '管理功能' : 'Management'}
+            </Button>
           )}
         </section>
 
@@ -442,11 +481,7 @@ export function UserPortalPage() {
           />
         )}
 
-        {activeTab === 'management' && isAdminView && (
-          <section className="surface-card w-full p-4 md:p-6">
-            <UsersCenterPage embedded />
-          </section>
-        )}
+        {activeTab === 'management' && isAdminView && <UsersCenterPage embedded />}
 
         {activeTab === 'notifications' && (
           <NotificationsTab
@@ -460,44 +495,5 @@ export function UserPortalPage() {
         )}
       </main>
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Tab button helper
-// ---------------------------------------------------------------------------
-
-function TabButton({
-  icon,
-  label,
-  active,
-  onClick,
-  badge,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  badge?: number;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'px-3 py-2 rounded-lg text-sm border transition-colors inline-flex items-center gap-2',
-        active
-          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-          : 'border-white/10 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800/60',
-      )}
-    >
-      {icon}
-      {label}
-      {badge !== undefined && (
-        <span className="min-w-5 h-5 px-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 text-[10px] flex items-center justify-center">
-          {badge}
-        </span>
-      )}
-    </button>
   );
 }
