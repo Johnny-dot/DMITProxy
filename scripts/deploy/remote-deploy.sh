@@ -108,17 +108,33 @@ if [[ $RESTORE_STASH -eq 1 ]]; then
 fi
 
 section "build"
-# `npm ci` is unreliable on this host: its node_modules teardown intermittently fails
-# (ENOTEMPTY), and — because package-lock.json is generated off-platform — it can skip the
-# ARM64-specific optional binaries for rollup/esbuild, leaving a tree that installs "OK" but
-# breaks `vite build` (MODULE_NOT_FOUND rollup/dist/native.js, or an unresolvable react).
-# Force-clean first, then fall back to `npm install` (which resolves the host's platform
-# deps) on a build failure, restoring the committed lockfile afterward.
-rm -rf node_modules
-npm ci
+# `npm ci` is flaky on this host in two distinct ways:
+#   1. it aborts mid-install — ENOTEMPTY during node_modules teardown, or ETXTBSY on the
+#      esbuild binary (spawned while still being written) — which previously killed the
+#      whole deploy and forced a manual re-run;
+#   2. because package-lock.json is generated off-platform, it can skip the ARM64 optional
+#      binaries for rollup/esbuild, installing "OK" but breaking `vite build`.
+# Handle (1) by retrying `npm ci` on a clean tree a few times; handle (2) by falling back to
+# `npm install` (which resolves the host's platform deps), restoring the committed lockfile.
+install_deps() {
+  local attempt
+  for attempt in 1 2 3; do
+    rm -rf node_modules
+    if npm ci; then
+      return 0
+    fi
+    log "npm ci failed (attempt ${attempt}/3) — retrying on a clean tree" >&2
+    sleep 3
+  done
+  log "npm ci failed repeatedly — falling back to npm install" >&2
+  rm -rf node_modules
+  npm install
+  git checkout -- package-lock.json 2>/dev/null || true
+}
+install_deps
 bash scripts/install-subconverter.sh
 if ! npm run build; then
-  log "vite build failed after npm ci — reinstalling with npm install (platform optional deps) and retrying" >&2
+  log "vite build failed after install — reinstalling with npm install (platform optional deps) and retrying" >&2
   npm install
   git checkout -- package-lock.json 2>/dev/null || true
   npm run build
