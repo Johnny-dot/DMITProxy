@@ -199,43 +199,13 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
         !embedded && 'content-shell-wide reveal-stagger px-4 md:px-6 xl:px-8',
       )}
     >
-      <div className={cn(!embedded && 'surface-card space-y-3 p-6 md:p-7')}>
-        {!embedded && (
-          <>
-            <p className="section-kicker">{t('userAccounts.title')}</p>
-            <h1 className="text-3xl font-semibold tracking-tight">{t('userAccounts.title')}</h1>
-            <p className="max-w-3xl text-sm leading-7 text-zinc-400">
-              {t('userAccounts.subtitle')}
-            </p>
-          </>
-        )}
-        <div
-          className={cn(
-            'glass-pill inline-flex flex-wrap items-center gap-2 p-3 text-xs',
-            embedded ? '' : 'mt-3',
-          )}
-        >
-          <span className="text-[var(--text-secondary)]">{t('userAccounts.autoProvision')}:</span>
-          <Badge variant={systemFlags?.xuiAutoProvisionEnabled ? 'success' : 'secondary'}>
-            {systemFlags?.xuiAutoProvisionEnabled
-              ? t('userAccounts.autoProvisionEnabled')
-              : t('userAccounts.autoProvisionDisabled')}
-          </Badge>
-          {systemFlags?.xuiAutoProvisionEnabled &&
-            !systemFlags?.xuiAutoProvisionCredentialsConfigured && (
-              <span className="text-amber-500">{t('userAccounts.autoProvisionMissingCreds')}</span>
-            )}
-          {!systemFlags?.xuiAutoProvisionEnabled && (
-            <span className="text-[var(--text-secondary)]">
-              {t('userAccounts.autoProvisionOff')}
-            </span>
-          )}
-          {systemFlags?.xuiAutoProvisionEnabled &&
-            systemFlags?.xuiAutoProvisionCredentialsConfigured && (
-              <span className="text-emerald-500">{t('userAccounts.autoProvisionReady')}</span>
-            )}
-        </div>
-      </div>
+      {!embedded && (
+        <section className="surface-card space-y-3 p-6 md:p-7">
+          <p className="section-kicker">{t('userAccounts.title')}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('userAccounts.title')}</h1>
+          <p className="max-w-3xl text-sm leading-7 text-zinc-400">{t('userAccounts.subtitle')}</p>
+        </section>
+      )}
 
       <Card className="w-full">
         <CardHeader>
@@ -252,6 +222,18 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                 <Badge variant={pendingCodes.length ? 'success' : 'secondary'}>
                   {pendingCodes.length} {isZh ? '待接受邀请' : 'pending'}
                 </Badge>
+                <Badge variant={systemFlags?.xuiAutoProvisionEnabled ? 'success' : 'secondary'}>
+                  {t('userAccounts.autoProvision')}:{' '}
+                  {systemFlags?.xuiAutoProvisionEnabled
+                    ? t('userAccounts.autoProvisionEnabled')
+                    : t('userAccounts.autoProvisionDisabled')}
+                </Badge>
+                {systemFlags?.xuiAutoProvisionEnabled &&
+                  !systemFlags?.xuiAutoProvisionCredentialsConfigured && (
+                    <span className="text-xs text-amber-500">
+                      {t('userAccounts.autoProvisionMissingCreds')}
+                    </span>
+                  )}
               </div>
             </div>
             <Button size="sm" className="gap-2" onClick={createInvite}>

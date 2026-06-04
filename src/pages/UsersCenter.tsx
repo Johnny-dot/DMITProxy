@@ -77,32 +77,34 @@ export function UsersCenterPage({ embedded = false }: { embedded?: boolean }) {
         !embedded && 'content-shell-wide reveal-stagger px-4 md:px-6 xl:px-8',
       )}
     >
-      <section className="surface-card space-y-3 p-6 md:p-7">
-        <p className="section-kicker">{isZh ? '用户中心' : 'User Center'}</p>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {isZh ? '用户中心' : 'User Center'}
-        </h1>
-        <p className="max-w-3xl text-sm leading-7 text-zinc-400">
-          {isZh
-            ? '在一个页面里统一管理用户、在线状态和邀请码。'
-            : 'Manage users, online activity, and invite accounts in one workspace.'}
-        </p>
-      </section>
+      <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
+        <div className="space-y-3">
+          <p className="section-kicker">{isZh ? '用户中心' : 'User Center'}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {isZh ? '用户中心' : 'User Center'}
+          </h1>
+          <p className="max-w-3xl text-sm leading-7 text-zinc-400">
+            {isZh
+              ? '在一个页面里统一管理用户、在线状态和邀请码。'
+              : 'Manage users, online activity, and invite accounts in one workspace.'}
+          </p>
+        </div>
 
-      <div className="glass-pill inline-flex flex-wrap items-center gap-2 p-2">
-        {tabItems.map((item) => (
-          <Button
-            key={item.key}
-            variant={activeTab === item.key ? 'secondary' : 'ghost'}
-            size="sm"
-            className="h-11 gap-2 px-4"
-            onClick={() => switchTab(item.key)}
-          >
-            <item.icon className="w-4 h-4" />
-            {item.label}
-          </Button>
-        ))}
-      </div>
+        <div className="glass-pill inline-flex flex-wrap items-center gap-2 self-start p-2 sm:self-auto">
+          {tabItems.map((item) => (
+            <Button
+              key={item.key}
+              variant={activeTab === item.key ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-11 gap-2 px-4"
+              onClick={() => switchTab(item.key)}
+            >
+              <item.icon className="w-4 h-4" />
+              {item.label}
+            </Button>
+          ))}
+        </div>
+      </section>
 
       <div className={cn('w-full min-w-0', activeTab === 'list' ? 'block' : 'hidden')}>
         {mountedTabs.list && <UsersPage embedded onOpenAccounts={() => switchTab('accounts')} />}
