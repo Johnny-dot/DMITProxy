@@ -6,6 +6,7 @@ import { HelpTab } from '@/src/pages/portal/HelpTab';
 import { HomeTab } from '@/src/pages/portal/HomeTab';
 import { SubscriptionTab } from '@/src/pages/portal/SubscriptionTab';
 import { Button } from '@/src/components/ui/Button';
+import { Skeleton } from '@/src/components/ui/Skeleton';
 import { useToast } from '@/src/components/ui/Toast';
 import { useAuth } from '@/src/context/AuthContext';
 import { useI18n } from '@/src/context/I18nContext';
@@ -222,8 +223,17 @@ export function MySubscriptionPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="h-7 w-7 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+      <div className="content-shell-wide reveal-stagger flex flex-col gap-4 px-4 py-2 md:px-6 xl:px-8">
+        <div className="surface-card space-y-3 p-6 md:p-7">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-7 w-2/3 max-w-sm" />
+          <Skeleton className="h-4 w-full max-w-2xl" />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Skeleton className="h-44 w-full" />
+          <Skeleton className="h-44 w-full" />
+        </div>
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
