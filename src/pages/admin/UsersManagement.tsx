@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Check, Users, Link as LinkIcon, KeyRound, Copy } from 'lucide-react';
+import { Plus, Trash2, Check, Users, Link as LinkIcon, KeyRound, Copy, Edit2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/src/components/ui/Table';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { Badge } from '@/src/components/ui/Badge';
@@ -81,47 +89,6 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
     }
     return map;
   }, [inbounds, onlineEmails]);
-
-  function renderUserStats(user: User) {
-    const sid = user.sub_id?.trim().toLowerCase();
-    const stats = sid ? clientStatsBySubId.get(sid) : undefined;
-    if (!stats) return null;
-    const pct = stats.total > 0 ? Math.min((stats.used / stats.total) * 100, 100) : 0;
-    return (
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--text-secondary)]">
-        <span
-          className={cn(
-            'inline-flex items-center gap-1.5',
-            stats.online ? 'text-emerald-500' : 'text-[var(--text-tertiary)]',
-          )}
-        >
-          <span
-            className={cn(
-              'h-1.5 w-1.5 rounded-full',
-              stats.online ? 'bg-emerald-500' : 'bg-[var(--text-tertiary)]',
-            )}
-          />
-          {stats.online ? (isZh ? '在线' : 'Online') : isZh ? '离线' : 'Offline'}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="font-mono">
-            {formatTraffic(stats.used)}
-            {stats.total > 0 ? ` / ${formatTraffic(stats.total)}` : ''}
-          </span>
-          <span className="glass-progress-track h-1 w-16 overflow-hidden">
-            <span
-              className={cn(
-                'block h-full rounded-full',
-                pct < 70 ? 'bg-emerald-500' : pct < 90 ? 'bg-yellow-500' : 'bg-red-500',
-              )}
-              style={{ width: `${pct}%` }}
-            />
-          </span>
-        </span>
-        {stats.expiryTime > 0 && <span>{formatExpiry(stats.expiryTime)}</span>}
-      </div>
-    );
-  }
 
   async function load() {
     try {
@@ -379,96 +346,181 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                 {users.length === 0 ? (
                   <EmptyState icon={Users} title={t('userAccounts.noUsers')} description="" />
                 ) : (
-                  <div className="space-y-3">
-                    {users.map((user) => (
-                      <div
-                        key={user.id}
-                        className="surface-panel flex flex-col justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center"
-                      >
-                        <div>
-                          <p className="font-medium">{user.username}</p>
-                          <p className="text-xs text-[var(--text-secondary)]">
-                            {t('userAccounts.joined', {
-                              date: new Date(user.created_at * 1000).toLocaleDateString(),
-                            })}
-                          </p>
-                          {renderUserStats(user)}
-                        </div>
-                        <div className="flex items-center gap-2 flex-1 sm:max-w-xs">
-                          {editingSubId?.id === user.id ? (
-                            <>
-                              <Input
-                                className="h-8 text-xs font-mono"
-                                placeholder={t('userAccounts.subIdPlaceholder')}
-                                value={editingSubId.value}
-                                onChange={(e) =>
-                                  setEditingSubId({ id: user.id, value: e.target.value })
-                                }
-                                autoFocus
-                              />
-                              <Button
-                                size="sm"
-                                className="h-8 px-3"
-                                onClick={() => saveSubId(user.id, editingSubId.value)}
-                              >
-                                {t('common.save')}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 px-3"
-                                onClick={() => setEditingSubId(null)}
-                              >
-                                {t('common.cancel')}
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              {user.sub_id ? (
-                                <code className="flex-1 truncate font-mono text-xs text-[var(--text-secondary)]">
-                                  {user.sub_id}
-                                </code>
-                              ) : (
-                                <span className="flex-1 text-xs text-[var(--text-tertiary)]">
-                                  {t('userAccounts.noSubAssigned')}
-                                </span>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 px-3 text-xs shrink-0"
-                                onClick={() =>
-                                  setEditingSubId({ id: user.id, value: user.sub_id ?? '' })
-                                }
-                              >
-                                {user.sub_id
-                                  ? t('userAccounts.change')
-                                  : t('userAccounts.assignSubId')}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 px-3 text-xs shrink-0 gap-1"
-                                onClick={() => generateResetLink(user.id, user.username)}
-                              >
-                                <KeyRound className="w-3.5 h-3.5" />
-                                {t('userAccounts.generateResetLink')}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 px-3 text-xs shrink-0 gap-1 text-red-400 border-red-500/30 hover:bg-red-500/10"
-                                onClick={() => deleteUser(user.id, user.username)}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                {t('userAccounts.deleteUser')}
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{isZh ? '用户' : 'User'}</TableHead>
+                        <TableHead className="hidden md:table-cell">
+                          {isZh ? '注册时间' : 'Joined'}
+                        </TableHead>
+                        <TableHead>{isZh ? '状态' : 'Status'}</TableHead>
+                        <TableHead>{isZh ? '流量' : 'Traffic'}</TableHead>
+                        <TableHead className="hidden lg:table-cell">
+                          {isZh ? '到期' : 'Expires'}
+                        </TableHead>
+                        <TableHead className="hidden xl:table-cell">
+                          {isZh ? '订阅 ID' : 'Sub ID'}
+                        </TableHead>
+                        <TableHead className="text-right">{isZh ? '操作' : 'Actions'}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => {
+                        const sid = user.sub_id?.trim().toLowerCase();
+                        const stats = sid ? clientStatsBySubId.get(sid) : undefined;
+                        const pct =
+                          stats && stats.total > 0
+                            ? Math.min((stats.used / stats.total) * 100, 100)
+                            : 0;
+                        const editing = editingSubId?.id === user.id ? editingSubId : null;
+                        const assignLabel = user.sub_id
+                          ? t('userAccounts.change')
+                          : t('userAccounts.assignSubId');
+                        return (
+                          <React.Fragment key={user.id}>
+                            <TableRow>
+                              <TableCell className="max-w-[240px] font-medium">
+                                <span className="block truncate">{user.username}</span>
+                              </TableCell>
+                              <TableCell className="hidden text-xs text-[var(--text-secondary)] md:table-cell">
+                                {new Date(user.created_at * 1000).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                {stats ? (
+                                  <Badge variant={stats.online ? 'success' : 'secondary'}>
+                                    {stats.online
+                                      ? isZh
+                                        ? '在线'
+                                        : 'Online'
+                                      : isZh
+                                        ? '离线'
+                                        : 'Offline'}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary">{isZh ? '未开通' : 'No client'}</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {stats ? (
+                                  <div className="flex min-w-[150px] max-w-[240px] flex-col gap-1.5">
+                                    <div className="flex justify-between font-mono text-[10px] tabular-nums text-[var(--text-secondary)]">
+                                      <span>{formatTraffic(stats.used)}</span>
+                                      <span>
+                                        {stats.total > 0
+                                          ? formatTraffic(stats.total)
+                                          : t('common.unlimited')}
+                                      </span>
+                                    </div>
+                                    <div className="glass-progress-track h-1.5 w-full overflow-hidden">
+                                      <div
+                                        className={cn(
+                                          'h-full rounded-full transition-all duration-500',
+                                          pct < 70
+                                            ? 'bg-emerald-500'
+                                            : pct < 90
+                                              ? 'bg-yellow-500'
+                                              : 'bg-red-500',
+                                        )}
+                                        style={{ width: `${pct}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-[var(--text-tertiary)]">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="hidden text-xs text-[var(--text-secondary)] lg:table-cell">
+                                {stats && stats.expiryTime > 0
+                                  ? formatExpiry(stats.expiryTime)
+                                  : '—'}
+                              </TableCell>
+                              <TableCell className="hidden xl:table-cell">
+                                {user.sub_id ? (
+                                  <code className="block max-w-[180px] truncate font-mono text-xs text-[var(--text-tertiary)]">
+                                    {user.sub_id}
+                                  </code>
+                                ) : (
+                                  <span className="text-xs text-[var(--text-tertiary)]">
+                                    {t('userAccounts.noSubAssigned')}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    title={assignLabel}
+                                    aria-label={assignLabel}
+                                    onClick={() =>
+                                      setEditingSubId({ id: user.id, value: user.sub_id ?? '' })
+                                    }
+                                  >
+                                    <Edit2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    title={t('userAccounts.generateResetLink')}
+                                    aria-label={t('userAccounts.generateResetLink')}
+                                    onClick={() => generateResetLink(user.id, user.username)}
+                                  >
+                                    <KeyRound className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-red-500 hover:bg-red-500/10"
+                                    title={t('userAccounts.deleteUser')}
+                                    aria-label={t('userAccounts.deleteUser')}
+                                    onClick={() => deleteUser(user.id, user.username)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                            {editing && (
+                              <TableRow>
+                                <TableCell colSpan={7}>
+                                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                    <Input
+                                      className="h-8 font-mono text-xs sm:max-w-md"
+                                      placeholder={t('userAccounts.subIdPlaceholder')}
+                                      value={editing.value}
+                                      onChange={(e) =>
+                                        setEditingSubId({ id: user.id, value: e.target.value })
+                                      }
+                                      autoFocus
+                                    />
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        className="h-8 px-3"
+                                        onClick={() => saveSubId(user.id, editing.value)}
+                                      >
+                                        {t('common.save')}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 px-3"
+                                        onClick={() => setEditingSubId(null)}
+                                      >
+                                        {t('common.cancel')}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
                 )}
               </div>
 
