@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, ChevronDown, Copy, Download, QrCode } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Copy, Download } from 'lucide-react';
 import type { ServerStatus } from '@/src/api/xui';
 import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
@@ -51,7 +51,7 @@ export function HomeTab({
 }: HomeTabProps) {
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
-  const [showRouteDetail, setShowRouteDetail] = useState(false);
+  const [showRouteDetail, setShowRouteDetail] = useState(true);
 
   const latestAnnouncement = effectiveSettings?.announcementActive
     ? effectiveSettings.announcementText.trim()
@@ -234,7 +234,6 @@ function MySubscriptionHero({
   onSetSection: (tab: PortalTab) => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const [showQr, setShowQr] = useState(false);
 
   const machineSummaryHelpText = isZh
     ? '这里显示的是 Prism 按整台机器汇总后的真实口径，不是 3X-UI 原生页面里按单个用户计算的“剩余”。'
@@ -328,83 +327,81 @@ function MySubscriptionHero({
           <Skeleton className="h-4 w-64" />
         </div>
       ) : hasSubscription ? (
-        <div className="space-y-5">
-          <div className="max-w-2xl space-y-2.5">
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <p className="text-3xl font-semibold tabular-nums text-zinc-50">{bigValue}</p>
-              <p className="inline-flex items-center gap-1 text-xs text-zinc-500">
-                <span>{subtitle}</span>
-                {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
-              </p>
+        <div
+          className={cn(
+            'grid gap-6 lg:items-center',
+            subscriptionUniversalUrl && 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]',
+          )}
+        >
+          <div className="space-y-5">
+            <div className="space-y-2.5">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <p className="text-3xl font-semibold tabular-nums text-zinc-50">{bigValue}</p>
+                <p className="inline-flex items-center gap-1 text-xs text-zinc-500">
+                  <span>{subtitle}</span>
+                  {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
+                </p>
+              </div>
+
+              {!unlimited ? (
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all',
+                      usedPercent < 50
+                        ? 'bg-emerald-500'
+                        : usedPercent < 80
+                          ? 'bg-amber-500'
+                          : 'bg-red-500',
+                    )}
+                    style={{ width: `${usedPercent}%` }}
+                  />
+                </div>
+              ) : null}
+
+              {resetText || expiryText ? (
+                <p className="text-xs text-zinc-500">
+                  {resetText}
+                  {resetText && expiryText ? ' · ' : ''}
+                  {expiryText ? (
+                    <span className={cn(isExpired && 'text-red-500')}>{expiryText}</span>
+                  ) : null}
+                </p>
+              ) : null}
             </div>
 
-            {!unlimited ? (
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-all',
-                    usedPercent < 50
-                      ? 'bg-emerald-500'
-                      : usedPercent < 80
-                        ? 'bg-amber-500'
-                        : 'bg-red-500',
-                  )}
-                  style={{ width: `${usedPercent}%` }}
-                />
-              </div>
-            ) : null}
-
-            {resetText || expiryText ? (
-              <p className="text-xs text-zinc-500">
-                {resetText}
-                {resetText && expiryText ? ' · ' : ''}
-                {expiryText ? (
-                  <span className={cn(isExpired && 'text-red-500')}>{expiryText}</span>
-                ) : null}
-              </p>
-            ) : null}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {subscriptionUniversalUrl ? (
-              <Button
-                size="sm"
-                className="gap-1.5"
-                onClick={() => {
-                  onCopy(subscriptionUniversalUrl, 'home-universal');
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制订阅' : 'Copy link'}
-              </Button>
-            ) : null}
-            {subscriptionUniversalUrl ? (
+            <div className="flex flex-wrap gap-2">
+              {subscriptionUniversalUrl ? (
+                <Button
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    onCopy(subscriptionUniversalUrl, 'home-universal');
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制订阅' : 'Copy link'}
+                </Button>
+              ) : null}
               <Button
                 variant="secondary"
                 size="sm"
                 className="gap-1.5"
-                onClick={() => setShowQr((value) => !value)}
-                aria-expanded={showQr}
+                onClick={() => onSetSection('setup')}
               >
-                <QrCode className="h-4 w-4" />
-                {isZh ? '二维码' : 'QR code'}
+                <Download className="h-4 w-4" />
+                {isZh ? '下载客户端' : 'Download client'}
               </Button>
-            ) : null}
-            <Button
-              variant="secondary"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => onSetSection('setup')}
-            >
-              <Download className="h-4 w-4" />
-              {isZh ? '下载客户端' : 'Download client'}
-            </Button>
+            </div>
           </div>
 
-          {showQr && subscriptionUniversalUrl ? (
-            <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
+          {subscriptionUniversalUrl ? (
+            <div className="flex flex-col items-center gap-2 lg:border-l lg:border-[var(--border-subtle)] lg:pl-6">
+              <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
+              <p className="text-xs text-zinc-500">{isZh ? '手机扫码导入' : 'Scan to import'}</p>
+            </div>
           ) : null}
         </div>
       ) : (
@@ -473,7 +470,7 @@ function UsageDetailCard({
           <Skeleton className="h-5 w-2/3" />
         </div>
       ) : rows.length > 0 ? (
-        <div className="space-y-2.5">
+        <div className="grid gap-x-10 gap-y-3 sm:grid-cols-2">
           {rows.map((row) => (
             <div key={row.label} className="flex items-center justify-between gap-3 text-sm">
               <span className="text-zinc-500">{row.label}</span>
