@@ -13,6 +13,7 @@ import {
 import { getBillingConfig } from './xui-billing.js';
 import { db } from './db.js';
 import { getDmitTrafficSnapshot } from './dmit-traffic-store.js';
+import { computeMachineUsage } from './machine-usage.js';
 import { getDmitServiceId } from './dmit-config.js';
 import {
   buildSubscriptionDecorations,
@@ -415,6 +416,9 @@ export async function buildSubscriptionPayload(subId: string): Promise<string> {
 
   const dmitServiceId = getDmitServiceId();
   const dmitSnapshot = dmitServiceId != null ? getDmitTrafficSnapshot(dmitServiceId) : null;
+  // One machine-level number everywhere: the same DMIT-anchored (and staleness-aware)
+  // value the admin console shows, instead of the raw snapshot fields.
+  const machineUsage = computeMachineUsage(inbounds, dmitSnapshot);
 
   const links: string[] = [];
 
@@ -444,8 +448,8 @@ export async function buildSubscriptionPayload(subId: string): Promise<string> {
           allClientUp: inboundTraffic.up,
           allClientDown: inboundTraffic.down,
           machineTotal: inbound.total ?? 0,
-          dmitMachineUsed: dmitSnapshot?.bwusageBytes,
-          dmitMachineTotal: dmitSnapshot?.bwlimitBytes,
+          dmitMachineUsed: machineUsage.usedBytes,
+          dmitMachineTotal: machineUsage.totalBytes,
         });
         links.push(
           ...buildDecoratedSubscriptionLinks(

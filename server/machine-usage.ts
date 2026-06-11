@@ -14,29 +14,64 @@ export interface MachineUsage {
 }
 
 type InboundLike = Pick<XuiInbound, 'clientStats' | 'total'>;
-type DmitLike = Pick<DmitTrafficSnapshot, 'bwusageBytes' | 'bwlimitBytes' | 'updatedAt'>;
+type DmitLike = Pick<
+  DmitTrafficSnapshot,
+  'bwusageBytes' | 'bwlimitBytes' | 'updatedAt' | 'nextResetAt'
+>;
+
+/** A snapshot that carries no reset info is discarded after a full billing cycle + slack. */
+const SNAPSHOT_MAX_AGE_WITHOUT_RESET_MS = 32 * 24 * 60 * 60 * 1000;
 
 /**
  * Single source of truth for the machine-level traffic gauge shown across the admin
- * console (dashboard / nodes / inbounds / traffic) and the user portal.
+ * console (dashboard / nodes / inbounds / traffic), the user portal, and subscription
+ * decorations.
  *
- * Prefers DMIT's network-layer billing number — authoritative and reset monthly at the
- * source. Falls back to the SUM OF 3X-UI per-client counters, which the monthly billing
- * reset (`resetAllClientTraffics`) also zeroes. It deliberately does NOT use the raw
- * inbound aggregate (`inbound.up + inbound.down`): that counter is not touched by the
- * monthly reset, so it drifts away from the billing cycle and is the root cause of the
- * admin-vs-portal mismatch this function exists to eliminate.
+ * DMIT's network-layer billing number is authoritative, but it only updates when the
+ * Tampermonkey userscript runs (i.e. when someone opens the DMIT panel). To avoid the
+ * gauge freezing between syncs, the DMIT value is treated as an ANCHOR and the live
+ * 3X-UI client-sum keeps it moving: usedBytes = max(dmit, client-sum). This relies on
+ * both counters covering the same billing window — the monthly billing reset
+ * (`resetAllClientTraffics`) zeroes the client counters on the same day DMIT resets.
+ *
+ * A snapshot from a PREVIOUS billing window (now past its recorded nextResetAt, or
+ * older than a full cycle when no reset info was captured) is discarded entirely and
+ * the gauge falls back to the live 3X-UI client-sum, so a long absence from the DMIT
+ * panel can never pin last month's number on screen.
+ *
+ * The fallback deliberately does NOT use the raw inbound aggregate
+ * (`inbound.up + inbound.down`): that counter is not touched by the monthly reset, so
+ * it drifts away from the billing cycle.
  */
-export function computeMachineUsage(inbounds: InboundLike[], dmit: DmitLike | null): MachineUsage {
-  if (dmit) {
+export function computeMachineUsage(
+  inbounds: InboundLike[],
+  dmit: DmitLike | null,
+  now: number = Date.now(),
+): MachineUsage {
+  const xuiUsed = inbounds.reduce((sum, ib) => sum + getInboundClientUsedBytes(ib), 0);
+  const xuiTotal = inbounds.reduce((sum, ib) => sum + safeNonNegativeInt(ib.total), 0);
+
+  const snapshotExpired =
+    dmit != null &&
+    (dmit.nextResetAt != null
+      ? now >= dmit.nextResetAt
+      : now - dmit.updatedAt > SNAPSHOT_MAX_AGE_WITHOUT_RESET_MS);
+
+  if (!dmit || snapshotExpired) {
     return {
-      usedBytes: safeNonNegativeInt(dmit.bwusageBytes),
-      totalBytes: safeNonNegativeInt(dmit.bwlimitBytes),
-      source: 'dmit',
-      updatedAt: dmit.updatedAt,
+      usedBytes: xuiUsed,
+      // The bandwidth cap is not window-dependent, so a stale snapshot may still
+      // provide the total when no inbound carries a configured limit.
+      totalBytes: xuiTotal > 0 ? xuiTotal : safeNonNegativeInt(dmit?.bwlimitBytes ?? 0),
+      source: 'xui',
+      updatedAt: null,
     };
   }
-  const usedBytes = inbounds.reduce((sum, ib) => sum + getInboundClientUsedBytes(ib), 0);
-  const totalBytes = inbounds.reduce((sum, ib) => sum + safeNonNegativeInt(ib.total), 0);
-  return { usedBytes, totalBytes, source: 'xui', updatedAt: null };
+
+  return {
+    usedBytes: Math.max(safeNonNegativeInt(dmit.bwusageBytes), xuiUsed),
+    totalBytes: safeNonNegativeInt(dmit.bwlimitBytes),
+    source: 'dmit',
+    updatedAt: dmit.updatedAt,
+  };
 }
