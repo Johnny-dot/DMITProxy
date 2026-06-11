@@ -329,7 +329,7 @@ function MySubscriptionHero({
         </div>
       ) : hasSubscription ? (
         <div className="space-y-5">
-          <div className="space-y-2.5">
+          <div className="max-w-2xl space-y-2.5">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <p className="text-3xl font-semibold tabular-nums text-zinc-50">{bigValue}</p>
               <p className="inline-flex items-center gap-1 text-xs text-zinc-500">
