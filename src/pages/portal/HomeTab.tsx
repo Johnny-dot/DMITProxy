@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, Copy, Download } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Copy, Download, QrCode } from 'lucide-react';
 import type { ServerStatus } from '@/src/api/xui';
 import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
@@ -7,9 +7,11 @@ import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { cn } from '@/src/utils/cn';
 import { formatTraffic } from '@/src/utils/xuiClients';
+import { getFraudRiskMeta } from '@/src/utils/nodeQuality';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import type { ClientStats, PortalSettings, PortalTab, PortalUsageSummary, UserInfo } from './types';
 import { NodeQualityCard } from './NodeQualityCard';
+import { QrCodeCanvas } from './SubscriptionTabCards';
 
 interface HomeTabProps {
   isAdminView: boolean;
@@ -49,12 +51,13 @@ export function HomeTab({
 }: HomeTabProps) {
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
+  const [showRouteDetail, setShowRouteDetail] = useState(false);
 
   const latestAnnouncement = effectiveSettings?.announcementActive
     ? effectiveSettings.announcementText.trim()
     : '';
   const supportContact = effectiveSettings?.supportTelegram ?? '';
-  const hasMessages = Boolean(latestAnnouncement || supportContact);
+  const showAnnouncement = showMessagesCard && Boolean(latestAnnouncement || supportContact);
 
   if (isAdminView) {
     return (
@@ -129,23 +132,47 @@ export function HomeTab({
         onSetSection={onSetSection}
       />
 
-      {showMessagesCard && hasMessages ? (
-        <AdminMessagesCard
-          isZh={isZh}
-          latestAnnouncement={latestAnnouncement}
-          supportContact={supportContact}
-        />
+      {hasSubscription || showAnnouncement ? (
+        <section
+          className={cn('grid gap-6', hasSubscription && showAnnouncement && 'xl:grid-cols-2')}
+        >
+          {hasSubscription ? (
+            <UsageDetailCard
+              isZh={isZh}
+              stats={clientStats}
+              usageSummary={usageSummary}
+              isLoading={isStatsLoading}
+            />
+          ) : null}
+          {showAnnouncement ? (
+            <AdminMessagesCard
+              isZh={isZh}
+              latestAnnouncement={latestAnnouncement}
+              supportContact={supportContact}
+            />
+          ) : null}
+        </section>
       ) : null}
 
-      {hasSubscription && clientStats && (
-        <NodeQualityCard
-          isZh={isZh}
-          inboundRemark={clientStats.inboundRemark}
-          profile={nodeQuality}
-          onRefresh={onRefreshNodeQuality}
-          isRefreshing={isRefreshingNodeQuality}
-        />
-      )}
+      {hasSubscription && clientStats ? (
+        <div className="space-y-3">
+          <RouteStatusPill
+            isZh={isZh}
+            profile={nodeQuality}
+            expanded={showRouteDetail}
+            onToggle={() => setShowRouteDetail((value) => !value)}
+          />
+          {showRouteDetail ? (
+            <NodeQualityCard
+              isZh={isZh}
+              inboundRemark={clientStats.inboundRemark}
+              profile={nodeQuality}
+              onRefresh={onRefreshNodeQuality}
+              isRefreshing={isRefreshingNodeQuality}
+            />
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -169,6 +196,22 @@ function daysUntilResetDay(resetDay: number): number {
   return Math.round((next - todayUTC) / 86_400_000);
 }
 
+const STATUS_BORDER = {
+  ready: 'border-emerald-500/30',
+  preparing: 'border-amber-500/30',
+  disabled: 'border-red-500/30',
+} as const;
+const STATUS_PILL = {
+  ready: 'bg-emerald-500/10 text-emerald-500',
+  preparing: 'bg-amber-500/10 text-amber-500',
+  disabled: 'bg-red-500/10 text-red-500',
+} as const;
+const STATUS_DOT = {
+  ready: 'bg-emerald-500',
+  preparing: 'bg-amber-500',
+  disabled: 'bg-red-500',
+} as const;
+
 function MySubscriptionHero({
   isZh,
   username,
@@ -190,6 +233,9 @@ function MySubscriptionHero({
   onCopy: (text: string, key: string) => void;
   onSetSection: (tab: PortalTab) => void;
 }) {
+  const [copied, setCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
+
   const machineSummaryHelpText = isZh
     ? '这里显示的是 Prism 按整台机器汇总后的真实口径，不是 3X-UI 原生页面里按单个用户计算的“剩余”。'
     : 'These numbers come from Prism machine-wide accounting, not the single-user remaining quota shown by the native 3X-UI page.';
@@ -204,16 +250,14 @@ function MySubscriptionHero({
 
   if (hasPool && usageSummary) {
     const { machineRemaining, machineTotal, ownUsed } = usageSummary;
+    const machineUsed = Math.max(machineTotal - machineRemaining, 0);
     bigValue = isZh
       ? `剩 ${formatTraffic(machineRemaining)}`
       : `${formatTraffic(machineRemaining)} left`;
-    usedPercent = Math.min(
-      Math.max(((machineTotal - machineRemaining) / machineTotal) * 100, 0),
-      100,
-    );
+    usedPercent = Math.min(Math.max((machineUsed / machineTotal) * 100, 0), 100);
     subtitle = isZh
-      ? `本机共享池 ${formatTraffic(machineTotal)} · 你已用 ${formatTraffic(ownUsed)}`
-      : `Shared pool ${formatTraffic(machineTotal)} · you used ${formatTraffic(ownUsed)}`;
+      ? `本机共享池 已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} · 其中你 ${formatTraffic(ownUsed)}`
+      : `Shared pool ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} used · you ${formatTraffic(ownUsed)}`;
   } else if (stats && stats.total > 0) {
     const remaining = Math.max(stats.total - used, 0);
     bigValue = isZh ? `剩 ${formatTraffic(remaining)}` : `${formatTraffic(remaining)} left`;
@@ -230,8 +274,8 @@ function MySubscriptionHero({
   const resetDay = usageSummary?.resetDay ?? null;
   const resetText = resetDay
     ? isZh
-      ? `每月 ${resetDay} 日 UTC 重置 · 约 ${daysUntilResetDay(resetDay)} 天后`
-      : `Resets UTC day ${resetDay} · in ~${daysUntilResetDay(resetDay)}d`
+      ? `重置 ${daysUntilResetDay(resetDay)} 天后（每月 ${resetDay} 日 UTC）`
+      : `Resets in ~${daysUntilResetDay(resetDay)}d (UTC day ${resetDay})`
     : null;
 
   const isExpired = Boolean(stats && stats.expiryTime > 0 && stats.expiryTime < Date.now());
@@ -246,25 +290,15 @@ function MySubscriptionHero({
     : stats && !stats.enable
       ? 'disabled'
       : 'ready';
-  const statusStyles: Record<typeof status, string> = {
-    ready: 'bg-emerald-500/10 text-emerald-500',
-    preparing: 'bg-amber-500/10 text-amber-500',
-    disabled: 'bg-red-500/10 text-red-500',
-  };
-  const statusDot: Record<typeof status, string> = {
-    ready: 'bg-emerald-500',
-    preparing: 'bg-amber-500',
-    disabled: 'bg-red-500',
-  };
-  const statusLabel: Record<typeof status, string> = {
+  const statusLabel = {
     ready: isZh ? '可用' : 'Ready',
     preparing: isZh ? '准备中' : 'Preparing',
     disabled: isZh ? '已停用' : 'Disabled',
-  };
+  }[status];
 
   return (
     <section
-      className="surface-card space-y-5 p-6 md:p-7"
+      className={cn('surface-card space-y-5 border p-6 md:p-7', STATUS_BORDER[status])}
       data-testid="subscription-home-account-status"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -279,37 +313,30 @@ function MySubscriptionHero({
           data-testid="subscription-home-status"
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
-            statusStyles[status],
+            STATUS_PILL[status],
           )}
         >
-          <span className={cn('h-1.5 w-1.5 rounded-full', statusDot[status])} />
-          {statusLabel[status]}
+          <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT[status])} />
+          {statusLabel}
         </span>
       </div>
 
       {isLoading ? (
         <div className="space-y-4">
-          <Skeleton className="h-9 w-40" />
+          <Skeleton className="h-9 w-48" />
           <Skeleton className="h-2.5 w-full" />
           <Skeleton className="h-4 w-64" />
         </div>
       ) : hasSubscription ? (
         <div className="space-y-5">
-          <div className="surface-panel space-y-3 p-4 sm:p-5">
-            <div className="flex flex-wrap items-end justify-between gap-2">
+          <div className="space-y-2.5">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <p className="text-3xl font-semibold tabular-nums text-zinc-50">{bigValue}</p>
-              <div className="space-y-0.5 text-right text-xs text-zinc-500">
-                {resetText ? <p>{resetText}</p> : null}
-                {expiryText ? (
-                  <p className={cn(isExpired && 'text-red-500')}>{expiryText}</p>
-                ) : null}
-              </div>
+              <p className="inline-flex items-center gap-1 text-xs text-zinc-500">
+                <span>{subtitle}</span>
+                {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
+              </p>
             </div>
-
-            <p className="inline-flex items-center gap-1 text-xs text-zinc-500">
-              <span>{subtitle}</span>
-              {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
-            </p>
 
             {!unlimited ? (
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
@@ -326,26 +353,44 @@ function MySubscriptionHero({
                 />
               </div>
             ) : null}
-          </div>
 
-          {stats ? (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
-              <span>
-                {isZh ? '上传' : 'Up'} {formatTraffic(stats.up)}
-              </span>
-              <span>
-                {isZh ? '下载' : 'Down'} {formatTraffic(stats.down)}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span>{isZh ? '协议' : 'Protocol'}</span>
-                <span className="font-medium uppercase text-zinc-300">{stats.protocol}</span>
-              </span>
-            </div>
-          ) : null}
+            {resetText || expiryText ? (
+              <p className="text-xs text-zinc-500">
+                {resetText}
+                {resetText && expiryText ? ' · ' : ''}
+                {expiryText ? (
+                  <span className={cn(isExpired && 'text-red-500')}>{expiryText}</span>
+                ) : null}
+              </p>
+            ) : null}
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {subscriptionUniversalUrl ? (
-              <CopyButton url={subscriptionUniversalUrl} isZh={isZh} onCopy={onCopy} />
+              <Button
+                size="sm"
+                className="gap-1.5"
+                onClick={() => {
+                  onCopy(subscriptionUniversalUrl, 'home-universal');
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制订阅' : 'Copy link'}
+              </Button>
+            ) : null}
+            {subscriptionUniversalUrl ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setShowQr((value) => !value)}
+                aria-expanded={showQr}
+              >
+                <QrCode className="h-4 w-4" />
+                {isZh ? '二维码' : 'QR code'}
+              </Button>
             ) : null}
             <Button
               variant="secondary"
@@ -357,6 +402,10 @@ function MySubscriptionHero({
               {isZh ? '下载客户端' : 'Download client'}
             </Button>
           </div>
+
+          {showQr && subscriptionUniversalUrl ? (
+            <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
+          ) : null}
         </div>
       ) : (
         <div className="space-y-4">
@@ -380,30 +429,114 @@ function MySubscriptionHero({
   );
 }
 
-function CopyButton({
-  url,
+function UsageDetailCard({
   isZh,
-  onCopy,
+  stats,
+  usageSummary,
+  isLoading,
 }: {
-  url: string;
   isZh: boolean;
-  onCopy: (text: string, key: string) => void;
+  stats?: ClientStats;
+  usageSummary?: PortalUsageSummary | null;
+  isLoading?: boolean;
 }) {
-  const [copied, setCopied] = useState(false);
+  const used = stats ? stats.up + stats.down : 0;
+  const hasPool = Boolean(usageSummary && usageSummary.machineTotal > 0);
+
+  const rows: Array<{ label: string; value: string }> = [];
+  if (hasPool && usageSummary) {
+    const machineUsed = Math.max(usageSummary.machineTotal - usageSummary.machineRemaining, 0);
+    rows.push({ label: isZh ? '你已用' : 'You used', value: formatTraffic(usageSummary.ownUsed) });
+    rows.push({
+      label: isZh ? '共享池合计' : 'Shared pool',
+      value: `${formatTraffic(machineUsed)} / ${formatTraffic(usageSummary.machineTotal)}`,
+    });
+  } else if (stats) {
+    rows.push({ label: isZh ? '已用' : 'Used', value: formatTraffic(used) });
+    if (stats.total > 0) {
+      rows.push({ label: isZh ? '总量' : 'Total', value: formatTraffic(stats.total) });
+    }
+  }
+  if (stats) {
+    rows.push({ label: isZh ? '上传' : 'Upload', value: formatTraffic(stats.up) });
+    rows.push({ label: isZh ? '下载' : 'Download', value: formatTraffic(stats.down) });
+    rows.push({ label: isZh ? '协议' : 'Protocol', value: stats.protocol.toUpperCase() });
+  }
 
   return (
-    <Button
-      size="sm"
-      className="gap-1.5"
-      onClick={() => {
-        onCopy(url, 'home-universal');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }}
+    <section className="surface-card space-y-4 p-6 md:p-7">
+      <p className="section-kicker">{isZh ? '用量明细' : 'Usage detail'}</p>
+      {isLoading ? (
+        <div className="space-y-2.5">
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-2/3" />
+        </div>
+      ) : rows.length > 0 ? (
+        <div className="space-y-2.5">
+          {rows.map((row) => (
+            <div key={row.label} className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-zinc-500">{row.label}</span>
+              <span className="font-medium tabular-nums text-zinc-100">{row.value}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm leading-6 text-zinc-500">
+          {isZh ? '暂无流量数据，稍后再试。' : 'No usage data yet.'}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function RouteStatusPill({
+  isZh,
+  profile,
+  expanded,
+  onToggle,
+}: {
+  isZh: boolean;
+  profile?: NodeQualityProfile | null;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const fraudMeta = getFraudRiskMeta(profile?.fraudScore ?? null, isZh);
+  const egress = profile?.egress;
+  const location = egress ? [egress.city, egress.country].filter(Boolean).join(', ') : '';
+  const score = profile?.fraudScore;
+  const summaryText = profile
+    ? [
+        isZh ? '线路' : 'Route',
+        fraudMeta.label,
+        location,
+        score != null ? (isZh ? `风险 ${score}` : `risk ${score}`) : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : isZh
+      ? '线路检测结果加载中…'
+      : 'Loading route status…';
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={expanded}
+      className="surface-card flex w-full items-center justify-between gap-3 px-5 py-3 text-left transition-colors hover:border-[var(--border-strong)]"
     >
-      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-      {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制订阅' : 'Copy link'}
-    </Button>
+      <span className="inline-flex min-w-0 items-center gap-2 text-sm text-zinc-300">
+        <span
+          className={cn('h-1.5 w-1.5 shrink-0 rounded-full bg-current', fraudMeta.className)}
+          aria-hidden="true"
+        />
+        <span className="truncate">{summaryText}</span>
+      </span>
+      <span className="inline-flex shrink-0 items-center gap-1 text-xs text-zinc-500">
+        {expanded ? (isZh ? '收起' : 'Hide') : isZh ? '查看详情' : 'Details'}
+        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} />
+      </span>
+    </button>
   );
 }
 
