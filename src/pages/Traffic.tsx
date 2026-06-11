@@ -19,7 +19,15 @@ import { useToast } from '@/src/components/ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 
-const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#14b8a6', '#f97316', '#3b82f6'];
+const COLORS = [
+  'var(--success)',
+  'var(--accent)',
+  'var(--warning)',
+  'var(--danger)',
+  'var(--info)',
+  'var(--color-violet-500)',
+  'var(--color-emerald-300)',
+];
 
 export function TrafficPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -161,10 +169,14 @@ export function TrafficPage() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={userRanking} layout="vertical" margin={{ left: 50, right: 12 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--border-subtle)"
+                    horizontal={false}
+                  />
                   <XAxis
                     type="number"
-                    stroke="#71717a"
+                    stroke="var(--text-tertiary)"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
@@ -172,22 +184,22 @@ export function TrafficPage() {
                   <YAxis
                     dataKey="name"
                     type="category"
-                    stroke="#71717a"
+                    stroke="var(--text-tertiary)"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                     width={120}
                   />
                   <Tooltip
-                    cursor={{ fill: '#27272a' }}
+                    cursor={{ fill: 'var(--border-subtle)' }}
                     contentStyle={{
-                      backgroundColor: '#09090b',
-                      border: '1px solid #27272a',
+                      backgroundColor: 'var(--surface-card-strong)',
+                      border: '1px solid var(--border-subtle)',
                       borderRadius: '8px',
                     }}
                     formatter={(value) => [`${value} GB`, t('traffic.traffic')]}
                   />
-                  <Bar dataKey="traffic" fill="#6366f1" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="traffic" fill="var(--accent)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -228,8 +240,8 @@ export function TrafficPage() {
                         return [payload.display ?? '0 B', payload.name ?? t('traffic.protocol')];
                       }}
                       contentStyle={{
-                        backgroundColor: '#09090b',
-                        border: '1px solid #27272a',
+                        backgroundColor: 'var(--surface-card-strong)',
+                        border: '1px solid var(--border-subtle)',
                         borderRadius: '8px',
                       }}
                     />
@@ -258,29 +270,38 @@ export function TrafficPage() {
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={inboundUsage}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--border-subtle)"
+                  vertical={false}
+                />
                 <XAxis
                   dataKey="name"
-                  stroke="#71717a"
+                  stroke="var(--text-tertiary)"
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
                 />
-                <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis
+                  stroke="var(--text-tertiary)"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <Tooltip
-                  cursor={{ fill: '#27272a' }}
+                  cursor={{ fill: 'var(--border-subtle)' }}
                   formatter={(value, name) => [
                     `${value} GB`,
                     name === 'downloadGB' ? t('traffic.download') : t('traffic.upload'),
                   ]}
                   contentStyle={{
-                    backgroundColor: '#09090b',
-                    border: '1px solid #27272a',
+                    backgroundColor: 'var(--surface-card-strong)',
+                    border: '1px solid var(--border-subtle)',
                     borderRadius: '8px',
                   }}
                 />
-                <Bar dataKey="downloadGB" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="uploadGB" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="downloadGB" fill="var(--success)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="uploadGB" fill="var(--accent)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

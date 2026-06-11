@@ -56,7 +56,7 @@ import { SharedResourceEditor } from '@/src/pages/settings/SharedResourceEditor'
 import { CommunityLinkEditor } from '@/src/pages/settings/CommunityLinkEditor';
 
 const TEXTAREA_CLASS_NAME =
-  'min-h-[150px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 text-sm text-[var(--text-primary)] shadow-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2';
+  'min-h-[150px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 text-sm text-[var(--text-primary)] shadow-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2';
 
 const DEFAULT_SETTINGS: AdminSettings = {
   siteName: 'Prism Admin',
@@ -912,7 +912,7 @@ export function SettingsPage() {
               ) : (
                 <>
                   <textarea
-                    className="min-h-[220px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 font-mono text-xs leading-6 text-[var(--text-primary)] shadow-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2"
+                    className="min-h-[220px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 font-mono text-xs leading-6 text-[var(--text-primary)] shadow-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
                     placeholder={copy.extraSubscriptionPlaceholder}
                     value={settings.extraSubscriptionLinks}
                     onChange={(event) => updateField('extraSubscriptionLinks', event.target.value)}
