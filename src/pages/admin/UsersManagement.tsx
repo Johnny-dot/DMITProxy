@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Check, Users, Link as LinkIcon, KeyRound, Copy, Edit2 } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Check,
+  Users,
+  Link as LinkIcon,
+  KeyRound,
+  Copy,
+  Edit2,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
 import {
   Table,
@@ -43,6 +55,46 @@ interface AppSettings {
 
 interface UsersManagementPageProps {
   embedded?: boolean;
+}
+
+type SortKey = 'username' | 'joined' | 'status' | 'traffic' | 'expiry' | 'subId';
+type SortState = { key: SortKey; dir: 'asc' | 'desc' } | null;
+
+function SortableHead({
+  label,
+  sortKey,
+  sort,
+  onSort,
+  className,
+}: {
+  label: string;
+  sortKey: SortKey;
+  sort: SortState;
+  onSort: (key: SortKey) => void;
+  className?: string;
+}) {
+  const dir = sort && sort.key === sortKey ? sort.dir : null;
+  return (
+    <TableHead
+      className={className}
+      aria-sort={dir ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className="inline-flex items-center gap-1 rounded transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+      >
+        <span>{label}</span>
+        {dir === 'desc' ? (
+          <ArrowDown className="h-3 w-3" />
+        ) : dir === 'asc' ? (
+          <ArrowUp className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-40" />
+        )}
+      </button>
+    </TableHead>
+  );
 }
 
 export function UsersManagementPage({ embedded = false }: UsersManagementPageProps) {
@@ -89,6 +141,52 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
     }
     return map;
   }, [inbounds, onlineEmails]);
+
+  const statsFor = (user: User) => {
+    const sid = user.sub_id?.trim().toLowerCase();
+    return sid ? clientStatsBySubId.get(sid) : undefined;
+  };
+
+  // Header-click sorting: first click sorts descending (e.g. most traffic first);
+  // clicking the same header again flips to ascending.
+  const [sort, setSort] = useState<SortState>(null);
+  const toggleSort = (key: SortKey) => {
+    setSort((prev) =>
+      prev?.key === key ? { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' } : { key, dir: 'desc' },
+    );
+  };
+
+  const sortedUsers = useMemo(() => {
+    if (!sort) return users;
+    const rank = (user: User): number | string => {
+      switch (sort.key) {
+        case 'username':
+          return user.username.toLowerCase();
+        case 'joined':
+          return user.created_at;
+        case 'status': {
+          const stats = statsFor(user);
+          return stats ? (stats.online ? 2 : 1) : 0;
+        }
+        case 'traffic':
+          return statsFor(user)?.used ?? -1;
+        case 'expiry':
+          return statsFor(user)?.expiryTime ?? -1;
+        case 'subId':
+          return (user.sub_id ?? '').toLowerCase();
+      }
+    };
+    const factor = sort.dir === 'asc' ? 1 : -1;
+    return [...users].sort((a, b) => {
+      const va = rank(a);
+      const vb = rank(b);
+      const cmp =
+        typeof va === 'string' && typeof vb === 'string'
+          ? va.localeCompare(vb)
+          : Number(va) - Number(vb);
+      return cmp * factor;
+    });
+  }, [users, sort, clientStatsBySubId]);
 
   async function load() {
     try {
@@ -349,25 +447,51 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{isZh ? '用户' : 'User'}</TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          {isZh ? '注册时间' : 'Joined'}
-                        </TableHead>
-                        <TableHead>{isZh ? '状态' : 'Status'}</TableHead>
-                        <TableHead>{isZh ? '流量' : 'Traffic'}</TableHead>
-                        <TableHead className="hidden lg:table-cell">
-                          {isZh ? '到期' : 'Expires'}
-                        </TableHead>
-                        <TableHead className="hidden xl:table-cell">
-                          {isZh ? '订阅 ID' : 'Sub ID'}
-                        </TableHead>
+                        <SortableHead
+                          label={isZh ? '用户' : 'User'}
+                          sortKey="username"
+                          sort={sort}
+                          onSort={toggleSort}
+                        />
+                        <SortableHead
+                          label={isZh ? '注册时间' : 'Joined'}
+                          sortKey="joined"
+                          sort={sort}
+                          onSort={toggleSort}
+                          className="hidden md:table-cell"
+                        />
+                        <SortableHead
+                          label={isZh ? '状态' : 'Status'}
+                          sortKey="status"
+                          sort={sort}
+                          onSort={toggleSort}
+                        />
+                        <SortableHead
+                          label={isZh ? '流量' : 'Traffic'}
+                          sortKey="traffic"
+                          sort={sort}
+                          onSort={toggleSort}
+                        />
+                        <SortableHead
+                          label={isZh ? '到期' : 'Expires'}
+                          sortKey="expiry"
+                          sort={sort}
+                          onSort={toggleSort}
+                          className="hidden lg:table-cell"
+                        />
+                        <SortableHead
+                          label={isZh ? '订阅 ID' : 'Sub ID'}
+                          sortKey="subId"
+                          sort={sort}
+                          onSort={toggleSort}
+                          className="hidden xl:table-cell"
+                        />
                         <TableHead className="text-right">{isZh ? '操作' : 'Actions'}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((user) => {
-                        const sid = user.sub_id?.trim().toLowerCase();
-                        const stats = sid ? clientStatsBySubId.get(sid) : undefined;
+                      {sortedUsers.map((user) => {
+                        const stats = statsFor(user);
                         const pct =
                           stats && stats.total > 0
                             ? Math.min((stats.used / stats.total) * 100, 100)
