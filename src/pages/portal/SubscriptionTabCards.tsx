@@ -81,12 +81,12 @@ export function GuideStepCard({ step, index }: { step: GuideStep; index: number 
       <div className={cn('mt-5 rounded-[24px] border p-4', toneClasses.panel)}>
         <div className="flex items-center justify-between gap-3">
           <div className="inline-flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/10">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[var(--surface-inline)]">
               <VisualIcon className={cn('h-4 w-4', toneClasses.icon)} />
             </span>
             <span className="text-sm font-medium text-zinc-100">{step.visualLabel}</span>
           </div>
-          <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[11px] text-zinc-300">
+          <span className="rounded-full border border-white/10 bg-[var(--surface-inline)] px-3 py-1 text-[11px] text-zinc-300">
             {step.ctaLabel}
           </span>
         </div>
@@ -94,7 +94,7 @@ export function GuideStepCard({ step, index }: { step: GuideStep; index: number 
           {step.visualItems.map((item) => (
             <div
               key={item}
-              className="flex items-center justify-between rounded-[18px] border border-white/10 bg-black/10 px-3 py-2"
+              className="flex items-center justify-between rounded-[18px] border border-white/10 bg-[var(--surface-inline)] px-3 py-2"
             >
               <span className="text-xs text-zinc-200">{item}</span>
               <span className="h-2 w-2 rounded-full bg-white/50" />
@@ -227,7 +227,7 @@ export function GuideScreenshotStepCard({ step, index }: { step: GuideStep; inde
             {step.visualItems.map((item, itemIndex) => (
               <div
                 key={`${step.title}-${item}`}
-                className="flex items-start gap-3 rounded-[18px] border border-white/10 bg-black/10 px-3 py-3"
+                className="flex items-start gap-3 rounded-[18px] border border-white/10 bg-[var(--surface-inline)] px-3 py-3"
               >
                 <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-[11px] text-zinc-200">
                   {itemIndex + 1}
@@ -286,7 +286,7 @@ export function ClientHighlightCard({
         onSelect(client.id);
       }}
       className={cn(
-        'cursor-pointer rounded-[28px] border p-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)]',
+        'cursor-pointer rounded-[28px] border p-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]',
         isActive
           ? 'border-emerald-500/40 bg-emerald-500/10'
           : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] hover:border-[color:var(--border-strong)]',
@@ -311,15 +311,6 @@ export function ClientHighlightCard({
               : `Recommended for ${getPlatformLabel(activePlatform, false)} right now.`}
           </p>
         </div>
-        <Button
-          type="button"
-          variant={isActive ? 'secondary' : 'outline'}
-          size="sm"
-          className="hidden"
-          onClick={() => onSelect(client.id)}
-        >
-          {isZh ? '使用这个客户端' : 'Use this client'}
-        </Button>
       </div>
       <div className="flex flex-wrap gap-2 lg:justify-end">
         <Button
@@ -432,7 +423,7 @@ export function ClientCompactCard({
         onSelect(client.id);
       }}
       className={cn(
-        'surface-panel flex h-full cursor-pointer flex-col justify-between rounded-[24px] border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)]',
+        'surface-panel flex h-full cursor-pointer flex-col justify-between rounded-[24px] border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]',
         isActive
           ? 'border-emerald-500/30 bg-emerald-500/5'
           : 'hover:border-[color:var(--border-strong)]',
@@ -446,15 +437,6 @@ export function ClientCompactCard({
             <p className="text-xs leading-6 text-zinc-400">{client.desc}</p>
           </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="hidden"
-          onClick={() => onSelect(client.id)}
-        >
-          {isZh ? '切换' : 'Select'}
-        </Button>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button
@@ -528,7 +510,7 @@ export function QrCodeCanvas({ url, isZh }: { url: string; isZh: boolean }) {
           )(canvas, targetUrl, {
             width: 200,
             margin: 2,
-            color: { dark: '#d4d4d8', light: '#18181b' },
+            color: { dark: '#111827', light: '#ffffff' },
           });
         })
         .then(() => setError(null))

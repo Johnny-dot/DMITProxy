@@ -314,7 +314,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
         data-testid="portal-setup-quick"
       >
         <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-emerald-300/18 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-1/4 h-40 w-96 rounded-full bg-sky-300/10 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-1/4 h-40 w-96 rounded-full bg-[var(--info-soft)] blur-3xl" />
         <div className="relative space-y-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
@@ -333,7 +333,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 lg:min-w-[420px]">
-              <div className="min-w-0 rounded-[18px] border border-white/10 bg-white/[0.055] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:rounded-[22px] sm:px-4 sm:py-3">
+              <div className="min-w-0 surface-inline px-3 py-2.5 sm:px-4 sm:py-3">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
                   {isZh ? '设备' : 'Device'}
                 </p>
@@ -341,7 +341,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   {activePlatformLabel}
                 </p>
               </div>
-              <div className="min-w-0 rounded-[18px] border border-white/10 bg-white/[0.055] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:rounded-[22px] sm:px-4 sm:py-3">
+              <div className="min-w-0 surface-inline px-3 py-2.5 sm:px-4 sm:py-3">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
                   {isZh ? '客户端' : 'Client'}
                 </p>
@@ -349,7 +349,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   {activeClient.name}
                 </p>
               </div>
-              <div className="min-w-0 rounded-[18px] border border-white/10 bg-white/[0.055] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:rounded-[22px] sm:px-4 sm:py-3">
+              <div className="min-w-0 surface-inline px-3 py-2.5 sm:px-4 sm:py-3">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
                   {isZh ? '状态' : 'Status'}
                 </p>
@@ -423,7 +423,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex items-start gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-white/10 bg-black/10">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-white/10 bg-[var(--surface-inline)]">
                     <ActiveClientIcon className="h-5 w-5 text-zinc-100" />
                   </span>
                   <div>
@@ -485,7 +485,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                         'rounded-[18px] border p-3 text-left transition-colors',
                         activeFormat === format.key
                           ? 'border-emerald-500/40 bg-emerald-500/10'
-                          : 'border-white/10 bg-black/10 hover:border-[color:var(--border-strong)]',
+                          : 'border-white/10 bg-[var(--surface-inline)] hover:border-[color:var(--border-strong)]',
                       )}
                     >
                       <p className="text-sm font-medium text-zinc-50">{format.label}</p>
@@ -514,7 +514,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                         />
                       </div>
                       <p
-                        className="break-all rounded-[22px] border border-white/10 bg-black/10 px-4 py-3 font-mono text-xs leading-6 text-zinc-300"
+                        className="break-all rounded-[22px] border border-white/10 bg-[var(--surface-inline)] px-4 py-3 font-mono text-xs leading-6 text-zinc-300"
                         data-testid="subscription-active-url"
                       >
                         {activeSubUrl}
@@ -710,7 +710,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   ) : null}
                 </div>
               </div>
-              <div className="rounded-[20px] border border-[color:var(--border-subtle)] bg-black/10 px-4 py-3 text-right">
+              <div className="rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-inline)] px-4 py-3 text-right">
                 <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
                   {isZh ? '当前教程' : 'Current guide'}
                 </p>
@@ -730,7 +730,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-[20px] border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm leading-6 text-amber-100">
+              <div className="rounded-[20px] border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm leading-6 text-[var(--warning)]">
                 {isZh
                   ? '当前客户端暂时只有简化步骤，没有站内真机图文教程。'
                   : 'This client currently uses a simplified text guide without on-site screenshots.'}
