@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, ChevronDown, Copy, Download } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Copy, Download, QrCode } from 'lucide-react';
 import type { ServerStatus } from '@/src/api/xui';
 import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
@@ -51,7 +51,10 @@ export function HomeTab({
 }: HomeTabProps) {
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
-  const [showRouteDetail, setShowRouteDetail] = useState(true);
+  // Route detail is heavy on a phone — start collapsed there, expanded on desktop.
+  const [showRouteDetail, setShowRouteDetail] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth >= 1024,
+  );
 
   const latestAnnouncement = effectiveSettings?.announcementActive
     ? effectiveSettings.announcementText.trim()
@@ -234,6 +237,7 @@ function MySubscriptionHero({
   onSetSection: (tab: PortalTab) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   const machineSummaryHelpText = isZh
     ? '这里显示的是 Prism 按整台机器汇总后的真实口径，不是 3X-UI 原生页面里按单个用户计算的“剩余”。'
@@ -370,35 +374,54 @@ function MySubscriptionHero({
               ) : null}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {subscriptionUniversalUrl ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {subscriptionUniversalUrl ? (
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => {
+                      onCopy(subscriptionUniversalUrl, 'home-universal');
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制订阅' : 'Copy link'}
+                  </Button>
+                ) : null}
+                {subscriptionUniversalUrl ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="gap-1.5 lg:hidden"
+                    onClick={() => setShowQr((value) => !value)}
+                    aria-expanded={showQr}
+                  >
+                    <QrCode className="h-4 w-4" />
+                    {isZh ? '二维码' : 'QR code'}
+                  </Button>
+                ) : null}
                 <Button
+                  variant="secondary"
                   size="sm"
                   className="gap-1.5"
-                  onClick={() => {
-                    onCopy(subscriptionUniversalUrl, 'home-universal');
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                  }}
+                  onClick={() => onSetSection('setup')}
                 >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制订阅' : 'Copy link'}
+                  <Download className="h-4 w-4" />
+                  {isZh ? '下载客户端' : 'Download client'}
                 </Button>
+              </div>
+              {showQr && subscriptionUniversalUrl ? (
+                <div className="lg:hidden">
+                  <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
+                </div>
               ) : null}
-              <Button
-                variant="secondary"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => onSetSection('setup')}
-              >
-                <Download className="h-4 w-4" />
-                {isZh ? '下载客户端' : 'Download client'}
-              </Button>
             </div>
           </div>
 
           {subscriptionUniversalUrl ? (
-            <div className="flex flex-col items-center gap-2 lg:border-l lg:border-[var(--border-subtle)] lg:pl-6">
+            <div className="hidden flex-col items-center gap-2 lg:flex lg:border-l lg:border-[var(--border-subtle)] lg:pl-6">
               <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
               <p className="text-xs text-zinc-500">{isZh ? '手机扫码导入' : 'Scan to import'}</p>
             </div>
