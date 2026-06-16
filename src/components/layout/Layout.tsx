@@ -67,7 +67,7 @@ export function Layout() {
           </div>
 
           <main
-            className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+            className="min-h-0 flex-1 overflow-x-clip overflow-y-auto"
             style={{ scrollbarGutter: 'stable' }}
           >
             {/* Route key remounts the wrapper so the enter animation plays on

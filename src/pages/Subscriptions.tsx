@@ -310,7 +310,7 @@ export function SubscriptionsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <Tabs>
-              <TabsList className="grid grid-cols-4 w-full">
+              <TabsList className="flex w-full justify-start overflow-x-auto sm:grid sm:grid-cols-4">
                 {SUBSCRIPTION_LINK_TABS.map((tab) => (
                   <TabsTrigger
                     key={tab.key}
@@ -660,7 +660,7 @@ export function SubscriptionsPage() {
         <Card>
           <CardContent className="p-6 space-y-6">
             <Tabs>
-              <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
+              <TabsList className="flex w-full justify-start overflow-x-auto md:grid md:grid-cols-6">
                 <TabsTrigger
                   active={activeOsTab === 'windows'}
                   onClick={() => setActiveOsTab('windows')}
