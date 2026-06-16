@@ -469,7 +469,7 @@ export function InboundsPage() {
                         setEditTrafficReset(event.target.value as TrafficResetPeriod)
                       }
                       disabled={isSavingInbound || editBillingDay.trim() !== ''}
-                      className="flex h-11 w-full rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none ring-offset-zinc-950 transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-11 w-full rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-2 text-base text-[var(--text-primary)] outline-none ring-offset-zinc-950 sm:text-sm transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {trafficResetOptions.map((option) => (
                         <option key={option.value} value={option.value}>

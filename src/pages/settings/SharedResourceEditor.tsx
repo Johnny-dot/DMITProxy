@@ -25,10 +25,10 @@ import {
 } from '@/src/utils/settingsHelpers';
 
 const TEXTAREA_CLASS_NAME =
-  'min-h-[150px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 text-sm text-[var(--text-primary)] shadow-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2';
+  'min-h-[150px] w-full rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 text-base text-[var(--text-primary)] shadow-sm sm:text-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2';
 
 const SELECT_CLASS_NAME =
-  'h-11 rounded-[18px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 text-sm text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2';
+  'h-11 rounded-[18px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-4 text-base text-[var(--text-primary)] focus-visible:outline-none sm:text-sm focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2';
 
 interface SharedResourceEditorCopy {
   visible: string;

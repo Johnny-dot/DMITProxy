@@ -291,7 +291,7 @@ export function NotificationsPanel({
                       </Badge>
                     </div>
                     <textarea
-                      className="min-h-[96px] w-full rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-4 py-3 text-sm text-[var(--text-primary)] backdrop-blur-xl placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+                      className="min-h-[96px] w-full rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-4 py-3 text-base text-[var(--text-primary)] backdrop-blur-xl sm:text-sm placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
                       value={announcementDraft}
                       placeholder={
                         isZh
