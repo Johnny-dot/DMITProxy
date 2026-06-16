@@ -444,52 +444,37 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                 {users.length === 0 ? (
                   <EmptyState icon={Users} title={t('userAccounts.noUsers')} description="" />
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <SortableHead
-                          label={isZh ? '用户' : 'User'}
-                          sortKey="username"
-                          sort={sort}
-                          onSort={toggleSort}
-                        />
-                        <SortableHead
-                          label={isZh ? '注册时间' : 'Joined'}
-                          sortKey="joined"
-                          sort={sort}
-                          onSort={toggleSort}
-                          className="hidden md:table-cell"
-                        />
-                        <SortableHead
-                          label={isZh ? '状态' : 'Status'}
-                          sortKey="status"
-                          sort={sort}
-                          onSort={toggleSort}
-                        />
-                        <SortableHead
-                          label={isZh ? '流量' : 'Traffic'}
-                          sortKey="traffic"
-                          sort={sort}
-                          onSort={toggleSort}
-                        />
-                        <SortableHead
-                          label={isZh ? '到期' : 'Expires'}
-                          sortKey="expiry"
-                          sort={sort}
-                          onSort={toggleSort}
-                          className="hidden lg:table-cell"
-                        />
-                        <SortableHead
-                          label={isZh ? '订阅 ID' : 'Sub ID'}
-                          sortKey="subId"
-                          sort={sort}
-                          onSort={toggleSort}
-                          className="hidden xl:table-cell"
-                        />
-                        <TableHead className="text-right">{isZh ? '操作' : 'Actions'}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    {/* Mobile: a sortable card per user — the 7-column table is unusable on a phone. */}
+                    <div className="space-y-3 md:hidden">
+                      <div className="flex items-center gap-2">
+                        <select
+                          aria-label={isZh ? '排序方式' : 'Sort by'}
+                          value={sort?.key ?? 'joined'}
+                          onChange={(e) => toggleSort(e.target.value as SortKey)}
+                          className="h-9 flex-1 rounded-[14px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-3 text-base text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] sm:text-sm"
+                        >
+                          <option value="joined">{isZh ? '注册时间' : 'Joined'}</option>
+                          <option value="username">{isZh ? '用户名' : 'User'}</option>
+                          <option value="status">{isZh ? '状态' : 'Status'}</option>
+                          <option value="traffic">{isZh ? '流量' : 'Traffic'}</option>
+                          <option value="expiry">{isZh ? '到期' : 'Expires'}</option>
+                        </select>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 shrink-0 gap-1.5"
+                          onClick={() => toggleSort(sort?.key ?? 'joined')}
+                        >
+                          {sort?.dir === 'asc' ? (
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          )}
+                          {sort?.dir === 'asc' ? (isZh ? '升序' : 'Asc') : isZh ? '降序' : 'Desc'}
+                        </Button>
+                      </div>
+
                       {sortedUsers.map((user) => {
                         const stats = statsFor(user);
                         const pct =
@@ -501,150 +486,356 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                           ? t('userAccounts.change')
                           : t('userAccounts.assignSubId');
                         return (
-                          <React.Fragment key={user.id}>
-                            <TableRow>
-                              <TableCell className="max-w-[240px] font-medium">
-                                <span className="block truncate">{user.username}</span>
-                              </TableCell>
-                              <TableCell className="hidden text-xs text-[var(--text-secondary)] md:table-cell">
-                                {new Date(user.created_at * 1000).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                {stats ? (
-                                  <Badge variant={stats.online ? 'success' : 'secondary'}>
-                                    {stats.online
-                                      ? isZh
-                                        ? '在线'
-                                        : 'Online'
-                                      : isZh
-                                        ? '离线'
-                                        : 'Offline'}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="secondary">{isZh ? '未开通' : 'No client'}</Badge>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {stats ? (
-                                  <div className="flex min-w-[150px] max-w-[240px] flex-col gap-1.5">
-                                    <div className="flex justify-between font-mono text-[10px] tabular-nums text-[var(--text-secondary)]">
-                                      <span>{formatTraffic(stats.used)}</span>
-                                      <span>
-                                        {stats.total > 0
-                                          ? formatTraffic(stats.total)
-                                          : t('common.unlimited')}
-                                      </span>
-                                    </div>
-                                    <div className="glass-progress-track h-1.5 w-full overflow-hidden">
-                                      <div
-                                        className={cn(
-                                          'h-full rounded-full transition-all duration-500',
-                                          pct < 70
-                                            ? 'bg-emerald-500'
-                                            : pct < 90
-                                              ? 'bg-yellow-500'
-                                              : 'bg-red-500',
-                                        )}
-                                        style={{ width: `${pct}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <span className="text-xs text-[var(--text-tertiary)]">—</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="hidden text-xs text-[var(--text-secondary)] lg:table-cell">
+                          <div key={user.id} className="surface-panel space-y-3 p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-medium text-[var(--text-primary)]">
+                                  {user.username}
+                                </p>
+                                <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                                  {isZh ? '注册' : 'Joined'}{' '}
+                                  {new Date(user.created_at * 1000).toLocaleDateString()}
+                                </p>
+                              </div>
+                              {stats ? (
+                                <Badge variant={stats.online ? 'success' : 'secondary'}>
+                                  {stats.online
+                                    ? isZh
+                                      ? '在线'
+                                      : 'Online'
+                                    : isZh
+                                      ? '离线'
+                                      : 'Offline'}
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary">{isZh ? '未开通' : 'No client'}</Badge>
+                              )}
+                            </div>
+
+                            {stats ? (
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">
+                                  <span>{formatTraffic(stats.used)}</span>
+                                  <span>
+                                    {stats.total > 0
+                                      ? formatTraffic(stats.total)
+                                      : t('common.unlimited')}
+                                  </span>
+                                </div>
+                                <div className="glass-progress-track h-1.5 w-full overflow-hidden">
+                                  <div
+                                    className={cn(
+                                      'h-full rounded-full transition-all duration-500',
+                                      pct < 70
+                                        ? 'bg-emerald-500'
+                                        : pct < 90
+                                          ? 'bg-yellow-500'
+                                          : 'bg-red-500',
+                                    )}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </div>
+                            ) : null}
+
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)]">
+                              <span>
+                                {isZh ? '到期' : 'Expires'}{' '}
                                 {stats && stats.expiryTime > 0
                                   ? formatExpiry(stats.expiryTime)
                                   : '—'}
-                              </TableCell>
-                              <TableCell className="hidden xl:table-cell">
+                              </span>
+                              <span className="inline-flex min-w-0 items-center gap-1">
+                                <span>{isZh ? '订阅' : 'Sub'}</span>
                                 {user.sub_id ? (
-                                  <code className="block max-w-[180px] truncate font-mono text-xs text-[var(--text-tertiary)]">
+                                  <code className="truncate font-mono text-[var(--text-tertiary)]">
                                     {user.sub_id}
                                   </code>
                                 ) : (
-                                  <span className="text-xs text-[var(--text-tertiary)]">
+                                  <span className="text-[var(--text-tertiary)]">
                                     {t('userAccounts.noSubAssigned')}
                                   </span>
                                 )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-1">
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 border-t border-[color:var(--border-subtle)] pt-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 flex-1 gap-1.5"
+                                onClick={() =>
+                                  setEditingSubId({ id: user.id, value: user.sub_id ?? '' })
+                                }
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                                {assignLabel}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9"
+                                title={t('userAccounts.generateResetLink')}
+                                aria-label={t('userAccounts.generateResetLink')}
+                                onClick={() => generateResetLink(user.id, user.username)}
+                              >
+                                <KeyRound className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9 text-red-500 hover:bg-red-500/10"
+                                title={t('userAccounts.deleteUser')}
+                                aria-label={t('userAccounts.deleteUser')}
+                                onClick={() => deleteUser(user.id, user.username)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+
+                            {editing && (
+                              <div className="flex flex-col gap-2 border-t border-[color:var(--border-subtle)] pt-3">
+                                <Input
+                                  className="h-9 font-mono"
+                                  placeholder={t('userAccounts.subIdPlaceholder')}
+                                  value={editing.value}
+                                  onChange={(e) =>
+                                    setEditingSubId({ id: user.id, value: e.target.value })
+                                  }
+                                  autoFocus
+                                />
+                                <div className="flex items-center gap-2">
                                   <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    title={assignLabel}
-                                    aria-label={assignLabel}
-                                    onClick={() =>
-                                      setEditingSubId({ id: user.id, value: user.sub_id ?? '' })
-                                    }
+                                    size="sm"
+                                    className="h-9 flex-1"
+                                    onClick={() => saveSubId(user.id, editing.value)}
                                   >
-                                    <Edit2 className="h-3.5 w-3.5" />
+                                    {t('common.save')}
                                   </Button>
                                   <Button
+                                    size="sm"
                                     variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    title={t('userAccounts.generateResetLink')}
-                                    aria-label={t('userAccounts.generateResetLink')}
-                                    onClick={() => generateResetLink(user.id, user.username)}
+                                    className="h-9 flex-1"
+                                    onClick={() => setEditingSubId(null)}
                                   >
-                                    <KeyRound className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-red-500 hover:bg-red-500/10"
-                                    title={t('userAccounts.deleteUser')}
-                                    aria-label={t('userAccounts.deleteUser')}
-                                    onClick={() => deleteUser(user.id, user.username)}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
+                                    {t('common.cancel')}
                                   </Button>
                                 </div>
-                              </TableCell>
-                            </TableRow>
-                            {editing && (
-                              <TableRow>
-                                <TableCell colSpan={7}>
-                                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                    <Input
-                                      className="h-8 font-mono text-xs sm:max-w-md"
-                                      placeholder={t('userAccounts.subIdPlaceholder')}
-                                      value={editing.value}
-                                      onChange={(e) =>
-                                        setEditingSubId({ id: user.id, value: e.target.value })
-                                      }
-                                      autoFocus
-                                    />
-                                    <div className="flex items-center gap-2">
-                                      <Button
-                                        size="sm"
-                                        className="h-8 px-3"
-                                        onClick={() => saveSubId(user.id, editing.value)}
-                                      >
-                                        {t('common.save')}
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 px-3"
-                                        onClick={() => setEditingSubId(null)}
-                                      >
-                                        {t('common.cancel')}
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
+                              </div>
                             )}
-                          </React.Fragment>
+                          </div>
                         );
                       })}
-                    </TableBody>
-                  </Table>
+                    </div>
+
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <SortableHead
+                              label={isZh ? '用户' : 'User'}
+                              sortKey="username"
+                              sort={sort}
+                              onSort={toggleSort}
+                            />
+                            <SortableHead
+                              label={isZh ? '注册时间' : 'Joined'}
+                              sortKey="joined"
+                              sort={sort}
+                              onSort={toggleSort}
+                              className="hidden md:table-cell"
+                            />
+                            <SortableHead
+                              label={isZh ? '状态' : 'Status'}
+                              sortKey="status"
+                              sort={sort}
+                              onSort={toggleSort}
+                            />
+                            <SortableHead
+                              label={isZh ? '流量' : 'Traffic'}
+                              sortKey="traffic"
+                              sort={sort}
+                              onSort={toggleSort}
+                            />
+                            <SortableHead
+                              label={isZh ? '到期' : 'Expires'}
+                              sortKey="expiry"
+                              sort={sort}
+                              onSort={toggleSort}
+                              className="hidden lg:table-cell"
+                            />
+                            <SortableHead
+                              label={isZh ? '订阅 ID' : 'Sub ID'}
+                              sortKey="subId"
+                              sort={sort}
+                              onSort={toggleSort}
+                              className="hidden xl:table-cell"
+                            />
+                            <TableHead className="text-right">
+                              {isZh ? '操作' : 'Actions'}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {sortedUsers.map((user) => {
+                            const stats = statsFor(user);
+                            const pct =
+                              stats && stats.total > 0
+                                ? Math.min((stats.used / stats.total) * 100, 100)
+                                : 0;
+                            const editing = editingSubId?.id === user.id ? editingSubId : null;
+                            const assignLabel = user.sub_id
+                              ? t('userAccounts.change')
+                              : t('userAccounts.assignSubId');
+                            return (
+                              <React.Fragment key={user.id}>
+                                <TableRow>
+                                  <TableCell className="max-w-[240px] font-medium">
+                                    <span className="block truncate">{user.username}</span>
+                                  </TableCell>
+                                  <TableCell className="hidden text-xs text-[var(--text-secondary)] md:table-cell">
+                                    {new Date(user.created_at * 1000).toLocaleDateString()}
+                                  </TableCell>
+                                  <TableCell>
+                                    {stats ? (
+                                      <Badge variant={stats.online ? 'success' : 'secondary'}>
+                                        {stats.online
+                                          ? isZh
+                                            ? '在线'
+                                            : 'Online'
+                                          : isZh
+                                            ? '离线'
+                                            : 'Offline'}
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="secondary">
+                                        {isZh ? '未开通' : 'No client'}
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {stats ? (
+                                      <div className="flex min-w-[150px] max-w-[240px] flex-col gap-1.5">
+                                        <div className="flex justify-between font-mono text-[10px] tabular-nums text-[var(--text-secondary)]">
+                                          <span>{formatTraffic(stats.used)}</span>
+                                          <span>
+                                            {stats.total > 0
+                                              ? formatTraffic(stats.total)
+                                              : t('common.unlimited')}
+                                          </span>
+                                        </div>
+                                        <div className="glass-progress-track h-1.5 w-full overflow-hidden">
+                                          <div
+                                            className={cn(
+                                              'h-full rounded-full transition-all duration-500',
+                                              pct < 70
+                                                ? 'bg-emerald-500'
+                                                : pct < 90
+                                                  ? 'bg-yellow-500'
+                                                  : 'bg-red-500',
+                                            )}
+                                            style={{ width: `${pct}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-[var(--text-tertiary)]">—</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="hidden text-xs text-[var(--text-secondary)] lg:table-cell">
+                                    {stats && stats.expiryTime > 0
+                                      ? formatExpiry(stats.expiryTime)
+                                      : '—'}
+                                  </TableCell>
+                                  <TableCell className="hidden xl:table-cell">
+                                    {user.sub_id ? (
+                                      <code className="block max-w-[180px] truncate font-mono text-xs text-[var(--text-tertiary)]">
+                                        {user.sub_id}
+                                      </code>
+                                    ) : (
+                                      <span className="text-xs text-[var(--text-tertiary)]">
+                                        {t('userAccounts.noSubAssigned')}
+                                      </span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        title={assignLabel}
+                                        aria-label={assignLabel}
+                                        onClick={() =>
+                                          setEditingSubId({ id: user.id, value: user.sub_id ?? '' })
+                                        }
+                                      >
+                                        <Edit2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        title={t('userAccounts.generateResetLink')}
+                                        aria-label={t('userAccounts.generateResetLink')}
+                                        onClick={() => generateResetLink(user.id, user.username)}
+                                      >
+                                        <KeyRound className="h-3.5 w-3.5" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-red-500 hover:bg-red-500/10"
+                                        title={t('userAccounts.deleteUser')}
+                                        aria-label={t('userAccounts.deleteUser')}
+                                        onClick={() => deleteUser(user.id, user.username)}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                                {editing && (
+                                  <TableRow>
+                                    <TableCell colSpan={7}>
+                                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                        <Input
+                                          className="h-8 font-mono text-xs sm:max-w-md"
+                                          placeholder={t('userAccounts.subIdPlaceholder')}
+                                          value={editing.value}
+                                          onChange={(e) =>
+                                            setEditingSubId({ id: user.id, value: e.target.value })
+                                          }
+                                          autoFocus
+                                        />
+                                        <div className="flex items-center gap-2">
+                                          <Button
+                                            size="sm"
+                                            className="h-8 px-3"
+                                            onClick={() => saveSubId(user.id, editing.value)}
+                                          >
+                                            {t('common.save')}
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 px-3"
+                                            onClick={() => setEditingSubId(null)}
+                                          >
+                                            {t('common.cancel')}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
                 )}
               </div>
 
