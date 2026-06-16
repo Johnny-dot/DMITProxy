@@ -66,7 +66,10 @@ export function Layout() {
             </header>
           </div>
 
-          <main className="min-h-0 flex-1 overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
+          <main
+            className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+            style={{ scrollbarGutter: 'stable' }}
+          >
             {/* Route key remounts the wrapper so the enter animation plays on
                 each navigation. We drop the exit animation that AnimatePresence
                 used to provide — the new route renders immediately. */}
