@@ -73,7 +73,10 @@ export function Layout() {
             {/* Route key remounts the wrapper so the enter animation plays on
                 each navigation. We drop the exit animation that AnimatePresence
                 used to provide — the new route renders immediately. */}
-            <div key={location.pathname + location.search} className="anim-route-enter">
+            <div
+              key={location.pathname + location.search}
+              className="anim-route-enter overflow-x-clip"
+            >
               <Outlet />
             </div>
           </main>
