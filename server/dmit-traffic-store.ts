@@ -14,6 +14,8 @@ export interface DmitTrafficUpsertInput {
   usagePercentage?: number | null;
   nextResetDay?: number | null;
   nextResetAt?: number | null;
+  /** 3X-UI client-sum (MB) at the moment of this snapshot — calibrates inter-sync advancement. */
+  xuiUsedMb?: number | null;
   source: DmitTrafficSource;
   now?: number;
 }
@@ -28,6 +30,7 @@ export interface DmitTrafficSnapshot {
   nextResetDay: number | null;
   nextResetAt: number | null;
   autoAppliedBillingDay: number | null;
+  xuiUsedBytes: number | null;
   updatedAt: number;
   source: DmitTrafficSource;
 }
@@ -42,6 +45,7 @@ interface Row {
   next_reset_day: number | null;
   next_reset_at: number | null;
   auto_applied_billing_day: number | null;
+  xui_used_mb: number | null;
   updated_at: number;
   source: DmitTrafficSource;
 }
@@ -49,15 +53,15 @@ interface Row {
 const selectStmt = db.prepare(
   `SELECT service_id, bwusage_mb, bwlimit_mb, bwusage_in_mb, bwusage_out_mb,
           usage_percentage, next_reset_day, next_reset_at, auto_applied_billing_day,
-          updated_at, source
+          xui_used_mb, updated_at, source
      FROM dmit_traffic WHERE service_id = ?`,
 );
 
 const upsertStmt = db.prepare(
   `INSERT INTO dmit_traffic (
      service_id, bwusage_mb, bwlimit_mb, bwusage_in_mb, bwusage_out_mb,
-     usage_percentage, next_reset_day, next_reset_at, updated_at, source
-   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     usage_percentage, next_reset_day, next_reset_at, xui_used_mb, updated_at, source
+   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    ON CONFLICT(service_id) DO UPDATE SET
      bwusage_mb = excluded.bwusage_mb,
      bwlimit_mb = excluded.bwlimit_mb,
@@ -66,6 +70,7 @@ const upsertStmt = db.prepare(
      usage_percentage = excluded.usage_percentage,
      next_reset_day = excluded.next_reset_day,
      next_reset_at = excluded.next_reset_at,
+     xui_used_mb = excluded.xui_used_mb,
      updated_at = excluded.updated_at,
      source = excluded.source`,
 );
@@ -88,6 +93,7 @@ function rowToSnapshot(row: Row | undefined): DmitTrafficSnapshot | null {
     nextResetDay: row.next_reset_day,
     nextResetAt: row.next_reset_at,
     autoAppliedBillingDay: row.auto_applied_billing_day,
+    xuiUsedBytes: row.xui_used_mb == null ? null : row.xui_used_mb * MB,
     updatedAt: row.updated_at,
     source: row.source,
   };
@@ -115,6 +121,7 @@ export function upsertDmitTraffic(input: DmitTrafficUpsertInput): void {
     input.usagePercentage ?? null,
     input.nextResetDay ?? null,
     input.nextResetAt ?? null,
+    input.xuiUsedMb ?? null,
     updatedAt,
     input.source,
   );

@@ -92,6 +92,7 @@ db.exec(`
     next_reset_day          INTEGER,
     next_reset_at           INTEGER,
     auto_applied_billing_day INTEGER,
+    xui_used_mb             INTEGER,
     updated_at              INTEGER NOT NULL,
     source                  TEXT NOT NULL CHECK (source IN ('tampermonkey','manual'))
   );
@@ -111,6 +112,19 @@ function ensureUserProfileColumns() {
 }
 
 ensureUserProfileColumns();
+
+function ensureDmitTrafficColumns() {
+  const columns = db.prepare(`PRAGMA table_info(dmit_traffic)`).all() as Array<{ name: string }>;
+  const columnNames = new Set(columns.map((column) => column.name));
+
+  // 3X-UI client-sum captured alongside each DMIT snapshot, so machine-usage can advance
+  // the gauge between syncs by the calibrated DMIT/3X-UI ratio.
+  if (!columnNames.has('xui_used_mb')) {
+    db.exec(`ALTER TABLE dmit_traffic ADD COLUMN xui_used_mb INTEGER`);
+  }
+}
+
+ensureDmitTrafficColumns();
 
 const cleanupLegacyAdminUsers = db.transaction(() => {
   const legacyAdmins = db

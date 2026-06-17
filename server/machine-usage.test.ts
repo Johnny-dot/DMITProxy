@@ -21,9 +21,9 @@ function inbound(total: number, clients: Array<{ up: number; down: number }>) {
 }
 
 describe('computeMachineUsage', () => {
-  it('uses the DMIT anchor when it is ahead of the client-sum (fresh sync)', () => {
-    // Network-layer accounting includes protocol overhead, so right after a sync the
-    // DMIT number is the larger one and wins.
+  it('reports the DMIT anchor exactly at sync time (no growth yet)', () => {
+    // The client-sum captured at the snapshot equals the current client-sum, so growth is 0
+    // and the gauge shows the DMIT value verbatim.
     const r = computeMachineUsage(
       [inbound(1000 * GB, [{ up: 10 * GB, down: 20 * GB }])],
       {
@@ -31,6 +31,7 @@ describe('computeMachineUsage', () => {
         bwlimitBytes: 1000 * GB,
         updatedAt: NOW - 1000,
         nextResetAt: NOW + 10 * DAY,
+        xuiUsedBytes: 30 * GB,
       },
       NOW,
     );
@@ -40,27 +41,61 @@ describe('computeMachineUsage', () => {
     expect(r.updatedAt).toBe(NOW - 1000);
   });
 
-  it('keeps advancing with the 3X-UI client-sum between syncs (no frozen gauge)', () => {
-    // Synced days ago at 5 GB; clients have since pushed the live sum to 7 GB. The
-    // gauge must keep moving instead of pinning the stale anchor.
+  it('advances by 3X-UI growth scaled by the calibrated DMIT/3X-UI ratio', () => {
+    // Synced at dmit=10 GB when the client-sum was 5 GB (ratio 2). The client-sum has since
+    // grown to 8 GB (+3 GB), so the gauge climbs to 10 + 3×2 = 16 GB — not frozen at 10.
     const r = computeMachineUsage(
-      [inbound(1000 * GB, [{ up: 3 * GB, down: 4 * GB }])],
+      [inbound(1000 * GB, [{ up: 3 * GB, down: 5 * GB }])],
       {
-        bwusageBytes: 5 * GB,
+        bwusageBytes: 10 * GB,
         bwlimitBytes: 1000 * GB,
         updatedAt: NOW - 7 * DAY,
         nextResetAt: NOW + 20 * DAY,
+        xuiUsedBytes: 5 * GB,
       },
       NOW,
     );
     expect(r.source).toBe('dmit');
-    expect(r.usedBytes).toBe(7 * GB);
-    expect(r.totalBytes).toBe(1000 * GB);
+    expect(r.usedBytes).toBe(16 * GB);
     expect(r.updatedAt).toBe(NOW - 7 * DAY);
   });
 
+  it('clamps a noisy calibration ratio to a sane maximum', () => {
+    // dmit=10 GB but the baseline client-sum was a tiny 1 GB → raw ratio 10, clamped to 4.
+    // Growth of 2 GB advances by 2×4 = 8 GB, not 2×10.
+    const r = computeMachineUsage(
+      [inbound(1000 * GB, [{ up: 3 * GB, down: 0 }])],
+      {
+        bwusageBytes: 10 * GB,
+        bwlimitBytes: 1000 * GB,
+        updatedAt: NOW - 2 * DAY,
+        nextResetAt: NOW + 20 * DAY,
+        xuiUsedBytes: 1 * GB,
+      },
+      NOW,
+    );
+    expect(r.usedBytes).toBe(10 * GB + 2 * GB * 4);
+  });
+
+  it('advances a legacy snapshot (no baseline) via the default proxy factor', () => {
+    // A snapshot recorded before xuiUsedBytes existed: estimate real = client-sum × 2,
+    // floored at the DMIT anchor.
+    const r = computeMachineUsage(
+      [inbound(1000 * GB, [{ up: 2 * GB, down: 2 * GB }])],
+      {
+        bwusageBytes: 5 * GB,
+        bwlimitBytes: 1000 * GB,
+        updatedAt: NOW - 3 * DAY,
+        nextResetAt: NOW + 20 * DAY,
+        xuiUsedBytes: null,
+      },
+      NOW,
+    );
+    expect(r.source).toBe('dmit');
+    expect(r.usedBytes).toBe(8 * GB); // max(5 GB, 4 GB × 2)
+  });
+
   it('discards a snapshot from a previous billing window (past nextResetAt)', () => {
-    // DMIT reset since the last sync: last month's 979 GB must not stick around.
     const r = computeMachineUsage(
       [inbound(1000 * GB, [{ up: 1 * GB, down: 2 * GB }])],
       {
@@ -68,12 +103,12 @@ describe('computeMachineUsage', () => {
         bwlimitBytes: 1000 * GB,
         updatedAt: NOW - 9 * DAY,
         nextResetAt: NOW - 1 * DAY,
+        xuiUsedBytes: 480 * GB,
       },
       NOW,
     );
     expect(r.source).toBe('xui');
-    expect(r.usedBytes).toBe(3 * GB);
-    expect(r.totalBytes).toBe(1000 * GB);
+    expect(r.usedBytes).toBe(3 * GB * 2); // live client-sum × proxy factor; last month gone
     expect(r.updatedAt).toBeNull();
   });
 
@@ -85,11 +120,12 @@ describe('computeMachineUsage', () => {
         bwlimitBytes: 1000 * GB,
         updatedAt: NOW - 33 * DAY,
         nextResetAt: null,
+        xuiUsedBytes: 250 * GB,
       },
       NOW,
     );
     expect(stale.source).toBe('xui');
-    expect(stale.usedBytes).toBe(1 * GB);
+    expect(stale.usedBytes).toBe(1 * GB * 2);
 
     const fresh = computeMachineUsage(
       [inbound(1000 * GB, [{ up: 1 * GB, down: 0 }])],
@@ -98,10 +134,13 @@ describe('computeMachineUsage', () => {
         bwlimitBytes: 1000 * GB,
         updatedAt: NOW - 1 * DAY,
         nextResetAt: null,
+        xuiUsedBytes: 250 * GB,
       },
       NOW,
     );
     expect(fresh.source).toBe('dmit');
+    // The live client-sum (1 GB) is below the captured baseline (250 GB) → growth clamps to
+    // 0 → the gauge stays at the anchor rather than going backwards.
     expect(fresh.usedBytes).toBe(500 * GB);
   });
 
@@ -113,6 +152,7 @@ describe('computeMachineUsage', () => {
         bwlimitBytes: 1000 * GB,
         updatedAt: NOW - 9 * DAY,
         nextResetAt: NOW - 1 * DAY,
+        xuiUsedBytes: 480 * GB,
       },
       NOW,
     );
@@ -120,7 +160,7 @@ describe('computeMachineUsage', () => {
     expect(r.totalBytes).toBe(1000 * GB);
   });
 
-  it('falls back to client-sum + inbound.total when no DMIT snapshot (resets monthly)', () => {
+  it('estimates real usage from client-sum × proxy factor when there is no DMIT snapshot', () => {
     const r = computeMachineUsage(
       [
         inbound(1000 * GB, [
@@ -131,7 +171,7 @@ describe('computeMachineUsage', () => {
       null,
     );
     expect(r.source).toBe('xui');
-    expect(r.usedBytes).toBe(1 * GB + 2 * GB + 500 * MB);
+    expect(r.usedBytes).toBe((1 * GB + 2 * GB + 500 * MB) * 2);
     expect(r.totalBytes).toBe(1000 * GB);
     expect(r.updatedAt).toBeNull();
   });
@@ -144,13 +184,13 @@ describe('computeMachineUsage', () => {
       ],
       null,
     );
-    expect(r.usedBytes).toBe(4 * GB);
+    expect(r.usedBytes).toBe(4 * GB * 2);
     expect(r.totalBytes).toBe(1000 * GB);
   });
 
   it('does NOT use the raw inbound aggregate (up/down ignored in fallback)', () => {
     // An inbound whose aggregate up/down is huge but whose client stats are tiny must
-    // report the tiny client-sum — this is the whole point of the unification.
+    // report from the tiny client-sum — this is the whole point of the unification.
     const ib = inbound(1000 * GB, [{ up: 1 * GB, down: 0 }]) as unknown as {
       up: number;
       down: number;
@@ -158,6 +198,6 @@ describe('computeMachineUsage', () => {
     ib.up = 303 * GB; // stale aggregate that never reset
     ib.down = 0;
     const r = computeMachineUsage([ib as never], null);
-    expect(r.usedBytes).toBe(1 * GB); // client-sum, not 303 GB
+    expect(r.usedBytes).toBe(1 * GB * 2); // client-sum × factor, not 303 GB
   });
 });

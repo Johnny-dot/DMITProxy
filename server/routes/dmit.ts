@@ -9,6 +9,7 @@ import { loginAndListInbounds, getXuiCredentials } from '../xui-admin.js';
 import { decideBillingDayAction, type BillingDayAction } from '../dmit-billing-sync.js';
 import { getDmitServiceId, getDmitSyncToken } from '../dmit-config.js';
 import { deriveNextReset, parseDaysUntilReset } from '../dmit-reset.js';
+import { getInboundClientUsedBytes } from '../subscription-usage.js';
 
 const router = Router();
 
@@ -92,6 +93,27 @@ router.post('/traffic', requireSyncToken, async (req: Request, res: Response) =>
   const nextResetDay = derived.nextResetDay ?? asOptionalBillingDay(body.next_reset_day);
   const nextResetAt = derived.nextResetAt ?? asOptionalFutureMs(body.next_reset_at, now);
 
+  // Capture the concurrent 3X-UI client-sum so machine-usage can advance the gauge
+  // between DMIT syncs by the calibrated DMIT/3X-UI ratio (3X-UI only counts the client
+  // leg, so it undercounts DMIT's network-layer billing ~2x for a proxy).
+  let xuiUsedMb: number | null = null;
+  const xuiCreds = getXuiCredentials();
+  if (xuiCreds) {
+    try {
+      const liveInbounds = await loginAndListInbounds(xuiCreds.username, xuiCreds.password);
+      const xuiUsedBytes = liveInbounds.reduce(
+        (sum, inbound) => sum + getInboundClientUsedBytes(inbound),
+        0,
+      );
+      xuiUsedMb = Math.round(xuiUsedBytes / (1024 * 1024));
+    } catch (err) {
+      console.warn(
+        '[dmit] failed to capture 3X-UI sum for snapshot calibration:',
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
   upsertDmitTraffic({
     serviceId: expectedServiceId,
     bwusageMb: body.bwusage,
@@ -101,6 +123,7 @@ router.post('/traffic', requireSyncToken, async (req: Request, res: Response) =>
     usagePercentage: asOptionalNumber(body.usage_percentage),
     nextResetDay,
     nextResetAt,
+    xuiUsedMb,
     source: 'tampermonkey',
     now,
   });
