@@ -30,6 +30,7 @@ import { useToast } from '@/src/components/ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { cn } from '@/src/utils/cn';
 import { getInbounds, getOnlineClients, Inbound } from '@/src/api/client';
+import { updateInboundClient } from '@/src/api/xui';
 import { flattenInboundClients, formatExpiry, formatTraffic } from '@/src/utils/xuiClients';
 
 interface User {
@@ -59,6 +60,117 @@ interface UsersManagementPageProps {
 
 type SortKey = 'username' | 'joined' | 'status' | 'traffic' | 'expiry' | 'subId';
 type SortState = { key: SortKey; dir: 'asc' | 'desc' } | null;
+
+type ClientRow = ReturnType<typeof flattenInboundClients>[number];
+
+const BYTES_PER_GB = 1024 ** 3;
+
+function toDatetimeLocal(expiryTime: number): string {
+  if (!Number.isFinite(expiryTime) || expiryTime <= 0) return '';
+  const local = new Date(expiryTime - new Date(expiryTime).getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function parseDatetimeLocal(value: string): number {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  const ms = new Date(trimmed).getTime();
+  return Number.isNaN(ms) ? NaN : ms;
+}
+
+interface EditState {
+  id: number;
+  subId: string;
+  trafficGb: string;
+  expiryLocal: string;
+  enable: boolean;
+  client: ClientRow | null;
+}
+
+// Combined inline editor: sub-id link plus the 3X-UI client's expiry / traffic cap / enable,
+// reused by both the desktop table row and the mobile card.
+function UserEditForm({
+  state,
+  onChange,
+  onSave,
+  onCancel,
+  isZh,
+  subIdPlaceholder,
+  saveLabel,
+  cancelLabel,
+}: {
+  state: EditState;
+  onChange: (patch: Partial<EditState>) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  isZh: boolean;
+  subIdPlaceholder: string;
+  saveLabel: string;
+  cancelLabel: string;
+}) {
+  const fieldLabel = 'space-y-1 text-xs text-[var(--text-secondary)]';
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className={fieldLabel}>
+          <span>{isZh ? '订阅 ID' : 'Sub ID'}</span>
+          <Input
+            className="h-9 font-mono"
+            placeholder={subIdPlaceholder}
+            value={state.subId}
+            onChange={(e) => onChange({ subId: e.target.value })}
+            autoFocus
+          />
+        </label>
+        {state.client ? (
+          <>
+            <label className={fieldLabel}>
+              <span>{isZh ? '流量上限(GB,0 = 不限)' : 'Traffic cap (GB, 0 = unlimited)'}</span>
+              <Input
+                className="h-9"
+                type="number"
+                min="0"
+                inputMode="decimal"
+                value={state.trafficGb}
+                onChange={(e) => onChange({ trafficGb: e.target.value })}
+              />
+            </label>
+            <label className={fieldLabel}>
+              <span>{isZh ? '到期(留空 = 永不)' : 'Expiry (empty = never)'}</span>
+              <input
+                type="datetime-local"
+                className="h-9 w-full rounded-[14px] border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-3 text-base text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] sm:text-sm"
+                value={state.expiryLocal}
+                onChange={(e) => onChange({ expiryLocal: e.target.value })}
+              />
+            </label>
+            <label className="flex items-center gap-2 self-end pb-1.5 text-sm text-[var(--text-primary)]">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[var(--accent)]"
+                checked={state.enable}
+                onChange={(e) => onChange({ enable: e.target.checked })}
+              />
+              <span>{isZh ? '启用' : 'Enabled'}</span>
+            </label>
+          </>
+        ) : (
+          <p className="self-center text-xs text-[var(--text-tertiary)]">
+            {isZh ? '关联订阅 ID 后可改到期与流量' : 'Link a sub ID to edit expiry & traffic'}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" className="h-9 px-4" onClick={onSave}>
+          {saveLabel}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-9 px-4" onClick={onCancel}>
+          {cancelLabel}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function SortableHead({
   label,
@@ -107,7 +219,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
   const [onlineEmails, setOnlineEmails] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<number | null>(null);
-  const [editingSubId, setEditingSubId] = useState<{ id: number; value: string } | null>(null);
+  const [editingSubId, setEditingSubId] = useState<EditState | null>(null);
   const [systemFlags, setSystemFlags] = useState<SystemFlags | null>(null);
   const [publicBaseUrl, setPublicBaseUrl] = useState('');
   const [latestResetLink, setLatestResetLink] = useState<{
@@ -145,6 +257,32 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
   const statsFor = (user: User) => {
     const sid = user.sub_id?.trim().toLowerCase();
     return sid ? clientStatsBySubId.get(sid) : undefined;
+  };
+
+  // Full client row (carries inboundId / clientId / rawClient) for editing expiry & traffic.
+  const clientRowBySubId = useMemo(() => {
+    const map = new Map<string, ClientRow>();
+    for (const client of flattenInboundClients(inbounds)) {
+      const sid = (client.subId ?? '').trim().toLowerCase();
+      if (sid && !map.has(sid)) map.set(sid, client);
+    }
+    return map;
+  }, [inbounds]);
+  const clientFor = (user: User) => {
+    const sid = user.sub_id?.trim().toLowerCase();
+    return sid ? clientRowBySubId.get(sid) : undefined;
+  };
+  const openEdit = (user: User) => {
+    const c = clientFor(user);
+    setEditingSubId({
+      id: user.id,
+      subId: user.sub_id ?? '',
+      trafficGb:
+        c && c.totalGB > 0 ? String(Math.round((c.totalGB / BYTES_PER_GB) * 100) / 100) : '',
+      expiryLocal: c ? toDatetimeLocal(c.expiryTime) : '',
+      enable: c ? c.enable : true,
+      client: c ?? null,
+    });
   };
 
   // Header-click sorting: first click sorts descending (e.g. most traffic first);
@@ -249,19 +387,53 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
     toast(t('userAccounts.inviteDeleted'), 'success');
   }
 
-  async function saveSubId(userId: number, subId: string) {
+  async function saveUser() {
+    const edit = editingSubId;
+    if (!edit) return;
+
+    let totalBytes = 0;
+    let expiryTime = 0;
+    if (edit.client) {
+      const trafficGb = Number(edit.trafficGb.trim() || '0');
+      if (!Number.isFinite(trafficGb) || trafficGb < 0) {
+        toast(t('userAccounts.saveFailed'), 'error');
+        return;
+      }
+      expiryTime = parseDatetimeLocal(edit.expiryLocal);
+      if (Number.isNaN(expiryTime)) {
+        toast(t('userAccounts.saveFailed'), 'error');
+        return;
+      }
+      totalBytes = trafficGb > 0 ? Math.round(trafficGb * BYTES_PER_GB) : 0;
+    }
+
     try {
-      const res = await fetch(`/local/admin/users/${userId}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subId: subId || null }),
-      });
-      if (!res.ok) throw new Error();
-      setUsers((prev) =>
-        prev.map((user) => (user.id === userId ? { ...user, sub_id: subId || null } : user)),
-      );
+      const current = users.find((u) => u.id === edit.id);
+      const nextSubId = edit.subId.trim() || null;
+      if (nextSubId !== (current?.sub_id ?? null)) {
+        const res = await fetch(`/local/admin/users/${edit.id}`, {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subId: nextSubId }),
+        });
+        if (!res.ok) throw new Error();
+        setUsers((prev) => prev.map((u) => (u.id === edit.id ? { ...u, sub_id: nextSubId } : u)));
+      }
+      if (edit.client) {
+        await updateInboundClient({
+          inboundId: edit.client.inboundId,
+          clientId: edit.client.clientId,
+          client: {
+            ...edit.client.rawClient,
+            enable: edit.enable,
+            totalGB: totalBytes,
+            expiryTime,
+          },
+        });
+      }
       setEditingSubId(null);
+      await load();
       toast(t('userAccounts.subAssigned'), 'success');
     } catch {
       toast(t('userAccounts.saveFailed'), 'error');
@@ -564,9 +736,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                                 variant="outline"
                                 size="sm"
                                 className="h-9 flex-1 gap-1.5"
-                                onClick={() =>
-                                  setEditingSubId({ id: user.id, value: user.sub_id ?? '' })
-                                }
+                                onClick={() => openEdit(user)}
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
                                 {assignLabel}
@@ -594,33 +764,19 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                             </div>
 
                             {editing && (
-                              <div className="flex flex-col gap-2 border-t border-[color:var(--border-subtle)] pt-3">
-                                <Input
-                                  className="h-9 font-mono"
-                                  placeholder={t('userAccounts.subIdPlaceholder')}
-                                  value={editing.value}
-                                  onChange={(e) =>
-                                    setEditingSubId({ id: user.id, value: e.target.value })
+                              <div className="border-t border-[color:var(--border-subtle)] pt-3">
+                                <UserEditForm
+                                  state={editing}
+                                  onChange={(patch) =>
+                                    setEditingSubId((prev) => (prev ? { ...prev, ...patch } : prev))
                                   }
-                                  autoFocus
+                                  onSave={saveUser}
+                                  onCancel={() => setEditingSubId(null)}
+                                  isZh={isZh}
+                                  subIdPlaceholder={t('userAccounts.subIdPlaceholder')}
+                                  saveLabel={t('common.save')}
+                                  cancelLabel={t('common.cancel')}
                                 />
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    className="h-9 flex-1"
-                                    onClick={() => saveSubId(user.id, editing.value)}
-                                  >
-                                    {t('common.save')}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-9 flex-1"
-                                    onClick={() => setEditingSubId(null)}
-                                  >
-                                    {t('common.cancel')}
-                                  </Button>
-                                </div>
                               </div>
                             )}
                           </div>
@@ -766,9 +922,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                                         className="h-8 w-8"
                                         title={assignLabel}
                                         aria-label={assignLabel}
-                                        onClick={() =>
-                                          setEditingSubId({ id: user.id, value: user.sub_id ?? '' })
-                                        }
+                                        onClick={() => openEdit(user)}
                                       >
                                         <Edit2 className="h-3.5 w-3.5" />
                                       </Button>
@@ -798,34 +952,20 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                                 {editing && (
                                   <TableRow>
                                     <TableCell colSpan={7}>
-                                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                        <Input
-                                          className="h-8 font-mono text-xs sm:max-w-md"
-                                          placeholder={t('userAccounts.subIdPlaceholder')}
-                                          value={editing.value}
-                                          onChange={(e) =>
-                                            setEditingSubId({ id: user.id, value: e.target.value })
-                                          }
-                                          autoFocus
-                                        />
-                                        <div className="flex items-center gap-2">
-                                          <Button
-                                            size="sm"
-                                            className="h-8 px-3"
-                                            onClick={() => saveSubId(user.id, editing.value)}
-                                          >
-                                            {t('common.save')}
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 px-3"
-                                            onClick={() => setEditingSubId(null)}
-                                          >
-                                            {t('common.cancel')}
-                                          </Button>
-                                        </div>
-                                      </div>
+                                      <UserEditForm
+                                        state={editing}
+                                        onChange={(patch) =>
+                                          setEditingSubId((prev) =>
+                                            prev ? { ...prev, ...patch } : prev,
+                                          )
+                                        }
+                                        onSave={saveUser}
+                                        onCancel={() => setEditingSubId(null)}
+                                        isZh={isZh}
+                                        subIdPlaceholder={t('userAccounts.subIdPlaceholder')}
+                                        saveLabel={t('common.save')}
+                                        cancelLabel={t('common.cancel')}
+                                      />
                                     </TableCell>
                                   </TableRow>
                                 )}

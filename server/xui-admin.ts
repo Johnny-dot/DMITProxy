@@ -518,7 +518,16 @@ export function buildClientPayload(protocol: string, email: string) {
   const limitIp = parseInt(process.env.XUI_AUTO_CLIENT_LIMIT_IP ?? '0', 10) || 0;
   const totalGB = parseInt(process.env.XUI_AUTO_CLIENT_TOTAL_GB ?? '0', 10) || 0;
   const expiryDays = parseInt(process.env.XUI_AUTO_CLIENT_EXPIRY_DAYS ?? '0', 10) || 0;
-  const expiryTime = expiryDays > 0 ? Date.now() + expiryDays * 24 * 60 * 60 * 1000 : 0;
+  // A fixed calendar date (e.g. the DMIT service expiry "2028-03-04") takes precedence over a
+  // rolling N-days window, so every auto-provisioned client expires with the VPS rather than
+  // outliving it. Falls back to N days from now, then to "never".
+  const fixedExpiryRaw = (process.env.XUI_AUTO_CLIENT_EXPIRY_DATE ?? '').trim();
+  const fixedExpiryMs = fixedExpiryRaw ? Date.parse(fixedExpiryRaw) : NaN;
+  const expiryTime = Number.isFinite(fixedExpiryMs)
+    ? fixedExpiryMs
+    : expiryDays > 0
+      ? Date.now() + expiryDays * 24 * 60 * 60 * 1000
+      : 0;
 
   const common = {
     email,
