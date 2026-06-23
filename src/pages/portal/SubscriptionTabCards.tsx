@@ -311,74 +311,74 @@ export function ClientHighlightCard({
               : `Recommended for ${getPlatformLabel(activePlatform, false)} right now.`}
           </p>
         </div>
-      </div>
-      <div className="flex flex-wrap gap-2 lg:justify-end">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="gap-2"
-          onClick={() =>
-            onOpenDownload(client.links.github, client.id, {
-              kind: 'official',
-              platform: activePlatform,
-            })
-          }
-          data-testid="portal-setup-download-primary"
-          data-client-action="true"
-          disabled={!client.links.github}
-        >
-          <Download className="h-4 w-4" />
-          {isZh ? '下载客户端' : 'Download client'}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() =>
-            onOpenDownload(client.links.github, client.id, {
-              kind: 'official',
-              platform: activePlatform,
-            })
-          }
-          data-client-action="true"
-          disabled={!client.links.github}
-        >
-          <ExternalLink className="h-4 w-4" />
-          {isZh ? '官方源' : 'Official'}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          title={
-            client.links.vps
-              ? client.links.vpsManaged
-                ? isZh
-                  ? '通过当前站点 VPS 缓存分发；首次请求可能需要等待官方包缓存完成'
-                  : 'Served through this VPS cache. The first request may wait while the official package is cached.'
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="gap-2"
+            onClick={() =>
+              onOpenDownload(client.links.github, client.id, {
+                kind: 'official',
+                platform: activePlatform,
+              })
+            }
+            data-testid="portal-setup-download-primary"
+            data-client-action="true"
+            disabled={!client.links.github}
+          >
+            <Download className="h-4 w-4" />
+            {isZh ? '下载客户端' : 'Download client'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() =>
+              onOpenDownload(client.links.github, client.id, {
+                kind: 'official',
+                platform: activePlatform,
+              })
+            }
+            data-client-action="true"
+            disabled={!client.links.github}
+          >
+            <ExternalLink className="h-4 w-4" />
+            {isZh ? '官方源' : 'Official'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            title={
+              client.links.vps
+                ? client.links.vpsManaged
+                  ? isZh
+                    ? '通过当前站点 VPS 缓存分发；首次请求可能需要等待官方包缓存完成'
+                    : 'Served through this VPS cache. The first request may wait while the official package is cached.'
+                  : isZh
+                    ? '打开已配置的镜像下载地址'
+                    : 'Open the configured mirror download URL'
                 : isZh
-                  ? '打开已配置的镜像下载地址'
-                  : 'Open the configured mirror download URL'
-              : isZh
-                ? '当前平台暂不提供镜像下载'
-                : 'Mirror is not available for this platform'
-          }
-          onClick={() =>
-            onOpenDownload(client.links.vps, client.id, {
-              kind: 'mirror',
-              managed: client.links.vpsManaged,
-              platform: activePlatform,
-            })
-          }
-          data-client-action="true"
-          disabled={!client.links.vps}
-        >
-          <ExternalLink className="h-4 w-4" />
-          {isZh ? '镜像下载' : 'Mirror'}
-        </Button>
+                  ? '当前平台暂不提供镜像下载'
+                  : 'Mirror is not available for this platform'
+            }
+            onClick={() =>
+              onOpenDownload(client.links.vps, client.id, {
+                kind: 'mirror',
+                managed: client.links.vpsManaged,
+                platform: activePlatform,
+              })
+            }
+            data-client-action="true"
+            disabled={!client.links.vps}
+          >
+            <ExternalLink className="h-4 w-4" />
+            {isZh ? '镜像下载' : 'Mirror'}
+          </Button>
+        </div>
       </div>
     </div>
   );

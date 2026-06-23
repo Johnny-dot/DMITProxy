@@ -191,9 +191,9 @@ export const DEFAULT_CLIENT_BY_PLATFORM: Record<GuidePlatform, ClientId> = {
 };
 
 export const PLATFORM_CLIENT_ORDER: Record<GuidePlatform, ClientId[]> = {
-  windows: ['flClash', 'v2rayN', 'sparkle'],
-  macos: ['flClash', 'shadowrocket', 'sparkle', 'singBox'],
-  linux: ['flClash', 'v2rayN', 'sparkle', 'singBox'],
+  windows: ['flClash', 'clashVerge', 'v2rayN', 'sparkle'],
+  macos: ['flClash', 'clashVerge', 'shadowrocket', 'sparkle', 'singBox'],
+  linux: ['flClash', 'clashVerge', 'v2rayN', 'sparkle', 'singBox'],
   android: ['flClash', 'clashMeta', 'singBox', 'v2rayNG', 'exclave'],
   ios: ['shadowrocket', 'surge', 'singBox'],
   harmonyos: ['clashBox'],

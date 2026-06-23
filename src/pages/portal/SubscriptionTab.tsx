@@ -74,7 +74,6 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     () => ({
       universal: subId ? buildSubscriptionUrl(subId, 'universal') : '',
       clash: subId ? buildSubscriptionUrl(subId, 'clash') : '',
-      v2ray: subId ? buildSubscriptionUrl(subId, 'v2ray') : '',
       singbox: subId ? buildSubscriptionUrl(subId, 'singbox') : '',
       surge: subId ? buildSubscriptionUrl(subId, 'surge') : '',
     }),
@@ -95,11 +94,6 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
         key: 'clash' as const,
         label: 'Clash',
         desc: isZh ? '更适合 Clash 系列' : 'Best for Clash-based clients',
-      },
-      {
-        key: 'v2ray' as const,
-        label: 'V2Ray',
-        desc: isZh ? '适合 V2Ray 客户端' : 'For V2Ray clients',
       },
       {
         key: 'singbox' as const,
@@ -263,6 +257,12 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     setActiveClientId(getRecommendedClientId(platform));
   }, []);
 
+  const scrollToTestId = useCallback((testId: string) => {
+    document
+      .querySelector(`[data-testid="${testId}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   const handleCopy = useCallback((text: string, key: string) => {
     if (!text) return;
     void navigator.clipboard.writeText(text).then(() => {
@@ -310,6 +310,52 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
   return (
     <div className="space-y-6" data-testid="portal-setup-tab">
       <section
+        className="surface-card p-4 md:p-5"
+        data-testid="portal-setup-roadmap"
+        aria-label={isZh ? '接入三步' : 'Setup in three steps'}
+      >
+        <div className="grid gap-2 sm:grid-cols-3">
+          {[
+            {
+              n: 1,
+              testId: 'portal-setup-platforms',
+              title: isZh ? '选择设备' : 'Pick your device',
+              desc: isZh ? '确认你的系统' : 'Confirm your OS',
+            },
+            {
+              n: 2,
+              testId: 'portal-setup-clients',
+              title: isZh ? '下载客户端' : 'Download the client',
+              desc: isZh ? '装好代理 App' : 'Install the proxy app',
+            },
+            {
+              n: 3,
+              testId: 'portal-setup-guide',
+              title: isZh ? '导入并连接' : 'Import & connect',
+              desc: isZh ? '导入订阅就能用' : 'Import the link and go',
+            },
+          ].map((stepItem) => (
+            <button
+              key={stepItem.n}
+              type="button"
+              onClick={() => scrollToTestId(stepItem.testId)}
+              className="group flex items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.035] px-3.5 py-3 text-left transition-colors hover:border-[color:var(--border-strong)] hover:bg-white/[0.06]"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-sm font-semibold text-emerald-300">
+                {stepItem.n}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium text-zinc-50">
+                  {stepItem.title}
+                </span>
+                <span className="block truncate text-xs text-zinc-500">{stepItem.desc}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section
         className="surface-card relative overflow-hidden p-5 md:p-7"
         data-testid="portal-setup-quick"
       >
@@ -318,12 +364,17 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
         <div className="relative space-y-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
-              <p className="text-xs font-medium uppercase tracking-[0.22em] text-emerald-300/90">
-                {isZh ? '使用订阅' : 'Subscription setup'}
-              </p>
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-[13px] font-semibold text-emerald-300">
+                  1
+                </span>
+                <p className="text-xs font-medium uppercase tracking-[0.22em] text-emerald-300/90">
+                  {isZh ? '第 1 步 · 选择设备' : 'Step 1 · Choose device'}
+                </p>
+              </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold tracking-tight text-zinc-50 md:text-3xl">
-                  {isZh ? '接入控制台' : 'Setup console'}
+                  {isZh ? '选择设备，获取订阅' : 'Choose your device, get the link'}
                 </h2>
                 <p className="text-sm leading-7 text-zinc-400">
                   {isZh
@@ -378,8 +429,8 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   </p>
                   <p className="mt-1 text-xs leading-5 text-zinc-500">
                     {isZh
-                      ? '选择后会同步客户端、格式和教程。'
-                      : 'This syncs client, format, and guide.'}
+                      ? '已为你自动识别当前设备，可随时更换；客户端、格式和教程会自动联动。'
+                      : 'We auto-detected your device — change it anytime. Client, format, and guide stay in sync.'}
                   </p>
                 </div>
                 <Monitor className="h-4 w-4 text-emerald-300" />
@@ -452,19 +503,24 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 </div>
                 <Button
                   type="button"
-                  variant={showFormatOptions ? 'secondary' : 'outline'}
+                  variant="ghost"
                   size="sm"
                   className="shrink-0 gap-2"
                   onClick={() => setShowFormatOptions((current) => !current)}
                   data-testid="portal-setup-toggle-formats"
+                  title={
+                    isZh
+                      ? '高级选项：手动切换订阅格式。新手通常无需改动。'
+                      : 'Advanced: switch the subscription format manually. Most users can skip this.'
+                  }
                 >
                   {showFormatOptions
                     ? isZh
-                      ? '收起格式'
-                      : 'Hide formats'
+                      ? '收起'
+                      : 'Hide'
                     : isZh
-                      ? '切换格式'
-                      : 'Switch format'}
+                      ? '其他格式'
+                      : 'Other formats'}
                   {showFormatOptions ? (
                     <ChevronUp className="h-3 w-3" />
                   ) : (
@@ -474,7 +530,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
               </div>
 
               {showFormatOptions ? (
-                <div className="mt-4 grid gap-2 md:grid-cols-5 xl:grid-cols-3">
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-2">
                   {formatOptions.map((format) => (
                     <button
                       key={format.key}
