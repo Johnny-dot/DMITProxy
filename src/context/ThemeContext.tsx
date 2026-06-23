@@ -13,15 +13,13 @@ const THEME_STORAGE_KEY = 'prism-theme';
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
-function getSystemTheme(): Theme {
-  if (typeof window === 'undefined') return 'light';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
 function getInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'light';
   const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  return stored === 'light' || stored === 'dark' ? stored : getSystemTheme();
+  // Default to light for anyone who hasn't explicitly chosen a theme. We no
+  // longer follow the OS `prefers-color-scheme`; an explicit toggle is the only
+  // way to land on dark, and that choice is persisted.
+  return stored === 'light' || stored === 'dark' ? stored : 'light';
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -42,18 +40,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       window.localStorage.removeItem(THEME_STORAGE_KEY);
     }
   }, [theme, hasStoredPreference]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || hasStoredPreference) return;
-
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (event: MediaQueryListEvent) => {
-      setTheme(event.matches ? 'dark' : 'light');
-    };
-
-    media.addEventListener('change', handleChange);
-    return () => media.removeEventListener('change', handleChange);
-  }, [hasStoredPreference]);
 
   const setThemeWithPreference = useCallback((nextTheme: Theme) => {
     setHasStoredPreference(true);

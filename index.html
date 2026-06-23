@@ -7,6 +7,21 @@
     <meta name="theme-color" content="#dce4ef" media="(prefers-color-scheme: light)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script>
+      // Set the theme before first paint so light is the real default and there
+      // is no flash. Dark only applies when the user previously toggled to it.
+      (function () {
+        try {
+          var t = window.localStorage.getItem('prism-theme');
+          if (t !== 'light' && t !== 'dark') t = 'light';
+          document.documentElement.setAttribute('data-theme', t);
+          document.documentElement.style.colorScheme = t;
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+          document.documentElement.style.colorScheme = 'light';
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
