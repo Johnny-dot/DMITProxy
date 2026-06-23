@@ -5,7 +5,6 @@ import {
   ArrowUpFromLine,
   CalendarClock,
   Check,
-  Copy,
   Database,
   RefreshCw,
   SatelliteDish,
@@ -21,7 +20,6 @@ import {
   getAdminDmitTraffic,
   postAdminDmitBillingSync,
   postAdminDmitTrafficManual,
-  ADMIN_DMIT_USERSCRIPT_URL,
   type AdminDmitTraffic,
 } from '@/src/api/client';
 
@@ -56,8 +54,6 @@ export function DmitSyncPage() {
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [savingManual, setSavingManual] = useState(false);
   const [syncingBilling, setSyncingBilling] = useState(false);
-  const [copyingScript, setCopyingScript] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [manual, setManual] = useState({
     bwusage: '',
     bwlimit: '',
@@ -141,24 +137,6 @@ export function DmitSyncPage() {
       toast(err instanceof Error ? err.message : 'sync failed', 'error');
     } finally {
       setSyncingBilling(false);
-    }
-  }
-
-  async function onCopyScript() {
-    if (copyingScript) return;
-    setCopyingScript(true);
-    try {
-      const r = await fetch(ADMIN_DMIT_USERSCRIPT_URL, { credentials: 'include' });
-      if (!r.ok) throw new Error(`fetch failed: ${r.status}`);
-      const text = await r.text();
-      await navigator.clipboard.writeText(text);
-      toast('Tampermonkey 脚本已复制', 'success');
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2200);
-    } catch (err) {
-      toast(err instanceof Error ? err.message : 'copy failed', 'error');
-    } finally {
-      setCopyingScript(false);
     }
   }
 
@@ -248,7 +226,8 @@ export function DmitSyncPage() {
               <Activity className="h-6 w-6 text-[var(--text-tertiary)]" />
               <p className="text-sm font-medium text-[var(--text-primary)]">尚未同步过任何数据</p>
               <p className="max-w-sm text-xs leading-6 text-[var(--text-secondary)]">
-                安装下方的 Tampermonkey 脚本并访问一次 DMIT 面板，真实流量就会自动出现在这里。
+                机器流量由代理节点上的 NIC agent 每 30 分钟自动上报；若长时间为空，检查节点上的{' '}
+                <code className="font-mono">dmit-nic-sync.timer</code> 是否在运行。
               </p>
             </div>
           ) : (
@@ -362,20 +341,22 @@ export function DmitSyncPage() {
         >
           <div className="pointer-events-none absolute inset-x-10 top-0 h-16 rounded-full bg-emerald-500/10 blur-3xl" />
           <p className="section-kicker">AUTO SYNC</p>
-          <h2 className="mt-1 text-lg font-semibold tracking-tight">Tampermonkey 同步脚本</h2>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight">NIC 自动同步</h2>
           <p className="mt-2 flex-1 text-sm leading-7 text-[var(--text-secondary)]">
-            装好 Tampermonkey 扩展后，复制脚本新建一个用户脚本粘贴保存。之后每次打开 DMIT 面板（每
-            30 分钟最多一次）会自动同步，无需手动操作。
+            机器流量由代理节点上的 vnstat{' '}
+            <span className="text-[var(--text-primary)]">NIC agent</span> 每 30
+            分钟自动上报，基于网卡计数（= DMIT
+            计费口径），无需浏览器脚本。上方状态点变红即表示同步滞后。
           </p>
-          <div className="mt-4">
-            <Button
-              onClick={() => void onCopyScript()}
-              disabled={copyingScript}
-              className={cn(copied && 'border-emerald-400/40 text-emerald-400')}
-            >
-              {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-              {copied ? '已复制到剪贴板' : '复制脚本到剪贴板'}
-            </Button>
+          <div className="mt-4 surface-panel rounded-xl p-3 text-xs leading-6 text-[var(--text-secondary)]">
+            滞后排查（在代理节点上）：
+            <code className="ml-1 font-mono text-[var(--text-primary)]">
+              systemctl status dmit-nic-sync.timer
+            </code>{' '}
+            ·{' '}
+            <code className="font-mono text-[var(--text-primary)]">
+              journalctl -u dmit-nic-sync
+            </code>
           </div>
         </section>
 

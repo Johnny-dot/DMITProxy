@@ -40,7 +40,7 @@ import {
   markAutoAppliedBillingDay,
   type DmitTrafficSnapshot,
 } from '../dmit-traffic-store.js';
-import { getDmitServiceId, getDmitSyncToken } from '../dmit-config.js';
+import { getDmitServiceId } from '../dmit-config.js';
 import { getXuiCredentials, loginAndListInbounds } from '../xui-admin.js';
 import { computeMachineUsage } from '../machine-usage.js';
 import { getServerVersion } from '../app-version.js';
@@ -949,36 +949,6 @@ router.post('/dmit/billing-day/sync', requireAdmin, async (_req, res) => {
     const detail = err instanceof Error ? err.message : 'Unknown error';
     return res.status(500).json({ error: detail });
   }
-});
-
-// GET /local/admin/dmit/userscript — render the Tampermonkey script with token / serviceId / backend URL filled in
-router.get('/dmit/userscript', requireAdmin, (req, res) => {
-  const token = getDmitSyncToken();
-  const serviceId = getDmitServiceId();
-  if (!token || serviceId == null) {
-    return res.status(400).json({ error: 'DMIT_SYNC_TOKEN or DMIT_SERVICE_ID is not configured' });
-  }
-  const proto = (req.header('x-forwarded-proto') ?? req.protocol).split(',')[0]?.trim() || 'https';
-  const host = req.header('x-forwarded-host') ?? req.header('host') ?? '';
-  const backend = `${proto}://${host}/local/dmit/traffic`;
-  let template: string;
-  try {
-    template = fs.readFileSync(
-      path.join(process.cwd(), 'scripts/userscripts/dmit-traffic-sync.user.js'),
-      'utf8',
-    );
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : 'Unknown error';
-    console.error(`[admin] userscript template unavailable: ${detail}`);
-    return res.status(500).json({ error: 'userscript template unavailable' });
-  }
-  const rendered = template
-    .replace(/__DMIT_BACKEND_URL__/g, backend)
-    .replace(/__DMIT_SERVICE_ID__/g, String(serviceId))
-    .replace(/__DMIT_SYNC_TOKEN__/g, token)
-    .replace(/__DMIT_BACKEND_HOST__/g, host);
-  res.setHeader('Cache-Control', 'no-store');
-  res.type('application/javascript; charset=utf-8').send(rendered);
 });
 
 // GET /local/admin/machine-usage — unified machine traffic for all admin pages.

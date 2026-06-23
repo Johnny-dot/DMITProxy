@@ -35,7 +35,7 @@ interface SyncBody {
   usage_percentage?: unknown;
   // Preferred: raw DMIT `auto_min_days_until_due` value (e.g. "8.57 天"). The server
   // parses + derives the reset day so the fragile midnight math is unit-tested, not
-  // duplicated in the (untestable) userscript.
+  // duplicated in the (untestable) sync client.
   days_until_reset_text?: unknown;
   // Legacy/explicit fallback (still accepted for backward compatibility).
   next_reset_at?: unknown;

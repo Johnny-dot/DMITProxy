@@ -37,8 +37,8 @@ const MAX_XUI_FACTOR = 4;
  * console (dashboard / nodes / inbounds / traffic), the user portal, and subscription
  * decorations.
  *
- * DMIT's network-layer billing is authoritative but only updates when the Tampermonkey
- * userscript runs. 3X-UI is live but undercounts (it only sees the client leg, ≈ half of
+ * DMIT's network-layer billing is authoritative but only updates when the LAX NIC sync
+ * agent posts. 3X-UI is live but undercounts (it only sees the client leg, ≈ half of
  * DMIT). So `max(dmit, client-sum)` would pin the gauge to the last DMIT snapshot forever
  * (the client-sum can never exceed it) and freeze it between syncs.
  *

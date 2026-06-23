@@ -57,9 +57,6 @@ export function postAdminDmitBillingSync(): Promise<AdminDmitBillingSyncResponse
   });
 }
 
-/** URL to fetch the rendered Tampermonkey script (admin-only). */
-export const ADMIN_DMIT_USERSCRIPT_URL = '/local/admin/dmit/userscript';
-
 export interface MachineUsage {
   usedBytes: number;
   totalBytes: number;
