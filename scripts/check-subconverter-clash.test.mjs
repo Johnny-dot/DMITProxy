@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   parseProxyGroups,
@@ -6,6 +6,7 @@ import {
   parseProxyProviders,
   summarizeClashYaml,
   validateClashSummary,
+  validateProxyProviderReachability,
 } from './check-subconverter-clash.mjs';
 
 describe('check-subconverter-clash', () => {
@@ -92,5 +93,99 @@ proxy-groups:
     expect(validateClashSummary(summarizeClashYaml(yaml))).toEqual([
       'Provider Provider_A023C2 uses a client-unusable URL: http://127.0.0.1:3001/sub/_raw/abc',
     ]);
+  });
+
+  it('does not confuse provider url with nested health-check url', () => {
+    const yaml = `
+proxy-providers:
+  Provider_A023C2:
+    type: http
+    url: http://127.0.0.1:3001/sub/abc
+    interval: 3600
+    path: ./providers/Provider_A023C2.yaml
+    health-check:
+      enable: true
+      url: https://cp.cloudflare.com/generate_204
+      interval: 300
+proxy-groups:
+  - name: PROXY
+    type: select
+    use:
+      - Provider_A023C2
+    proxies:
+      - DIRECT
+`;
+
+    expect(parseProxyProviders(yaml).get('Provider_A023C2')).toEqual({
+      url: 'http://127.0.0.1:3001/sub/abc',
+    });
+
+    expect(validateClashSummary(summarizeClashYaml(yaml))).toEqual([
+      'Provider Provider_A023C2 uses a client-unusable URL: http://127.0.0.1:3001/sub/abc',
+    ]);
+  });
+
+  it('fetches provider urls and ignores nested health-check urls during reachability checks', async () => {
+    const yaml = `
+proxy-providers:
+  Provider_A023C2:
+    type: http
+    url: http://154.17.12.1:2096/a7k2mxp9qw3z/abc
+    interval: 3600
+    path: ./providers/Provider_A023C2.yaml
+    health-check:
+      enable: true
+      url: https://cp.cloudflare.com/generate_204
+      interval: 300
+proxy-groups:
+  - name: PROXY
+    type: select
+    use:
+      - Provider_A023C2
+    proxies:
+      - DIRECT
+`;
+    const fetchImpl = vi.fn(async (url) => {
+      if (url === 'http://154.17.12.1:2096/a7k2mxp9qw3z/abc') {
+        throw new Error('Unsupported HTTP version');
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    await expect(
+      validateProxyProviderReachability(summarizeClashYaml(yaml), fetchImpl),
+    ).resolves.toEqual(['Provider Provider_A023C2 is not reachable: Unsupported HTTP version']);
+
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'http://154.17.12.1:2096/a7k2mxp9qw3z/abc',
+      expect.any(Object),
+    );
+  });
+
+  it('accepts reachable provider payloads with base64 subscription links', async () => {
+    const yaml = `
+proxy-providers:
+  Provider_A023C2:
+    type: http
+    url: https://sub.example.com/sub/abc
+proxy-groups:
+  - name: PROXY
+    type: select
+    use:
+      - Provider_A023C2
+    proxies:
+      - DIRECT
+`;
+    const body = Buffer.from('vless://example.com#node').toString('base64');
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => body,
+    }));
+
+    await expect(
+      validateProxyProviderReachability(summarizeClashYaml(yaml), fetchImpl),
+    ).resolves.toEqual([]);
   });
 });

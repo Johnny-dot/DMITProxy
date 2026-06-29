@@ -101,4 +101,28 @@ describe('subscription-probe-target', () => {
 
     expect(selected).toBeNull();
   });
+
+  it('accepts duplicate decorated links for the same probe endpoint', () => {
+    const nodes = parseSubscriptionNodes(
+      [
+        'vless://uuid@example.com:443?security=reality&type=tcp&pbk=pubkey&sid=abcd&sni=example.com&fp=chrome&prism_info=user#用户｜toki18c',
+        'vless://uuid@example.com:443?security=reality&type=tcp&pbk=pubkey&sid=abcd&sni=example.com&fp=chrome&prism_info=reset#重置｜每月3日',
+        'vless://uuid@example.com:443?security=reality&type=tcp&pbk=pubkey&sid=abcd&sni=example.com&fp=chrome&prism_info=usage#机器｜剩169.6/1000G',
+      ].join('\n'),
+    );
+
+    const selected = pickProbeEndpointForInbound(nodes, {
+      remark: 'DMIT-VLESS-Reality',
+      protocol: 'vless',
+      port: 443,
+    });
+
+    expect(selected).toMatchObject({
+      address: 'example.com',
+      port: 443,
+      protocol: 'vless',
+      publicKey: 'pubkey',
+      shortId: 'abcd',
+    });
+  });
 });

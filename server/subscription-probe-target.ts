@@ -88,6 +88,34 @@ function parsePort(value: string | number | null | undefined) {
   return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : 0;
 }
 
+function buildProbeEndpointKey(node: ProxyProbeEndpoint) {
+  return JSON.stringify({
+    protocol: node.protocol,
+    address: node.address,
+    port: node.port,
+    security: node.security,
+    network: node.network,
+    id: node.id,
+    password: node.password,
+    encryption: node.encryption,
+    flow: node.flow,
+    method: node.method,
+    alterId: node.alterId,
+    hostHeader: node.hostHeader,
+    path: node.path,
+    serviceName: node.serviceName,
+    authority: node.authority,
+    sni: node.sni,
+    fingerprint: node.fingerprint,
+    alpn: node.alpn,
+    publicKey: node.publicKey,
+    shortId: node.shortId,
+    spiderX: node.spiderX,
+    allowInsecure: node.allowInsecure,
+    headerType: node.headerType,
+  });
+}
+
 function buildSubscriptionUrl(subId: string, format: 'universal' = 'universal') {
   const token = encodeURIComponent(subId.trim());
   if (!token) return '';
@@ -382,6 +410,11 @@ export function pickProbeEndpointForInbound(
   }
 
   if (second && second.score === best.score) {
+    const tied = scoredPool.filter((item) => item.score === best.score);
+    const firstKey = buildProbeEndpointKey(best.node);
+    if (tied.every((item) => buildProbeEndpointKey(item.node) === firstKey)) {
+      return best.node;
+    }
     return null;
   }
 

@@ -166,7 +166,7 @@ export function parseProxyProviders(text) {
     }
 
     if (currentName) {
-      const urlMatch = line.match(/^\s+url:\s*(.+?)\s*$/);
+      const urlMatch = line.match(/^ {4}url:\s*(.+?)\s*$/);
       if (urlMatch) {
         providers.set(currentName, { url: stripQuotes(urlMatch[1]) });
       }
@@ -192,6 +192,38 @@ function isClientUnusableProviderUrl(value) {
     hostname === '::1' ||
     parsed.pathname.includes('/sub/_raw/')
   );
+}
+
+function decodeBase64SubscriptionPayload(text) {
+  const trimmed = text.trim();
+  const compact = trimmed.replace(/\s+/g, '');
+  if (!compact || compact.includes('://')) return trimmed;
+
+  const normalized = compact.replace(/-/g, '+').replace(/_/g, '/');
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(normalized)) return trimmed;
+
+  try {
+    const decoded = Buffer.from(normalized, 'base64').toString('utf8');
+    return decoded.includes('://') ? decoded : trimmed;
+  } catch {
+    return trimmed;
+  }
+}
+
+function countProtocolLinks(text) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => /^[a-z][a-z0-9+.-]*:\/\//i.test(line)).length;
+}
+
+export function summarizeProviderPayload(text) {
+  const inlineProxyNames = parseProxyNames(text);
+  const decodedPayload = decodeBase64SubscriptionPayload(text);
+  return {
+    inlineProxyNames,
+    protocolLinkCount: countProtocolLinks(decodedPayload),
+  };
 }
 
 export function summarizeClashYaml(text) {
@@ -284,6 +316,41 @@ export function validateClashSummary(summary) {
   return errors;
 }
 
+export async function validateProxyProviderReachability(summary, fetchImpl = fetch) {
+  const errors = [];
+  const hasInlineNodes = summary.proxyNames.length > 0 && summary.proxyGroupNodeMembers.length > 0;
+  if (hasInlineNodes) return errors;
+
+  const usedProviders = new Set(summary.proxyGroupProviders);
+  const providers = summary.providerEntries.filter((provider) => usedProviders.has(provider.name));
+
+  for (const provider of providers) {
+    let response;
+    try {
+      response = await fetchImpl(provider.url, {
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(`Provider ${provider.name} is not reachable: ${message}`);
+      continue;
+    }
+
+    if (!response.ok) {
+      errors.push(`Provider ${provider.name} returned HTTP ${response.status}`);
+      continue;
+    }
+
+    const body = await response.text();
+    const providerSummary = summarizeProviderPayload(body);
+    if (providerSummary.inlineProxyNames.length === 0 && providerSummary.protocolLinkCount === 0) {
+      errors.push(`Provider ${provider.name} did not return any proxy nodes`);
+    }
+  }
+
+  return errors;
+}
+
 async function main() {
   const [subId, baseUrlArg] = process.argv.slice(2);
   if (!subId || subId === '-h' || subId === '--help') {
@@ -320,6 +387,12 @@ async function main() {
   const errors = validateClashSummary(summary);
   if (errors.length > 0) {
     for (const error of errors) console.error(`[check-subconverter-clash] FAIL: ${error}`);
+    process.exit(1);
+  }
+
+  const providerErrors = await validateProxyProviderReachability(summary);
+  if (providerErrors.length > 0) {
+    for (const error of providerErrors) console.error(`[check-subconverter-clash] FAIL: ${error}`);
     process.exit(1);
   }
 
