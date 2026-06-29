@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Ca
 import { Input } from '@/src/components/ui/Input';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
+import { Modal } from '@/src/components/ui/Modal';
 import { useToast } from '@/src/components/ui/Toast';
 import { Plus, Search, Edit2, Trash2, Power, PowerOff, ShieldCheck, X } from 'lucide-react';
 import {
@@ -403,15 +404,18 @@ export function InboundsPage() {
         <p>{t('inbounds.note')}</p>
       </div>
 
-      {editingInbound && (
-        <div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
-          onClick={() => (isSavingInbound ? undefined : setEditingInbound(null))}
-        >
-          <div
-            className="surface-card w-full max-w-lg"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <Modal
+        open={Boolean(editingInbound)}
+        onClose={() => {
+          if (isSavingInbound) return;
+          setEditingInbound(null);
+        }}
+        closeOnBackdrop={!isSavingInbound}
+        ariaLabel={t('inbounds.editInbound')}
+        panelClassName="w-full max-w-lg"
+      >
+        {editingInbound ? (
+          <div className="surface-card w-full">
             <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border-subtle)] px-5 py-4">
               <div className="space-y-1">
                 <p className="font-semibold text-[var(--text-primary)]">
@@ -533,8 +537,8 @@ export function InboundsPage() {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+        ) : null}
+      </Modal>
     </div>
   );
 }

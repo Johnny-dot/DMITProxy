@@ -47,8 +47,8 @@ describe('buildSubscriptionUrl', () => {
       configurable: true,
     });
 
-    vi.stubEnv('VITE_SUB_URL', 'http://64.186.227.197:2096');
-    vi.stubEnv('VITE_SUB_URL_TEMPLATE', 'http://64.186.227.197:2096/a7k2xmp9qw3z/{subId}');
+    vi.stubEnv('VITE_SUB_URL', 'http://154.17.12.1:2096');
+    vi.stubEnv('VITE_SUB_URL_TEMPLATE', 'http://154.17.12.1:2096/a7k2xmp9qw3z/{subId}');
     vi.resetModules();
 
     const { buildSubscriptionUrl } = await import('./subscription');

@@ -39,8 +39,10 @@ describe('buildSubscriptionUsageSummary', () => {
       totalUp,
       totalDown,
       totalUsed,
+      machineUsed: totalUsed,
       machineRemaining: machineTotal - totalUsed,
       machineTotal,
+      machineSource: 'xui',
     });
   });
 
@@ -73,7 +75,9 @@ describe('buildSubscriptionUsageSummary', () => {
 
     // machine fields come from DMIT
     expect(summary.machineTotal).toBe(dmitMachineTotal);
+    expect(summary.machineUsed).toBe(dmitMachineUsed);
     expect(summary.machineRemaining).toBe(dmitMachineTotal - dmitMachineUsed);
+    expect(summary.machineSource).toBe('dmit');
   });
 
   it('falls back to 3X-UI machineTotal when dmitMachineTotal is undefined', () => {
@@ -102,6 +106,7 @@ describe('buildSubscriptionUsageSummary', () => {
       dmitMachineTotal: 1000 * GB,
     });
     expect(summary.machineRemaining).toBe(0);
+    expect(summary.machineUsed).toBe(1000 * GB);
   });
 });
 
@@ -120,10 +125,26 @@ describe('buildSubscriptionDecorations', () => {
     ).toEqual([
       '账单重置｜每月 3 日（UTC）',
       '订阅到期｜2028-03-04',
-      '本月消耗｜↑ 12.34G · ↓ 177.34G',
-      '他人消耗｜↑ 120.00G · ↓ 272.61G',
-      '机器余量｜417.71G / 1000.00G',
+      '个人用量(3X-UI)｜↑ 12.34G · ↓ 177.34G · 合 189.68G',
+      '他人用量(3X-UI)｜↑ 120.00G · ↓ 272.61G · 合 392.61G',
+      '机器估算｜已用 582.29G · 剩 417.71G / 1000.00G',
+      '口径说明｜个人/他人是3X-UI应用层；机器估算来自3X-UI客户端合计',
     ]);
+  });
+
+  it('labels machine-level DMIT data separately from 3X-UI per-user data', () => {
+    expect(
+      buildSubscriptionDecorations({
+        resetDay: 3,
+        ownUp: Math.trunc(39.14 * GB),
+        ownDown: Math.trunc(29.22 * GB),
+        allClientUp: Math.trunc(76.95 * GB),
+        allClientDown: Math.trunc(293.09 * GB),
+        machineTotal: 1000 * GB,
+        dmitMachineUsed: Math.trunc(825.05 * GB),
+        dmitMachineTotal: 1000 * GB,
+      }),
+    ).toContain('DMIT账单｜已用 825.05G · 剩 174.95G / 1000.00G');
   });
 });
 

@@ -594,7 +594,7 @@
 /* Opt-in staggered reveal: a page adds `reveal-stagger` to a section container and its
  * direct children cascade in on load. Shared so every page polishes consistently. */
 .reveal-stagger > * {
-  animation: anim-route-in 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: anim-route-in 460ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 .reveal-stagger > *:nth-child(1) {
   animation-delay: 40ms;

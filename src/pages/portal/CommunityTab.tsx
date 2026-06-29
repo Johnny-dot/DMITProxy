@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Copy, ExternalLink, X, ZoomIn } from 'lucide-react';
 import { CommunityPlatformIcon } from '@/src/components/icons/CommunityPlatformIcon';
 import { Button } from '@/src/components/ui/Button';
+import { Modal } from '@/src/components/ui/Modal';
 import { cn } from '@/src/utils/cn';
 import { isCommunityQrImageSource } from '@/src/utils/communityQr';
 import type { CommunityLink } from '@/src/types/communityLink';
@@ -384,15 +385,14 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
         })}
       </div>
 
-      {previewQr ? (
-        <div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-[color:var(--overlay)] p-4 backdrop-blur-sm"
-          onClick={() => setPreviewQr(null)}
-        >
-          <div
-            className="surface-card w-full max-w-3xl rounded-[32px] p-5 shadow-[var(--shadow-strong)] md:p-6"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <Modal
+        open={Boolean(previewQr)}
+        onClose={() => setPreviewQr(null)}
+        ariaLabel={isZh ? '二维码预览' : 'QR preview'}
+        panelClassName="w-full max-w-3xl"
+      >
+        {previewQr ? (
+          <div className="surface-card w-full rounded-[32px] p-5 shadow-[var(--shadow-strong)] md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
@@ -437,8 +437,8 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
               )}
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </Modal>
     </section>
   );
 }

@@ -2,7 +2,7 @@
 """LAX NIC -> Prism traffic sync agent (python3 stdlib only).
 
 Replaces the fragile DMIT Tampermonkey userscript. Runs ON the DMIT proxy node
-(LAX, 64.186.227.197) on a timer. Reads the node's cumulative NIC bytes via
+(LAX, 154.17.12.1) on a timer. Reads the node's cumulative NIC bytes via
 vnstat (reboot-safe) and POSTs the current billing-cycle usage to Prism's
 EXISTING /local/dmit/traffic endpoint, so the machine gauge tracks DMIT's
 network-layer billing without any browser.

@@ -46,7 +46,7 @@ describe('NodeQualityCard notes', () => {
     const notes = getNodeQualityCardNotes(
       createProfile({
         egress: {
-          ip: '64.186.227.197',
+          ip: '154.17.12.1',
           country: 'United States',
           countryCode: 'US',
           regionName: 'California',

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/src/utils/cn';
 import { useDelayedUnmount } from '@/src/utils/useDelayedUnmount';
 
@@ -63,7 +64,7 @@ export function Modal({
 
   // Save previous focus, move focus into modal, restore on close.
   useEffect(() => {
-    if (!open) return;
+    if (!open || !mounted) return;
     previousFocusRef.current = (document.activeElement as HTMLElement | null) ?? null;
     const focusables = getFocusable(panelRef.current);
     const target = focusables[0] ?? panelRef.current;
@@ -71,7 +72,7 @@ export function Modal({
     return () => {
       previousFocusRef.current?.focus({ preventScroll: true });
     };
-  }, [open]);
+  }, [mounted, open]);
 
   // ESC + focus-trap Tab cycling.
   useEffect(() => {
@@ -112,9 +113,9 @@ export function Modal({
     [closeOnBackdrop, onClose],
   );
 
-  if (!mounted) return null;
+  if (!mounted || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <div
       data-anim-state={animState}
       className="anim-backdrop fixed inset-0 z-[105] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
@@ -134,6 +135,7 @@ export function Modal({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

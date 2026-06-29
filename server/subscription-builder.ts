@@ -450,6 +450,7 @@ export async function buildSubscriptionPayload(subId: string): Promise<string> {
           machineTotal: inbound.total ?? 0,
           dmitMachineUsed: machineUsage.usedBytes,
           dmitMachineTotal: machineUsage.totalBytes,
+          machineSource: machineUsage.source,
         });
         links.push(
           ...buildDecoratedSubscriptionLinks(

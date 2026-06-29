@@ -15,8 +15,10 @@ export interface SubscriptionUsageSummary {
   totalUp: number;
   totalDown: number;
   totalUsed: number;
+  machineUsed: number;
   machineRemaining: number;
   machineTotal: number;
+  machineSource: 'dmit' | 'xui';
 }
 
 export interface SubscriptionUsageSummaryInput {
@@ -31,6 +33,8 @@ export interface SubscriptionUsageSummaryInput {
   dmitMachineUsed?: number;
   /** Bytes of DMIT plan total — overrides machineTotal when present. */
   dmitMachineTotal?: number;
+  /** Machine-level source used for display copy. Defaults to DMIT when dmitMachineUsed is present. */
+  machineSource?: 'dmit' | 'xui';
 }
 
 export interface TrafficBreakdown {
@@ -103,6 +107,8 @@ export function buildSubscriptionUsageSummary(
 
   const usedForRemaining =
     input.dmitMachineUsed !== undefined ? safeNonNegativeInt(input.dmitMachineUsed) : totalUsed;
+  const machineUsed =
+    machineTotal > 0 ? Math.min(usedForRemaining, machineTotal) : usedForRemaining;
 
   return {
     resetDay: Number.isInteger(input.resetDay) && (input.resetDay ?? 0) > 0 ? input.resetDay : null,
@@ -116,8 +122,10 @@ export function buildSubscriptionUsageSummary(
     totalUp,
     totalDown,
     totalUsed,
+    machineUsed,
     machineRemaining: Math.max(0, machineTotal - usedForRemaining),
     machineTotal,
+    machineSource: input.machineSource ?? (input.dmitMachineUsed !== undefined ? 'dmit' : 'xui'),
   };
 }
 
@@ -125,12 +133,18 @@ export function buildSubscriptionDecorations(input: SubscriptionUsageSummaryInpu
   const summary = buildSubscriptionUsageSummary(input);
   const resetText = summary.resetDay ? `每月 ${summary.resetDay} 日（UTC）` : '未配置';
   const expiryText = summary.expiryDate ?? '未配置';
+  const machineLabel = summary.machineSource === 'dmit' ? 'DMIT账单' : '机器估算';
+  const sourceNote =
+    summary.machineSource === 'dmit'
+      ? '口径说明｜个人/他人是3X-UI应用层；机器是DMIT网卡账单，二者不相加'
+      : '口径说明｜个人/他人是3X-UI应用层；机器估算来自3X-UI客户端合计';
 
   return [
     `账单重置｜${resetText}`,
     `订阅到期｜${expiryText}`,
-    `本月消耗｜↑ ${formatTrafficGB(summary.ownUp)} · ↓ ${formatTrafficGB(summary.ownDown)}`,
-    `他人消耗｜↑ ${formatTrafficGB(summary.otherUsersUp)} · ↓ ${formatTrafficGB(summary.otherUsersDown)}`,
-    `机器余量｜${formatTrafficGB(summary.machineRemaining)} / ${formatTrafficGB(summary.machineTotal)}`,
+    `个人用量(3X-UI)｜↑ ${formatTrafficGB(summary.ownUp)} · ↓ ${formatTrafficGB(summary.ownDown)} · 合 ${formatTrafficGB(summary.ownUsed)}`,
+    `他人用量(3X-UI)｜↑ ${formatTrafficGB(summary.otherUsersUp)} · ↓ ${formatTrafficGB(summary.otherUsersDown)} · 合 ${formatTrafficGB(summary.otherUsersUsed)}`,
+    `${machineLabel}｜已用 ${formatTrafficGB(summary.machineUsed)} · 剩 ${formatTrafficGB(summary.machineRemaining)} / ${formatTrafficGB(summary.machineTotal)}`,
+    sourceNote,
   ];
 }

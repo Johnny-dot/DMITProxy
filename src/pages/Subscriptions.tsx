@@ -12,6 +12,7 @@ import { Badge } from '@/src/components/ui/Badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/src/components/ui/Tabs';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { MirrorDownloadDialog } from '@/src/components/downloads/MirrorDownloadDialog';
+import { Modal } from '@/src/components/ui/Modal';
 import { useToast } from '@/src/components/ui/Toast';
 import {
   Copy,
@@ -742,87 +743,79 @@ export function SubscriptionsPage() {
         </Card>
       )}
 
-      {qrOpen && (
-        <div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
-          onClick={() => setQrOpen(false)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') setQrOpen(false);
-          }}
-        >
-          <Card
-            className="w-full max-w-md max-h-[90vh] overflow-auto"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <CardHeader className="space-y-3 pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <QrCode className="w-4 h-4 text-zinc-400" />
-                  {t('subscriptions.qrTitle')}
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setQrOpen(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              <CardDescription>{t('subscriptions.qrFor', { label: qrLabel })}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="surface-panel flex min-h-[280px] flex-col items-center justify-center p-4">
-                {qrLoading ? (
-                  <div className="flex flex-col items-center gap-3 text-zinc-400 text-sm">
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span>{t('subscriptions.qrGenerating')}</span>
-                  </div>
-                ) : qrError ? (
-                  <div className="space-y-3 text-center">
-                    <p className="text-sm text-red-400">{qrError}</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => copyToClipboard(qrText, 'qr-fallback-copy')}
-                    >
-                      <Copy className="w-4 h-4" />
-                      {t('subscriptions.copyFromModal')}
-                    </Button>
-                  </div>
-                ) : qrImage ? (
-                  <img
-                    src={qrImage}
-                    alt={`${qrLabel} QR`}
-                    className="w-full max-w-[320px] rounded-md border border-white/10"
-                  />
-                ) : (
-                  <p className="text-sm text-zinc-500">{t('subscriptions.qrEmpty')}</p>
-                )}
-              </div>
+      <Modal
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        ariaLabel={t('subscriptions.qrTitle')}
+        panelClassName="w-full max-w-md"
+      >
+        <Card className="max-h-[90vh] w-full overflow-auto">
+          <CardHeader className="space-y-3 pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-zinc-400" />
+                {t('subscriptions.qrTitle')}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setQrOpen(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <CardDescription>{t('subscriptions.qrFor', { label: qrLabel })}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="surface-panel flex min-h-[280px] flex-col items-center justify-center p-4">
+              {qrLoading ? (
+                <div className="flex flex-col items-center gap-3 text-zinc-400 text-sm">
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  <span>{t('subscriptions.qrGenerating')}</span>
+                </div>
+              ) : qrError ? (
+                <div className="space-y-3 text-center">
+                  <p className="text-sm text-red-400">{qrError}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => copyToClipboard(qrText, 'qr-fallback-copy')}
+                  >
+                    <Copy className="w-4 h-4" />
+                    {t('subscriptions.copyFromModal')}
+                  </Button>
+                </div>
+              ) : qrImage ? (
+                <img
+                  src={qrImage}
+                  alt={`${qrLabel} QR`}
+                  className="w-full max-w-[320px] rounded-md border border-white/10"
+                />
+              ) : (
+                <p className="text-sm text-zinc-500">{t('subscriptions.qrEmpty')}</p>
+              )}
+            </div>
 
-              <Input value={qrText} readOnly className="font-mono text-xs" />
+            <Input value={qrText} readOnly className="font-mono text-xs" />
 
-              <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => copyToClipboard(qrText, 'qr-copy')}
-                >
-                  <Copy className="w-4 h-4" />
-                  {t('subscriptions.copyFromModal')}
-                </Button>
-                <Button className="gap-2" onClick={() => setQrOpen(false)}>
-                  {t('subscriptions.closeQr')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => copyToClipboard(qrText, 'qr-copy')}
+              >
+                <Copy className="w-4 h-4" />
+                {t('subscriptions.copyFromModal')}
+              </Button>
+              <Button className="gap-2" onClick={() => setQrOpen(false)}>
+                {t('subscriptions.closeQr')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </Modal>
 
       <MirrorDownloadDialog
         open={Boolean(mirrorDialog)}

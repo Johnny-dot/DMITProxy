@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Ca
 import { Input } from '@/src/components/ui/Input';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
+import { Modal } from '@/src/components/ui/Modal';
 import { useToast } from '@/src/components/ui/Toast';
 import QRCode from 'qrcode';
 import {
@@ -748,12 +749,18 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
           )}
         </CardContent>
       </Card>
-      {activityModal && (
-        <div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
-          onClick={() => (isResettingTraffic ? undefined : setActivityModal(null))}
-        >
-          <div className="surface-card w-full max-w-xl" onClick={(e) => e.stopPropagation()}>
+      <Modal
+        open={Boolean(activityModal)}
+        onClose={() => {
+          if (isResettingTraffic) return;
+          setActivityModal(null);
+        }}
+        closeOnBackdrop={!isResettingTraffic}
+        ariaLabel={t('users.clientActivityTitle')}
+        panelClassName="w-full max-w-xl"
+      >
+        {activityModal ? (
+          <div className="surface-card w-full">
             <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border-subtle)] px-5 py-4">
               <div className="space-y-1">
                 <p className="font-semibold text-[var(--text-primary)]">
@@ -880,14 +887,20 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
               </div>
             </div>
           </div>
-        </div>
-      )}
-      {editClient && (
-        <div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
-          onClick={() => (isSavingClient ? undefined : setEditClient(null))}
-        >
-          <div className="surface-card w-full max-w-xl" onClick={(e) => e.stopPropagation()}>
+        ) : null}
+      </Modal>
+      <Modal
+        open={Boolean(editClient)}
+        onClose={() => {
+          if (isSavingClient) return;
+          setEditClient(null);
+        }}
+        closeOnBackdrop={!isSavingClient}
+        ariaLabel={t('users.editClientDetails')}
+        panelClassName="w-full max-w-xl"
+      >
+        {editClient ? (
+          <div className="surface-card w-full">
             <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border-subtle)] px-5 py-4">
               <div className="space-y-1">
                 <p className="font-semibold text-[var(--text-primary)]">
@@ -1054,8 +1067,8 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
               </Button>
             </div>
           </div>
-        </div>
-      )}
+        ) : null}
+      </Modal>
       {subModal &&
         (() => {
           const formats = [
@@ -1069,11 +1082,13 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
             { key: 'surge', label: 'Surge', format: 'surge' as const },
           ];
           return (
-            <div
-              className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm"
-              onClick={() => setSubModal(null)}
+            <Modal
+              open={Boolean(subModal)}
+              onClose={() => setSubModal(null)}
+              ariaLabel={subModal.username}
+              panelClassName="w-full max-w-md"
             >
-              <div className="surface-card w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+              <div className="surface-card w-full">
                 <div className="flex items-center justify-between border-b border-[color:var(--border-subtle)] px-5 py-4">
                   <div>
                     <p className="font-semibold text-[var(--text-primary)]">{subModal.username}</p>
@@ -1128,7 +1143,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                   </div>
                 )}
               </div>
-            </div>
+            </Modal>
           );
         })()}
     </div>
