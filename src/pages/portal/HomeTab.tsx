@@ -759,10 +759,10 @@ function MachineHealthCard({
           ))}
         </div>
       ) : (
-        <div className="relative grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
-          <div className="space-y-4">
-            <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.025))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] md:p-6">
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="relative space-y-4">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="min-h-[176px] rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.025))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] md:p-6">
+              <div className="flex h-full flex-col justify-between gap-5 sm:flex-row sm:items-end">
                 <div className="space-y-3">
                   <p className="section-kicker">{isZh ? '机器健康' : 'Machine health'}</p>
                   <div className="flex flex-wrap items-center gap-3">
@@ -798,85 +798,17 @@ function MachineHealthCard({
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              {resourceMeters.map((meter) => (
-                <ResourceMeter
-                  key={meter.label}
-                  icon={meter.icon}
-                  label={meter.label}
-                  value={meter.value}
-                  percent={meter.percent}
-                  tone={meter.tone}
-                />
-              ))}
-            </div>
-
-            <div className="rounded-[28px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-zinc-100">
-                    {isZh ? '实时网络节奏' : 'Live network rhythm'}
-                  </p>
-                  <p className="text-xs text-zinc-500">
-                    {isZh
-                      ? '展示当前上/下行吞吐，让用户知道线路有没有在跑。'
-                      : 'Shows current throughput so users can see whether the line is moving.'}
-                  </p>
-                </div>
-                <span className="rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1 text-[11px] font-medium text-sky-400">
-                  LIVE
-                </span>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {networkBars.map((bar) => (
-                  <div
-                    key={bar.key}
-                    className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[var(--surface-inline)] p-4"
-                  >
-                    <div
-                      className={cn(
-                        'pointer-events-none absolute inset-y-0 left-0 opacity-20 transition-all',
-                        bar.key === 'up' ? 'bg-sky-400' : 'bg-emerald-400',
-                      )}
-                      style={{ width: `${bar.percent}%` }}
-                    />
-                    <div className="relative flex items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-2 text-xs text-zinc-400">
-                        {bar.key === 'up' ? (
-                          <ArrowUp className="h-4 w-4 text-sky-400" />
-                        ) : (
-                          <ArrowDown className="h-4 w-4 text-emerald-400" />
-                        )}
-                        {bar.key === 'up' ? (isZh ? '上行' : 'Upload') : isZh ? '下行' : 'Download'}
-                      </span>
-                      <span className="font-mono text-lg font-semibold tabular-nums text-zinc-50">
-                        {formatSpeed(bar.value)}
-                      </span>
-                    </div>
-                    <div className="relative mt-3 h-1.5 overflow-hidden rounded-full bg-zinc-800/70">
-                      <div
-                        className={cn(
-                          'h-full rounded-full transition-all',
-                          bar.key === 'up' ? 'bg-sky-400' : 'bg-emerald-400',
-                        )}
-                        style={{ width: `${bar.percent}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-[30px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-5">
-              <div className="flex items-start justify-between gap-4">
+            <div className="min-h-[176px] rounded-[30px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-5">
+              <div className="flex h-full items-center justify-between gap-5">
                 <div>
                   <p className="section-kicker">{isZh ? '流量水位' : 'Traffic level'}</p>
-                  <p className="mt-2 text-sm leading-6 text-zinc-500">
+                  <p className="mt-3 text-2xl font-semibold tabular-nums text-zinc-50">
+                    {trafficTotal > 0 ? formatTraffic(trafficRemaining) : '--'}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">
                     {isZh
-                      ? `同步：${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`
-                      : `Synced: ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`}
+                      ? `剩余流量 · ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`
+                      : `Remaining · ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`}
                   </p>
                 </div>
                 <div
@@ -895,8 +827,100 @@ function MachineHealthCard({
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {resourceMeters.map((meter) => (
+              <ResourceMeter
+                key={meter.label}
+                icon={meter.icon}
+                label={meter.label}
+                value={meter.value}
+                percent={meter.percent}
+                tone={meter.tone}
+              />
+            ))}
+            <ServiceStabilityTile isZh={isZh} serverStatus={serverStatus} />
+          </div>
+
+          <div className="grid items-stretch gap-4 xl:grid-cols-2">
+            <div className="min-h-[258px] rounded-[28px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-5">
+              <div className="mb-5 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-zinc-100">
+                    {isZh ? '实时网络节奏' : 'Live network rhythm'}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                    {isZh
+                      ? '当前上/下行吞吐，左右等宽对比。'
+                      : 'Current up/down throughput with balanced comparison.'}
+                  </p>
+                </div>
+                <span className="rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1 text-[11px] font-medium text-sky-400">
+                  LIVE
+                </span>
+              </div>
+              <div className="grid h-[172px] gap-3 sm:grid-cols-2">
+                {networkBars.map((bar) => (
+                  <div
+                    key={bar.key}
+                    className="relative flex min-h-0 flex-col justify-between overflow-hidden rounded-[24px] border border-white/10 bg-[var(--surface-inline)] p-4"
+                  >
+                    <div
+                      className={cn(
+                        'pointer-events-none absolute inset-y-0 left-0 opacity-20 transition-all',
+                        bar.key === 'up' ? 'bg-sky-400' : 'bg-emerald-400',
+                      )}
+                      style={{ width: `${bar.percent}%` }}
+                    />
+                    <div className="relative flex items-center justify-between gap-3">
+                      <span className="inline-flex items-center gap-2 text-xs text-zinc-400">
+                        {bar.key === 'up' ? (
+                          <ArrowUp className="h-4 w-4 text-sky-400" />
+                        ) : (
+                          <ArrowDown className="h-4 w-4 text-emerald-400" />
+                        )}
+                        {bar.key === 'up' ? (isZh ? '上行' : 'Upload') : isZh ? '下行' : 'Download'}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="font-mono text-xl font-semibold tabular-nums text-zinc-50">
+                        {formatSpeed(bar.value)}
+                      </span>
+                      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-zinc-800/70">
+                        <div
+                          className={cn(
+                            'h-full rounded-full transition-all',
+                            bar.key === 'up' ? 'bg-sky-400' : 'bg-emerald-400',
+                          )}
+                          style={{ width: `${bar.percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="min-h-[258px] rounded-[28px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-5">
+              <div className="mb-5 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-zinc-100">
+                    {isZh ? 'DMIT 流量账单' : 'DMIT traffic billing'}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                    {isZh
+                      ? `同步：${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`
+                      : `Synced: ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`}
+                  </p>
+                </div>
+                <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-400">
+                  {dmitUsagePercent == null ? '--' : `${dmitUsagePercent.toFixed(1)}%`}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <MiniStat
                   label={isZh ? '机器剩余' : 'Remaining'}
                   value={trafficTotal > 0 ? formatTraffic(trafficRemaining) : '--'}
@@ -958,39 +982,6 @@ function MachineHealthCard({
                 </p>
               )}
             </div>
-
-            <div className="rounded-[28px] border border-[color:var(--border-subtle)] bg-[linear-gradient(135deg,var(--surface-panel),rgba(255,255,255,0.035))] p-4">
-              <div className="flex items-center gap-3">
-                <span
-                  className={cn(
-                    'flex h-11 w-11 items-center justify-center rounded-[18px] border',
-                    serverStatus?.xray.state === 'running'
-                      ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-400'
-                      : 'border-red-400/25 bg-red-500/10 text-red-400',
-                  )}
-                >
-                  <Clock className="h-4 w-4" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-zinc-100">
-                    {isZh ? '服务稳定性' : 'Service stability'}
-                  </p>
-                  <p className="truncate text-xs text-zinc-500">
-                    {serverStatus
-                      ? serverStatus.xray.state === 'running'
-                        ? isZh
-                          ? `Xray 正常运行 · ${serverStatus.xray.version}`
-                          : `Xray running · ${serverStatus.xray.version}`
-                        : isZh
-                          ? 'Xray 未运行'
-                          : 'Xray is not running'
-                      : isZh
-                        ? '等待服务器状态'
-                        : 'Waiting for server status'}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -1021,7 +1012,7 @@ function ResourceMeter({
   const toneClass = PRESSURE_TONE[tone];
 
   return (
-    <div className="rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4">
+    <div className="min-h-[132px] rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4">
       <div className="flex items-center justify-between gap-2 text-sm">
         <span className="inline-flex items-center gap-2 text-zinc-400">
           {icon}
@@ -1030,11 +1021,62 @@ function ResourceMeter({
         <span className={cn('font-medium tabular-nums', toneClass.text)}>{percent}%</span>
       </div>
       <p className="mt-2 truncate text-xs tabular-nums text-zinc-500">{value}</p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800/80">
+      <div className="mt-7 h-2 overflow-hidden rounded-full bg-zinc-800/80">
         <div
           className={cn('h-full rounded-full transition-all', toneClass.bg)}
           style={{ width: `${percent}%` }}
         />
+      </div>
+    </div>
+  );
+}
+
+function ServiceStabilityTile({
+  isZh,
+  serverStatus,
+}: {
+  isZh: boolean;
+  serverStatus?: ServerStatus | null;
+}) {
+  return (
+    <div className="min-h-[132px] rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4">
+      <div className="flex h-full flex-col justify-between">
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <span className="inline-flex items-center gap-2 text-zinc-400">
+            <Clock className="h-4 w-4" />
+            {isZh ? '服务' : 'Service'}
+          </span>
+          <span
+            className={cn(
+              'h-2 w-2 rounded-full',
+              serverStatus?.xray.state === 'running' ? 'bg-emerald-400' : 'bg-red-400',
+            )}
+          />
+        </div>
+        <div>
+          <p className="truncate text-xs text-zinc-500">
+            {serverStatus
+              ? serverStatus.xray.state === 'running'
+                ? isZh
+                  ? `Xray ${serverStatus.xray.version}`
+                  : `Xray ${serverStatus.xray.version}`
+                : isZh
+                  ? 'Xray 未运行'
+                  : 'Xray stopped'
+              : isZh
+                ? '等待状态'
+                : 'Waiting'}
+          </p>
+          <p className="mt-2 text-lg font-semibold text-zinc-50">
+            {serverStatus?.xray.state === 'running'
+              ? isZh
+                ? '正常'
+                : 'Running'
+              : isZh
+                ? '异常'
+                : 'Stopped'}
+          </p>
+        </div>
       </div>
     </div>
   );
