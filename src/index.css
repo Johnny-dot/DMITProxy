@@ -9,8 +9,8 @@
   --radius-card: 30px;
   --radius-panel: 24px;
   --radius-control: 20px;
-  --glass-blur: 24px;
-  --glass-blur-soft: 18px;
+  --glass-blur: 34px;
+  --glass-blur-soft: 24px;
   --accent: #4d7cff;
   --accent-strong: #3f6de8;
   --accent-contrast: #f9fbff;
@@ -31,31 +31,36 @@
 }
 
 :root[data-theme='light'] {
-  --page-bg: #dce4ef;
-  --page-bg-deep: #eef3f8;
-  --page-glow-1: rgba(255, 255, 255, 0.88);
-  --page-glow-2: rgba(121, 156, 255, 0.26);
-  --page-glow-3: rgba(78, 199, 185, 0.2);
-  --page-glow-4: rgba(255, 196, 160, 0.2);
-  --surface-card: rgba(255, 255, 255, 0.48);
-  --surface-card-strong: rgba(249, 252, 255, 0.74);
-  --surface-panel: rgba(255, 255, 255, 0.34);
-  --surface-panel-strong: rgba(246, 250, 255, 0.56);
-  --surface-inline: rgba(255, 255, 255, 0.66);
-  --surface-strong: rgba(255, 255, 255, 0.78);
-  --surface-contrast: rgba(232, 239, 248, 0.82);
+  --page-bg: #d7e0ee;
+  --page-bg-deep: #f5f8fc;
+  --page-glow-1: rgba(255, 255, 255, 0.98);
+  --page-glow-2: rgba(111, 151, 255, 0.34);
+  --page-glow-3: rgba(58, 206, 190, 0.25);
+  --page-glow-4: rgba(255, 175, 127, 0.24);
+  --surface-card: rgba(255, 255, 255, 0.3);
+  --surface-card-strong: rgba(255, 255, 255, 0.58);
+  --surface-panel: rgba(255, 255, 255, 0.22);
+  --surface-panel-strong: rgba(255, 255, 255, 0.42);
+  --surface-inline: rgba(255, 255, 255, 0.46);
+  --surface-strong: rgba(255, 255, 255, 0.68);
+  --surface-contrast: rgba(222, 232, 244, 0.72);
   --text-primary: #122033;
   --text-secondary: #415168;
   --text-tertiary: #6f7f92;
   --text-inverse: #f9fbff;
-  --border-subtle: rgba(255, 255, 255, 0.48);
-  --border-strong: rgba(255, 255, 255, 0.76);
-  --glass-specular: rgba(255, 255, 255, 0.44);
-  --glass-edge: rgba(255, 255, 255, 0.7);
+  --border-subtle: rgba(255, 255, 255, 0.52);
+  --border-strong: rgba(255, 255, 255, 0.82);
+  --glass-specular: rgba(255, 255, 255, 0.62);
+  --glass-edge: rgba(255, 255, 255, 0.88);
+  --glass-rim: rgba(255, 255, 255, 0.9);
+  --glass-rim-shadow: rgba(55, 82, 126, 0.12);
+  --glass-caustic: rgba(255, 255, 255, 0.34);
+  --glass-depth: rgba(85, 110, 150, 0.1);
+  --glass-tint: rgba(236, 245, 255, 0.24);
   --overlay: rgba(18, 27, 42, 0.26);
-  --shadow-card: 0 24px 60px rgba(67, 93, 127, 0.18);
-  --shadow-soft: 0 14px 32px rgba(67, 93, 127, 0.12);
-  --shadow-strong: 0 36px 88px rgba(54, 79, 113, 0.24);
+  --shadow-card: 0 28px 74px rgba(67, 93, 127, 0.2);
+  --shadow-soft: 0 16px 40px rgba(67, 93, 127, 0.13);
+  --shadow-strong: 0 40px 104px rgba(54, 79, 113, 0.26);
   --color-zinc-50: #122033;
   --color-zinc-100: #213146;
   --color-zinc-200: #34445a;
@@ -93,31 +98,36 @@
 }
 
 :root[data-theme='dark'] {
-  --page-bg: #0b1220;
-  --page-bg-deep: #141d2d;
-  --page-glow-1: rgba(56, 103, 255, 0.28);
-  --page-glow-2: rgba(90, 208, 190, 0.22);
-  --page-glow-3: rgba(255, 142, 95, 0.16);
-  --page-glow-4: rgba(255, 255, 255, 0.08);
-  --surface-card: rgba(16, 25, 38, 0.58);
-  --surface-card-strong: rgba(33, 44, 60, 0.72);
-  --surface-panel: rgba(15, 24, 37, 0.42);
-  --surface-panel-strong: rgba(32, 42, 57, 0.56);
-  --surface-inline: rgba(33, 45, 61, 0.66);
-  --surface-strong: rgba(38, 50, 68, 0.72);
+  --page-bg: #09111f;
+  --page-bg-deep: #172234;
+  --page-glow-1: rgba(63, 109, 255, 0.36);
+  --page-glow-2: rgba(74, 221, 200, 0.28);
+  --page-glow-3: rgba(255, 142, 95, 0.2);
+  --page-glow-4: rgba(255, 255, 255, 0.1);
+  --surface-card: rgba(20, 31, 47, 0.46);
+  --surface-card-strong: rgba(42, 55, 76, 0.58);
+  --surface-panel: rgba(20, 31, 47, 0.32);
+  --surface-panel-strong: rgba(42, 55, 76, 0.42);
+  --surface-inline: rgba(42, 55, 76, 0.54);
+  --surface-strong: rgba(48, 63, 84, 0.62);
   --surface-contrast: rgba(52, 65, 82, 0.82);
   --text-primary: #edf4ff;
   --text-secondary: #bdc9d8;
   --text-tertiary: #8d9ab0;
   --text-inverse: #0d1523;
-  --border-subtle: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.24);
-  --glass-specular: rgba(255, 255, 255, 0.12);
-  --glass-edge: rgba(255, 255, 255, 0.18);
+  --border-subtle: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.3);
+  --glass-specular: rgba(255, 255, 255, 0.18);
+  --glass-edge: rgba(255, 255, 255, 0.28);
+  --glass-rim: rgba(255, 255, 255, 0.36);
+  --glass-rim-shadow: rgba(0, 0, 0, 0.34);
+  --glass-caustic: rgba(255, 255, 255, 0.11);
+  --glass-depth: rgba(0, 0, 0, 0.16);
+  --glass-tint: rgba(157, 187, 255, 0.1);
   --overlay: rgba(5, 10, 17, 0.56);
-  --shadow-card: 0 26px 64px rgba(0, 0, 0, 0.34);
-  --shadow-soft: 0 16px 32px rgba(0, 0, 0, 0.24);
-  --shadow-strong: 0 38px 96px rgba(0, 0, 0, 0.42);
+  --shadow-card: 0 30px 82px rgba(0, 0, 0, 0.42);
+  --shadow-soft: 0 18px 46px rgba(0, 0, 0, 0.28);
+  --shadow-strong: 0 42px 112px rgba(0, 0, 0, 0.5);
   --accent: #8fb2ff;
   --accent-strong: #a8c2ff;
   --accent-contrast: #0f1a2c;
@@ -191,11 +201,18 @@
     @apply min-h-screen font-sans antialiased transition-colors duration-300;
     position: relative;
     background:
-      radial-gradient(circle at 12% 18%, var(--page-glow-1) 0%, transparent 28%),
-      radial-gradient(circle at 85% 16%, var(--page-glow-2) 0%, transparent 30%),
-      radial-gradient(circle at 84% 84%, var(--page-glow-3) 0%, transparent 28%),
-      radial-gradient(circle at 15% 82%, var(--page-glow-4) 0%, transparent 34%),
-      linear-gradient(135deg, var(--page-bg-deep) 0%, var(--page-bg) 48%, var(--page-bg-deep) 100%);
+      radial-gradient(circle at 8% 12%, var(--page-glow-1) 0%, transparent 26%),
+      radial-gradient(circle at 86% 10%, var(--page-glow-2) 0%, transparent 31%),
+      radial-gradient(circle at 88% 82%, var(--page-glow-3) 0%, transparent 30%),
+      radial-gradient(circle at 12% 88%, var(--page-glow-4) 0%, transparent 34%),
+      linear-gradient(
+        115deg,
+        rgba(255, 255, 255, 0.24) 0%,
+        transparent 18% 62%,
+        rgba(255, 255, 255, 0.12) 78%,
+        transparent 100%
+      ),
+      linear-gradient(135deg, var(--page-bg-deep) 0%, var(--page-bg) 46%, var(--page-bg-deep) 100%);
     color: var(--text-primary);
     letter-spacing: -0.01em;
   }
@@ -206,17 +223,38 @@
     inset: 0;
     pointer-events: none;
     background:
+      radial-gradient(ellipse at 28% 8%, rgba(255, 255, 255, 0.28), transparent 36%),
       linear-gradient(
         120deg,
-        rgba(255, 255, 255, 0.14) 0%,
-        transparent 18%,
-        transparent 54%,
-        rgba(255, 255, 255, 0.08) 74%,
+        rgba(255, 255, 255, 0.16) 0%,
+        transparent 16%,
+        transparent 52%,
+        rgba(255, 255, 255, 0.1) 72%,
         transparent 100%
       ),
       radial-gradient(circle at top, rgba(255, 255, 255, 0.14), transparent 40%);
     opacity: 0.5;
     mix-blend-mode: screen;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        100deg,
+        transparent 0 18%,
+        rgba(255, 255, 255, 0.08) 19%,
+        transparent 21% 52%,
+        rgba(255, 255, 255, 0.06) 54%,
+        transparent 56%
+      ),
+      radial-gradient(circle at 45% 35%, rgba(255, 255, 255, 0.08), transparent 24%),
+      radial-gradient(circle at 62% 68%, rgba(255, 255, 255, 0.06), transparent 22%);
+    opacity: 0.42;
+    mix-blend-mode: soft-light;
   }
 
   #root {
@@ -260,49 +298,116 @@
   .glass-pill,
   .glass-nav-item,
   .glass-nav-item-active {
-    border: 1px solid var(--border-subtle);
-    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    position: relative;
+    border: 1px solid color-mix(in oklab, var(--border-subtle), transparent 10%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(210%) brightness(1.08);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(210%) brightness(1.08);
+    isolation: isolate;
   }
 
   .surface-card {
     background:
+      radial-gradient(ellipse at 18% 0%, var(--glass-caustic) 0%, transparent 46%),
       linear-gradient(
-        180deg,
+        135deg,
         var(--glass-specular) 0%,
-        rgba(255, 255, 255, 0.04) 28%,
-        rgba(255, 255, 255, 0.01) 100%
+        rgba(255, 255, 255, 0.08) 18%,
+        rgba(255, 255, 255, 0.015) 50%,
+        var(--glass-depth) 100%
+      ),
+      linear-gradient(
+        160deg,
+        var(--surface-card-strong) 0%,
+        var(--glass-tint) 42%,
+        var(--surface-card) 100%
       ),
       linear-gradient(135deg, var(--surface-card-strong) 0%, var(--surface-card) 100%);
     border-radius: var(--radius-card);
     box-shadow:
-      inset 0 1px 0 var(--glass-edge),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.06),
-      0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 1px 0 var(--glass-rim),
+      inset 1px 0 0 rgba(255, 255, 255, 0.18),
+      inset -1px 0 0 rgba(255, 255, 255, 0.08),
+      inset 0 -1px 0 var(--glass-rim-shadow),
+      0 1px 0 rgba(255, 255, 255, 0.18),
       var(--shadow-card);
   }
 
   .surface-panel {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 100%),
+      radial-gradient(ellipse at 15% 0%, var(--glass-caustic) 0%, transparent 44%),
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.035) 45%,
+        var(--glass-depth) 100%
+      ),
       linear-gradient(135deg, var(--surface-panel-strong) 0%, var(--surface-panel) 100%);
     border-radius: var(--radius-panel);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+      inset 0 1px 0 color-mix(in oklab, var(--glass-rim), transparent 20%),
+      inset 0 -1px 0 var(--glass-rim-shadow),
       var(--shadow-soft);
   }
 
   .surface-inline,
   .glass-pill {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 100%),
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.24) 0%,
+        rgba(255, 255, 255, 0.05) 52%,
+        var(--glass-depth) 100%
+      ),
       var(--surface-inline);
     border-radius: var(--radius-control);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.28),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+      inset 0 1px 0 color-mix(in oklab, var(--glass-rim), transparent 18%),
+      inset 0 -1px 0 var(--glass-rim-shadow),
       var(--shadow-soft);
+  }
+
+  .surface-card::before,
+  .surface-panel::before,
+  .surface-inline::before,
+  .glass-pill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        115deg,
+        rgba(255, 255, 255, 0.32) 0%,
+        transparent 22% 68%,
+        rgba(255, 255, 255, 0.08) 100%
+      ),
+      radial-gradient(circle at 82% 14%, rgba(255, 255, 255, 0.22), transparent 26%);
+    opacity: 0.46;
+    mix-blend-mode: soft-light;
+  }
+
+  .surface-card::after,
+  .surface-panel::after,
+  .glass-pill::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+      inset 0 -18px 36px rgba(255, 255, 255, 0.035);
+  }
+
+  .surface-card > *,
+  .surface-panel > *,
+  .surface-inline > *,
+  .glass-pill > * {
+    position: relative;
+    z-index: 1;
   }
 
   .glass-pill {
@@ -311,7 +416,7 @@
 
   .glass-progress-track {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.03) 100%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.04) 100%),
       var(--surface-inline);
     border: 1px solid var(--border-subtle);
     border-radius: 999px;
@@ -334,7 +439,7 @@
 
   .glass-nav-item:hover {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 100%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.035) 100%),
       var(--surface-panel);
     border-color: var(--border-subtle);
     color: var(--text-primary);
@@ -344,7 +449,7 @@
 
   .glass-nav-item-active {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 100%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.055) 100%),
       var(--surface-strong);
     border-color: var(--border-strong);
     color: var(--text-primary);
