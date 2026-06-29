@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { cn } from '@/src/utils/cn';
 import type { UnlockServiceId } from '@/src/types/nodeQuality';
 
@@ -7,17 +7,62 @@ interface UnlockServiceIconProps {
   className?: string;
 }
 
-const OFFICIAL_FAVICONS: Record<UnlockServiceId, string> = {
-  netflix: 'https://www.netflix.com/favicon.ico',
-  chatgpt: 'https://chatgpt.com/favicon.ico',
-  claude: 'https://claude.ai/favicon.svg',
-  tiktok: 'https://www.tiktok.com/favicon.ico',
-  instagram: 'https://www.instagram.com/favicon.ico',
-  spotify: 'https://open.spotify.com/favicon.ico',
-  youtube: 'https://www.youtube.com/favicon.ico',
-  disneyplus: 'https://www.disneyplus.com/favicon.ico',
-  primevideo: 'https://www.primevideo.com/favicon.ico',
-  x: 'https://x.com/favicon.ico',
+const OFFICIAL_ICON_SOURCES: Record<UnlockServiceId, string[]> = {
+  netflix: [
+    'https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.png',
+    'https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2023.ico',
+    'https://www.netflix.com/favicon.ico',
+  ],
+  chatgpt: [
+    'https://cdn.oaistatic.com/assets/favicon-miwirzcw.ico',
+    'https://chatgpt.com/apple-touch-icon.png',
+    'https://chatgpt.com/favicon.ico',
+  ],
+  claude: [
+    'https://claude.ai/apple-touch-icon.png',
+    'https://claude.ai/favicon.svg',
+    'https://claude.ai/favicon.ico',
+  ],
+  tiktok: [
+    'https://sf16-sg.tiktokcdn.com/obj/eden-sg/uvkuhyieh7lpqpbj/pwa/512x512.png',
+    'https://sf16-sg.tiktokcdn.com/obj/eden-sg/uvkuhyieh7lpqpbj/pwa/384x384.png',
+    'https://sf16-sg.tiktokcdn.com/obj/eden-sg/uvkuhyieh7lpqpbj/pwa/192x192.png',
+    'https://www.tiktok.com/favicon.ico',
+  ],
+  instagram: [
+    'https://static.cdninstagram.com/rsrc.php/yr/r/rzWiSjZRxk5.webp',
+    'https://static.cdninstagram.com/rsrc.php/yw/r/icwX0xAk0pz.webp',
+    'https://static.cdninstagram.com/rsrc.php/y4/r/QaBlI0OZiks.ico',
+  ],
+  spotify: [
+    'https://open.spotifycdn.com/cdn/images/icons/Spotify_MWP_512.50dd387d.png',
+    'https://open.spotifycdn.com/cdn/images/icons/Spotify_MWP_384.b98158a0.png',
+    'https://open.spotifycdn.com/cdn/images/icons/Spotify_MWP_192.ebf939fd.png',
+    'https://open.spotifycdn.com/cdn/images/favicon32.b64ecc03.png',
+  ],
+  youtube: [
+    'https://www.gstatic.com/youtube/img/web/maskable/logo_512x512.png',
+    'https://www.gstatic.com/youtube/img/web/maskable/logo_192x192.png',
+    'https://www.gstatic.com/youtube/img/branding/favicon/favicon_192x192_v2.png',
+    'https://www.youtube.com/favicon.ico',
+  ],
+  disneyplus: [
+    'https://static-assets.bamgrid.com/product/disneyplus/favicons/msftpwa-512x512-aurora.b544236c6734eb78083b1f4f31d6f873.png',
+    'https://static-assets.bamgrid.com/product/disneyplus/favicons/msftpwa-192x192-aurora.97f08a1eb58995c81687d0cf3f953796.png',
+    'https://static-assets.bamgrid.com/product/disneyplus/favicons/disPlus-favicon-180x180.7d56f648dc95f591721935193bc827cb.png',
+    'https://www.disneyplus.com/favicon.ico',
+  ],
+  primevideo: [
+    'https://m.media-amazon.com/images/G/01/digital/video/DVUI/favicons/apple-touch-icon.png',
+    'https://m.media-amazon.com/images/G/01/digital/video/DVUI/favicons/apple-touch-icon-152x152.png',
+    'https://m.media-amazon.com/images/G/01/digital/video/DVUI/favicons/favicon.png',
+    'https://www.primevideo.com/favicon.ico',
+  ],
+  x: [
+    'https://abs.twimg.com/responsive-web/client-web/icon-ios.77d25eba.png',
+    'https://abs.twimg.com/responsive-web/client-web/icon-svg.ea5ff4aa.svg',
+    'https://x.com/favicon.ico',
+  ],
 };
 
 function Wrapper({
@@ -33,7 +78,7 @@ function Wrapper({
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10',
+        'inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-[9px]',
         className,
       )}
       style={style}
@@ -87,10 +132,30 @@ function FallbackIcon({ service, className }: UnlockServiceIconProps) {
           <path d="M12 15.7v4.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           <path d="M3.7 12h4.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           <path d="M15.7 12h4.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="m6.1 6.1 3.2 3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="m14.7 14.7 3.2 3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="m17.9 6.1-3.2 3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="m9.3 14.7-3.2 3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path
+            d="m6.1 6.1 3.2 3.2"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+          <path
+            d="m14.7 14.7 3.2 3.2"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+          <path
+            d="m17.9 6.1-3.2 3.2"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+          <path
+            d="m9.3 14.7-3.2 3.2"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
         </svg>
       </Wrapper>
     );
@@ -243,20 +308,25 @@ function FallbackIcon({ service, className }: UnlockServiceIconProps) {
 }
 
 export function UnlockServiceIcon({ service, className }: UnlockServiceIconProps) {
-  const [useFallback, setUseFallback] = useState(false);
-  const src = OFFICIAL_FAVICONS[service];
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const sources = OFFICIAL_ICON_SOURCES[service];
+  const src = sources[sourceIndex];
 
-  if (!useFallback && src) {
+  useEffect(() => {
+    setSourceIndex(0);
+  }, [service]);
+
+  if (src) {
     return (
-      <Wrapper className={cn('bg-white/95', className)}>
+      <Wrapper className={cn('bg-transparent', className)}>
         <img
-          key={service}
+          key={`${service}-${sourceIndex}`}
           src={src}
           alt=""
-          className="h-5 w-5 rounded-[5px] object-contain"
+          className="h-8 w-8 rounded-[8px] object-cover"
           loading="lazy"
           referrerPolicy="no-referrer"
-          onError={() => setUseFallback(true)}
+          onError={() => setSourceIndex((current) => current + 1)}
         />
       </Wrapper>
     );
