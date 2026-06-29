@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, ChevronDown, Copy, Download, QrCode } from 'lucide-react';
+import {
+  Activity,
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  Check,
+  ChevronDown,
+  Clock,
+  Copy,
+  Cpu,
+  Database,
+  Download,
+  HardDrive,
+  QrCode,
+} from 'lucide-react';
 import type { ServerStatus } from '@/src/api/xui';
 import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
@@ -10,6 +24,12 @@ import { formatTraffic } from '@/src/utils/xuiClients';
 import { getFraudRiskMeta } from '@/src/utils/nodeQuality';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import type { ClientStats, PortalSettings, PortalTab, PortalUsageSummary, UserInfo } from './types';
+import {
+  buildNetworkTrendBars,
+  formatPortalUptime,
+  getMachinePressureState,
+  resourceUsagePercent,
+} from './machineStatus';
 import { NodeQualityCard } from './NodeQualityCard';
 import { QrCodeCanvas } from './SubscriptionTabCards';
 
@@ -40,6 +60,7 @@ export function HomeTab({
   subscriptionUniversalUrl,
   clientStats,
   usageSummary,
+  serverStatus,
   nodeQuality,
   isStatsLoading,
   onRefreshNodeQuality,
@@ -134,6 +155,15 @@ export function HomeTab({
         onCopy={onCopy}
         onSetSection={onSetSection}
       />
+
+      {hasSubscription || serverStatus || isStatsLoading ? (
+        <MachineHealthCard
+          isZh={isZh}
+          serverStatus={serverStatus}
+          usageSummary={usageSummary}
+          isLoading={isStatsLoading}
+        />
+      ) : null}
 
       {hasSubscription || showAnnouncement ? (
         <section
@@ -555,6 +585,369 @@ function UsageDetailCard({
         </p>
       )}
     </section>
+  );
+}
+
+const PRESSURE_TONE = {
+  good: {
+    border: 'border-emerald-500/25',
+    text: 'text-emerald-400',
+    bg: 'bg-emerald-500',
+    soft: 'bg-emerald-500/10',
+  },
+  warn: {
+    border: 'border-amber-500/30',
+    text: 'text-amber-400',
+    bg: 'bg-amber-500',
+    soft: 'bg-amber-500/10',
+  },
+  danger: {
+    border: 'border-red-500/35',
+    text: 'text-red-400',
+    bg: 'bg-red-500',
+    soft: 'bg-red-500/10',
+  },
+  unknown: {
+    border: 'border-[var(--border-subtle)]',
+    text: 'text-zinc-400',
+    bg: 'bg-zinc-500',
+    soft: 'bg-zinc-500/10',
+  },
+} as const;
+
+function formatSpeed(bytesPerSecond: number): string {
+  const safe = Math.max(0, bytesPerSecond);
+  const mb = safe / 1024 ** 2;
+  if (mb >= 1) return `${mb.toFixed(1)} MB/s`;
+  return `${(safe / 1024).toFixed(1)} KB/s`;
+}
+
+function formatDateTime(ms: number | null | undefined, isZh: boolean): string {
+  if (!ms) return isZh ? '暂未同步' : 'Not synced';
+  return new Date(ms).toLocaleString(isZh ? 'zh-CN' : 'en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function MachineHealthCard({
+  isZh,
+  serverStatus,
+  usageSummary,
+  isLoading,
+}: {
+  isZh: boolean;
+  serverStatus?: ServerStatus | null;
+  usageSummary?: PortalUsageSummary | null;
+  isLoading?: boolean;
+}) {
+  const pressure = getMachinePressureState(serverStatus);
+  const tone = PRESSURE_TONE[pressure.level];
+  const pressureLabel = {
+    good: isZh ? '健康' : 'Healthy',
+    warn: isZh ? '有压力' : 'Under load',
+    danger: isZh ? '压力高' : 'High pressure',
+    unknown: isZh ? '等待数据' : 'Waiting',
+  }[pressure.level];
+  const networkBars = buildNetworkTrendBars(serverStatus);
+  const hasTrafficSplit =
+    usageSummary?.machineInbound != null ||
+    usageSummary?.machineOutbound != null ||
+    usageSummary?.machineUsagePercentage != null;
+  const inboundTraffic = usageSummary?.machineInbound ?? 0;
+  const outboundTraffic = usageSummary?.machineOutbound ?? 0;
+  const trafficSplitTotal = Math.max(inboundTraffic + outboundTraffic, 1);
+  const inboundPercent = Math.round((inboundTraffic / trafficSplitTotal) * 100);
+  const outboundPercent = Math.max(0, 100 - inboundPercent);
+  const dmitUsagePercent =
+    usageSummary?.machineUsagePercentage ??
+    (usageSummary && usageSummary.machineTotal > 0
+      ? Math.min((usageSummary.machineUsed / usageSummary.machineTotal) * 100, 100)
+      : null);
+
+  return (
+    <section className={cn('surface-card overflow-hidden border p-6 md:p-7', tone.border)}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <p className="section-kicker">{isZh ? '机器健康' : 'Machine health'}</p>
+          <h3 className="text-xl font-semibold tracking-tight text-zinc-50">
+            {isZh ? '当前网络与服务器状态' : 'Live network and server status'}
+          </h3>
+          <p className="max-w-2xl text-sm leading-6 text-zinc-500">
+            {isZh
+              ? '这里展示实时网络速率、资源压力、DMIT 账单流量和服务稳定运行时长。'
+              : 'See live network speed, resource pressure, DMIT billing traffic, and uptime.'}
+          </p>
+        </div>
+        <div className={cn('rounded-2xl px-4 py-3 text-right', tone.soft)}>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+            {isZh ? '综合压力' : 'Pressure'}
+          </p>
+          <p className={cn('mt-1 text-2xl font-semibold tabular-nums', tone.text)}>
+            {isLoading ? '--' : pressure.level === 'unknown' ? '--' : `${pressure.percent}%`}
+          </p>
+          <p className={cn('text-xs font-medium', tone.text)}>{pressureLabel}</p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <Skeleton key={item} className="h-32 rounded-3xl" />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <ResourceMeter
+                icon={<Cpu className="h-4 w-4" />}
+                label={isZh ? 'CPU' : 'CPU'}
+                value={serverStatus ? `${serverStatus.cpu.toFixed(1)}%` : '--'}
+                percent={serverStatus ? Math.round(serverStatus.cpu) : 0}
+                tone={
+                  serverStatus && serverStatus.cpu >= 85
+                    ? 'danger'
+                    : serverStatus && serverStatus.cpu >= 65
+                      ? 'warn'
+                      : 'good'
+                }
+              />
+              <ResourceMeter
+                icon={<Database className="h-4 w-4" />}
+                label={isZh ? '内存' : 'Memory'}
+                value={
+                  serverStatus
+                    ? `${formatTraffic(serverStatus.mem.current)} / ${formatTraffic(serverStatus.mem.total)}`
+                    : '--'
+                }
+                percent={
+                  serverStatus
+                    ? resourceUsagePercent(serverStatus.mem.current, serverStatus.mem.total)
+                    : 0
+                }
+                tone={
+                  serverStatus &&
+                  resourceUsagePercent(serverStatus.mem.current, serverStatus.mem.total) >= 85
+                    ? 'danger'
+                    : serverStatus &&
+                        resourceUsagePercent(serverStatus.mem.current, serverStatus.mem.total) >= 65
+                      ? 'warn'
+                      : 'good'
+                }
+              />
+              <ResourceMeter
+                icon={<HardDrive className="h-4 w-4" />}
+                label={isZh ? '磁盘' : 'Disk'}
+                value={
+                  serverStatus
+                    ? `${formatTraffic(serverStatus.disk.current)} / ${formatTraffic(serverStatus.disk.total)}`
+                    : '--'
+                }
+                percent={
+                  serverStatus
+                    ? resourceUsagePercent(serverStatus.disk.current, serverStatus.disk.total)
+                    : 0
+                }
+                tone={
+                  serverStatus &&
+                  resourceUsagePercent(serverStatus.disk.current, serverStatus.disk.total) >= 85
+                    ? 'danger'
+                    : serverStatus &&
+                        resourceUsagePercent(serverStatus.disk.current, serverStatus.disk.total) >=
+                          65
+                      ? 'warn'
+                      : 'good'
+                }
+              />
+            </div>
+
+            <div className="surface-panel space-y-4 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-zinc-100">
+                    {isZh ? '实时网络统计图' : 'Live network chart'}
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    {isZh ? '当前上/下行吞吐，对齐机器实时状态。' : 'Current up/down throughput.'}
+                  </p>
+                </div>
+                <Activity className="h-4 w-4 text-teal-400" />
+              </div>
+              <div className="space-y-3">
+                {networkBars.map((bar) => (
+                  <div key={bar.key} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="inline-flex items-center gap-1.5 text-zinc-400">
+                        {bar.key === 'up' ? (
+                          <ArrowUp className="h-3.5 w-3.5 text-sky-400" />
+                        ) : (
+                          <ArrowDown className="h-3.5 w-3.5 text-emerald-400" />
+                        )}
+                        {bar.key === 'up' ? (isZh ? '上行' : 'Upload') : isZh ? '下行' : 'Download'}
+                      </span>
+                      <span className="font-medium tabular-nums text-zinc-100">
+                        {formatSpeed(bar.value)}
+                      </span>
+                    </div>
+                    <div className="h-3 overflow-hidden rounded-full bg-zinc-800/80">
+                      <div
+                        className={cn(
+                          'h-full rounded-full transition-all',
+                          bar.key === 'up' ? 'bg-sky-400' : 'bg-emerald-400',
+                        )}
+                        style={{ width: `${bar.percent}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+            <MetricTile
+              icon={<Clock className="h-4 w-4" />}
+              label={isZh ? '成功运行时长' : 'Uptime'}
+              value={serverStatus ? formatPortalUptime(serverStatus.uptime, isZh) : '--'}
+              caption={
+                serverStatus
+                  ? serverStatus.xray.state === 'running'
+                    ? isZh
+                      ? `Xray 正常运行 · ${serverStatus.xray.version}`
+                      : `Xray running · ${serverStatus.xray.version}`
+                    : isZh
+                      ? 'Xray 未运行'
+                      : 'Xray is not running'
+                  : isZh
+                    ? '等待服务器状态'
+                    : 'Waiting for server status'
+              }
+            />
+
+            <div className="surface-panel space-y-4 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-zinc-100">
+                    {isZh ? 'DMIT 流量账单' : 'DMIT traffic billing'}
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    {isZh
+                      ? `同步：${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`
+                      : `Synced: ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`}
+                  </p>
+                </div>
+                <span className="rounded-full bg-teal-500/10 px-2.5 py-1 text-xs font-medium text-teal-300">
+                  {dmitUsagePercent == null ? '--' : `${dmitUsagePercent.toFixed(1)}%`}
+                </span>
+              </div>
+
+              {hasTrafficSplit ? (
+                <div className="space-y-3">
+                  <div className="flex h-3 overflow-hidden rounded-full bg-zinc-800">
+                    <div className="bg-sky-400" style={{ width: `${inboundPercent}%` }} />
+                    <div className="bg-emerald-400" style={{ width: `${outboundPercent}%` }} />
+                  </div>
+                  <div className="grid gap-2 text-xs text-zinc-400">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{isZh ? '入站流量' : 'Inbound'}</span>
+                      <span className="font-medium tabular-nums text-zinc-100">
+                        {usageSummary?.machineInbound == null
+                          ? isZh
+                            ? '未提供'
+                            : 'Not provided'
+                          : formatTraffic(usageSummary.machineInbound)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{isZh ? '出站流量' : 'Outbound'}</span>
+                      <span className="font-medium tabular-nums text-zinc-100">
+                        {usageSummary?.machineOutbound == null
+                          ? isZh
+                            ? '未提供'
+                            : 'Not provided'
+                          : formatTraffic(usageSummary.machineOutbound)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{isZh ? '下次重置' : 'Next reset'}</span>
+                      <span className="font-medium tabular-nums text-zinc-100">
+                        {formatDateTime(usageSummary?.machineNextResetAt, isZh)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm leading-6 text-zinc-500">
+                  {isZh
+                    ? '暂无 DMIT 入站/出站拆分；同步脚本更新后会自动显示。'
+                    : 'No DMIT inbound/outbound split yet. It appears after the sync script updates.'}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ResourceMeter({
+  icon,
+  label,
+  value,
+  percent,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  percent: number;
+  tone: 'good' | 'warn' | 'danger';
+}) {
+  const toneClass = PRESSURE_TONE[tone];
+
+  return (
+    <div className="surface-panel space-y-3 p-4">
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span className="inline-flex items-center gap-2 text-zinc-400">
+          {icon}
+          {label}
+        </span>
+        <span className="font-medium tabular-nums text-zinc-100">{value}</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-zinc-800/80">
+        <div
+          className={cn('h-full rounded-full transition-all', toneClass.bg)}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MetricTile({
+  icon,
+  label,
+  value,
+  caption,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  caption: string;
+}) {
+  return (
+    <div className="surface-panel space-y-3 p-4">
+      <div className="flex items-center gap-2 text-sm text-zinc-400">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <p className="text-2xl font-semibold tabular-nums text-zinc-50">{value}</p>
+      <p className="text-xs leading-5 text-zinc-500">{caption}</p>
+    </div>
   );
 }
 

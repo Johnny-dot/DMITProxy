@@ -1091,6 +1091,7 @@ describe.sequential('Portal Stats Integration', () => {
           },
         }),
       );
+    const dmitNextResetAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
     context.db
       .prepare(
         `INSERT INTO dmit_traffic (
@@ -1102,11 +1103,11 @@ describe.sequential('Portal Stats Integration', () => {
         168117,
         machineUsed / 1024 ** 2,
         machineTotal / 1024 ** 2,
-        null,
-        null,
+        410 * 1024,
+        590 * 1024,
         82.6,
-        null,
-        Date.now() + 7 * 24 * 60 * 60 * 1000,
+        3,
+        dmitNextResetAt,
         xuiTotalUsed / 1024 ** 2,
         dmitUpdatedAt,
         'manual',
@@ -1146,6 +1147,11 @@ describe.sequential('Portal Stats Integration', () => {
       machineUpdatedAt: dmitUpdatedAt,
       xuiTotalUsed,
       usageGap: machineUsed - xuiTotalUsed,
+      machineInbound: 410 * 1024 ** 3,
+      machineOutbound: 590 * 1024 ** 3,
+      machineUsagePercentage: 82.6,
+      machineNextResetDay: 3,
+      machineNextResetAt: dmitNextResetAt,
     });
     expect(statsRes.body.nodeQuality).toMatchObject({
       inboundId: 11,

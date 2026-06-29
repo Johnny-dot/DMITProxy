@@ -634,6 +634,11 @@ router.get('/portal/stats', async (req, res) => {
             machineUpdatedAt: machineUsage.updatedAt,
             xuiTotalUsed: summary.totalUsed,
             usageGap: Math.max(0, summary.machineUsed - summary.totalUsed),
+            machineInbound: dmitSnapshot?.bwusageInBytes ?? null,
+            machineOutbound: dmitSnapshot?.bwusageOutBytes ?? null,
+            machineUsagePercentage: dmitSnapshot?.usagePercentage ?? null,
+            machineNextResetDay: dmitSnapshot?.nextResetDay ?? null,
+            machineNextResetAt: dmitSnapshot?.nextResetAt ?? null,
           };
         })()
       : null;

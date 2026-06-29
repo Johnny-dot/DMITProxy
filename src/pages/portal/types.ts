@@ -92,6 +92,11 @@ export interface PortalUsageSummary {
   machineUpdatedAt: number | null;
   xuiTotalUsed: number;
   usageGap: number;
+  machineInbound: number | null;
+  machineOutbound: number | null;
+  machineUsagePercentage: number | null;
+  machineNextResetDay: number | null;
+  machineNextResetAt: number | null;
 }
 
 export interface PortalStatsResponse {
