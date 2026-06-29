@@ -50,6 +50,29 @@ interface SubscriptionTabProps {
   onSetSection?: (tab: PortalTab) => void;
 }
 
+function scrollWithinNearestContainer(target: HTMLElement) {
+  let container = target.parentElement;
+
+  while (container && container !== document.body) {
+    const style = window.getComputedStyle(container);
+    const canScroll =
+      /(auto|scroll|overlay)/.test(style.overflowY) &&
+      container.scrollHeight > container.clientHeight;
+
+    if (canScroll) {
+      const targetRect = target.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const top = container.scrollTop + targetRect.top - containerRect.top;
+      container.scrollTo({ top, behavior: 'smooth' });
+      return;
+    }
+
+    container = container.parentElement;
+  }
+
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 export function SubscriptionTab({ initialFocus = 'overview', subId }: SubscriptionTabProps) {
   const { language } = useI18n();
   const { toast } = useToast();
@@ -247,7 +270,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
     const target = initialFocus === 'downloads' ? downloadsRef.current : null;
     if (!target) return;
     const timer = window.setTimeout(() => {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollWithinNearestContainer(target);
     }, 120);
     return () => window.clearTimeout(timer);
   }, [initialFocus]);
@@ -258,9 +281,10 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
   }, []);
 
   const scrollToTestId = useCallback((testId: string) => {
-    document
-      .querySelector(`[data-testid="${testId}"]`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const target = document.querySelector(`[data-testid="${testId}"]`);
+    if (target instanceof HTMLElement) {
+      scrollWithinNearestContainer(target);
+    }
   }, []);
 
   const handleCopy = useCallback((text: string, key: string) => {
@@ -638,12 +662,10 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                         variant="outline"
                         size="sm"
                         className="gap-2"
-                        onClick={() =>
-                          downloadsRef.current?.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start',
-                          })
-                        }
+                        onClick={() => {
+                          if (downloadsRef.current)
+                            scrollWithinNearestContainer(downloadsRef.current);
+                        }}
                       >
                         <Download className="h-4 w-4" />
                         {isZh ? '下载客户端' : 'Download client'}

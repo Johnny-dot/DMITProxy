@@ -87,7 +87,7 @@ export function Sidebar({
       : t('nav.dashboard');
 
   return (
-    <aside className="surface-card flex h-[calc(100vh-2rem)] w-72 flex-col gap-5 p-4">
+    <aside className="surface-card flex h-[calc(100dvh-2rem)] w-72 flex-col gap-5 p-4">
       <div className="surface-panel relative overflow-hidden px-4 py-4">
         <div className="absolute inset-x-6 top-0 h-px bg-white/25" />
         <div className="flex items-center gap-3">

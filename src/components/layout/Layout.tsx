@@ -12,7 +12,7 @@ export function Layout() {
   const mobileMenu = useDelayedUnmount(isMobileMenuOpen, 180);
 
   return (
-    <div className="relative h-svh min-h-screen overflow-hidden text-[var(--text-primary)]">
+    <div className="relative h-dvh min-h-dvh overflow-hidden text-[var(--text-primary)]">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-9rem] top-[-7rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(255,255,255,0.74)_0%,_rgba(255,255,255,0)_68%)] blur-2xl" />
         <div className="absolute right-[-10rem] top-[4rem] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,_rgba(111,154,255,0.32)_0%,_rgba(111,154,255,0)_68%)] blur-3xl" />
