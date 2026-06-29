@@ -384,9 +384,30 @@ function addDecorationMarker(link: string, marker: string): string {
   return `${base}${join}prism_info=${encodeURIComponent(marker)}${fragment}`;
 }
 
-function resolveAddress(inbound: XuiInbound): string {
-  // Use SNI as the address if available (common for Reality/TLS setups behind CDN)
-  // Fall back to the server's public IP from env
+function resolveConfiguredNodeHost(): string | null {
+  const raw = String(
+    process.env.PUBLIC_NODE_HOST ?? process.env.VITE_PUBLIC_NODE_HOST ?? '',
+  ).trim();
+  if (!raw) return null;
+
+  try {
+    return new URL(raw.includes('://') ? raw : `https://${raw}`).hostname;
+  } catch {
+    return (
+      raw
+        .replace(/^\[|\]$/g, '')
+        .split('/')[0]
+        ?.split(':')[0]
+        ?.trim() || null
+    );
+  }
+}
+
+export function resolveAddress(inbound: XuiInbound): string {
+  const configuredNodeHost = resolveConfiguredNodeHost();
+  if (configuredNodeHost) return configuredNodeHost;
+
+  // Fall back to a non-wildcard inbound listen address, then to the admin/subscription host.
   const listen = String(inbound.listen ?? '').trim();
   if (listen && listen !== '0.0.0.0' && listen !== '::' && listen !== '') {
     return listen;

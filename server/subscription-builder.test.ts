@@ -4,6 +4,7 @@ import {
   getExtraSubscriptionLinks,
   normalizeExtraSubscriptionLinks,
   replaceLinkName,
+  resolveAddress,
 } from './subscription-builder.js';
 
 describe('replaceLinkName', () => {
@@ -67,5 +68,41 @@ describe('normalizeExtraSubscriptionLinks', () => {
       'vless://first@example.com:443#%E5%85%B1%E4%BA%AB%E8%8A%82%E7%82%B9%EF%BD%9C%E6%97%A5%E6%9C%AC%20IEPL%2001',
       'trojan://second@example.com:443#%E5%85%B1%E4%BA%AB%E8%8A%82%E7%82%B9%EF%BD%9C02',
     ]);
+  });
+});
+
+describe('resolveAddress', () => {
+  it('prefers PUBLIC_NODE_HOST over the 3X-UI admin host', () => {
+    const previousPublicNodeHost = process.env.PUBLIC_NODE_HOST;
+    const previousVitePublicNodeHost = process.env.VITE_PUBLIC_NODE_HOST;
+    const previousXuiServer = process.env.VITE_3XUI_SERVER;
+
+    try {
+      process.env.PUBLIC_NODE_HOST = 'lax.prismproxy.uk';
+      delete process.env.VITE_PUBLIC_NODE_HOST;
+      process.env.VITE_3XUI_SERVER = 'https://154.17.12.1:49675';
+
+      expect(resolveAddress({ listen: '', port: 443 } as any)).toBe('lax.prismproxy.uk');
+    } finally {
+      if (previousPublicNodeHost === undefined) delete process.env.PUBLIC_NODE_HOST;
+      else process.env.PUBLIC_NODE_HOST = previousPublicNodeHost;
+      if (previousVitePublicNodeHost === undefined) delete process.env.VITE_PUBLIC_NODE_HOST;
+      else process.env.VITE_PUBLIC_NODE_HOST = previousVitePublicNodeHost;
+      if (previousXuiServer === undefined) delete process.env.VITE_3XUI_SERVER;
+      else process.env.VITE_3XUI_SERVER = previousXuiServer;
+    }
+  });
+
+  it('accepts URL-shaped public node hosts and keeps only the hostname', () => {
+    const previousPublicNodeHost = process.env.PUBLIC_NODE_HOST;
+
+    try {
+      process.env.PUBLIC_NODE_HOST = 'https://lax.prismproxy.uk:443/reality';
+
+      expect(resolveAddress({ listen: '154.17.12.1', port: 443 } as any)).toBe('lax.prismproxy.uk');
+    } finally {
+      if (previousPublicNodeHost === undefined) delete process.env.PUBLIC_NODE_HOST;
+      else process.env.PUBLIC_NODE_HOST = previousPublicNodeHost;
+    }
   });
 });
