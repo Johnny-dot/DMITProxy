@@ -123,12 +123,11 @@ describe('buildSubscriptionDecorations', () => {
         machineTotal: 1000 * GB,
       }),
     ).toEqual([
-      '账单重置｜每月 3 日（UTC）',
-      '订阅到期｜2028-03-04',
-      '个人用量(3X-UI)｜↑ 12.34G · ↓ 177.34G · 合 189.68G',
-      '他人用量(3X-UI)｜↑ 120.00G · ↓ 272.61G · 合 392.61G',
-      '机器估算｜已用 582.29G · 剩 417.71G / 1000.00G',
-      '口径说明｜个人/他人是3X-UI应用层；机器估算来自3X-UI客户端合计',
+      '重置｜每月3日',
+      '到期｜2028-03-04',
+      '个人｜↑12.3 ↓177.3G',
+      '他人｜↑120 ↓272.6G',
+      '机器｜剩417.7/1000G',
     ]);
   });
 
@@ -144,7 +143,7 @@ describe('buildSubscriptionDecorations', () => {
         dmitMachineUsed: Math.trunc(825.05 * GB),
         dmitMachineTotal: 1000 * GB,
       }),
-    ).toContain('DMIT账单｜已用 825.05G · 剩 174.95G / 1000.00G');
+    ).toContain('机器｜剩175/1000G');
   });
 });
 

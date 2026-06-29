@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildDecoratedSubscriptionLinks,
+  buildUserNodeName,
   getExtraSubscriptionLinks,
   normalizeExtraSubscriptionLinks,
   replaceLinkName,
@@ -38,6 +39,18 @@ describe('buildDecoratedSubscriptionLinks', () => {
       original,
       'vless://uuid@example.com:443?security=reality&type=tcp&prism_info=prism-info-1#%E8%B4%A6%E5%8D%95%E9%87%8D%E7%BD%AE%EF%BD%9C%E6%AF%8F%E6%9C%88%203%20%E6%97%A5%EF%BC%88UTC%EF%BC%89',
     ]);
+  });
+});
+
+describe('buildUserNodeName', () => {
+  it('uses a compact email prefix for the real user node', () => {
+    expect(buildUserNodeName({ email: 'toki18c@gmail.com' }, { remark: 'DMIT' } as any)).toBe(
+      '用户｜toki18c',
+    );
+  });
+
+  it('falls back to the inbound remark when the client has no email', () => {
+    expect(buildUserNodeName({}, { remark: 'DMIT Reality' } as any)).toBe('用户｜DMIT Reality');
   });
 });
 

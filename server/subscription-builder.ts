@@ -318,9 +318,10 @@ function sanitizeSharedNodeName(name: string): string {
     .slice(0, 24);
 }
 
-function buildUserNodeName(client: Record<string, unknown>, inbound: XuiInbound): string {
+export function buildUserNodeName(client: Record<string, unknown>, inbound: XuiInbound): string {
   const raw = String(client.email ?? inbound.remark ?? '默认节点').trim() || '默认节点';
-  return `用户节点｜${raw}`;
+  const compact = (raw.includes('@') ? raw.split('@')[0] : raw).replace(/\s+/g, ' ').trim();
+  return `用户｜${compact || '默认节点'}`;
 }
 
 export function buildDecoratedSubscriptionLinks(

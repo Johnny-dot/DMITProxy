@@ -47,6 +47,10 @@ export function formatTrafficGB(bytes: number): string {
   return `${(safeNonNegativeInt(bytes) / GB).toFixed(2)}G`;
 }
 
+function formatTrafficBriefGB(bytes: number): string {
+  return (safeNonNegativeInt(bytes) / GB).toFixed(1).replace(/\.0$/, '');
+}
+
 export function getClientUsedBytes(
   stats: { up?: unknown; down?: unknown } | null | undefined,
 ): number {
@@ -131,20 +135,14 @@ export function buildSubscriptionUsageSummary(
 
 export function buildSubscriptionDecorations(input: SubscriptionUsageSummaryInput): string[] {
   const summary = buildSubscriptionUsageSummary(input);
-  const resetText = summary.resetDay ? `每月 ${summary.resetDay} 日（UTC）` : '未配置';
+  const resetText = summary.resetDay ? `每月${summary.resetDay}日` : '未配置';
   const expiryText = summary.expiryDate ?? '未配置';
-  const machineLabel = summary.machineSource === 'dmit' ? 'DMIT账单' : '机器估算';
-  const sourceNote =
-    summary.machineSource === 'dmit'
-      ? '口径说明｜个人/他人是3X-UI应用层；机器是DMIT网卡账单，二者不相加'
-      : '口径说明｜个人/他人是3X-UI应用层；机器估算来自3X-UI客户端合计';
 
   return [
-    `账单重置｜${resetText}`,
-    `订阅到期｜${expiryText}`,
-    `个人用量(3X-UI)｜↑ ${formatTrafficGB(summary.ownUp)} · ↓ ${formatTrafficGB(summary.ownDown)} · 合 ${formatTrafficGB(summary.ownUsed)}`,
-    `他人用量(3X-UI)｜↑ ${formatTrafficGB(summary.otherUsersUp)} · ↓ ${formatTrafficGB(summary.otherUsersDown)} · 合 ${formatTrafficGB(summary.otherUsersUsed)}`,
-    `${machineLabel}｜已用 ${formatTrafficGB(summary.machineUsed)} · 剩 ${formatTrafficGB(summary.machineRemaining)} / ${formatTrafficGB(summary.machineTotal)}`,
-    sourceNote,
+    `重置｜${resetText}`,
+    `到期｜${expiryText}`,
+    `个人｜↑${formatTrafficBriefGB(summary.ownUp)} ↓${formatTrafficBriefGB(summary.ownDown)}G`,
+    `他人｜↑${formatTrafficBriefGB(summary.otherUsersUp)} ↓${formatTrafficBriefGB(summary.otherUsersDown)}G`,
+    `机器｜剩${formatTrafficBriefGB(summary.machineRemaining)}/${formatTrafficBriefGB(summary.machineTotal)}G`,
   ];
 }
