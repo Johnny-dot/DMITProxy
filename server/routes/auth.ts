@@ -5,6 +5,7 @@ import {
   fetchClientStatsBySubId,
   fetchClientUsageSourceBySubId,
   fetchServerStatusForPortal,
+  fetchXuiInbounds,
   provisionClientForRegisteredUser,
   type AutoProvisionedClient,
   XuiAdminError,
@@ -29,6 +30,9 @@ import {
   getClientTrafficBreakdown,
   getInboundClientTrafficBreakdown,
 } from '../subscription-usage.js';
+import { computeMachineUsage } from '../machine-usage.js';
+import { getDmitServiceId } from '../dmit-config.js';
+import { getDmitTrafficSnapshot } from '../dmit-traffic-store.js';
 
 const router = Router();
 const SESSION_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -590,24 +594,48 @@ router.get('/portal/stats', async (req, res) => {
       });
     }
 
-    const [usageSource, serverStatus] = await Promise.all([
+    const [usageSource, machineInbounds, serverStatus] = await Promise.all([
       fetchClientUsageSourceBySubId(session.sub_id),
+      fetchXuiInbounds().catch((error) => {
+        console.error(
+          '[Prism] /portal/stats: fetchXuiInbounds failed; falling back to current inbound:',
+          error,
+        );
+        return null;
+      }),
       serverStatusPromise,
     ]);
     const stats = usageSource?.usage ?? null;
+    const dmitServiceId = getDmitServiceId();
+    const dmitSnapshot = dmitServiceId == null ? null : getDmitTrafficSnapshot(dmitServiceId);
+    const inbounds = machineInbounds ?? (usageSource ? [usageSource.inbound] : []);
+    const machineUsage = computeMachineUsage(inbounds, dmitSnapshot);
     const usageSummary = usageSource
-      ? buildSubscriptionUsageSummary({
-          resetDay: getBillingConfig(usageSource.inbound.id)?.billingDay ?? null,
-          expiryTime:
-            usageSource.clientStat?.expiryTime ??
-            (usageSource.client.expiryTime as number | undefined) ??
-            null,
-          ownUp: getClientTrafficBreakdown(usageSource.clientStat).up,
-          ownDown: getClientTrafficBreakdown(usageSource.clientStat).down,
-          allClientUp: getInboundClientTrafficBreakdown(usageSource.inbound).up,
-          allClientDown: getInboundClientTrafficBreakdown(usageSource.inbound).down,
-          machineTotal: usageSource.inbound.total ?? 0,
-        })
+      ? (() => {
+          const ownTraffic = getClientTrafficBreakdown(usageSource.clientStat);
+          const inboundTraffic = getInboundClientTrafficBreakdown(usageSource.inbound);
+          const summary = buildSubscriptionUsageSummary({
+            resetDay: getBillingConfig(usageSource.inbound.id)?.billingDay ?? null,
+            expiryTime:
+              usageSource.clientStat?.expiryTime ??
+              (usageSource.client.expiryTime as number | undefined) ??
+              null,
+            ownUp: ownTraffic.up,
+            ownDown: ownTraffic.down,
+            allClientUp: inboundTraffic.up,
+            allClientDown: inboundTraffic.down,
+            machineTotal: usageSource.inbound.total ?? 0,
+            dmitMachineUsed: machineUsage.usedBytes,
+            dmitMachineTotal: machineUsage.totalBytes,
+            machineSource: machineUsage.source,
+          });
+          return {
+            ...summary,
+            machineUpdatedAt: machineUsage.updatedAt,
+            xuiTotalUsed: summary.totalUsed,
+            usageGap: Math.max(0, summary.machineUsed - summary.totalUsed),
+          };
+        })()
       : null;
     return res.json({
       stats,

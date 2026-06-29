@@ -34,6 +34,7 @@ const TEST_ENV_KEYS = [
   'COOKIE_SECURE',
   'AUTH_RATE_LIMIT_WINDOW_MS',
   'AUTH_RATE_LIMIT_MAX',
+  'DMIT_SERVICE_ID',
 ] as const;
 
 async function createTestContext(options?: {
@@ -86,6 +87,7 @@ async function createTestContext(options?: {
       enable: boolean;
     };
   };
+  mockFetchXuiInbounds?: () => Promise<unknown[]>;
   mockNodeQualityProfile?: {
     inboundId: number;
     probeMode?: 'server-egress' | 'proxy-outbound';
@@ -211,11 +213,13 @@ async function createTestContext(options?: {
   if (
     options?.mockClientStats ||
     options?.mockClientUsageSource ||
+    options?.mockFetchXuiInbounds ||
     options?.mockServerStatus ||
     options?.mockAutoProvision
   ) {
     const mockClientStats = options.mockClientStats;
     const mockClientUsageSource = options.mockClientUsageSource;
+    const mockFetchXuiInbounds = options.mockFetchXuiInbounds;
     const mockServerStatus = options.mockServerStatus;
     const provisionClientForRegisteredUser = options.mockAutoProvision
       ? vi.fn(options.mockAutoProvision.implementation)
@@ -249,6 +253,13 @@ async function createTestContext(options?: {
         ...(mockClientUsageSource
           ? {
               fetchClientUsageSourceBySubId: vi.fn(async () => mockClientUsageSource),
+            }
+          : {}),
+        ...(mockFetchXuiInbounds || mockClientUsageSource
+          ? {
+              fetchXuiInbounds: vi.fn(
+                mockFetchXuiInbounds ?? (async () => [mockClientUsageSource!.inbound]),
+              ),
             }
           : {}),
         ...(mockServerStatus
@@ -1042,7 +1053,11 @@ describe.sequential('Portal Stats Integration', () => {
   it('returns node quality metadata alongside portal stats', async () => {
     const ownUsed = 100 * 1024 ** 3 + Math.trunc(89.68 * 1024 ** 3);
     const otherUsersUsed = 200 * 1024 ** 3 + Math.trunc(192.6 * 1024 ** 3);
+    const xuiTotalUsed = ownUsed + otherUsersUsed;
+    const machineUsed = 826 * 1024 ** 3;
     const machineTotal = 1000 * 1024 ** 3;
+    const dmitUpdatedAt = Date.now() - 5 * 60_000;
+    process.env.DMIT_SERVICE_ID = '168117';
     context.db.prepare('INSERT INTO invite_codes (code) VALUES (?)').run('invite-bob');
 
     const registerRes = await request(context.app).post('/local/auth/register').send({
@@ -1076,6 +1091,26 @@ describe.sequential('Portal Stats Integration', () => {
           },
         }),
       );
+    context.db
+      .prepare(
+        `INSERT INTO dmit_traffic (
+           service_id, bwusage_mb, bwlimit_mb, bwusage_in_mb, bwusage_out_mb,
+           usage_percentage, next_reset_day, next_reset_at, xui_used_mb, updated_at, source
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        168117,
+        machineUsed / 1024 ** 2,
+        machineTotal / 1024 ** 2,
+        null,
+        null,
+        82.6,
+        null,
+        Date.now() + 7 * 24 * 60 * 60 * 1000,
+        xuiTotalUsed / 1024 ** 2,
+        dmitUpdatedAt,
+        'manual',
+      );
 
     const loginRes = await request(context.app).post('/local/auth/login').send({
       username: 'bob',
@@ -1103,9 +1138,14 @@ describe.sequential('Portal Stats Integration', () => {
       resetDay: null,
       ownUsed,
       otherUsersUsed,
-      totalUsed: ownUsed + otherUsersUsed,
-      machineRemaining: machineTotal - (ownUsed + otherUsersUsed),
+      totalUsed: xuiTotalUsed,
+      machineUsed,
+      machineRemaining: machineTotal - machineUsed,
       machineTotal,
+      machineSource: 'dmit',
+      machineUpdatedAt: dmitUpdatedAt,
+      xuiTotalUsed,
+      usageGap: machineUsed - xuiTotalUsed,
     });
     expect(statsRes.body.nodeQuality).toMatchObject({
       inboundId: 11,
@@ -1133,6 +1173,126 @@ describe.sequential('Portal Stats Integration', () => {
         down: 4096,
       },
     });
+  });
+
+  it('falls back to the current inbound when machine-wide inbound fetch fails', async () => {
+    const ownUsed = 10 * 1024 ** 3;
+    const otherUsersUsed = 15 * 1024 ** 3;
+    const xuiTotalUsed = ownUsed + otherUsersUsed;
+    const machineTotal = 300 * 1024 ** 3;
+    const fallbackContext = await createTestContext({
+      mockClientUsageSource: {
+        inbound: {
+          id: 33,
+          remark: 'Fallback-Reality',
+          protocol: 'vless',
+          enable: true,
+          settings: JSON.stringify({
+            clients: [{ email: 'fallback@example.com', subId: 'fallback-sub-id' }],
+          }),
+          total: machineTotal,
+          clientStats: [
+            {
+              email: 'fallback@example.com',
+              up: ownUsed,
+              down: 0,
+              total: machineTotal,
+              expiryTime: 0,
+              enable: true,
+            },
+            {
+              email: 'other@example.com',
+              up: otherUsersUsed,
+              down: 0,
+              total: machineTotal,
+              expiryTime: 0,
+              enable: true,
+            },
+          ],
+        },
+        client: { email: 'fallback@example.com', subId: 'fallback-sub-id' },
+        clientStat: {
+          email: 'fallback@example.com',
+          up: ownUsed,
+          down: 0,
+          total: machineTotal,
+          expiryTime: 0,
+          enable: true,
+        },
+        usage: {
+          inboundId: 33,
+          inboundRemark: 'Fallback-Reality',
+          protocol: 'vless',
+          up: ownUsed,
+          down: 0,
+          total: machineTotal,
+          expiryTime: 0,
+          enable: true,
+        },
+      },
+      mockFetchXuiInbounds: async () => {
+        throw new Error('inbounds unavailable');
+      },
+    });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      fallbackContext.db.prepare('INSERT INTO invite_codes (code) VALUES (?)').run('invite-dana');
+      const registerRes = await request(fallbackContext.app).post('/local/auth/register').send({
+        username: 'dana',
+        password: 'secret123',
+        inviteCode: 'invite-dana',
+      });
+      expect(registerRes.status).toBe(200);
+      fallbackContext.db
+        .prepare('UPDATE users SET sub_id = ? WHERE username = ?')
+        .run('fallback-sub-id', 'dana');
+
+      const loginRes = await request(fallbackContext.app).post('/local/auth/login').send({
+        username: 'dana',
+        password: 'secret123',
+      });
+      expect(loginRes.status).toBe(200);
+
+      const rawSetCookie = loginRes.headers['set-cookie'];
+      const setCookies =
+        rawSetCookie === undefined
+          ? []
+          : Array.isArray(rawSetCookie)
+            ? rawSetCookie
+            : [rawSetCookie];
+      const sessionCookie = setCookies.find((entry) => entry.startsWith('pd_session='));
+      expect(sessionCookie).toBeTruthy();
+
+      const statsRes = await request(fallbackContext.app)
+        .get('/local/auth/portal/stats')
+        .set('Cookie', sessionCookie!.split(';')[0]);
+
+      expect(statsRes.status).toBe(200);
+      expect(statsRes.body.stats).toMatchObject({
+        inboundId: 33,
+        inboundRemark: 'Fallback-Reality',
+      });
+      expect(statsRes.body.usageSummary).toMatchObject({
+        ownUsed,
+        otherUsersUsed,
+        totalUsed: xuiTotalUsed,
+        machineUsed: xuiTotalUsed * 2,
+        machineRemaining: machineTotal - xuiTotalUsed * 2,
+        machineTotal,
+        machineSource: 'xui',
+        machineUpdatedAt: null,
+        xuiTotalUsed,
+        usageGap: xuiTotalUsed,
+      });
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('fetchXuiInbounds failed'),
+        expect.any(Error),
+      );
+    } finally {
+      errorSpy.mockRestore();
+      fallbackContext.cleanup();
+    }
   });
 
   it('refreshes node quality via the user portal route', async () => {

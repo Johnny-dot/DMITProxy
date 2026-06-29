@@ -85,8 +85,13 @@ export interface PortalUsageSummary {
   ownUsed: number;
   otherUsersUsed: number;
   totalUsed: number;
+  machineUsed: number;
   machineRemaining: number;
   machineTotal: number;
+  machineSource: 'dmit' | 'xui';
+  machineUpdatedAt: number | null;
+  xuiTotalUsed: number;
+  usageGap: number;
 }
 
 export interface PortalStatsResponse {

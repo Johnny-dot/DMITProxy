@@ -68,12 +68,17 @@ fi
 cd "$APP_DIR"
 
 STASH_NAME="autodeploy-protected-$(date +%Y%m%d-%H%M%S)"
+EXTRA_STASH_NAME="autodeploy-extra-$(date +%Y%m%d-%H%M%S)"
 RESTORE_STASH=0
+EXTRA_STASH=0
 
 cleanup() {
   local exit_code=$?
   if [[ $exit_code -ne 0 && $RESTORE_STASH -eq 1 ]]; then
     log "deployment failed; protected-file stash kept for manual recovery: $STASH_NAME" >&2
+  fi
+  if [[ $exit_code -ne 0 && $EXTRA_STASH -eq 1 ]]; then
+    log "deployment failed; extra local changes remain stashed for manual recovery: $EXTRA_STASH_NAME" >&2
   fi
 }
 trap cleanup EXIT
@@ -94,6 +99,14 @@ if [[ ${#stash_args[@]} -gt 0 ]]; then
   if git stash list | grep -Fq "$STASH_NAME"; then
     RESTORE_STASH=1
     log "stashed protected local patches"
+  fi
+fi
+
+if ! git diff --quiet || ! git diff --cached --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+  git stash push -u -m "$EXTRA_STASH_NAME" >/dev/null
+  if git stash list | grep -Fq "$EXTRA_STASH_NAME"; then
+    EXTRA_STASH=1
+    log "stashed extra local changes; they will not be restored automatically: $EXTRA_STASH_NAME"
   fi
 fi
 
@@ -231,3 +244,6 @@ fi
 section "done"
 log "head-after=$(git rev-parse --short HEAD)"
 log "healthcheck-ok=$HEALTHCHECK_URL"
+if [[ $EXTRA_STASH -eq 1 ]]; then
+  log "extra-local-stash=$EXTRA_STASH_NAME"
+fi

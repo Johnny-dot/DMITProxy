@@ -199,6 +199,18 @@ function daysUntilResetDay(resetDay: number): number {
   return Math.round((next - todayUTC) / 86_400_000);
 }
 
+function formatSyncTime(ms: number | null | undefined, isZh: boolean): string {
+  if (!ms) return isZh ? '实时估算' : 'Live estimate';
+  const ageMs = Math.max(0, Date.now() - ms);
+  const minutes = Math.floor(ageMs / 60_000);
+  if (minutes < 1) return isZh ? '刚刚同步' : 'Just synced';
+  if (minutes < 60) return isZh ? `${minutes} 分钟前` : `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return isZh ? `${hours} 小时前` : `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return isZh ? `${days} 天前` : `${days}d ago`;
+}
+
 const STATUS_BORDER = {
   ready: 'border-emerald-500/30',
   preparing: 'border-amber-500/30',
@@ -240,8 +252,8 @@ function MySubscriptionHero({
   const [showQr, setShowQr] = useState(false);
 
   const machineSummaryHelpText = isZh
-    ? '这里显示的是 Prism 按整台机器汇总后的真实口径，不是 3X-UI 原生页面里按单个用户计算的“剩余”。'
-    : 'These numbers come from Prism machine-wide accounting, not the single-user remaining quota shown by the native 3X-UI page.';
+    ? '个人/他人来自 3X-UI 应用层统计；机器余量来自 DMIT 网卡账单或 Prism 估算，两种口径不直接相加。'
+    : 'Personal and shared-user usage comes from 3X-UI. Machine remaining comes from DMIT billing or Prism estimation, so the two scopes are not additive.';
 
   const used = stats ? stats.up + stats.down : 0;
   const hasPool = Boolean(usageSummary && usageSummary.machineTotal > 0);
@@ -252,15 +264,22 @@ function MySubscriptionHero({
   let unlimited = false;
 
   if (hasPool && usageSummary) {
-    const { machineRemaining, machineTotal, ownUsed } = usageSummary;
-    const machineUsed = Math.max(machineTotal - machineRemaining, 0);
+    const { machineRemaining, machineTotal, ownUsed, machineUsed, machineSource } = usageSummary;
+    const sourceLabel =
+      machineSource === 'dmit'
+        ? isZh
+          ? 'DMIT账单'
+          : 'DMIT billing'
+        : isZh
+          ? '机器估算'
+          : 'Machine estimate';
     bigValue = isZh
       ? `剩 ${formatTraffic(machineRemaining)}`
       : `${formatTraffic(machineRemaining)} left`;
     usedPercent = Math.min(Math.max((machineUsed / machineTotal) * 100, 0), 100);
     subtitle = isZh
-      ? `本机共享池 已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} · 其中你 ${formatTraffic(ownUsed)}`
-      : `Shared pool ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} used · you ${formatTraffic(ownUsed)}`;
+      ? `${sourceLabel} 已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} · 其中你(3X-UI) ${formatTraffic(ownUsed)}`
+      : `${sourceLabel} ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} used · you (3X-UI) ${formatTraffic(ownUsed)}`;
   } else if (stats && stats.total > 0) {
     const remaining = Math.max(stats.total - used, 0);
     bigValue = isZh ? `剩 ${formatTraffic(remaining)}` : `${formatTraffic(remaining)} left`;
@@ -465,11 +484,40 @@ function UsageDetailCard({
 
   const rows: Array<{ label: string; value: string }> = [];
   if (hasPool && usageSummary) {
-    const machineUsed = Math.max(usageSummary.machineTotal - usageSummary.machineRemaining, 0);
-    rows.push({ label: isZh ? '你已用' : 'You used', value: formatTraffic(usageSummary.ownUsed) });
+    const sourceLabel =
+      usageSummary.machineSource === 'dmit'
+        ? isZh
+          ? 'DMIT账单'
+          : 'DMIT billing'
+        : isZh
+          ? '机器估算'
+          : 'Machine estimate';
+    const syncText = formatSyncTime(usageSummary.machineUpdatedAt, isZh);
+    const xuiTotalUsed = usageSummary.xuiTotalUsed ?? usageSummary.totalUsed;
+    const usageGap = usageSummary.usageGap ?? Math.max(0, usageSummary.machineUsed - xuiTotalUsed);
     rows.push({
-      label: isZh ? '共享池合计' : 'Shared pool',
-      value: `${formatTraffic(machineUsed)} / ${formatTraffic(usageSummary.machineTotal)}`,
+      label: isZh ? '你已用(3X-UI)' : 'You used (3X-UI)',
+      value: formatTraffic(usageSummary.ownUsed),
+    });
+    rows.push({
+      label: isZh ? '他人用量(3X-UI)' : 'Others (3X-UI)',
+      value: formatTraffic(usageSummary.otherUsersUsed),
+    });
+    rows.push({
+      label: isZh ? '3X-UI合计' : '3X-UI total',
+      value: formatTraffic(xuiTotalUsed),
+    });
+    rows.push({
+      label: sourceLabel,
+      value: `${formatTraffic(usageSummary.machineUsed)} / ${formatTraffic(usageSummary.machineTotal)}`,
+    });
+    rows.push({
+      label: isZh ? '口径差值' : 'Scope gap',
+      value: formatTraffic(usageGap),
+    });
+    rows.push({
+      label: isZh ? '同步时间' : 'Sync time',
+      value: syncText,
     });
   } else if (stats) {
     rows.push({ label: isZh ? '已用' : 'Used', value: formatTraffic(used) });
