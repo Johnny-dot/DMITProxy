@@ -9,23 +9,92 @@ interface PublicAuthLayoutProps {
   title: string;
   description: string;
   children: React.ReactNode;
+  compactMobile?: boolean;
 }
 
-function BrandBadge() {
+function BrandBadge({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="glass-pill inline-flex items-center gap-3 px-4 py-3">
-      <div className="surface-inline flex h-12 w-12 items-center justify-center">
-        <img src="/logo.svg" alt="Prism" className="h-7 w-7" />
+    <div
+      className={`glass-pill inline-flex items-center gap-3 ${compact ? 'px-3 py-2' : 'px-4 py-3'}`}
+    >
+      <div
+        className={`surface-inline flex items-center justify-center ${compact ? 'h-10 w-10' : 'h-12 w-12'}`}
+      >
+        <img src="/logo.svg" alt="Prism" className={compact ? 'h-6 w-6' : 'h-7 w-7'} />
       </div>
-      <div className="space-y-1">
+      <div className="min-w-0 space-y-1">
         <span className="section-kicker block">Prism</span>
-        <span className="text-sm text-[var(--text-secondary)]">Liquid control center</span>
+        <span
+          className={`${compact ? 'block truncate text-xs' : 'text-sm'} text-[var(--text-secondary)]`}
+        >
+          Liquid control center
+        </span>
       </div>
     </div>
   );
 }
 
-export function PublicAuthLayout({ eyebrow, title, description, children }: PublicAuthLayoutProps) {
+function CompactLiquidBackdrop() {
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 z-0 mx-auto max-w-[460px] overflow-hidden sm:hidden"
+      aria-hidden="true"
+    >
+      <img
+        src="/auth-liquid-c2-bg.png"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover object-top opacity-90"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.02)_34%,rgba(255,255,255,0.12)_52%,rgba(215,224,238,0.30)_100%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-[45svh] bg-gradient-to-b from-transparent via-[rgba(255,255,255,0.16)] to-[rgba(247,250,255,0.42)]" />
+    </div>
+  );
+}
+
+function ControlCluster({
+  compactMobile,
+  isZh,
+  setLanguage,
+  t,
+}: {
+  compactMobile: boolean;
+  isZh: boolean;
+  setLanguage: (language: 'zh-CN' | 'en-US') => void;
+  t: (key: string) => string;
+}) {
+  return (
+    <div
+      className={
+        compactMobile
+          ? 'flex shrink-0 items-center gap-2'
+          : 'glass-pill flex items-center gap-2 p-2'
+      }
+    >
+      <Button
+        type="button"
+        variant="outline"
+        size={compactMobile ? 'icon' : 'sm'}
+        className={compactMobile ? 'h-12 w-12 px-0 shadow-[var(--shadow-soft)]' : 'h-11 px-4'}
+        onClick={() => setLanguage(isZh ? 'en-US' : 'zh-CN')}
+        data-testid="public-language-toggle"
+      >
+        {isZh ? t('common.en') : t('common.zh')}
+      </Button>
+      <ThemeToggle
+        testId="public-theme-toggle"
+        className={compactMobile ? 'h-12 w-12 shadow-[var(--shadow-soft)]' : undefined}
+      />
+    </div>
+  );
+}
+
+export function PublicAuthLayout({
+  eyebrow,
+  title,
+  description,
+  children,
+  compactMobile = false,
+}: PublicAuthLayoutProps) {
   const { language, setLanguage, t } = useI18n();
   const isZh = language === 'zh-CN';
 
@@ -52,41 +121,57 @@ export function PublicAuthLayout({ eyebrow, title, description, children }: Publ
   ];
 
   return (
-    <div className="relative min-h-svh overflow-hidden px-4 py-5 sm:px-6 lg:px-10">
+    <div
+      className={`relative min-h-svh overflow-hidden px-4 sm:px-6 lg:px-10 ${compactMobile ? 'flex flex-col py-3 sm:block sm:py-5' : 'py-5'}`}
+    >
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-8rem] top-[-6rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(255,255,255,0.74)_0%,_rgba(255,255,255,0)_70%)] blur-2xl" />
         <div className="absolute right-[-8rem] top-[8%] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,_rgba(107,148,255,0.3)_0%,_rgba(107,148,255,0)_70%)] blur-3xl" />
         <div className="absolute bottom-[-10rem] left-[24%] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(74,207,186,0.22)_0%,_rgba(74,207,186,0)_70%)] blur-3xl" />
       </div>
 
-      <div className="relative mx-auto flex max-w-[460px] justify-end lg:max-w-7xl">
-        <div className="glass-pill flex items-center gap-2 p-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-11 px-4"
-            onClick={() => setLanguage(isZh ? 'en-US' : 'zh-CN')}
-            data-testid="public-language-toggle"
-          >
-            {isZh ? t('common.en') : t('common.zh')}
-          </Button>
-          <ThemeToggle testId="public-theme-toggle" />
+      <div
+        className={`relative z-20 mx-auto max-w-[460px] lg:max-w-7xl ${compactMobile ? 'w-full shrink-0' : 'flex justify-end'}`}
+      >
+        <div
+          className={
+            compactMobile
+              ? 'flex w-full items-center justify-between gap-3 sm:justify-end'
+              : 'flex justify-end'
+          }
+        >
+          {compactMobile ? (
+            <div className="min-w-0 sm:hidden">
+              <BrandBadge compact />
+            </div>
+          ) : null}
+          <ControlCluster
+            compactMobile={compactMobile}
+            isZh={isZh}
+            setLanguage={setLanguage}
+            t={t}
+          />
         </div>
       </div>
 
-      <div className="relative mx-auto max-w-[460px] space-y-4 py-5 lg:hidden">
-        <BrandBadge />
+      {compactMobile ? <CompactLiquidBackdrop /> : null}
+
+      <div
+        className={`relative mx-auto max-w-[460px] lg:hidden ${compactMobile ? 'hidden space-y-4 py-5 sm:block' : 'space-y-4 py-5'}`}
+      >
+        <BrandBadge compact={compactMobile} />
         <div className="surface-panel space-y-3 p-6">
           <p className="section-kicker">{eyebrow}</p>
-          <h1 className="text-[1.9rem] font-semibold tracking-[-0.05em] text-[var(--text-primary)]">
+          <h1 className="text-[1.9rem] font-semibold tracking-normal text-[var(--text-primary)]">
             {title}
           </h1>
           <p className="text-sm leading-6 text-[var(--text-secondary)]">{description}</p>
         </div>
       </div>
 
-      <main className="relative mx-auto grid max-w-[460px] gap-6 py-2 lg:max-w-7xl lg:min-h-[calc(100svh-6rem)] lg:grid-cols-[minmax(0,1.2fr)_minmax(380px,460px)] lg:items-center lg:gap-10 lg:py-8">
+      <main
+        className={`relative z-10 mx-auto grid max-w-[460px] lg:max-w-7xl lg:min-h-[calc(100svh-6rem)] lg:grid-cols-[minmax(0,1.2fr)_minmax(380px,460px)] lg:items-center lg:gap-10 lg:py-8 ${compactMobile ? 'flex w-full flex-1 items-end pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:grid sm:flex-none sm:gap-4 sm:py-2' : 'gap-6 py-2'}`}
+      >
         <section className="hidden lg:block lg:pr-8">
           <div className="surface-card space-y-8 p-10 xl:p-12">
             <BrandBadge />
@@ -113,8 +198,12 @@ export function PublicAuthLayout({ eyebrow, title, description, children }: Publ
           </div>
         </section>
 
-        <section className="relative">
-          <div className="surface-card p-6 sm:p-8">{children}</div>
+        <section className="relative w-full">
+          <div
+            className={`surface-card ${compactMobile ? 'flex min-h-[min(500px,calc(100svh-8.5rem))] w-full flex-col justify-center overflow-hidden p-7 sm:block sm:min-h-0 sm:p-8' : 'p-6 sm:p-8'}`}
+          >
+            {children}
+          </div>
         </section>
       </main>
     </div>
