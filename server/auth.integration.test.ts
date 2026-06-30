@@ -659,6 +659,35 @@ describe.sequential('Local Auth Integration', () => {
     );
   });
 
+  it('does not serve cached user portal context responses', async () => {
+    const loginRes = await request(context.app).post('/local/auth/login').send({
+      username: 'alice',
+      password: 'secret456',
+    });
+    expect(loginRes.status).toBe(200);
+
+    const rawSetCookie = loginRes.headers['set-cookie'];
+    const setCookies =
+      rawSetCookie === undefined ? [] : Array.isArray(rawSetCookie) ? rawSetCookie : [rawSetCookie];
+    const sessionCookie = setCookies.find((entry) => entry.startsWith('pd_session='));
+    expect(sessionCookie).toBeTruthy();
+
+    const firstPortalRes = await request(context.app)
+      .get('/local/auth/portal/context')
+      .set('Cookie', sessionCookie!.split(';')[0]);
+    expect(firstPortalRes.status).toBe(200);
+    expect(firstPortalRes.headers['cache-control']).toContain('no-store');
+
+    const secondPortalRes = await request(context.app)
+      .get('/local/auth/portal/context')
+      .set('Cookie', sessionCookie!.split(';')[0])
+      .set('If-None-Match', firstPortalRes.headers.etag ?? 'W/"cached"');
+
+    expect(secondPortalRes.status).toBe(200);
+    expect(secondPortalRes.body.user).toMatchObject({ username: 'alice' });
+    expect(secondPortalRes.headers['cache-control']).toContain('no-store');
+  });
+
   it('returns announcement history newest first and keeps recurring notices on stable timestamps', async () => {
     const now = Math.floor(Date.now() / 1000);
     const stmt = context.db.prepare(`

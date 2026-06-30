@@ -174,6 +174,16 @@ export function createApp() {
   });
 
   app.use('/local', express.json({ limit: `${localJsonLimitMb}mb` }));
+  app.use('/local/auth', (req, res, next) => {
+    delete req.headers['if-none-match'];
+    delete req.headers['if-modified-since'];
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+    });
+    next();
+  });
   app.use('/local/downloads', downloadsRouter);
   app.use('/local/auth/login', authLimiter);
   app.use('/local/auth/register', authLimiter);

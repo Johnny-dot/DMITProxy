@@ -112,7 +112,9 @@ fi
 
 section "update"
 git fetch origin "$BRANCH"
-git pull --ff-only origin "$BRANCH"
+# Merge the exact ref we just fetched. This avoids relying on the remote repo's
+# branch.main.merge config, which can contain multiple upstream refs.
+git merge --ff-only FETCH_HEAD
 
 if [[ $RESTORE_STASH -eq 1 ]]; then
   git stash pop --index >/dev/null
