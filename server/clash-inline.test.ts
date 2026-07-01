@@ -56,4 +56,22 @@ describe('renderClashInlineSubscription', () => {
     expect(yaml).toContain('- "VMess Node"');
     expect(yaml).toContain('- "SS Node"');
   });
+
+  it('decodes legacy base64-wrapped VLESS authority links', () => {
+    const encodedAuthority = Buffer.from(
+      'none:adf8362f-f4cc-40b7-bf6c-3d326617ae74@168.138.179.100:2096',
+    ).toString('base64url');
+    const yaml = renderClashInlineSubscription(
+      `vless://${encodedAuthority}?remarks=SG-Reality&tls=1&peer=www.netflix.com&xtls=2&pbk=public-key&sid=short-id#Shared`,
+    );
+
+    expect(yaml).toContain('name: "Shared"');
+    expect(yaml).toContain('server: "168.138.179.100"');
+    expect(yaml).toContain('port: 2096');
+    expect(yaml).toContain('uuid: "adf8362f-f4cc-40b7-bf6c-3d326617ae74"');
+    expect(yaml).toContain('servername: "www.netflix.com"');
+    expect(yaml).toContain('flow: "xtls-rprx-vision"');
+    expect(yaml).toContain('public-key: "public-key"');
+    expect(yaml).toContain('short-id: "short-id"');
+  });
 });

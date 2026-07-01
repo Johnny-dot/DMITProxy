@@ -25,6 +25,7 @@ import { buildSubscriptionUserinfoHeader } from './subscription-userinfo.js';
 import { fetchClientStatsBySubId } from './xui-admin.js';
 import { buildSubscriptionProfileTitleHeader } from './subscription-profile.js';
 import { ClashInlineRenderError, renderClashInlineSubscription } from './clash-inline.js';
+import { renderSingboxInlineSubscription, SingboxInlineRenderError } from './singbox-inline.js';
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
@@ -321,6 +322,16 @@ export function createApp() {
           return;
         }
 
+        if (format === 'singbox') {
+          const payload = await buildSubscriptionPayload(subId);
+          const body = renderSingboxInlineSubscription(payload);
+          res
+            .set('Content-Type', 'application/json; charset=utf-8')
+            .set('Content-Disposition', 'attachment; filename="sing-box-config.json"')
+            .send(body);
+          return;
+        }
+
         const rawSourceUrl = buildLoopbackRawSubscriptionSourceUrl(subId);
         const result = await renderSubscription({ format, rawSourceUrl });
         res
@@ -330,6 +341,11 @@ export function createApp() {
       } catch (error) {
         if (error instanceof ClashInlineRenderError) {
           console.error(`[Prism] inline Clash render failed for ${subId}: ${error.message}`);
+          res.status(502).send('Subscription conversion failed.');
+          return;
+        }
+        if (error instanceof SingboxInlineRenderError) {
+          console.error(`[Prism] inline sing-box render failed for ${subId}: ${error.message}`);
           res.status(502).send('Subscription conversion failed.');
           return;
         }

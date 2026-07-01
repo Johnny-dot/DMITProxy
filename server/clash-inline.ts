@@ -1,5 +1,5 @@
 type ClashScalar = string | number | boolean | null;
-type ClashValue = ClashScalar | ClashValue[] | { [key: string]: ClashValue };
+export type ClashValue = ClashScalar | ClashValue[] | { [key: string]: ClashValue };
 
 export class ClashInlineRenderError extends Error {
   constructor(message: string) {
@@ -80,12 +80,13 @@ function addTransportOptions(node: Record<string, ClashValue>, params: URLSearch
 }
 
 function addTlsOptions(node: Record<string, ClashValue>, params: URLSearchParams) {
-  const security = params.get('security') || '';
-  if (security !== 'tls' && security !== 'reality') return;
+  const security = params.get('security') || (params.get('pbk') ? 'reality' : '');
+  const tlsEnabled = security === 'tls' || security === 'reality' || boolParam(params.get('tls'));
+  if (!tlsEnabled) return;
 
   node.tls = true;
 
-  const sni = params.get('sni');
+  const sni = params.get('sni') || params.get('peer');
   if (sni) node.servername = sni;
 
   const fingerprint = params.get('fp');
@@ -108,19 +109,32 @@ function addTlsOptions(node: Record<string, ClashValue>, params: URLSearchParams
   }
 }
 
+function decodeLegacyVlessAuthority(value: string): URL | null {
+  try {
+    const decoded = decodeBase64Url(value);
+    const match = decoded.match(/^(?:none:)?([^@]+)@([^:]+):([0-9]+)$/);
+    if (!match) return null;
+    return new URL(`vless://${match[1]}@${match[2]}:${match[3]}`);
+  } catch {
+    return null;
+  }
+}
+
 function parseVlessLink(link: string): Record<string, ClashValue> | null {
   const url = new URL(link);
+  const legacyAuthority = url.username ? null : decodeLegacyVlessAuthority(url.hostname);
+  const sourceUrl = legacyAuthority ?? url;
   const params = url.searchParams;
   const node: Record<string, ClashValue> = {
     name: decodeFragmentName(url, 'VLESS'),
     type: 'vless',
-    server: hostname(url),
-    port: numberPort(url, 443),
-    uuid: decodeURIComponent(url.username),
+    server: hostname(sourceUrl),
+    port: numberPort(sourceUrl, 443),
+    uuid: decodeURIComponent(sourceUrl.username),
     udp: true,
   };
 
-  const flow = params.get('flow');
+  const flow = params.get('flow') || (params.get('xtls') === '2' ? 'xtls-rprx-vision' : '');
   if (flow) node.flow = flow;
 
   addTlsOptions(node, params);
@@ -226,6 +240,15 @@ function parseProtocolLink(link: string): Record<string, ClashValue> | null {
   return null;
 }
 
+export function parseClashProxyLinks(payload: string): Record<string, ClashValue>[] {
+  return payload
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map(parseProtocolLink)
+    .filter((proxy): proxy is Record<string, ClashValue> => Boolean(proxy));
+}
+
 function scalarToYaml(value: ClashScalar): string {
   if (value === null) return 'null';
   if (typeof value === 'number') return Number.isFinite(value) ? String(value) : '0';
@@ -290,12 +313,7 @@ function emitYaml(value: ClashValue, indent = 0): string[] {
 }
 
 export function renderClashInlineSubscription(payload: string): string {
-  const proxies = payload
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map(parseProtocolLink)
-    .filter((proxy): proxy is Record<string, ClashValue> => Boolean(proxy));
+  const proxies = parseClashProxyLinks(payload);
 
   if (proxies.length === 0) {
     throw new ClashInlineRenderError('No Clash-compatible proxy nodes were found.');
