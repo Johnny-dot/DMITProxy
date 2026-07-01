@@ -24,6 +24,7 @@ import { buildPublicSubscriptionSourceUrl } from './subscription-source-url.js';
 import { buildSubscriptionUserinfoHeader } from './subscription-userinfo.js';
 import { fetchClientStatsBySubId } from './xui-admin.js';
 import { buildSubscriptionProfileTitleHeader } from './subscription-profile.js';
+import { ClashInlineRenderError, renderClashInlineSubscription } from './clash-inline.js';
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
@@ -72,6 +73,11 @@ function setSubscriptionProfileHeaders(res: express.Response, subId: string) {
     'profile-web-page-url',
     buildPublicSubscriptionSourceUrl(subId) ?? `/sub/${encodeURIComponent(subId)}`,
   );
+}
+
+function buildLoopbackRawSubscriptionSourceUrl(subId: string): string {
+  const port = process.env.SERVER_PORT ?? '3001';
+  return `http://127.0.0.1:${port}/sub/_raw/${encodeURIComponent(subId)}`;
 }
 
 export function createApp() {
@@ -301,23 +307,32 @@ export function createApp() {
 
     const format = FORMAT_FLAG_MAP[flag];
     if (format) {
-      const rawSourceUrl = buildPublicSubscriptionSourceUrl(subId);
-      if (!rawSourceUrl) {
-        console.error(
-          `[Prism] cannot convert ${format} for ${subId}: VITE_SUB_URL or VITE_SUB_URL_TEMPLATE is not configured`,
-        );
-        res.status(502).send('Subscription conversion failed.');
-        return;
-      }
       try {
         await setSubscriptionUserinfoHeader(res, subId);
         setSubscriptionProfileHeaders(res, subId);
+
+        if (format === 'clash') {
+          const payload = await buildSubscriptionPayload(subId);
+          const body = renderClashInlineSubscription(payload);
+          res
+            .set('Content-Type', 'text/yaml; charset=utf-8')
+            .set('Content-Disposition', 'attachment; filename="clash-config.yaml"')
+            .send(body);
+          return;
+        }
+
+        const rawSourceUrl = buildLoopbackRawSubscriptionSourceUrl(subId);
         const result = await renderSubscription({ format, rawSourceUrl });
         res
           .set('Content-Type', result.contentType)
           .set('Content-Disposition', `attachment; filename="${result.filename}"`)
           .send(result.body);
       } catch (error) {
+        if (error instanceof ClashInlineRenderError) {
+          console.error(`[Prism] inline Clash render failed for ${subId}: ${error.message}`);
+          res.status(502).send('Subscription conversion failed.');
+          return;
+        }
         if (error instanceof SubconverterError) {
           console.error(`[Prism] subconverter ${format} failed for ${subId}: ${error.message}`);
           res.status(502).send('Subscription conversion failed.');

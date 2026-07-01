@@ -163,7 +163,7 @@ proxy-groups:
     );
   });
 
-  it('accepts reachable provider payloads with base64 subscription links', async () => {
+  it('rejects reachable provider payloads with base64 subscription links', async () => {
     const yaml = `
 proxy-providers:
   Provider_A023C2:
@@ -186,6 +186,8 @@ proxy-groups:
 
     await expect(
       validateProxyProviderReachability(summarizeClashYaml(yaml), fetchImpl),
-    ).resolves.toEqual([]);
+    ).resolves.toEqual([
+      'Provider Provider_A023C2 returned raw protocol links instead of Clash provider YAML',
+    ]);
   });
 });

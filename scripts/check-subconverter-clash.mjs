@@ -343,6 +343,12 @@ export async function validateProxyProviderReachability(summary, fetchImpl = fet
 
     const body = await response.text();
     const providerSummary = summarizeProviderPayload(body);
+    if (providerSummary.protocolLinkCount > 0 && providerSummary.inlineProxyNames.length === 0) {
+      errors.push(
+        `Provider ${provider.name} returned raw protocol links instead of Clash provider YAML`,
+      );
+      continue;
+    }
     if (providerSummary.inlineProxyNames.length === 0 && providerSummary.protocolLinkCount === 0) {
       errors.push(`Provider ${provider.name} did not return any proxy nodes`);
     }
