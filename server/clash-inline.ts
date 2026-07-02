@@ -47,7 +47,7 @@ function boolParam(value: string | null): boolean {
 
 function addTransportOptions(node: Record<string, ClashValue>, params: URLSearchParams) {
   const network = params.get('type') || params.get('network') || 'tcp';
-  if (network && network !== 'tcp') node.network = network === 'h2' ? 'http' : network;
+  if (network) node.network = network === 'h2' ? 'http' : network;
 
   if (network === 'ws') {
     const wsOpts: Record<string, ClashValue> = {};

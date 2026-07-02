@@ -15,6 +15,7 @@ describe('renderClashInlineSubscription', () => {
     expect(yaml).not.toContain('proxy-providers:');
     expect(yaml).toContain('type: "vless"');
     expect(yaml).toContain('name: "User"');
+    expect(yaml).toContain('network: "tcp"');
     expect(yaml).toContain('flow: "xtls-rprx-vision"');
     expect(yaml).toContain('client-fingerprint: "chrome"');
     expect(yaml).toContain('reality-opts:');
@@ -69,6 +70,7 @@ describe('renderClashInlineSubscription', () => {
     expect(yaml).toContain('server: "168.138.179.100"');
     expect(yaml).toContain('port: 2096');
     expect(yaml).toContain('uuid: "adf8362f-f4cc-40b7-bf6c-3d326617ae74"');
+    expect(yaml).toContain('network: "tcp"');
     expect(yaml).toContain('servername: "www.netflix.com"');
     expect(yaml).toContain('flow: "xtls-rprx-vision"');
     expect(yaml).toContain('public-key: "public-key"');
