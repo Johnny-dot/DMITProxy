@@ -592,7 +592,30 @@ router.get('/users', requireAdmin, (_req, res) => {
   const users = db
     .prepare(
       `
-    SELECT id, username, sub_id, role, created_at FROM users WHERE role = 'user' ORDER BY created_at DESC LIMIT 500
+    SELECT
+      u.id,
+      u.username,
+      u.sub_id,
+      u.role,
+      u.created_at,
+      (
+        SELECT i.code
+        FROM invite_codes i
+        WHERE i.used_by = u.id
+        ORDER BY COALESCE(i.used_at, 0) DESC, i.created_at DESC
+        LIMIT 1
+      ) AS invite_code,
+      (
+        SELECT i.used_at
+        FROM invite_codes i
+        WHERE i.used_by = u.id
+        ORDER BY COALESCE(i.used_at, 0) DESC, i.created_at DESC
+        LIMIT 1
+      ) AS invite_used_at
+    FROM users u
+    WHERE u.role = 'user'
+    ORDER BY u.created_at DESC
+    LIMIT 500
   `,
     )
     .all();

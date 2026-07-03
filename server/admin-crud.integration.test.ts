@@ -189,8 +189,15 @@ describe.sequential('Admin CRUD Integration', () => {
         .get('/local/admin/users')
         .set('Cookie', context.adminCookie);
       expect(listRes.status).toBe(200);
-      const users = listRes.body as Array<{ id: number; username: string }>;
-      expect(users.find((u) => u.id === userId)).toBeTruthy();
+      const users = listRes.body as Array<{
+        id: number;
+        username: string;
+        invite_code: string | null;
+        invite_used_at: number | null;
+      }>;
+      expect(users.find((u) => u.id === userId)).toMatchObject({
+        invite_code: 'invite-crud-1',
+      });
 
       const patchRes = await request(context.app)
         .patch(`/local/admin/users/${userId}`)

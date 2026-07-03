@@ -29,15 +29,18 @@ import { EmptyState } from '@/src/components/ui/EmptyState';
 import { useToast } from '@/src/components/ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { cn } from '@/src/utils/cn';
-import { getInbounds, getOnlineClients, Inbound } from '@/src/api/client';
+import { getInboundClientIps, getInbounds, getOnlineClients, Inbound } from '@/src/api/client';
 import { updateInboundClient } from '@/src/api/xui';
 import { flattenInboundClients, formatExpiry, formatTraffic } from '@/src/utils/xuiClients';
+import { normalizeClientIpRecords } from '@/src/utils/clientIpRecords';
 
 interface User {
   id: number;
   username: string;
   sub_id: string | null;
   created_at: number;
+  invite_code: string | null;
+  invite_used_at: number | null;
 }
 interface InviteCode {
   id: number;
@@ -58,10 +61,17 @@ interface UsersManagementPageProps {
   embedded?: boolean;
 }
 
-type SortKey = 'username' | 'joined' | 'status' | 'traffic' | 'expiry' | 'subId';
+type SortKey = 'username' | 'joined' | 'invite' | 'status' | 'traffic' | 'expiry' | 'subId';
 type SortState = { key: SortKey; dir: 'asc' | 'desc' } | null;
 
 type ClientRow = ReturnType<typeof flattenInboundClients>[number];
+type ClientStats = {
+  used: number;
+  total: number;
+  expiryTime: number;
+  online: boolean;
+  onlineDevices: number;
+};
 
 const BYTES_PER_GB = 1024 ** 3;
 
@@ -76,6 +86,41 @@ function parseDatetimeLocal(value: string): number {
   if (!trimmed) return 0;
   const ms = new Date(trimmed).getTime();
   return Number.isNaN(ms) ? NaN : ms;
+}
+
+function normalizeEmail(value: string | null | undefined): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase();
+}
+
+async function fetchOnlineDeviceCounts(
+  inbounds: Inbound[],
+  onlineEmails: string[],
+): Promise<Record<string, number>> {
+  const onlineSet = new Set(onlineEmails.map(normalizeEmail).filter(Boolean));
+  if (onlineSet.size === 0) return {};
+
+  const emailByKey = new Map<string, string>();
+  for (const client of flattenInboundClients(inbounds)) {
+    const key = normalizeEmail(client.email);
+    if (key && onlineSet.has(key) && !emailByKey.has(key)) {
+      emailByKey.set(key, client.email.trim());
+    }
+  }
+
+  const entries = await Promise.all(
+    [...emailByKey.entries()].map(async ([key, email]) => {
+      try {
+        const ips = normalizeClientIpRecords(await getInboundClientIps(email));
+        return [key, Math.max(new Set(ips).size, 1)] as const;
+      } catch {
+        return [key, 1] as const;
+      }
+    }),
+  );
+
+  return Object.fromEntries(entries);
 }
 
 interface EditState {
@@ -217,6 +262,9 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
   const [codes, setCodes] = useState<InviteCode[]>([]);
   const [inbounds, setInbounds] = useState<Inbound[]>([]);
   const [onlineEmails, setOnlineEmails] = useState<string[]>([]);
+  const [onlineDeviceCountsByEmail, setOnlineDeviceCountsByEmail] = useState<
+    Record<string, number>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [editingSubId, setEditingSubId] = useState<EditState | null>(null);
@@ -234,25 +282,30 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
   // Join each portal account to its 3X-UI client(s) by sub_id, so the unified view shows
   // real usage (online / traffic / expiry) next to the account — no separate "用户" tab needed.
   const clientStatsBySubId = useMemo(() => {
-    const onlineSet = new Set(onlineEmails.map((e) => e.trim().toLowerCase()).filter(Boolean));
-    const map = new Map<
-      string,
-      { used: number; total: number; expiryTime: number; online: boolean }
-    >();
+    const onlineSet = new Set(onlineEmails.map(normalizeEmail).filter(Boolean));
+    const map = new Map<string, ClientStats>();
     for (const client of flattenInboundClients(inbounds)) {
       const sid = (client.subId ?? '').trim().toLowerCase();
       if (!sid) continue;
-      const email = (client.email ?? '').trim().toLowerCase();
-      const prev = map.get(sid) ?? { used: 0, total: 0, expiryTime: 0, online: false };
+      const email = normalizeEmail(client.email);
+      const online = email ? onlineSet.has(email) : false;
+      const prev = map.get(sid) ?? {
+        used: 0,
+        total: 0,
+        expiryTime: 0,
+        online: false,
+        onlineDevices: 0,
+      };
       map.set(sid, {
         used: prev.used + client.up + client.down,
         total: prev.total + (client.totalGB || 0),
         expiryTime: prev.expiryTime || client.expiryTime || 0,
-        online: prev.online || (email ? onlineSet.has(email) : false),
+        online: prev.online || online,
+        onlineDevices: prev.onlineDevices + (online ? (onlineDeviceCountsByEmail[email] ?? 1) : 0),
       });
     }
     return map;
-  }, [inbounds, onlineEmails]);
+  }, [inbounds, onlineEmails, onlineDeviceCountsByEmail]);
 
   const statsFor = (user: User) => {
     const sid = user.sub_id?.trim().toLowerCase();
@@ -302,9 +355,11 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
           return user.username.toLowerCase();
         case 'joined':
           return user.created_at;
+        case 'invite':
+          return (user.invite_code ?? '').toLowerCase();
         case 'status': {
           const stats = statsFor(user);
-          return stats ? (stats.online ? 2 : 1) : 0;
+          return stats ? (stats.online ? 2 + stats.onlineDevices / 1000 : 1) : 0;
         }
         case 'traffic':
           return statsFor(user)?.used ?? -1;
@@ -339,8 +394,10 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
         getInbounds().catch(() => [] as Inbound[]),
         getOnlineClients().catch(() => [] as string[]),
       ]);
+      const onlineDeviceCounts = await fetchOnlineDeviceCounts(inboundData, onlineData);
       setInbounds(inboundData);
       setOnlineEmails(onlineData);
+      setOnlineDeviceCountsByEmail(onlineDeviceCounts);
 
       const flagsRes = await fetch('/local/admin/system', { credentials: 'include' });
       if (flagsRes.ok) setSystemFlags(await flagsRes.json());
@@ -504,6 +561,16 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
     setTimeout(() => setCopiedId(null), 2000);
   }
 
+  function statusBadgeLabel(stats: ClientStats | undefined) {
+    if (!stats) return isZh ? '未开通' : 'No client';
+    if (!stats.online) return isZh ? '离线' : 'Offline';
+    return t('userAccounts.onlineDevices', { count: Math.max(stats.onlineDevices, 1) });
+  }
+
+  function inviteDisplay(user: User) {
+    return user.invite_code?.trim() || '';
+  }
+
   return (
     <div
       className={cn(
@@ -628,6 +695,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                         >
                           <option value="joined">{isZh ? '注册时间' : 'Joined'}</option>
                           <option value="username">{isZh ? '用户名' : 'User'}</option>
+                          <option value="invite">{t('userAccounts.inviteCode')}</option>
                           <option value="status">{isZh ? '状态' : 'Status'}</option>
                           <option value="traffic">{isZh ? '流量' : 'Traffic'}</option>
                           <option value="expiry">{isZh ? '到期' : 'Expires'}</option>
@@ -657,6 +725,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                         const assignLabel = user.sub_id
                           ? t('userAccounts.change')
                           : t('userAccounts.assignSubId');
+                        const inviteCode = inviteDisplay(user);
                         return (
                           <div key={user.id} className="surface-panel space-y-3 p-4">
                             <div className="flex items-start justify-between gap-3">
@@ -668,19 +737,25 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                                   {isZh ? '注册' : 'Joined'}{' '}
                                   {new Date(user.created_at * 1000).toLocaleDateString()}
                                 </p>
+                                <p className="mt-1 flex min-w-0 items-center gap-1 text-xs text-[var(--text-secondary)]">
+                                  <span>{t('userAccounts.inviteCode')}</span>
+                                  {inviteCode ? (
+                                    <code className="truncate font-mono text-[var(--text-tertiary)]">
+                                      {inviteCode}
+                                    </code>
+                                  ) : (
+                                    <span className="text-[var(--text-tertiary)]">
+                                      {t('userAccounts.noInviteUsed')}
+                                    </span>
+                                  )}
+                                </p>
                               </div>
                               {stats ? (
                                 <Badge variant={stats.online ? 'success' : 'secondary'}>
-                                  {stats.online
-                                    ? isZh
-                                      ? '在线'
-                                      : 'Online'
-                                    : isZh
-                                      ? '离线'
-                                      : 'Offline'}
+                                  {statusBadgeLabel(stats)}
                                 </Badge>
                               ) : (
-                                <Badge variant="secondary">{isZh ? '未开通' : 'No client'}</Badge>
+                                <Badge variant="secondary">{statusBadgeLabel(stats)}</Badge>
                               )}
                             </div>
 
@@ -843,11 +918,24 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                             const assignLabel = user.sub_id
                               ? t('userAccounts.change')
                               : t('userAccounts.assignSubId');
+                            const inviteCode = inviteDisplay(user);
                             return (
                               <React.Fragment key={user.id}>
                                 <TableRow>
                                   <TableCell className="max-w-[240px] font-medium">
                                     <span className="block truncate">{user.username}</span>
+                                    <span className="mt-1 flex min-w-0 items-center gap-1 text-[11px] font-normal text-[var(--text-secondary)]">
+                                      <span>{t('userAccounts.inviteCode')}</span>
+                                      {inviteCode ? (
+                                        <code className="truncate font-mono text-[var(--text-tertiary)]">
+                                          {inviteCode}
+                                        </code>
+                                      ) : (
+                                        <span className="text-[var(--text-tertiary)]">
+                                          {t('userAccounts.noInviteUsed')}
+                                        </span>
+                                      )}
+                                    </span>
                                   </TableCell>
                                   <TableCell className="hidden text-xs text-[var(--text-secondary)] md:table-cell">
                                     {new Date(user.created_at * 1000).toLocaleDateString()}
@@ -855,18 +943,10 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                                   <TableCell>
                                     {stats ? (
                                       <Badge variant={stats.online ? 'success' : 'secondary'}>
-                                        {stats.online
-                                          ? isZh
-                                            ? '在线'
-                                            : 'Online'
-                                          : isZh
-                                            ? '离线'
-                                            : 'Offline'}
+                                        {statusBadgeLabel(stats)}
                                       </Badge>
                                     ) : (
-                                      <Badge variant="secondary">
-                                        {isZh ? '未开通' : 'No client'}
-                                      </Badge>
+                                      <Badge variant="secondary">{statusBadgeLabel(stats)}</Badge>
                                     )}
                                   </TableCell>
                                   <TableCell>
