@@ -1,5 +1,5 @@
 import { db } from './db.js';
-import { resetInboundAllClientTraffics } from './xui-admin.js';
+import { resetInboundTrafficCounters } from './xui-admin.js';
 
 export interface BillingConfig {
   inboundId: number;
@@ -110,7 +110,7 @@ export function getBillingSchedulerDelayMs(
 
 export async function runBillingResetTick(
   now: Date,
-  resetFn: (inboundId: number) => Promise<void> = resetInboundAllClientTraffics,
+  resetFn: (inboundId: number) => Promise<void> = resetInboundTrafficCounters,
 ): Promise<void> {
   const configs = listBillingConfigs();
   const today = formatDateUTC(now);
@@ -121,7 +121,7 @@ export async function runBillingResetTick(
       await resetFn(cfg.inboundId);
       markResetStmt.run(today, cfg.inboundId);
       console.log(
-        `[Prism] Billing reset succeeded for inbound ${cfg.inboundId} (day ${cfg.billingDay}) on ${today}`,
+        `[Prism] Billing traffic reset succeeded for inbound ${cfg.inboundId} (day ${cfg.billingDay}) on ${today}`,
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

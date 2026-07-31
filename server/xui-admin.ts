@@ -38,6 +38,7 @@ export interface XuiInbound {
   listen?: string;
   settings: string;
   streamSettings?: string;
+  sniffing?: string;
   tag?: string;
   up?: number;
   down?: number;
@@ -712,25 +713,101 @@ export async function autoProvisionClientForRegisteredUser(
   return provisionedClient?.subId ?? null;
 }
 
-export async function resetInboundAllClientTraffics(inboundId: number): Promise<void> {
+export function buildInboundAggregateTrafficResetPayload(
+  inbound: XuiInbound,
+): Record<string, unknown> {
+  if (!Number.isInteger(inbound.id) || inbound.id <= 0) {
+    throw new XuiAdminError('Cannot reset traffic for an invalid inbound id');
+  }
+  if (!Number.isInteger(inbound.port) || (inbound.port ?? 0) <= 0) {
+    throw new XuiAdminError(`Cannot reset traffic for inbound ${inbound.id}: invalid port`);
+  }
+  if (!inbound.protocol) {
+    throw new XuiAdminError(`Cannot reset traffic for inbound ${inbound.id}: protocol is missing`);
+  }
+
+  return {
+    up: 0,
+    down: 0,
+    total: inbound.total ?? 0,
+    remark: inbound.remark ?? '',
+    enable: inbound.enable,
+    expiryTime: inbound.expiryTime ?? 0,
+    trafficReset: inbound.trafficReset ?? 'never',
+    lastTrafficResetTime: inbound.lastTrafficResetTime ?? 0,
+    listen: inbound.listen ?? '',
+    port: inbound.port,
+    protocol: inbound.protocol,
+    settings: inbound.settings,
+    streamSettings: inbound.streamSettings ?? '',
+    sniffing: inbound.sniffing ?? '',
+  };
+}
+
+/**
+ * Reset both traffic scopes maintained by 3X-UI for one billing inbound.
+ *
+ * 3X-UI keeps aggregate inbound counters and per-client counters separately.
+ * Its resetAllClientTraffics endpoint only resets the latter, so a billing
+ * reset is complete only after both operations succeed.
+ */
+export async function resetInboundTrafficCounters(inboundId: number): Promise<void> {
+  if (!Number.isInteger(inboundId) || inboundId <= 0) {
+    throw new XuiAdminError('Cannot reset traffic for an invalid inbound id');
+  }
+
   const creds = getXuiCredentials();
   if (!creds) {
     throw new XuiAdminError('XUI admin credentials are missing in .env');
   }
 
   const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
-  const resp = await requestXuiJson<null>(
-    `/panel/api/inbounds/resetAllClientTraffics/${inboundId}`,
-    'POST',
+  const listResp = await requestXuiJson<XuiInbound[]>(
+    '/panel/api/inbounds/list',
+    'GET',
     null,
     cookieHeader,
   );
-
-  if (!resp.success) {
-    throw new XuiAdminError(resp.msg || `Failed to reset inbound ${inboundId} traffics`);
+  if (!listResp.success || !Array.isArray(listResp.obj)) {
+    throw new XuiAdminError(listResp.msg || 'Failed to fetch inbounds from 3X-UI');
   }
 
-  invalidateStatsSnapshotCache();
+  const inbound = listResp.obj.find((candidate) => candidate.id === inboundId);
+  if (!inbound) {
+    throw new XuiAdminError(`Cannot reset traffic: inbound ${inboundId} was not found`);
+  }
+
+  let aggregateReset = false;
+  try {
+    const aggregateResp = await requestXuiJson<null>(
+      `/panel/api/inbounds/update/${inboundId}`,
+      'POST',
+      buildInboundAggregateTrafficResetPayload(inbound),
+      cookieHeader,
+    );
+    if (!aggregateResp.success) {
+      throw new XuiAdminError(
+        aggregateResp.msg || `Failed to reset aggregate traffic for inbound ${inboundId}`,
+      );
+    }
+    aggregateReset = true;
+
+    const clientsResp = await requestXuiJson<null>(
+      `/panel/api/inbounds/resetAllClientTraffics/${inboundId}`,
+      'POST',
+      null,
+      cookieHeader,
+    );
+    if (!clientsResp.success) {
+      throw new XuiAdminError(
+        clientsResp.msg || `Failed to reset client traffic for inbound ${inboundId}`,
+      );
+    }
+  } finally {
+    // The aggregate update may have succeeded even if the client reset failed.
+    // Never serve a pre-reset snapshot after either remote mutation.
+    if (aggregateReset) invalidateStatsSnapshotCache();
+  }
 }
 
 export async function updateClientTrafficByEmail({

@@ -8,6 +8,7 @@ import {
   parseInboundClients,
   buildClientPayload,
   buildClientTrafficUpdatePayload,
+  buildInboundAggregateTrafficResetPayload,
   pickInboundForAutoProvision,
   toClientUsage,
 } from './xui-admin.js';
@@ -215,6 +216,59 @@ describe('buildClientTrafficUpdatePayload', () => {
       upload: 10,
       download: 0,
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildInboundAggregateTrafficResetPayload
+// ---------------------------------------------------------------------------
+describe('buildInboundAggregateTrafficResetPayload', () => {
+  it('zeros only aggregate counters while preserving the inbound configuration', () => {
+    const payload = buildInboundAggregateTrafficResetPayload({
+      id: 7,
+      remark: 'DMIT',
+      protocol: 'vless',
+      enable: true,
+      port: 443,
+      listen: '',
+      settings: '{"clients":[]}',
+      streamSettings: '{"network":"tcp"}',
+      sniffing: '{"enabled":true}',
+      up: 123,
+      down: 456,
+      total: 789,
+      expiryTime: 1234567890,
+      trafficReset: 'never',
+      lastTrafficResetTime: 987654321,
+    });
+
+    expect(payload).toEqual({
+      up: 0,
+      down: 0,
+      total: 789,
+      remark: 'DMIT',
+      enable: true,
+      expiryTime: 1234567890,
+      trafficReset: 'never',
+      lastTrafficResetTime: 987654321,
+      listen: '',
+      port: 443,
+      protocol: 'vless',
+      settings: '{"clients":[]}',
+      streamSettings: '{"network":"tcp"}',
+      sniffing: '{"enabled":true}',
+    });
+  });
+
+  it('rejects an incomplete inbound instead of overwriting it with invalid defaults', () => {
+    expect(() =>
+      buildInboundAggregateTrafficResetPayload({
+        id: 7,
+        protocol: 'vless',
+        enable: true,
+        settings: '{"clients":[]}',
+      }),
+    ).toThrow('invalid port');
   });
 });
 
