@@ -6,11 +6,11 @@
 }
 
 :root {
-  --radius-card: 30px;
-  --radius-panel: 24px;
-  --radius-control: 20px;
-  --glass-blur: 34px;
-  --glass-blur-soft: 24px;
+  --radius-card: 24px;
+  --radius-panel: 18px;
+  --radius-control: 14px;
+  --glass-blur: 18px;
+  --glass-blur-soft: 12px;
   --accent: #4d7cff;
   --accent-strong: #3f6de8;
   --accent-contrast: #f9fbff;
@@ -31,42 +31,42 @@
 }
 
 :root[data-theme='light'] {
-  --page-bg: #d7e0ee;
-  --page-bg-deep: #f5f8fc;
+  --page-bg: #eaf0f8;
+  --page-bg-deep: #f8faff;
   --page-glow-1: rgba(255, 255, 255, 0.98);
-  --page-glow-2: rgba(111, 151, 255, 0.34);
-  --page-glow-3: rgba(58, 206, 190, 0.25);
-  --page-glow-4: rgba(255, 175, 127, 0.24);
-  --surface-card: rgba(255, 255, 255, 0.3);
-  --surface-card-strong: rgba(255, 255, 255, 0.58);
-  --surface-panel: rgba(255, 255, 255, 0.22);
-  --surface-panel-strong: rgba(255, 255, 255, 0.42);
-  --surface-inline: rgba(255, 255, 255, 0.46);
+  --page-glow-2: rgba(111, 151, 255, 0.16);
+  --page-glow-3: rgba(58, 206, 190, 0.11);
+  --page-glow-4: rgba(255, 175, 127, 0.07);
+  --surface-card: rgba(255, 255, 255, 0.72);
+  --surface-card-strong: rgba(255, 255, 255, 0.9);
+  --surface-panel: rgba(242, 246, 252, 0.7);
+  --surface-panel-strong: rgba(249, 251, 255, 0.82);
+  --surface-inline: rgba(247, 250, 255, 0.8);
   --surface-strong: rgba(255, 255, 255, 0.68);
   --surface-contrast: rgba(222, 232, 244, 0.72);
   --text-primary: #122033;
   --text-secondary: #415168;
   --text-tertiary: #6f7f92;
   --text-inverse: #f9fbff;
-  --border-subtle: rgba(255, 255, 255, 0.52);
-  --border-strong: rgba(255, 255, 255, 0.82);
+  --border-subtle: rgba(94, 120, 158, 0.15);
+  --border-strong: rgba(94, 120, 158, 0.28);
   --glass-specular: rgba(255, 255, 255, 0.62);
   --glass-edge: rgba(255, 255, 255, 0.88);
   --glass-rim: rgba(255, 255, 255, 0.9);
   --glass-rim-shadow: rgba(55, 82, 126, 0.12);
   --glass-caustic: rgba(255, 255, 255, 0.34);
-  --glass-depth: rgba(85, 110, 150, 0.1);
+  --glass-depth: rgba(85, 110, 150, 0.025);
   --glass-tint: rgba(236, 245, 255, 0.24);
   --overlay: rgba(18, 27, 42, 0.26);
-  --shadow-card: 0 28px 74px rgba(67, 93, 127, 0.2);
-  --shadow-soft: 0 16px 40px rgba(67, 93, 127, 0.13);
-  --shadow-strong: 0 40px 104px rgba(54, 79, 113, 0.26);
+  --shadow-card: 0 8px 28px rgba(67, 93, 127, 0.07);
+  --shadow-soft: 0 3px 12px rgba(67, 93, 127, 0.05);
+  --shadow-strong: 0 20px 56px rgba(54, 79, 113, 0.14);
   --color-zinc-50: #122033;
   --color-zinc-100: #213146;
   --color-zinc-200: #34445a;
   --color-zinc-300: #4d5e72;
-  --color-zinc-400: #6b7c90;
-  --color-zinc-500: #8898ab;
+  --color-zinc-400: #5f7187;
+  --color-zinc-500: #6d7e94;
   --color-zinc-600: #a8b6c7;
   --color-zinc-700: #c8d1dd;
   --color-zinc-800: #e2e8f0;
@@ -300,8 +300,8 @@
   .glass-nav-item-active {
     position: relative;
     border: 1px solid color-mix(in oklab, var(--border-subtle), transparent 10%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(210%) brightness(1.08);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(210%) brightness(1.08);
+    backdrop-filter: blur(var(--glass-blur)) saturate(135%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(135%);
     isolation: isolate;
   }
 
@@ -384,7 +384,7 @@
         rgba(255, 255, 255, 0.08) 100%
       ),
       radial-gradient(circle at 82% 14%, rgba(255, 255, 255, 0.22), transparent 26%);
-    opacity: 0.46;
+    opacity: 0.18;
     mix-blend-mode: soft-light;
   }
 
@@ -427,7 +427,7 @@
 
   .glass-nav-item,
   .glass-nav-item-active {
-    border-radius: 20px;
+    border-radius: 14px;
     color: var(--text-secondary);
     transition:
       background-color 180ms ease,
@@ -450,9 +450,9 @@
   .glass-nav-item-active {
     background:
       linear-gradient(145deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.055) 100%),
-      var(--surface-strong);
-    border-color: var(--border-strong);
-    color: var(--text-primary);
+      var(--accent-soft);
+    border-color: var(--accent-border);
+    color: var(--accent-strong);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.26),
       inset 0 -1px 0 rgba(255, 255, 255, 0.04),

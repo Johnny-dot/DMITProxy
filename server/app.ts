@@ -195,6 +195,15 @@ export function createApp() {
   app.use('/local/auth/login', authLimiter);
   app.use('/local/auth/register', authLimiter);
   app.use('/local/auth/password-reset', authLimiter);
+  app.use('/api', (req, res, next) => {
+    try {
+      const pathname = decodeURIComponent(req.path).replace(/\/+$/, '').toLowerCase();
+      if (/(^|\/)login$/.test(pathname)) return authLimiter(req, res, next);
+    } catch {
+      return res.status(400).json({ error: 'Invalid request path' });
+    }
+    next();
+  });
   app.use('/local/auth/portal/node-quality/refresh', refreshLimiter);
   app.use('/local/auth', authRouter);
   app.use('/local/admin', adminLimiter, adminRouter);

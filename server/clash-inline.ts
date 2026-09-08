@@ -332,7 +332,7 @@ export function renderClashInlineSubscription(payload: string): string {
       {
         name: 'PROXY',
         type: 'select',
-        proxies: ['DIRECT', ...proxyNames],
+        proxies: [...proxyNames, 'DIRECT'],
       },
     ],
     rules: [

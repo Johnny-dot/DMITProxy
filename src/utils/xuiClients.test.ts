@@ -3,6 +3,54 @@ import type { Inbound } from '../api/client';
 import { flattenInboundClients, formatTraffic, getClientStatus } from './xuiClients';
 
 describe('xuiClients helpers', () => {
+  it('counts a client once when traffic rows have database IDs but no subscription ID', () => {
+    const inbound: Inbound = {
+      id: 1,
+      remark: 'example',
+      protocol: 'vless',
+      port: 443,
+      enable: true,
+      up: 0,
+      down: 0,
+      total: 0,
+      expiryTime: 0,
+      settings: JSON.stringify({
+        clients: [
+          { id: 'protocol-uuid', email: 'alice', subId: 'subscription-alice', enable: true },
+        ],
+      }),
+      clientStats: [
+        {
+          id: 'database-row-17',
+          email: 'alice',
+          subId: '',
+          enable: true,
+          expiryTime: 0,
+          totalGB: 0,
+          up: 10,
+          down: 20,
+        },
+        {
+          id: 'database-row-18',
+          email: 'orphan',
+          subId: '',
+          enable: true,
+          expiryTime: 0,
+          totalGB: 0,
+          up: 30,
+          down: 40,
+        },
+      ],
+    };
+    const rows = flattenInboundClients([inbound]);
+    expect(rows).toHaveLength(2);
+    expect(rows.find((row) => row.username === 'alice')).toMatchObject({
+      up: 10,
+      down: 20,
+      configSource: 'settings',
+    });
+    expect(rows.find((row) => row.username === 'orphan')).toMatchObject({ configSource: 'stats' });
+  });
   it('flattens client settings and stats into one row', () => {
     const inbounds: Inbound[] = [
       {

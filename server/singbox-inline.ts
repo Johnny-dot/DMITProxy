@@ -184,10 +184,6 @@ export function renderSingboxInlineSubscription(payload: string): string {
         type: 'direct',
         tag: 'DIRECT',
       },
-      {
-        type: 'block',
-        tag: 'REJECT',
-      },
     ],
     route: {
       final: 'PROXY',

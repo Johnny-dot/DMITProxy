@@ -1,5 +1,7 @@
 # Playwright 网站显示检查
 
+> 当前推荐入口为 `npm run test:e2e`，使用 `scripts/demo/screenshots.ts` 自动启动隔离的本地演示。`pw:flow` 与 `pw:flow:local` 已指向该入口。它不使用生产 `.env`、不终止现有端口上的服务。以下保留旧脚本的历史说明；其中独立后端地址和旧门户分区不再作为当前回归范围。最新范围见 [运行指南](GETTING_STARTED.md) 与 [贡献说明](../CONTRIBUTING.md)。
+
 这套脚本会在本地隔离环境下启动前后端，然后执行一轮真实浏览器显示检查，覆盖：
 
 - 公共页：`/login`、`/register`、`/reset-password`

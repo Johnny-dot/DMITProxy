@@ -87,8 +87,8 @@ export function Sidebar({
       : t('nav.dashboard');
 
   return (
-    <aside className="surface-card flex h-[calc(100dvh-2rem)] w-72 flex-col gap-5 p-4">
-      <div className="surface-panel relative overflow-hidden px-4 py-4">
+    <aside className="surface-card flex h-[calc(100dvh-2rem)] w-full flex-col gap-5 p-3 md:w-64">
+      <div className="relative overflow-hidden px-3 py-4">
         <div className="absolute inset-x-6 top-0 h-px bg-white/25" />
         <div className="flex items-center gap-3">
           <div className="surface-inline flex h-12 w-12 items-center justify-center">
@@ -115,7 +115,10 @@ export function Sidebar({
         <p className="section-kicker">{role === 'user' ? userCenterLabel : t('nav.dashboard')}</p>
       </div>
 
-      <nav className="flex-1 space-y-2 overflow-y-auto">
+      <nav
+        aria-label={isZh ? '主导航' : 'Main navigation'}
+        className="flex-1 space-y-1.5 overflow-y-auto"
+      >
         {role === 'user'
           ? userMenuItems.map((item) => (
               <NavLink

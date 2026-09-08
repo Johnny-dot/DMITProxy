@@ -23,6 +23,8 @@ describe('renderClashInlineSubscription', () => {
     expect(yaml).toContain('short-id: "abcd"');
     expect(yaml).toContain('- "User"');
     expect(yaml).toContain('- "Info"');
+    const groupSection = yaml.slice(yaml.indexOf('proxy-groups:'));
+    expect(groupSection.indexOf('- "User"')).toBeLessThan(groupSection.indexOf('- "DIRECT"'));
   });
 
   it('renders vmess and shadowsocks links into the same PROXY group', () => {

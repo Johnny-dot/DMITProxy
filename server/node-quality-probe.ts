@@ -1,4 +1,4 @@
-import { fetch as undiciFetch, ProxyAgent, type Dispatcher } from 'undici';
+import { fetch as undiciFetch, ProxyAgent, type Dispatcher, type HeadersInit } from 'undici';
 import {
   saveNodeQualityProfile,
   type NodeQualityProfile,

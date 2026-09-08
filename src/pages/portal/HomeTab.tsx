@@ -245,16 +245,19 @@ const STATUS_BORDER = {
   ready: 'border-emerald-500/30',
   preparing: 'border-amber-500/30',
   disabled: 'border-red-500/30',
+  unavailable: 'border-amber-500/30',
 } as const;
 const STATUS_PILL = {
   ready: 'bg-emerald-500/10 text-emerald-500',
   preparing: 'bg-amber-500/10 text-amber-500',
   disabled: 'bg-red-500/10 text-red-500',
+  unavailable: 'bg-amber-500/10 text-amber-500',
 } as const;
 const STATUS_DOT = {
   ready: 'bg-emerald-500',
   preparing: 'bg-amber-500',
   disabled: 'bg-red-500',
+  unavailable: 'bg-amber-500',
 } as const;
 
 function MySubscriptionHero({
@@ -337,15 +340,24 @@ function MySubscriptionHero({
       : `Expires ${formatExpiry(stats.expiryTime, isZh)}`
     : null;
 
-  const status: 'ready' | 'preparing' | 'disabled' = !hasSubscription
+  const status: keyof typeof STATUS_BORDER = !hasSubscription
     ? 'preparing'
-    : stats && !stats.enable
-      ? 'disabled'
-      : 'ready';
+    : !stats
+      ? 'unavailable'
+      : !stats.enable || isExpired
+        ? 'disabled'
+        : 'ready';
   const statusLabel = {
     ready: isZh ? '可用' : 'Ready',
     preparing: isZh ? '准备中' : 'Preparing',
     disabled: isZh ? '已停用' : 'Disabled',
+    unavailable: isLoading
+      ? isZh
+        ? '更新中'
+        : 'Updating'
+      : isZh
+        ? '用量暂不可用'
+        : 'Usage unavailable',
   }[status];
 
   return (
@@ -378,6 +390,17 @@ function MySubscriptionHero({
           <Skeleton className="h-9 w-48" />
           <Skeleton className="h-2.5 w-full" />
           <Skeleton className="h-4 w-64" />
+        </div>
+      ) : hasSubscription && !stats ? (
+        <div className="space-y-3" data-testid="subscription-home-usage-unavailable">
+          <p className="text-sm leading-6 text-[var(--text-secondary)]">
+            {isZh
+              ? '暂时无法获取最新用量。你仍可以查看订阅和导入步骤。'
+              : 'Latest usage is temporarily unavailable. You can still access your subscription and setup guide.'}
+          </p>
+          <Button onClick={() => onSetSection('setup')} size="sm">
+            {isZh ? '使用订阅' : 'Open subscription'}
+          </Button>
         </div>
       ) : hasSubscription ? (
         <div
