@@ -36,6 +36,9 @@ describe('renderSingboxInlineSubscription', () => {
       },
     });
     expect(config.route.final).toBe('PROXY');
+    expect(config.outbounds.some((outbound: { type: string }) => outbound.type === 'block')).toBe(
+      false,
+    );
   });
 
   it('renders legacy base64-wrapped VLESS links with the decoded endpoint', () => {

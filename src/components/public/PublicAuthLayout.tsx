@@ -27,7 +27,7 @@ function BrandBadge({ compact = false }: { compact?: boolean }) {
         <span
           className={`${compact ? 'block truncate text-xs' : 'text-sm'} text-[var(--text-secondary)]`}
         >
-          Liquid control center
+          {compact ? 'Your connection, simplified.' : 'Subscription workspace'}
         </span>
       </div>
     </div>
@@ -170,7 +170,7 @@ export function PublicAuthLayout({
       </div>
 
       <main
-        className={`relative z-10 mx-auto grid max-w-[460px] lg:max-w-7xl lg:min-h-[calc(100svh-6rem)] lg:grid-cols-[minmax(0,1.2fr)_minmax(380px,460px)] lg:items-center lg:gap-10 lg:py-8 ${compactMobile ? 'flex w-full flex-1 items-end pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:grid sm:flex-none sm:gap-4 sm:py-2' : 'gap-6 py-2'}`}
+        className={`relative z-10 mx-auto grid max-w-[460px] lg:max-w-7xl lg:min-h-[calc(100svh-6rem)] lg:grid-cols-[minmax(0,1.2fr)_minmax(380px,460px)] lg:items-center lg:gap-10 lg:py-8 ${compactMobile ? 'flex w-full flex-1 items-center pb-[max(1rem,env(safe-area-inset-bottom))] pt-8 sm:grid sm:flex-none sm:gap-4 sm:py-2' : 'gap-6 py-2'}`}
       >
         <section className="hidden lg:block lg:pr-8">
           <div className="surface-card space-y-8 p-10 xl:p-12">
@@ -200,7 +200,7 @@ export function PublicAuthLayout({
 
         <section className="relative w-full">
           <div
-            className={`surface-card ${compactMobile ? 'flex min-h-[min(500px,calc(100svh-8.5rem))] w-full flex-col justify-center overflow-hidden p-7 sm:block sm:min-h-0 sm:p-8' : 'p-6 sm:p-8'}`}
+            className={`surface-card ${compactMobile ? 'w-full overflow-hidden p-6 sm:p-8' : 'p-6 sm:p-8'}`}
           >
             {children}
           </div>

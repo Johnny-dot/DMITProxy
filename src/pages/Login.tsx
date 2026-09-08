@@ -106,6 +106,34 @@ export function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+            {import.meta.env.VITE_DEMO_MODE === true && (
+              <div className="rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-soft)] p-3 text-sm">
+                <p className="font-medium">
+                  {isZh ? '本地演示 · 所有数据均为示例' : 'Local demo · all data is synthetic'}
+                </p>
+                <div className="mt-2 flex gap-2">
+                  {['demo', 'admin'].map((account) => (
+                    <button
+                      key={account}
+                      type="button"
+                      className="rounded-lg bg-[var(--surface-card-strong)] px-3 py-2 text-xs font-medium"
+                      onClick={() => {
+                        setUsername(account);
+                        setPassword('prism-demo-2026');
+                      }}
+                    >
+                      {account === 'demo'
+                        ? isZh
+                          ? '体验用户门户'
+                          : 'User portal'
+                        : isZh
+                          ? '体验管理后台'
+                          : 'Admin console'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {!hasConfiguredXui && (
               <p
                 className="rounded-[20px] border border-[var(--warning-soft-strong)] bg-[var(--warning-soft)] px-4 py-3 text-sm leading-6 text-amber-500"

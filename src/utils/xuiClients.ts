@@ -223,16 +223,12 @@ export function flattenInboundClients(inbounds: Inbound[]): XuiClientRow[] {
       if (subId) statsBySubId.set(subId, stat);
     }
 
+    const matchedStats = new Set<InboundClient>();
     if (settingsClients.length > 0) {
       for (const client of settingsClients) {
-        rows.push(
-          buildClientRow(
-            inbound,
-            client,
-            pickClientStats(client, statsByEmail, statsById, statsBySubId),
-            'settings',
-          ),
-        );
+        const stats = pickClientStats(client, statsByEmail, statsById, statsBySubId);
+        if (stats) matchedStats.add(stats);
+        rows.push(buildClientRow(inbound, client, stats, 'settings'));
       }
     }
 
@@ -245,6 +241,7 @@ export function flattenInboundClients(inbounds: Inbound[]): XuiClientRow[] {
     );
 
     for (const stat of clientStats) {
+      if (matchedStats.has(stat)) continue;
       const statKey = normalizeKey(
         normalizeText(stat.subId) || normalizeText(stat.id) || normalizeText(stat.email),
       );

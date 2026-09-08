@@ -1,5 +1,7 @@
 # ProxyDog System Flow
 
+> Historical design note. Current architecture, database naming, routes, registration order, and demo behavior are documented in [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## 1) End-to-End Request Flow
 
 ```mermaid

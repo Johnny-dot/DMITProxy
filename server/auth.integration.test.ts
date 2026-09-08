@@ -319,6 +319,37 @@ async function createTestContext(options?: {
   };
 }
 
+describe.sequential('Public auth request boundaries', () => {
+  it('rejects non-string registration fields before hashing or database binding', async () => {
+    const context = await createTestContext({ authRateLimitMax: 100 });
+    try {
+      for (const body of [
+        { username: 'alice', password: {}, inviteCode: 'example' },
+        { username: ['alice'], password: 'secret123', inviteCode: 'example' },
+        { username: 'alice', password: 'secret123', inviteCode: { code: 'example' } },
+      ]) {
+        const response = await request(context.app).post('/local/auth/register').send(body);
+        expect(response.status).toBe(400);
+      }
+      expect((await request(context.app).get('/local/version')).status).toBe(200);
+    } finally {
+      context.cleanup();
+    }
+  });
+
+  it('shares the admin login rate bucket across encoded and plain login paths', async () => {
+    const context = await createTestContext({ authRateLimitMax: 2 });
+    try {
+      // No upstream is configured in this fixture: 503 means the request reached the proxy.
+      expect((await request(context.app).post('/api/login').send('')).status).toBe(503);
+      expect((await request(context.app).post('/api/%6Cogin').send('')).status).toBe(503);
+      expect((await request(context.app).post('/api/login/').send('')).status).toBe(429);
+    } finally {
+      context.cleanup();
+    }
+  });
+});
+
 describe.sequential('Local Auth Integration', () => {
   let context: TestContext;
 

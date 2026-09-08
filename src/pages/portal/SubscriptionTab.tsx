@@ -332,13 +332,13 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
   );
 
   return (
-    <div className="space-y-6" data-testid="portal-setup-tab">
+    <div className="space-y-4 sm:space-y-6" data-testid="portal-setup-tab">
       <section
-        className="surface-card p-4 md:p-5"
+        className="surface-card p-2.5 md:p-3"
         data-testid="portal-setup-roadmap"
         aria-label={isZh ? '接入三步' : 'Setup in three steps'}
       >
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
           {[
             {
               n: 1,
@@ -363,16 +363,18 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
               key={stepItem.n}
               type="button"
               onClick={() => scrollToTestId(stepItem.testId)}
-              className="group flex items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.035] px-3.5 py-3 text-left transition-colors hover:border-[color:var(--border-strong)] hover:bg-white/[0.06]"
+              className="group flex min-w-0 items-center gap-2 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-[var(--accent-soft)] sm:px-3.5"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-sm font-semibold text-emerald-300">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xs font-semibold text-[var(--accent)] sm:h-8 sm:w-8">
                 {stepItem.n}
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-sm font-medium text-zinc-50">
+                <span className="block text-[11px] font-medium text-zinc-50 sm:text-sm">
                   {stepItem.title}
                 </span>
-                <span className="block truncate text-xs text-zinc-500">{stepItem.desc}</span>
+                <span className="hidden truncate text-xs text-zinc-500 sm:block">
+                  {stepItem.desc}
+                </span>
               </span>
             </button>
           ))}
@@ -385,10 +387,10 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
       >
         <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-emerald-300/18 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-1/4 h-40 w-96 rounded-full bg-[var(--info-soft)] blur-3xl" />
-        <div className="relative space-y-6">
+        <div className="relative space-y-4 sm:space-y-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
-              <div className="flex items-center gap-2.5">
+              <div className="hidden items-center gap-2.5 sm:flex">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-[13px] font-semibold text-emerald-300">
                   1
                 </span>
@@ -398,16 +400,16 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold tracking-tight text-zinc-50 md:text-3xl">
-                  {isZh ? '选择设备，获取订阅' : 'Choose your device, get the link'}
+                  {isZh ? '连接，从这里开始。' : 'Your connection starts here.'}
                 </h2>
                 <p className="text-sm leading-7 text-zinc-400">
                   {isZh
-                    ? '先确认设备和客户端，然后直接导入订阅；下载、格式和教程都跟着当前选择自动联动。'
-                    : 'Confirm your device and client first, then import the subscription. Downloads, format, and guide stay synced to the current choice.'}
+                    ? '已匹配当前设备。复制订阅或一键导入，随时切换其他客户端。'
+                    : 'Matched to your device. Copy the link or import directly, and switch clients anytime.'}
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2 lg:min-w-[420px]">
+            <div className="hidden grid-cols-3 gap-2 lg:grid lg:min-w-[360px]">
               <div className="min-w-0 surface-inline px-3 py-2.5 sm:px-4 sm:py-3">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
                   {isZh ? '设备' : 'Device'}
@@ -443,7 +445,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
 
           <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
             <div
-              className="rounded-[30px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4 md:p-5"
+              className="order-2 rounded-[18px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4 xl:order-1 md:p-5"
               data-testid="portal-setup-platforms"
             >
               <div className="mb-4 flex items-center justify-between gap-3">
@@ -459,13 +461,14 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 </div>
                 <Monitor className="h-4 w-4 text-emerald-300" />
               </div>
-              <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-2">
+              <div className="grid grid-cols-3 gap-2 xl:grid-cols-2">
                 {PLATFORM_OPTIONS.map((platform) => (
                   <button
                     key={platform.key}
                     type="button"
                     onClick={() => handlePlatformSelect(platform.key)}
                     data-testid={`portal-setup-platform-${platform.key}`}
+                    aria-pressed={activePlatform === platform.key}
                     className={cn(
                       'group rounded-[18px] border px-3 py-2.5 text-left transition-all sm:rounded-[20px] sm:px-3.5 sm:py-3',
                       activePlatform === platform.key
@@ -484,7 +487,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                         )}
                       />
                     </div>
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-500">
+                    <p className="mt-1 hidden text-xs leading-5 text-zinc-500 sm:line-clamp-2">
                       {getPlatformBlurb(platform.key, isZh)}
                     </p>
                   </button>
@@ -493,7 +496,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             </div>
 
             <div
-              className="rounded-[30px] border border-emerald-500/25 bg-gradient-to-br from-white/[0.09] via-white/[0.045] to-emerald-500/[0.06] p-4 shadow-[0_24px_70px_rgba(15,23,42,0.22)] md:p-5"
+              className="order-1 rounded-[18px] border border-[var(--accent-border)] bg-[var(--surface-card-strong)] p-4 shadow-[var(--shadow-soft)] xl:order-2 md:p-5"
               data-testid="portal-setup-link"
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -532,6 +535,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   className="shrink-0 gap-2"
                   onClick={() => setShowFormatOptions((current) => !current)}
                   data-testid="portal-setup-toggle-formats"
+                  aria-expanded={showFormatOptions}
                   title={
                     isZh
                       ? '高级选项：手动切换订阅格式。新手通常无需改动。'
@@ -600,11 +604,11 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                         {activeSubUrl}
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                       {oneClickImportUrl ? (
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="default"
                           size="sm"
                           className="gap-2"
                           onClick={() => handleOneClickImport(oneClickImportUrl)}
@@ -642,6 +646,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                         size="sm"
                         className="gap-2"
                         onClick={() => setShowQuickQr((current) => !current)}
+                        aria-expanded={showQuickQr}
                       >
                         <QrCode className="h-4 w-4" />
                         {showQuickQr

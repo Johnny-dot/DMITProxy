@@ -5,6 +5,9 @@ coverage/
 .tmp/
 output/
 data/
+artifacts/
+logs/
+docs/images/*.json
 .husky/_
 tmp_*.js
 tmp_*.txt

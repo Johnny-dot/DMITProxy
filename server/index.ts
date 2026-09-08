@@ -6,6 +6,7 @@ import { db } from './db.js';
 import { startXuiBillingScheduler } from './xui-billing.js';
 
 const PORT = parseInt(process.env.SERVER_PORT ?? '3001');
+const HOST = process.env.SERVER_HOST || '127.0.0.1';
 const app = createApp();
 const server = createServer(app);
 
@@ -35,8 +36,8 @@ try {
 
 const billingScheduler = startXuiBillingScheduler();
 
-server.listen(PORT, () => {
-  console.log(`[Prism] Server running on http://localhost:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`[Prism] Server running on http://${HOST}:${PORT}`);
 });
 
 function shutdown(signal: string) {

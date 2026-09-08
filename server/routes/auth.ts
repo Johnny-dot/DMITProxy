@@ -182,6 +182,17 @@ function serializeUserSession(session: UserSessionRow) {
 router.post('/register', async (req, res) => {
   const { username, password, inviteCode } = req.body ?? {};
 
+  if (
+    typeof username !== 'string' ||
+    typeof password !== 'string' ||
+    typeof inviteCode !== 'string'
+  ) {
+    return res.status(400).json({ error: 'username, password and inviteCode must be strings' });
+  }
+  if (username.length > 64 || password.length > 1024 || inviteCode.length > 128) {
+    return res.status(400).json({ error: 'Registration fields exceed the supported length' });
+  }
+
   if (!username || !password || !inviteCode) {
     return res.status(400).json({ error: 'username, password and inviteCode are required' });
   }
