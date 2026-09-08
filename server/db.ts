@@ -82,6 +82,21 @@ db.exec(`
     last_reset_date TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS xui_billing_reset_jobs (
+    scope_key TEXT NOT NULL,
+    inbound_id INTEGER NOT NULL,
+    cycle_date TEXT NOT NULL,
+    billing_day INTEGER NOT NULL,
+    aggregate_done INTEGER NOT NULL DEFAULT 0,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    next_attempt_at INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT,
+    requires_review INTEGER NOT NULL DEFAULT 0,
+    completed_at INTEGER,
+    cancelled_at INTEGER,
+    PRIMARY KEY (scope_key, inbound_id, cycle_date)
+  );
+
   CREATE TABLE IF NOT EXISTS dmit_traffic (
     service_id              INTEGER PRIMARY KEY,
     bwusage_mb              INTEGER NOT NULL,

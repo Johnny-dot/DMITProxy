@@ -97,18 +97,12 @@ function buildServiceProbe(
 }
 
 async function fetchWithTimeout(url: string, headers?: HeadersInit, dispatcher?: Dispatcher) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
-  try {
-    return await undiciFetch(url, {
-      redirect: 'manual',
-      headers,
-      signal: controller.signal,
-      dispatcher,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
+  return undiciFetch(url, {
+    redirect: 'manual',
+    headers,
+    signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+    dispatcher,
+  });
 }
 
 async function fetchTextProbe(
@@ -118,7 +112,7 @@ async function fetchTextProbe(
 ): Promise<ProbeHttpResult> {
   try {
     const res = await fetchWithTimeout(url, headers, dispatcher);
-    const body = await res.text().catch(() => '');
+    const body = await res.text();
     return {
       ok: true,
       status: res.status,

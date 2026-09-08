@@ -10,14 +10,7 @@ import adminRouter from './routes/admin.js';
 import downloadsRouter from './routes/downloads.js';
 import dmitRouter from './routes/dmit.js';
 import { getServerVersion } from './app-version.js';
-import {
-  buildXuiPath,
-  getXuiPathCandidates,
-  getXuiRequestFactory,
-  shouldSkipXuiTlsVerification,
-  getXuiTarget,
-  resolveXuiRedirectPath,
-} from './xui.js';
+import { buildXuiPath, getXuiTarget } from './xui.js';
 import { buildSubscriptionPayload } from './subscription-builder.js';
 import { renderSubscription, SubconverterError, type SubFormat } from './subconverter-client.js';
 import { buildPublicSubscriptionSourceUrl } from './subscription-source-url.js';
@@ -26,9 +19,8 @@ import { fetchClientStatsBySubId } from './xui-admin.js';
 import { buildSubscriptionProfileTitleHeader } from './subscription-profile.js';
 import { ClashInlineRenderError, renderClashInlineSubscription } from './clash-inline.js';
 import { renderSingboxInlineSubscription, SingboxInlineRenderError } from './singbox-inline.js';
+import { requestXuiTransport, stripHopByHopHeaders, XuiTransportError } from './xui-transport.js';
 
-const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
-const MAX_REDIRECTS = 3;
 const XUI_NOT_CONFIGURED_ERROR =
   '3X-UI admin capability is not configured. Set VITE_3XUI_SERVER and VITE_3XUI_BASE_PATH in .env.';
 
@@ -50,11 +42,6 @@ function parseCorsOrigins(rawValue: string | undefined): string[] {
     .map((item) => item.trim())
     .filter(Boolean);
   return Array.from(new Set(origins));
-}
-
-function toCookieArray(value: string | string[] | undefined): string[] {
-  if (!value) return [];
-  return Array.isArray(value) ? value : [value];
 }
 
 async function setSubscriptionUserinfoHeader(res: express.Response, subId: string) {
@@ -99,7 +86,16 @@ export function createApp() {
   const authRateLimitMax = toBoundedPositiveInt(process.env.AUTH_RATE_LIMIT_MAX, 20, 1, 10_000);
 
   app.disable('x-powered-by');
-  app.set('trust proxy', 1);
+  const trustedProxy = (process.env.TRUST_PROXY ?? 'loopback').trim();
+  app.set(
+    'trust proxy',
+    trustedProxy === 'false'
+      ? false
+      : trustedProxy
+          .split(',')
+          .map((value) => value.trim())
+          .filter(Boolean),
+  );
   app.use(compression());
   app.use(
     helmet({
@@ -231,7 +227,7 @@ export function createApp() {
 
   // Loopback-only raw payload endpoint. Subconverter (running on 127.0.0.1:25500)
   // calls this to fetch the source v2ray-format subscription. Public callers get
-  // 404 — `app.set('trust proxy', 1)` above means req.ip is the real client IP
+  // 404 — req.ip only honors headers from the configured trusted proxies
   // via X-Forwarded-For when behind nginx, so non-loopback addresses won't match.
   // Skips subLimiter so localhost calls don't compete with public traffic for the
   // shared bucket.
@@ -384,196 +380,99 @@ export function createApp() {
     }
   });
 
-  // Proxy /api/* -> 3X-UI (used in both development and production)
+  // Browser credentials are forwarded as supplied; service credentials are never injected here.
   const xuiTarget = getXuiTarget();
   if (xuiTarget) {
-    const requestFactory = getXuiRequestFactory(xuiTarget.protocol);
-    const skipTlsVerification = shouldSkipXuiTlsVerification();
-    if (xuiTarget.protocol === 'https:' && skipTlsVerification) {
-      console.warn(
-        '[Prism] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, TLS cert verification disabled.',
-      );
-    }
-
     app.use('/api', (req, res) => {
       const chunks: Buffer[] = [];
       let bodySize = 0;
+      const controller = new AbortController();
+      const disconnect = () => {
+        if (!res.writableEnded) controller.abort();
+      };
+      res.once('close', disconnect);
+      req.once('aborted', () => controller.abort());
       req.on('data', (chunk) => {
-        const buffered = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-        bodySize += buffered.length;
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        bodySize += buffer.length;
         if (bodySize > MAX_PROXY_BODY_BYTES) {
-          if (!res.headersSent) {
-            res.status(413).json({
-              error: `Request body too large (max ${Math.floor(MAX_PROXY_BODY_BYTES / (1024 * 1024))}MB)`,
-            });
-          }
+          if (!res.headersSent) res.status(413).json({ error: 'Request body too large' });
           req.destroy();
           return;
         }
-        chunks.push(buffered);
+        chunks.push(buffer);
       });
       req.on('error', () => {
-        if (!res.headersSent) res.status(400).json({ error: 'Invalid request body' });
+        if (!res.headersSent && !res.destroyed)
+          res.status(400).json({ error: 'Invalid request body' });
       });
-      req.on('end', () => {
-        if (res.headersSent) return;
-
-        const body = Buffer.concat(chunks);
-        const candidatePaths = getXuiPathCandidates(req.url).map((candidate) =>
-          buildXuiPath(xuiTarget.basePath, candidate),
-        );
-        const method = req.method ?? 'GET';
-        const receivedSetCookies: string[] = [];
-        const reqHost = String(req.headers.host ?? '')
-          .split(':')[0]
-          .toLowerCase();
-        const isLocalDevHost =
-          reqHost === 'localhost' || reqHost === '127.0.0.1' || reqHost === '::1';
-        const upstreamOrigin = `${xuiTarget.protocol}//${xuiTarget.hostHeader}`;
-        const upstreamReferer = `${upstreamOrigin}${buildXuiPath(xuiTarget.basePath, '/panel/')}`;
-
-        if (PROXY_DEBUG) {
-          const hasCookie = Boolean((req.headers.cookie ?? '').trim());
-          console.warn(`[Prism] -> ${method} ${req.url} cookie=${hasCookie ? 'yes' : 'no'}`);
-        }
-
-        const baseHeaders: Record<string, string | string[]> = {
-          ...(req.headers as Record<string, string | string[]>),
-        };
-        baseHeaders.host = xuiTarget.hostHeader;
-        baseHeaders.origin = upstreamOrigin;
-        baseHeaders.referer = upstreamReferer;
-        if (!baseHeaders['x-requested-with']) {
-          baseHeaders['x-requested-with'] = 'XMLHttpRequest';
-        }
-        delete baseHeaders['content-length'];
-        delete baseHeaders['transfer-encoding'];
-        delete baseHeaders['sec-fetch-site'];
-        delete baseHeaders['sec-fetch-mode'];
-        delete baseHeaders['sec-fetch-dest'];
-        delete baseHeaders['sec-fetch-user'];
-        delete baseHeaders['sec-ch-ua'];
-        delete baseHeaders['sec-ch-ua-mobile'];
-        delete baseHeaders['sec-ch-ua-platform'];
-        if (body.length > 0) baseHeaders['content-length'] = String(body.length);
-
-        const rewriteCookieForClient = (cookie: string) => {
-          let rewritten = cookie.replace(/;\s*Path=[^;]*/i, '; Path=/');
-          if (isLocalDevHost) {
-            // Local HTTP dev cannot use upstream domain-bound secure cookies.
-            rewritten = rewritten.replace(/;\s*Domain=[^;]*/gi, '');
-            rewritten = rewritten.replace(/;\s*Secure/gi, '');
-            rewritten = rewritten.replace(/;\s*SameSite=None/gi, '; SameSite=Lax');
-          }
-          return rewritten;
-        };
-
-        const proxyAttempt = (
-          targetPath: string,
-          redirectsRemaining: number,
-          candidateIndex: number,
-        ) => {
-          const requestOptions: any = {
-            hostname: xuiTarget.hostname,
-            port: xuiTarget.port,
-            path: targetPath,
-            method,
-            headers: baseHeaders,
+      req.on('end', async () => {
+        if (res.headersSent || res.destroyed) return;
+        try {
+          const origin = `${xuiTarget.protocol}//${xuiTarget.hostHeader}`;
+          const headers: Record<string, string | string[]> = {
+            ...(req.headers as Record<string, string | string[]>),
+            host: xuiTarget.hostHeader,
+            origin,
+            referer: `${origin}${buildXuiPath(xuiTarget.basePath, '/panel/')}`,
+            'x-requested-with': 'XMLHttpRequest',
           };
-          if (xuiTarget.protocol === 'https:' && skipTlsVerification) {
-            requestOptions.rejectUnauthorized = false;
-          }
-
-          const proxyReq = requestFactory(requestOptions, (proxyRes) => {
-            const statusCode = proxyRes.statusCode ?? 502;
-            const location =
-              typeof proxyRes.headers.location === 'string' ? proxyRes.headers.location : undefined;
-            const contentType = String(proxyRes.headers['content-type'] ?? '');
-            const setCookies = toCookieArray(
-              proxyRes.headers['set-cookie'] as string | string[] | undefined,
-            );
-            if (setCookies.length > 0) receivedSetCookies.push(...setCookies);
-            if (PROXY_DEBUG && req.url.startsWith('/login')) {
-              console.warn(
-                `[Prism] <- ${method} ${req.url} status=${statusCode} set-cookie=${setCookies.length}`,
-              );
-            }
-
-            if (REDIRECT_STATUS_CODES.has(statusCode) && location && redirectsRemaining > 0) {
-              const redirectPath = resolveXuiRedirectPath(xuiTarget, location);
-              if (redirectPath) {
-                proxyRes.resume();
-                const redirectedIndex = candidatePaths.indexOf(redirectPath);
-                return proxyAttempt(
-                  redirectPath,
-                  redirectsRemaining - 1,
-                  redirectedIndex >= 0 ? redirectedIndex : candidateIndex,
-                );
-              }
-            }
-
-            if (statusCode === 404 && candidateIndex + 1 < candidatePaths.length) {
-              if (PROXY_DEBUG) {
-                console.warn(
-                  `[Prism] 404 on ${targetPath}, retrying with ${candidatePaths[candidateIndex + 1]}`,
-                );
-              }
-              proxyRes.resume();
-              return proxyAttempt(
-                candidatePaths[candidateIndex + 1],
-                MAX_REDIRECTS,
-                candidateIndex + 1,
-              );
-            }
-
-            if (PROXY_DEBUG && statusCode >= 400) {
-              console.warn(`[Prism] ${method} ${req.url} => ${statusCode} via ${targetPath}`);
-            }
-            if (
-              PROXY_DEBUG &&
-              req.url.startsWith('/panel/api/') &&
-              statusCode >= 200 &&
-              statusCode < 400
-            ) {
-              if (!contentType.toLowerCase().includes('application/json')) {
-                console.warn(
-                  `[Prism] ${method} ${req.url} => ${statusCode} non-json content-type=${contentType}`,
-                );
-              } else {
-                console.info(`[Prism] ${method} ${req.url} => ${statusCode} json`);
-              }
-            }
-
-            const headers = { ...proxyRes.headers };
-            if (receivedSetCookies.length > 0) {
-              headers['set-cookie'] = receivedSetCookies.map(rewriteCookieForClient);
-            } else if (headers['set-cookie']) {
-              headers['set-cookie'] = toCookieArray(
-                headers['set-cookie'] as string | string[] | undefined,
-              ).map(rewriteCookieForClient);
-            }
-            res.writeHead(statusCode, headers);
-            proxyRes.pipe(res);
+          for (const key of [
+            'sec-fetch-site',
+            'sec-fetch-mode',
+            'sec-fetch-dest',
+            'sec-fetch-user',
+            'sec-ch-ua',
+            'sec-ch-ua-mobile',
+            'sec-ch-ua-platform',
+          ])
+            delete headers[key];
+          const response = await requestXuiTransport({
+            target: xuiTarget,
+            path: req.url,
+            method: req.method,
+            headers,
+            body: Buffer.concat(chunks),
+            signal: controller.signal,
           });
-
-          proxyReq.on('error', (err: Error) => {
-            if (!res.headersSent) {
-              res.status(502).json({ error: 'Upstream error', detail: err.message });
-            }
-          });
-
-          if (body.length > 0) proxyReq.write(body);
-          proxyReq.end();
-        };
-
-        proxyAttempt(candidatePaths[0], MAX_REDIRECTS, 0);
+          if (res.destroyed) return;
+          const resultHeaders = stripHopByHopHeaders(response.headers);
+          const hostname = req.hostname.toLowerCase();
+          const local =
+            hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname === '[::1]' ||
+            hostname === '::1';
+          if (response.cookies.length)
+            resultHeaders['set-cookie'] = response.cookies.map((cookie) => {
+              let value = cookie.replace(/;\s*Path=[^;]*/i, '; Path=/');
+              if (local)
+                value = value
+                  .replace(/;\s*Domain=[^;]*/gi, '')
+                  .replace(/;\s*Secure/gi, '')
+                  .replace(/;\s*SameSite=None/gi, '; SameSite=Lax');
+              return value;
+            });
+          if (PROXY_DEBUG)
+            console.info(`[Prism] 3X-UI proxy ${req.method} status=${response.status}`);
+          res.writeHead(response.status, resultHeaders);
+          res.end(response.body);
+        } catch (error) {
+          if (!res.headersSent && !res.destroyed)
+            res
+              .status(error instanceof XuiTransportError && error.code === 'timeout' ? 504 : 502)
+              .json({
+                error: 'Upstream request failed',
+                detail: error instanceof Error ? error.message : 'Unknown error',
+              });
+        } finally {
+          res.off('close', disconnect);
+        }
       });
     });
   } else {
     console.warn('[Prism] VITE_3XUI_SERVER is not set. /api proxy is disabled.');
-    app.use('/api', (_req, res) => {
-      res.status(503).json({ error: XUI_NOT_CONFIGURED_ERROR });
-    });
+    app.use('/api', (_req, res) => res.status(503).json({ error: XUI_NOT_CONFIGURED_ERROR }));
   }
 
   // Serve React build in production

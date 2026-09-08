@@ -41,7 +41,7 @@ location / {
 }
 ```
 
-片段不含 TLS server 块、证书签发和防火墙，需按主机配置。应用目前按一跳代理解释来源 IP，多级代理/CDN 需单独核对；不要直接开放应用端口。生产 HTTPS 保持 COOKIE_SECURE=true。
+片段不含 TLS server 块、证书签发和防火墙，需按主机配置。应用默认仅信任回环代理的转发头；多级代理/CDN 应通过 TRUST_PROXY 配置准确的受信地址，并检查反向代理对来路头的处理。不要直接开放应用端口。生产 HTTPS 保持 COOKIE_SECURE=true。
 
 ## PM2 与可选服务
 
@@ -69,13 +69,19 @@ pm2 save
 - SQLite 位于 DATA_DIR/prism.db，并可能有 WAL/SHM 文件。
 - 镜像缓存也位于 DATA_DIR，不能作为唯一备份。
 - 运行中的 WAL 数据库不能简单当单文件复制。使用在线备份或在确认停服后做一致性备份，并测试恢复。
-- 当前界面备份入口仍需完善并发与恢复验证，不应作为唯一恢复手段。
+- 界面备份入口使用 SQLite 在线备份，在完整性校验后返回成功；本地备份仍需配合异地副本和恢复演练。
 - .env、数据库、日志和实际订阅不得进入 Git；备份需独立存储并限制读取。
 
 ## 发布工作流
 
-现有 .github/workflows/deploy.yml 在推送 main 或手动触发时运行，通过 SSH 执行远端脚本。自己的部署需要 VPS_HOST、VPS_USER、VPS_SSH_PRIVATE_KEY，以及可选 VPS_PORT。远端目录、Node 版本、进程名必须按自己的环境调整。
+推送 main 后先运行 CI，CI 成功才触发 Deploy。部署使用通过检查的完整 SHA，忽略已被更新 main 取代的 CI 结果；手动部署也要求对应 SHA 已有成功 CI。需要时可先手动运行 CI，再运行 Deploy。
 
-目前部署流程尚未绑定 CI 成功与精确提交，也没有完整自动回滚。Fork 后先阅读、调整工作流，再配置生产 Secrets。开源发布和生产部署应分别安排。
+自己的部署需要 VPS_HOST、VPS_USER、VPS_SSH_PRIVATE_KEY，以及可选 VPS_PORT。远端目录、Node 版本、进程名必须按自己的环境调整。脚本要求 Linux、flock、Node/npm、Git 和 PM2，生产 checkout 必须干净。
+
+脚本先在 .git/prism-deploy 下安装锁定依赖、构建并备份数据库。验证成功后才更新 checkout、切换 node_modules/dist、重启目标 Node 应用，并检查版本及可用订阅。它不会自动 stash 或重放生产源码补丁；有本地修改时会中止并保留修改。
+
+安装、构建或备份失败时保持旧应用；切换后的启动或订阅检查失败时恢复上一份代码、依赖与构建，并验证旧版本。运行数据库不自动回退，schema 变更必须向后兼容。上一份运行产物保留在 .git/prism-deploy/previous。意外断电等超出脚本异常处理的情况，仍需人工恢复演练。
+
+自动部署只重启 PM2_NAME 指定的 Node 应用；subconverter 的安装与升级单独执行。重跑已健康运行的同一提交不会再次重启。详细故障验证与账期恢复说明见 [RELIABILITY.md](RELIABILITY.md)。
 
 /local/version 返回进程启动时提交标识；还应验证登录、只读 API、订阅解析和代理连接，不能仅凭首页 HTTP 200 判断业务可用。

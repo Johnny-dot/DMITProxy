@@ -65,7 +65,7 @@ export function resolveXuiRedirectPath(target: XuiTarget, location: string): str
     const sameHost = parsed.hostname.toLowerCase() === target.hostname.toLowerCase();
     const samePort = getPort(parsed.protocol, parsed.port) === target.port;
     const pathAllowed = isPathWithinBasePath(target.basePath, parsed.pathname);
-    if (!sameHost || !samePort || !pathAllowed) return null;
+    if (parsed.protocol !== target.protocol || !sameHost || !samePort || !pathAllowed) return null;
     return `${parsed.pathname}${parsed.search}`;
   } catch {
     return null;

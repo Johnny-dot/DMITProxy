@@ -194,7 +194,7 @@ describe('xui-billing CRUD + runBillingResetTick', () => {
     const resetFn = vi.fn().mockResolvedValue(undefined);
     await runBillingResetTick(new Date(Date.UTC(2026, 4, 15, 12, 0)), resetFn);
     expect(resetFn).toHaveBeenCalledTimes(1);
-    expect(resetFn).toHaveBeenCalledWith(100);
+    expect(resetFn).toHaveBeenCalledWith(100, expect.objectContaining({ skipAggregate: false }));
     expect(getBillingConfig(100)?.lastResetDate).toBe('2026-05-15');
     expect(getBillingConfig(101)?.lastResetDate).toBeNull();
 
