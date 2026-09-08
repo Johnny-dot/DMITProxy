@@ -72,6 +72,13 @@ case "$1" in
   start)
     [[ "$*" == *'--only dmit-proxy'* ]] || exit 27
     if [[ -f "$PM2_HOME/fail-start" ]]; then rm -f "$PM2_HOME/fail-start"; exit 28; fi
+    if [[ -f "$PM2_HOME/operator-edit" || -f "$PM2_HOME/operator-commit" ]]; then
+      printf 'operator-change\n' >> server/app.ts
+      if [[ -f "$PM2_HOME/operator-commit" ]]; then
+        git -c user.name=Fixture -c user.email=fixture@example.invalid -c commit.gpgsign=false commit -qam 'operator fixture edit'
+      fi
+      rm -f "$PM2_HOME/operator-edit" "$PM2_HOME/operator-commit"
+    fi
     git rev-parse --short HEAD > "$PM2_HOME/current"
     ;;
   save) : ;;
@@ -135,3 +142,12 @@ DEPLOYED="$NEXT"; NEXT="$PREV"
 if run_deploy; then fail 'stale deployment was accepted'; fi
 [[ "$(git -C "$APP" rev-parse HEAD)" == "$DEPLOYED" ]] || fail 'stale deployment changed HEAD'
 pass 'stale deployment is rejected'
+for change in edit commit; do
+  setup_case "operator-$change"; touch "$STATE/operator-$change"
+  if run_deploy; then fail 'concurrent operator change falsely succeeded'; fi
+  grep -q operator-change "$APP/server/app.ts" || fail 'concurrent operator change was overwritten'
+  if [[ "$change" == commit ]]; then
+    [[ "$(git -C "$APP" log -1 --format=%s)" == 'operator fixture edit' ]] || fail 'operator commit was reset'
+  fi
+  pass "concurrent operator $change is preserved"
+done

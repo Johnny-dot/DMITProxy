@@ -97,6 +97,9 @@ restart_app() {
 rollback() {
   log 'activation failed; restoring the previous application'
   clean_checkout || { log 'Checkout changed during deployment; backups retained for manual recovery' >&2; return 1; }
+  local current_head
+  current_head="$(git rev-parse HEAD)"
+  [[ "$current_head" == "$DEPLOY_SHA" || "$current_head" == "$PREVIOUS_SHA" ]] || { log 'HEAD changed outside this deployment; refusing to overwrite it' >&2; return 1; }
   "$PM2_BIN" stop "$PM2_NAME" 9>&- >/dev/null 2>&1 || true
   if (( NEW_MODULES )); then remove_owned "$APP_DIR/node_modules" || return 1; fi
   if (( NEW_DIST )); then remove_owned "$APP_DIR/dist" || return 1; fi
@@ -153,6 +156,8 @@ NEW_DIST=1
 restart_app
 wait_for_version "$TARGET_SHORT" || fail 'New application did not serve the tested version'
 node --import tsx/esm scripts/deploy/smoke.ts 9>&-
+clean_checkout || fail 'Checkout changed during activation'
+[[ "$(git rev-parse HEAD)" == "$DEPLOY_SHA" ]] || fail 'HEAD changed during activation'
 "$PM2_BIN" save 9>&- >/dev/null
 ACTIVATING=0
 log "version check ok: serving $TARGET_SHORT"
