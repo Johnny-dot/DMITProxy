@@ -20,6 +20,8 @@ function findEnvDir(start: string): string {
 }
 
 function readGitShortSha(): string {
+  const buildCommit = process.env.PRISM_BUILD_COMMIT;
+  if (buildCommit && /^[a-f0-9]{7,40}$/.test(buildCommit)) return buildCommit;
   try {
     return execSync('git rev-parse --short HEAD', {
       cwd: __dirname,

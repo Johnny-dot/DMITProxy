@@ -77,6 +77,6 @@ Browser checks start an isolated demo and save evidence to `output/e2e`. Windows
 
 ## Scope and roadmap
 
-Prism is independent of DMIT and 3X-UI. Demo tests and screenshots do not establish real network connectivity or production readiness. Upcoming work includes bounded upstream requests and authentication recovery, billing retries, verified online backups, exact-version deployment/rollback, and broader proxy-core/device checks.
+Prism is independent of DMIT and 3X-UI. Demo tests and screenshots do not establish real network connectivity. Upstream exchanges are bounded; read requests can recover expired service sessions; billing retries preserve confirmed stages and require review for uncertain writes. Backups use checked online snapshots. Passing main CI triggers exact-commit deployment with application rollback. See [reliability notes](docs/RELIABILITY.md) for boundaries and operational controls. Broader proxy-core, device, and capacity checks remain future work.
 
 Original project code is licensed under [MIT](LICENSE). Third-party components and brand assets retain their own rights; see [notices](THIRD_PARTY_NOTICES.md).

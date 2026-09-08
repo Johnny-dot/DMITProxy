@@ -9,6 +9,8 @@ const PORT = parseInt(process.env.SERVER_PORT ?? '3001');
 const HOST = process.env.SERVER_HOST || '127.0.0.1';
 const app = createApp();
 const server = createServer(app);
+server.requestTimeout = 30_000;
+server.headersTimeout = 15_000;
 
 // Periodic cleanup of expired sessions and password reset tokens (every hour)
 const CLEANUP_INTERVAL_MS = 60 * 60 * 1000;

@@ -155,6 +155,21 @@ describe('resetInboundTrafficCounters', () => {
     expect(received.some((request) => request.url.includes('resetAllClientTraffics'))).toBe(false);
   });
 
+  it('resumes client reset without repeating a confirmed aggregate reset', async () => {
+    failClientReset = true;
+    const onAggregateReset = vi.fn();
+    await expect(resetInboundTrafficCounters!(7, { onAggregateReset })).rejects.toThrow(
+      'client reset refused',
+    );
+    expect(onAggregateReset).toHaveBeenCalledOnce();
+    failClientReset = false;
+    await resetInboundTrafficCounters!(7, { skipAggregate: true });
+    expect(received.filter((r) => r.url === '/panel/api/inbounds/update/7')).toHaveLength(1);
+    expect(
+      received.filter((r) => r.url === '/panel/api/inbounds/resetAllClientTraffics/7'),
+    ).toHaveLength(2);
+  });
+
   it('reports failure when the client reset fails after the aggregate was cleared', async () => {
     failClientReset = true;
 

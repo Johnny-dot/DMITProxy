@@ -1,18 +1,9 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { IncomingHttpHeaders } from 'node:http';
-import {
-  buildXuiPath,
-  getXuiPathCandidates,
-  getXuiRequestFactory,
-  getXuiTarget,
-  resolveXuiRedirectPath,
-  shouldSkipXuiTlsVerification,
-} from './xui.js';
+import { buildXuiPath, getXuiTarget } from './xui.js';
+import { requestXuiTransport, XuiTransportError } from './xui-transport.js';
 
-const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
 const MAX_REDIRECTS = 3;
-const skipTlsVerification = shouldSkipXuiTlsVerification();
-let insecureTlsWarningShown = false;
 
 interface XuiEnvelope<T> {
   success: boolean;
@@ -102,14 +93,17 @@ interface XuiRequestResult {
   body: string;
   headers: IncomingHttpHeaders;
   cookies: string[];
+  redirectedToLogin?: boolean;
 }
 
 export class XuiAdminError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, cause?: unknown) {
+    super(message, { cause });
     this.name = 'XuiAdminError';
   }
 }
+
+export class XuiMutationUncertainError extends XuiAdminError {}
 
 export function normalizeSetCookie(setCookie: string[] | string | undefined): string[] {
   if (!setCookie) return [];
@@ -142,7 +136,13 @@ function ensureConfiguredServiceAccount() {
 }
 
 // Module-level session cache for stats fetches (TTL: 10 minutes)
-let cachedStatsCookie: { cookie: string; expiresAt: number } | null = null;
+interface ServiceSession {
+  cookie: string;
+  expiresAt: number;
+  identity: string;
+}
+let cachedStatsCookie: ServiceSession | null = null;
+let pendingStatsLogin: { identity: string; promise: Promise<ServiceSession> } | null = null;
 const DEFAULT_STATS_CACHE_TTL_MS = 5_000;
 const MIN_STATS_CACHE_TTL_MS = 1_000;
 const MAX_STATS_CACHE_TTL_MS = 60_000;
@@ -156,15 +156,60 @@ interface StatsSnapshot {
 
 let cachedStatsSnapshot: StatsSnapshot | null = null;
 let pendingStatsSnapshotPromise: Promise<StatsSnapshot> | null = null;
+let statsGeneration = 0;
+
+async function getServiceSession(username: string, password: string): Promise<ServiceSession> {
+  const identity = createHash('sha256')
+    .update(JSON.stringify([getXuiTarget(), username, password]))
+    .digest('hex');
+  if (cachedStatsCookie?.identity === identity && cachedStatsCookie.expiresAt > Date.now())
+    return cachedStatsCookie;
+  if (pendingStatsLogin?.identity === identity) return pendingStatsLogin.promise;
+  if (
+    (cachedStatsCookie && cachedStatsCookie.identity !== identity) ||
+    (pendingStatsLogin && pendingStatsLogin.identity !== identity)
+  )
+    invalidateStatsSnapshotCache();
+  let pending: NonNullable<typeof pendingStatsLogin>;
+  const promise = loginWithServiceAccount(username, password)
+    .then((cookie) => {
+      const session = { cookie, identity, expiresAt: Date.now() + 10 * 60 * 1000 };
+      if (pendingStatsLogin === pending) cachedStatsCookie = session;
+      return session;
+    })
+    .finally(() => {
+      if (pendingStatsLogin === pending) pendingStatsLogin = null;
+    });
+  pending = { identity, promise };
+  pendingStatsLogin = pending;
+  return promise;
+}
 
 async function getStatsCookieHeader(username: string, password: string): Promise<string> {
-  const now = Date.now();
-  if (cachedStatsCookie && cachedStatsCookie.expiresAt > now) {
-    return cachedStatsCookie.cookie;
+  return (await getServiceSession(username, password)).cookie;
+}
+
+class XuiAuthenticationError extends XuiAdminError {}
+
+async function withServiceRead<T>(
+  username: string,
+  password: string,
+  read: (cookie: string) => Promise<T>,
+): Promise<T> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const session = await getServiceSession(username, password);
+    try {
+      return await read(session.cookie);
+    } catch (error) {
+      if (!(error instanceof XuiAuthenticationError)) throw error;
+      if (cachedStatsCookie === session) {
+        cachedStatsCookie = null;
+        invalidateStatsSnapshotCache();
+      }
+      if (attempt === 1) throw error;
+    }
   }
-  const cookie = await loginWithServiceAccount(username, password);
-  cachedStatsCookie = { cookie, expiresAt: now + 10 * 60 * 1000 };
-  return cookie;
+  throw new XuiAdminError('3X-UI authentication failed');
 }
 
 export function safeNonNegativeInt(value: unknown, fallback = 0): number {
@@ -202,7 +247,9 @@ export function toClientUsage(
 }
 
 function invalidateStatsSnapshotCache() {
+  statsGeneration += 1;
   cachedStatsSnapshot = null;
+  pendingStatsSnapshotPromise = null;
 }
 
 export function buildClientUsageIndex(inbounds: XuiInbound[]): Map<string, XuiClientUsage> {
@@ -275,6 +322,7 @@ async function getStatsSnapshot(
   }
 
   const fetchPromise = (async () => {
+    const generation = statsGeneration;
     const listResp = await requestXuiJson<XuiInbound[]>(
       '/panel/api/inbounds/list',
       'GET',
@@ -292,7 +340,7 @@ async function getStatsSnapshot(
       fetchedAt,
       expiresAt: fetchedAt + getStatsCacheTtlMs(),
     };
-    cachedStatsSnapshot = snapshot;
+    if (generation === statsGeneration) cachedStatsSnapshot = snapshot;
     return snapshot;
   })();
 
@@ -312,120 +360,58 @@ async function requestXui(
   method: string,
   headers: Record<string, string>,
   body: string,
-  redirectsRemaining: number,
-  candidatePaths?: string[],
-  candidateIndex = 0,
+  _redirectsRemaining: number,
 ): Promise<XuiRequestResult> {
   const target = getXuiTarget();
   if (!target) throw new XuiAdminError('VITE_3XUI_SERVER is not configured');
-
-  const requestFactory = getXuiRequestFactory(target.protocol);
-  const candidates =
-    candidatePaths ??
-    getXuiPathCandidates(path).map((candidate) => buildXuiPath(target.basePath, candidate));
-  const targetPath = candidates[candidateIndex];
-  const upstreamOrigin = `${target.protocol}//${target.hostHeader}`;
-  const upstreamReferer = `${upstreamOrigin}${buildXuiPath(target.basePath, '/panel/')}`;
-
-  const requestHeaders: Record<string, string> = {
-    Host: target.hostHeader,
-    Origin: upstreamOrigin,
-    Referer: upstreamReferer,
-    'X-Requested-With': 'XMLHttpRequest',
-    ...headers,
-  };
-  if (body.length > 0) requestHeaders['Content-Length'] = String(Buffer.byteLength(body));
-
-  return new Promise<XuiRequestResult>((resolve, reject) => {
-    const options: any = {
-      hostname: target.hostname,
-      port: target.port,
-      path: targetPath,
+  const origin = `${target.protocol}//${target.hostHeader}`;
+  try {
+    const response = await requestXuiTransport({
+      target,
+      path,
       method,
-      headers: requestHeaders,
-    };
-    if (target.protocol === 'https:' && skipTlsVerification) {
-      options.rejectUnauthorized = false;
-      if (!insecureTlsWarningShown) {
-        insecureTlsWarningShown = true;
-        console.warn(
-          '[Prism] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, auto-provision TLS verification disabled.',
-        );
-      }
-    }
-
-    const req = requestFactory(options, async (res) => {
-      const status = res.statusCode ?? 0;
-      const location = typeof res.headers.location === 'string' ? res.headers.location : undefined;
-      const receivedCookies = normalizeSetCookie(
-        res.headers['set-cookie'] as string[] | string | undefined,
-      );
-
-      let responseBody = '';
-      res.setEncoding('utf8');
-      res.on('data', (chunk) => {
-        responseBody += chunk;
-      });
-      res.on('end', async () => {
-        if (REDIRECT_STATUS_CODES.has(status) && location && redirectsRemaining > 0) {
-          const redirected = resolveXuiRedirectPath(target, location);
-          if (!redirected) {
-            return reject(new XuiAdminError(`Unsafe redirect blocked: ${location}`));
-          }
-          try {
-            const next = await requestXui(
-              redirected,
-              method,
-              headers,
-              body,
-              redirectsRemaining - 1,
-              [redirected],
-              0,
-            );
-            resolve({
-              ...next,
-              cookies: [...receivedCookies, ...next.cookies],
-            });
-          } catch (err) {
-            reject(err);
-          }
-          return;
-        }
-
-        if (status === 404 && candidateIndex + 1 < candidates.length) {
-          try {
-            const next = await requestXui(
-              path,
-              method,
-              headers,
-              body,
-              MAX_REDIRECTS,
-              candidates,
-              candidateIndex + 1,
-            );
-            resolve({
-              ...next,
-              cookies: [...receivedCookies, ...next.cookies],
-            });
-          } catch (err) {
-            reject(err);
-          }
-          return;
-        }
-
-        resolve({
-          status,
-          body: responseBody,
-          headers: res.headers,
-          cookies: receivedCookies,
-        });
-      });
+      body,
+      headers: {
+        Host: target.hostHeader,
+        Origin: origin,
+        Referer: `${origin}${buildXuiPath(target.basePath, '/panel/')}`,
+        'X-Requested-With': 'XMLHttpRequest',
+        ...headers,
+      },
     });
+    return { ...response, body: response.body.toString('utf8') };
+  } catch (error) {
+    throw new XuiAdminError(error instanceof Error ? error.message : '3X-UI request failed', error);
+  }
+}
 
-    req.on('error', (err) => reject(new XuiAdminError(`Failed to request 3X-UI: ${err.message}`)));
-    if (body.length > 0) req.write(body);
-    req.end();
-  });
+function parseXuiEnvelope<T>(
+  response: XuiRequestResult,
+  path: string,
+  cookie: string | null,
+): XuiEnvelope<T> {
+  if (cookie && ([401, 403].includes(response.status) || response.redirectedToLogin))
+    throw new XuiAuthenticationError('3X-UI session expired');
+  if (response.status < 200 || response.status >= 300)
+    throw new XuiAdminError(`3X-UI returned HTTP ${response.status}`);
+  let parsed: XuiEnvelope<T>;
+  try {
+    parsed = JSON.parse(response.body);
+  } catch {
+    if (cookie && String(response.headers['content-type']).includes('text/html'))
+      throw new XuiAuthenticationError('3X-UI session expired');
+    throw new XuiAdminError(`3X-UI returned invalid JSON (HTTP ${response.status})`);
+  }
+  if (!parsed || typeof parsed !== 'object') throw new XuiAdminError('Invalid 3X-UI envelope');
+  if (
+    cookie &&
+    parsed.success === false &&
+    /unauthori[sz]ed|not logged|login required|session expired|未登录|请.*登录/i.test(
+      String(parsed.msg ?? ''),
+    )
+  )
+    throw new XuiAuthenticationError('3X-UI session expired');
+  return parsed;
 }
 
 async function requestXuiJson<T>(
@@ -444,17 +430,7 @@ async function requestXuiJson<T>(
   if (cookieHeader) headers.Cookie = cookieHeader;
 
   const response = await requestXui(path, method, headers, body, MAX_REDIRECTS);
-  if (!response.body) throw new XuiAdminError(`3X-UI returned empty response for ${path}`);
-
-  let parsed: XuiEnvelope<T>;
-  try {
-    parsed = JSON.parse(response.body);
-  } catch {
-    throw new XuiAdminError(
-      `3X-UI returned non-JSON response for ${path} (HTTP ${response.status})`,
-    );
-  }
-  return parsed;
+  return parseXuiEnvelope<T>(response, path, cookieHeader);
 }
 
 async function requestXuiJsonBody<T>(
@@ -471,17 +447,7 @@ async function requestXuiJsonBody<T>(
   if (cookieHeader) headers.Cookie = cookieHeader;
 
   const response = await requestXui(path, method, headers, body, MAX_REDIRECTS);
-  if (!response.body) throw new XuiAdminError(`3X-UI returned empty response for ${path}`);
-
-  let parsed: XuiEnvelope<T>;
-  try {
-    parsed = JSON.parse(response.body);
-  } catch {
-    throw new XuiAdminError(
-      `3X-UI returned non-JSON response for ${path} (HTTP ${response.status})`,
-    );
-  }
-  return parsed;
+  return parseXuiEnvelope<T>(response, path, cookieHeader);
 }
 
 export function buildClientTrafficUpdatePayload(upload: unknown, download: unknown) {
@@ -610,18 +576,17 @@ export async function loginAndListInbounds(
   username: string,
   password: string,
 ): Promise<XuiInbound[]> {
-  // Reuse the cached session cookie instead of logging in on every request
-  const cookieHeader = await getStatsCookieHeader(username, password);
-  const listResp = await requestXuiJson<XuiInbound[]>(
-    '/panel/api/inbounds/list',
-    'GET',
-    null,
-    cookieHeader,
-  );
-  if (!listResp.success || !Array.isArray(listResp.obj)) {
-    throw new XuiAdminError(listResp.msg || 'Failed to fetch inbounds from 3X-UI');
-  }
-  return listResp.obj;
+  return withServiceRead(username, password, async (cookie) => {
+    const response = await requestXuiJson<XuiInbound[]>(
+      '/panel/api/inbounds/list',
+      'GET',
+      null,
+      cookie,
+    );
+    if (!response.success || !Array.isArray(response.obj))
+      throw new XuiAdminError(response.msg || 'Failed to fetch inbounds from 3X-UI');
+    return response.obj;
+  });
 }
 
 export async function provisionClientForRegisteredUser(
@@ -751,7 +716,34 @@ export function buildInboundAggregateTrafficResetPayload(
  * Its resetAllClientTraffics endpoint only resets the latter, so a billing
  * reset is complete only after both operations succeed.
  */
-export async function resetInboundTrafficCounters(inboundId: number): Promise<void> {
+export interface BillingResetOptions {
+  skipAggregate?: boolean;
+  onBeforeWrite?: () => void;
+  onAggregateReset?: () => void;
+}
+
+async function requestBillingWrite(
+  path: string,
+  payload: Record<string, unknown> | null,
+  cookie: string,
+) {
+  try {
+    return await requestXuiJson<null>(path, 'POST', payload, cookie);
+  } catch (error) {
+    if (!(error instanceof XuiAuthenticationError)) {
+      throw new XuiMutationUncertainError(
+        '3X-UI write outcome is unknown; inspect upstream counters before retrying',
+        error,
+      );
+    }
+    throw error;
+  }
+}
+
+export async function resetInboundTrafficCounters(
+  inboundId: number,
+  options: BillingResetOptions = {},
+): Promise<void> {
   if (!Number.isInteger(inboundId) || inboundId <= 0) {
     throw new XuiAdminError('Cannot reset traffic for an invalid inbound id');
   }
@@ -761,12 +753,13 @@ export async function resetInboundTrafficCounters(inboundId: number): Promise<vo
     throw new XuiAdminError('XUI admin credentials are missing in .env');
   }
 
-  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
-  const listResp = await requestXuiJson<XuiInbound[]>(
-    '/panel/api/inbounds/list',
-    'GET',
-    null,
-    cookieHeader,
+  const { cookieHeader, listResp } = await withServiceRead(
+    creds.username,
+    creds.password,
+    async (cookie) => ({
+      cookieHeader: cookie,
+      listResp: await requestXuiJson<XuiInbound[]>('/panel/api/inbounds/list', 'GET', null, cookie),
+    }),
   );
   if (!listResp.success || !Array.isArray(listResp.obj)) {
     throw new XuiAdminError(listResp.msg || 'Failed to fetch inbounds from 3X-UI');
@@ -778,23 +771,29 @@ export async function resetInboundTrafficCounters(inboundId: number): Promise<vo
   }
 
   let aggregateReset = false;
+  let clientResetAttempted = false;
   try {
-    const aggregateResp = await requestXuiJson<null>(
-      `/panel/api/inbounds/update/${inboundId}`,
-      'POST',
-      buildInboundAggregateTrafficResetPayload(inbound),
-      cookieHeader,
-    );
-    if (!aggregateResp.success) {
-      throw new XuiAdminError(
-        aggregateResp.msg || `Failed to reset aggregate traffic for inbound ${inboundId}`,
+    if (!options.skipAggregate) {
+      const payload = buildInboundAggregateTrafficResetPayload(inbound);
+      options.onBeforeWrite?.();
+      const aggregateResp = await requestBillingWrite(
+        `/panel/api/inbounds/update/${inboundId}`,
+        payload,
+        cookieHeader,
       );
+      if (!aggregateResp.success) {
+        throw new XuiAdminError(
+          aggregateResp.msg || `Failed to reset aggregate traffic for inbound ${inboundId}`,
+        );
+      }
+      aggregateReset = true;
+      options.onAggregateReset?.();
     }
-    aggregateReset = true;
 
-    const clientsResp = await requestXuiJson<null>(
+    clientResetAttempted = true;
+    options.onBeforeWrite?.();
+    const clientsResp = await requestBillingWrite(
       `/panel/api/inbounds/resetAllClientTraffics/${inboundId}`,
-      'POST',
       null,
       cookieHeader,
     );
@@ -806,7 +805,7 @@ export async function resetInboundTrafficCounters(inboundId: number): Promise<vo
   } finally {
     // The aggregate update may have succeeded even if the client reset failed.
     // Never serve a pre-reset snapshot after either remote mutation.
-    if (aggregateReset) invalidateStatsSnapshotCache();
+    if (aggregateReset || clientResetAttempted) invalidateStatsSnapshotCache();
   }
 }
 
@@ -852,15 +851,17 @@ export async function fetchClientStatsBySubId(subId: string): Promise<XuiClientU
     return null;
   }
 
-  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
-
-  const initial = await getStatsSnapshot(cookieHeader);
+  const initial = await withServiceRead(creds.username, creds.password, (cookie) =>
+    getStatsSnapshot(cookie),
+  );
   const cachedUsage = initial.snapshot.bySubId.get(normalizedSubId) ?? null;
   if (cachedUsage || !initial.fromCache) {
     return cachedUsage;
   }
 
-  const refreshed = await getStatsSnapshot(cookieHeader, true);
+  const refreshed = await withServiceRead(creds.username, creds.password, (cookie) =>
+    getStatsSnapshot(cookie, true),
+  );
   return refreshed.snapshot.bySubId.get(normalizedSubId) ?? null;
 }
 
@@ -878,37 +879,24 @@ export async function fetchClientUsageSourceBySubId(
     return null;
   }
 
-  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
-
-  const initial = await getStatsSnapshot(cookieHeader);
+  const initial = await withServiceRead(creds.username, creds.password, (cookie) =>
+    getStatsSnapshot(cookie),
+  );
   const cachedUsage = findClientUsageSource(initial.snapshot.inbounds, normalizedSubId);
   if (cachedUsage || !initial.fromCache) {
     return cachedUsage;
   }
 
-  const refreshed = await getStatsSnapshot(cookieHeader, true);
+  const refreshed = await withServiceRead(creds.username, creds.password, (cookie) =>
+    getStatsSnapshot(cookie, true),
+  );
   return findClientUsageSource(refreshed.snapshot.inbounds, normalizedSubId);
 }
 
 export async function fetchXuiInbounds(): Promise<XuiInbound[]> {
   const creds = getXuiCredentials();
-  if (!creds) {
-    throw new XuiAdminError('XUI admin credentials are missing in .env');
-  }
-
-  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
-  const response = await requestXuiJson<XuiInbound[]>(
-    '/panel/api/inbounds/list',
-    'GET',
-    null,
-    cookieHeader,
-  );
-
-  if (!response.success || !Array.isArray(response.obj)) {
-    throw new XuiAdminError(response.msg || 'Failed to fetch inbounds from 3X-UI');
-  }
-
-  return response.obj;
+  if (!creds) throw new XuiAdminError('XUI admin credentials are missing in .env');
+  return loginAndListInbounds(creds.username, creds.password);
 }
 
 export async function fetchServerStatusForPortal(): Promise<XuiServerStatus | null> {
@@ -920,12 +908,8 @@ export async function fetchServerStatusForPortal(): Promise<XuiServerStatus | nu
     return null;
   }
 
-  const cookieHeader = await getStatsCookieHeader(creds.username, creds.password);
-  const response = await requestXuiJson<XuiServerStatus>(
-    '/panel/api/server/status',
-    'GET',
-    null,
-    cookieHeader,
+  const response = await withServiceRead(creds.username, creds.password, (cookie) =>
+    requestXuiJson<XuiServerStatus>('/panel/api/server/status', 'GET', null, cookie),
   );
 
   if (!response.success || !response.obj) {

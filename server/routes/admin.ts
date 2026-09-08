@@ -1,15 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import fs from 'node:fs';
-import path from 'node:path';
-import { dataDirectory, db, dbFilePath, generateToken, hashToken } from '../db.js';
-import {
-  buildXuiPath,
-  getXuiPathCandidates,
-  getXuiRequestFactory,
-  getXuiTarget,
-  resolveXuiRedirectPath,
-  shouldSkipXuiTlsVerification,
-} from '../xui.js';
+import { dataDirectory, db, generateToken, hashToken } from '../db.js';
+import { buildXuiPath, getXuiTarget } from '../xui.js';
 import { type NodeQualityProfile, getNodeQualityProfiles } from '../node-quality.js';
 import { probeAndStoreNodeQualityProfile } from '../node-quality-probe.js';
 import {
@@ -33,7 +24,13 @@ import {
   parseAnnouncementHistory,
   removeAnnouncementHistoryEntry,
 } from '../announcement-history.js';
-import { clearBillingDay, listBillingConfigs, setBillingDay } from '../xui-billing.js';
+import {
+  clearBillingDay,
+  listBillingConfigs,
+  listBillingResetJobs,
+  reviewBillingReset,
+  setBillingDay,
+} from '../xui-billing.js';
 import {
   getDmitTrafficSnapshot,
   upsertDmitTraffic,
@@ -44,14 +41,14 @@ import { getDmitServiceId } from '../dmit-config.js';
 import { getXuiCredentials, loginAndListInbounds } from '../xui-admin.js';
 import { computeMachineUsage } from '../machine-usage.js';
 import { getServerVersion } from '../app-version.js';
+import { requestXuiTransport } from '../xui-transport.js';
+import { TtlCache } from '../ttl-cache.js';
+import { createDatabaseBackup } from '../database-backup.js';
 
 const router = Router();
 const xuiTarget = getXuiTarget();
-const skipTlsVerification = shouldSkipXuiTlsVerification();
-const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
-const MAX_REDIRECTS = 3;
 const ADMIN_VERIFY_CACHE_TTL_MS = 10_000; // cache positive results for 10 seconds
-const adminVerifyCache = new Map<string, { ok: boolean; expiresAt: number }>();
+const adminVerifyCache = new TtlCache<boolean>(512, ADMIN_VERIFY_CACHE_TTL_MS);
 const XUI_NOT_CONFIGURED_ERROR =
   '3X-UI admin capability is not configured. Set VITE_3XUI_SERVER and VITE_3XUI_BASE_PATH in .env.';
 const configuredResetTtlSeconds = Number.parseInt(process.env.PASSWORD_RESET_TTL_SECONDS ?? '', 10);
@@ -59,12 +56,6 @@ const DEFAULT_RESET_TTL_SECONDS =
   Number.isFinite(configuredResetTtlSeconds) && configuredResetTtlSeconds > 0
     ? Math.max(5 * 60, Math.min(24 * 60 * 60, configuredResetTtlSeconds))
     : 30 * 60;
-
-if (xuiTarget?.protocol === 'https:' && skipTlsVerification) {
-  console.warn(
-    '[Prism] WARNING: XUI_TLS_INSECURE_SKIP_VERIFY=true, admin upstream TLS verification disabled.',
-  );
-}
 
 interface AppSettings {
   siteName: string;
@@ -436,87 +427,50 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!xuiTarget) return res.status(503).json({ error: XUI_NOT_CONFIGURED_ERROR });
   const cookie = req.headers.cookie ?? '';
   if (!cookie) return res.status(401).json({ error: 'Unauthorized' });
-
-  const now = Date.now();
-  const cached = adminVerifyCache.get(cookie);
-  if (cached && cached.expiresAt > now) {
-    if (!cached.ok) return res.status(401).json({ error: 'Unauthorized' });
-    return next();
+  const key = hashToken(cookie);
+  const cached = adminVerifyCache.get(key);
+  if (cached !== undefined)
+    return cached ? next() : res.status(401).json({ error: 'Unauthorized' });
+  const controller = new AbortController();
+  const disconnect = () => {
+    if (!res.writableEnded) controller.abort();
+  };
+  res.once('close', disconnect);
+  let ok = false;
+  try {
+    const origin = `${xuiTarget.protocol}//${xuiTarget.hostHeader}`;
+    const response = await requestXuiTransport({
+      target: xuiTarget,
+      path: '/panel/api/server/status',
+      signal: controller.signal,
+      headers: {
+        Cookie: cookie,
+        Host: xuiTarget.hostHeader,
+        Origin: origin,
+        Referer: `${origin}${buildXuiPath(xuiTarget.basePath, '/panel/')}`,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    });
+    if (response.status >= 500)
+      return res.status(503).json({ error: '3X-UI authentication service is unavailable' });
+    try {
+      ok =
+        response.status >= 200 &&
+        response.status < 300 &&
+        !response.redirectedToLogin &&
+        JSON.parse(response.body.toString('utf8')).success === true;
+    } catch {
+      ok = false;
+    }
+  } catch {
+    if (!res.destroyed)
+      res.status(503).json({ error: '3X-UI authentication service is unavailable' });
+    return;
+  } finally {
+    res.off('close', disconnect);
   }
-
-  const ok = await new Promise<boolean>((resolve) => {
-    const requestFactory = getXuiRequestFactory(xuiTarget.protocol);
-    const candidates = getXuiPathCandidates('/panel/api/server/status').map((candidate) =>
-      buildXuiPath(xuiTarget.basePath, candidate),
-    );
-    const upstreamOrigin = `${xuiTarget.protocol}//${xuiTarget.hostHeader}`;
-    const upstreamReferer = `${upstreamOrigin}${buildXuiPath(xuiTarget.basePath, '/panel/')}`;
-
-    const checkAttempt = (
-      targetPath: string,
-      redirectsRemaining: number,
-      candidateIndex: number,
-    ) => {
-      const opts: any = {
-        hostname: xuiTarget.hostname,
-        port: xuiTarget.port,
-        path: targetPath,
-        method: 'GET',
-        headers: {
-          Cookie: cookie,
-          Host: xuiTarget.hostHeader,
-          Origin: upstreamOrigin,
-          Referer: upstreamReferer,
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-      };
-      if (xuiTarget.protocol === 'https:' && skipTlsVerification) {
-        opts.rejectUnauthorized = false;
-      }
-
-      const r = requestFactory(opts, (proxyRes) => {
-        const statusCode = proxyRes.statusCode ?? 0;
-        const location =
-          typeof proxyRes.headers.location === 'string' ? proxyRes.headers.location : undefined;
-        if (REDIRECT_STATUS_CODES.has(statusCode) && location && redirectsRemaining > 0) {
-          const redirectPath = resolveXuiRedirectPath(xuiTarget, location);
-          if (redirectPath) {
-            proxyRes.resume();
-            const redirectedIndex = candidates.indexOf(redirectPath);
-            return checkAttempt(
-              redirectPath,
-              redirectsRemaining - 1,
-              redirectedIndex >= 0 ? redirectedIndex : candidateIndex,
-            );
-          }
-        }
-
-        if (statusCode === 404 && candidateIndex + 1 < candidates.length) {
-          proxyRes.resume();
-          return checkAttempt(candidates[candidateIndex + 1], MAX_REDIRECTS, candidateIndex + 1);
-        }
-
-        let data = '';
-        proxyRes.on('data', (c) => (data += c));
-        proxyRes.on('end', () => {
-          if (statusCode < 200 || statusCode >= 300) return resolve(false);
-          try {
-            resolve(JSON.parse(data).success === true);
-          } catch {
-            resolve(false);
-          }
-        });
-      });
-      r.on('error', () => {
-        resolve(false);
-      });
-      r.end();
-    };
-
-    checkAttempt(candidates[0], MAX_REDIRECTS, 0);
-  });
-
-  adminVerifyCache.set(cookie, { ok, expiresAt: now + ADMIN_VERIFY_CACHE_TTL_MS });
+  if (res.destroyed) return;
+  adminVerifyCache.set(key, ok);
   if (!ok) return res.status(401).json({ error: 'Unauthorized' });
   next();
 }
@@ -840,17 +794,9 @@ router.post('/security/clear-sessions', requireAdmin, (_req, res) => {
 });
 
 // POST /local/admin/maintenance/backup - create a SQLite backup file
-router.post('/maintenance/backup', requireAdmin, (_req, res) => {
+router.post('/maintenance/backup', requireAdmin, async (_req, res) => {
   try {
-    const backupDir = path.join(dataDirectory, 'backups');
-    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
-
-    db.pragma('wal_checkpoint(TRUNCATE)');
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filePath = path.join(backupDir, `prism-${stamp}.db`);
-    fs.copyFileSync(dbFilePath, filePath);
-
-    res.json({ ok: true, file: filePath });
+    res.json({ ok: true, ...(await createDatabaseBackup(db, dataDirectory)) });
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({ error: `Backup failed: ${detail}` });
@@ -864,7 +810,23 @@ router.post('/maintenance/clear-traffic', requireAdmin, (_req, res) => {
 
 // GET /local/admin/xui-inbounds-billing - list per-inbound billing-day configs
 router.get('/xui-inbounds-billing', requireAdmin, (_req, res) => {
-  res.json({ configs: listBillingConfigs() });
+  res.json({ configs: listBillingConfigs(), resets: listBillingResetJobs() });
+});
+
+router.post('/xui-inbounds/:id/billing-reset/review', requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const { cycleDate, decision } = req.body ?? {};
+  if (
+    !Number.isSafeInteger(id) ||
+    id < 1 ||
+    typeof cycleDate !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(cycleDate) ||
+    !['retry', 'aggregate-done', 'complete'].includes(decision)
+  )
+    return res.status(400).json({ error: 'Invalid reset review' });
+  if (!reviewBillingReset(id, cycleDate, decision))
+    return res.status(404).json({ error: 'Pending reset review not found' });
+  return res.json({ ok: true });
 });
 
 // PUT /local/admin/xui-inbounds/:id/billing-day - set or clear billing day
