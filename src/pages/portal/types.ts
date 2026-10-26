@@ -5,6 +5,14 @@ import type { CommunityLink } from '@/src/types/communityLink';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import type { SharedResource } from '@/src/types/sharedResource';
 import type { UserAvatarStyle } from '@/src/types/userProfile';
+import {
+  resolveUserPortalSection,
+  type SetupFocus,
+  type UserPortalTab,
+} from '@/src/utils/userPortalSection';
+
+export type { SetupFocus, UserPortalTab };
+export { resolveUserPortalSection };
 
 export interface UserInfo {
   id: number;
@@ -43,8 +51,6 @@ export interface PortalContextResponse {
 export type SubscriptionFormat = 'universal' | 'clash' | 'v2ray' | 'singbox' | 'surge' | 'quanx';
 export type PlatformKey = 'all' | 'windows' | 'macos' | 'linux' | 'android' | 'ios' | 'harmonyos';
 export type PortalTab = 'home' | 'setup' | 'help' | 'community' | 'notifications' | 'management';
-export type UserPortalTab = 'home' | 'setup' | 'help';
-export type SetupFocus = 'overview' | 'downloads';
 export type ViewerRole = 'user' | 'admin';
 
 export interface ClientCard {
@@ -118,20 +124,6 @@ export function getUserPortalSectionParam(tab: PortalTab): UserPortalTab {
     return tab;
   }
   return 'home';
-}
-
-export function resolveUserPortalSection(value: string | null): {
-  tab: UserPortalTab;
-  setupFocus: SetupFocus;
-} {
-  if (value === 'community') return { tab: 'help', setupFocus: 'overview' };
-  if (value === 'clients') return { tab: 'setup', setupFocus: 'downloads' };
-  if (value === 'help' || value === 'support') return { tab: 'help', setupFocus: 'overview' };
-  if (value === 'setup' || value === 'subscription') {
-    return { tab: 'setup', setupFocus: 'overview' };
-  }
-
-  return { tab: 'home', setupFocus: 'overview' };
 }
 
 export function isPortalTab(value: string | null): value is PortalTab {

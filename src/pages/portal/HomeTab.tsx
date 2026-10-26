@@ -375,20 +375,12 @@ function MySubscriptionHero({
   return (
     <section className="user-sub" data-testid="subscription-home-account-status">
       <div className="user-sub-head">
-        <div className="min-w-0">
-          <h2 className="user-sub-title">{isZh ? '导入订阅' : 'Import subscription'}</h2>
-          <p className="user-section-label" data-testid="subscription-home-status">
-            {isZh ? '我的订阅' : 'My subscription'}
-            {username ? ` · ${username}` : ''}
-            {` · ${statusLabel}`}
-          </p>
-        </div>
-        {subscriptionUniversalUrl ? (
-          <div className="user-sub-qr">
-            <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} plain size={140} />
-            <p className="user-section-label">{isZh ? '扫码导入' : 'Scan to import'}</p>
-          </div>
-        ) : null}
+        <h2 className="user-sub-title">{isZh ? '导入订阅' : 'Import subscription'}</h2>
+        <p className="user-section-label" data-testid="subscription-home-status">
+          {isZh ? '我的订阅' : 'My subscription'}
+          {username ? ` · ${username}` : ''}
+          {` · ${statusLabel}`}
+        </p>
       </div>
 
       {isLoading ? (
@@ -411,79 +403,89 @@ function MySubscriptionHero({
       ) : hasSubscription ? (
         <>
           {subscriptionUniversalUrl && importAction ? (
-            <div className="grid gap-3">
-              <div
-                className="user-device-tabs"
-                role="group"
-                aria-label={isZh ? '选择设备' : 'Choose a device'}
-              >
-                {IMPORT_DEVICES.map((device) => {
-                  const selected = device === importDevice;
-                  return (
-                    <button
-                      key={device}
-                      type="button"
-                      data-testid={`subscription-import-${device}`}
-                      aria-pressed={selected}
-                      className="user-device-tab"
-                      onClick={() => setImportDevice(device)}
-                    >
-                      {importDeviceLabel(device, isZh)}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="user-sub-actions">
-                <Button
-                  className="user-primary-action"
-                  onClick={() => {
-                    window.location.href = importAction.openUrl;
-                  }}
-                  data-testid="subscription-home-import"
+            <div className="user-sub-import">
+              <div className="grid gap-3">
+                <div
+                  className="user-device-tabs"
+                  role="group"
+                  aria-label={isZh ? '选择设备' : 'Choose a device'}
                 >
-                  {importPrimaryLabel(importDevice, isZh)}
-                </Button>
-                <div className="user-sub-ghosts">
+                  {IMPORT_DEVICES.map((device) => {
+                    const selected = device === importDevice;
+                    return (
+                      <button
+                        key={device}
+                        type="button"
+                        data-testid={`subscription-import-${device}`}
+                        aria-pressed={selected}
+                        className="user-device-tab"
+                        onClick={() => setImportDevice(device)}
+                      >
+                        {importDeviceLabel(device, isZh)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="user-sub-actions">
                   <Button
-                    variant="ghost"
-                    className="gap-1.5"
+                    className="user-primary-action"
                     onClick={() => {
-                      onCopy(importAction.copyUrl, 'home-universal');
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
+                      window.location.href = importAction.openUrl;
                     }}
+                    data-testid="subscription-home-import"
                   >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制' : 'Copy'}
+                    {importPrimaryLabel(importDevice, isZh)}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    className="gap-1.5 lg:hidden"
-                    onClick={() => setShowQr((value) => !value)}
-                    aria-expanded={showQr}
-                    data-testid="subscription-home-qr"
-                  >
-                    <QrCode className="h-4 w-4" />
-                    {isZh ? '二维码' : 'QR'}
-                  </Button>
-                  <Button variant="ghost" className="gap-1.5" onClick={() => onSetSection('setup')}>
-                    <Download className="h-4 w-4" />
-                    {isZh ? '下载' : 'Download'}
-                  </Button>
+                  <div className="user-sub-ghosts">
+                    <Button
+                      variant="ghost"
+                      className="gap-1.5"
+                      onClick={() => {
+                        onCopy(importAction.copyUrl, 'home-universal');
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                    >
+                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制' : 'Copy'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="gap-1.5 lg:hidden"
+                      onClick={() => setShowQr((value) => !value)}
+                      aria-expanded={showQr}
+                      data-testid="subscription-home-qr"
+                    >
+                      <QrCode className="h-4 w-4" />
+                      {isZh ? '二维码' : 'QR'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="gap-1.5"
+                      onClick={() => onSetSection('setup')}
+                    >
+                      <Download className="h-4 w-4" />
+                      {isZh ? '下载' : 'Download'}
+                    </Button>
+                  </div>
                 </div>
+                <p className="user-section-label">{importHint(importDevice, isZh)}</p>
+                <p className="user-sub-link user-num">
+                  {maskSubscriptionUrl(subscriptionUniversalUrl)}
+                </p>
+                <p className="user-section-label">
+                  {isZh ? '请勿转发订阅链接。' : 'Do not share this subscription link.'}
+                </p>
+                {showQr && subscriptionUniversalUrl ? (
+                  <div className="lg:hidden">
+                    <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} plain size={140} />
+                  </div>
+                ) : null}
               </div>
-              <p className="user-section-label">{importHint(importDevice, isZh)}</p>
-              <p className="user-sub-link user-num">
-                {maskSubscriptionUrl(subscriptionUniversalUrl)}
-              </p>
-              <p className="user-section-label">
-                {isZh ? '请勿转发订阅链接。' : 'Do not share this subscription link.'}
-              </p>
-              {showQr && subscriptionUniversalUrl ? (
-                <div className="lg:hidden">
-                  <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} plain size={140} />
-                </div>
-              ) : null}
+              <div className="user-sub-qr">
+                <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} plain size={112} />
+                <p className="user-section-label">{isZh ? '扫码导入' : 'Scan to import'}</p>
+              </div>
             </div>
           ) : null}
           <div className="user-sub-stats">
