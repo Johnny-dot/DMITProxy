@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
   Bell,
@@ -20,6 +20,7 @@ import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
 import { getAvatarInitials, getAvatarToneClasses } from '@/src/utils/userProfile';
 import { resolveUserPortalSection } from '@/src/pages/portal/types';
+import { resolveSidebarNav, type SidebarNavId } from '@/src/utils/sidebarNav';
 import { getSidebarSubtitle } from '@/src/utils/sidebarSubtitle';
 
 export function Sidebar({
@@ -42,37 +43,92 @@ export function Sidebar({
   const activeUserSection = resolveUserPortalSection(
     new URLSearchParams(location.search).get('section'),
   ).tab;
+  const activeNav = resolveSidebarNav(location.pathname, location.search);
 
-  const adminMenuItems = [
-    { icon: LayoutDashboard, label: t('nav.dashboard'), path: '/' },
-    { icon: Server, label: t('nav.nodes'), path: '/nodes' },
-    { icon: ShieldCheck, label: t('nav.inbounds'), path: '/inbounds' },
-    { icon: Users, label: userCenterLabel, path: '/users' },
-    { icon: BarChart3, label: t('nav.traffic'), path: '/traffic' },
-    { icon: Satellite, label: isZh ? 'DMIT 同步' : 'DMIT Sync', path: '/admin/dmit-sync' },
-    { icon: Settings, label: t('nav.settings'), path: '/settings' },
+  const adminMenuItems: Array<{
+    id: SidebarNavId;
+    icon: typeof LayoutDashboard;
+    label: string;
+    to: string;
+    testId: string;
+  }> = [
+    {
+      id: 'admin-dashboard',
+      icon: LayoutDashboard,
+      label: t('nav.dashboard'),
+      to: '/',
+      testId: 'sidebar-admin-dashboard',
+    },
+    {
+      id: 'admin-nodes',
+      icon: Server,
+      label: t('nav.nodes'),
+      to: '/nodes',
+      testId: 'sidebar-admin-nodes',
+    },
+    {
+      id: 'admin-inbounds',
+      icon: ShieldCheck,
+      label: t('nav.inbounds'),
+      to: '/inbounds',
+      testId: 'sidebar-admin-inbounds',
+    },
+    {
+      id: 'admin-users',
+      icon: Users,
+      label: userCenterLabel,
+      to: '/users',
+      testId: 'sidebar-admin-users',
+    },
+    {
+      id: 'admin-traffic',
+      icon: BarChart3,
+      label: t('nav.traffic'),
+      to: '/traffic',
+      testId: 'sidebar-admin-traffic',
+    },
+    {
+      id: 'admin-dmit',
+      icon: Satellite,
+      label: isZh ? 'DMIT 同步' : 'DMIT Sync',
+      to: '/admin/dmit-sync',
+      testId: 'sidebar-admin-dmit',
+    },
+    {
+      id: 'admin-settings',
+      icon: Settings,
+      label: t('nav.settings'),
+      to: '/settings',
+      testId: 'sidebar-admin-settings',
+    },
   ];
 
-  const userMenuItems = [
+  const userMenuItems: Array<{
+    id: SidebarNavId;
+    icon: typeof LayoutDashboard;
+    label: string;
+    to: string;
+    testId: string;
+  }> = [
     {
+      id: 'user-overview',
       icon: LayoutDashboard,
       label: overviewLabel,
       to: '/my-subscription?section=home',
-      active: location.pathname === '/my-subscription' && activeUserSection === 'home',
       testId: 'sidebar-user-overview',
     },
     {
+      id: 'user-subscription',
       icon: LinkIcon,
       label: setupLabel,
       to: '/my-subscription?section=setup',
-      active: location.pathname === '/my-subscription' && activeUserSection === 'setup',
       testId: 'sidebar-user-setup',
     },
     {
+      id: 'user-help',
       icon: LifeBuoy,
       label: helpLabel,
       to: '/my-subscription?section=help',
-      active: location.pathname === '/my-subscription' && activeUserSection === 'help',
       testId: 'sidebar-user-help',
     },
   ];
@@ -91,7 +147,7 @@ export function Sidebar({
         : t('nav.dashboard');
 
   return (
-    <aside className="surface-card flex h-[calc(100dvh-2rem)] w-full flex-col gap-5 p-3 md:w-64">
+    <aside className="user-sidebar surface-card w-full md:w-64">
       <div className="relative overflow-hidden px-3 py-4">
         <div className="absolute inset-x-6 top-0 h-px bg-white/25" />
         <div className="flex items-center gap-3">
@@ -125,39 +181,25 @@ export function Sidebar({
         aria-label={isZh ? '主导航' : 'Main navigation'}
         className="flex-1 space-y-1.5 overflow-y-auto"
       >
-        {role === 'user'
-          ? userMenuItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={onNavigate}
-                data-testid={item.testId}
-                className={cn(
-                  'flex items-center gap-3 px-4 py-3 text-sm font-medium',
-                  item.active ? 'glass-nav-item-active' : 'glass-nav-item',
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </NavLink>
-            ))
-          : adminMenuItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === '/'}
-                onClick={onNavigate}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 px-4 py-3 text-sm font-medium',
-                    isActive ? 'glass-nav-item-active' : 'glass-nav-item',
-                  )
-                }
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </NavLink>
-            ))}
+        {(role === 'user' ? userMenuItems : adminMenuItems).map((item) => {
+          const active = activeNav === item.id;
+          return (
+            <Link
+              key={item.id}
+              to={item.to}
+              onClick={onNavigate}
+              data-testid={item.testId}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 text-sm font-medium',
+                active ? 'glass-nav-item-active' : 'glass-nav-item',
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          );
+        })}
       </nav>
 
       {onClose ? (
@@ -178,20 +220,20 @@ export function Sidebar({
         </div>
       ) : null}
 
-      <div className="soft-divider border-t pt-5">
+      <div className="user-sidebar-account">
         <NavLink
           to="/profile"
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              'surface-panel flex items-center gap-3 px-4 py-4 transition-colors',
-              isActive && 'border-[color:var(--border-strong)]',
+              'flex items-center gap-3 px-3 py-3 transition-colors',
+              isActive && 'text-[var(--text-primary)]',
             )
           }
         >
           <div
             className={cn(
-              'glass-pill flex h-11 w-11 items-center justify-center text-sm font-semibold',
+              'flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] text-sm font-semibold',
               role === 'user' ? getAvatarToneClasses(avatarStyle) : 'text-[var(--accent)]',
             )}
           >

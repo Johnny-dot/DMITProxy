@@ -22,15 +22,15 @@ export function Layout() {
   }, []);
 
   return (
-    <div className="user-surface relative h-dvh min-h-dvh overflow-hidden text-[var(--text-primary)]">
+    <div className="user-surface app-shell relative min-h-dvh text-[var(--text-primary)]">
       <div className="pointer-events-none absolute inset-0 opacity-35">
         <div className="absolute left-[-9rem] top-[-7rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(255,255,255,0.74)_0%,_rgba(255,255,255,0)_68%)] blur-2xl" />
         <div className="absolute right-[-10rem] top-[4rem] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,_rgba(111,154,255,0.32)_0%,_rgba(111,154,255,0)_68%)] blur-3xl" />
         <div className="absolute bottom-[-10rem] left-[18%] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(76,205,186,0.24)_0%,_rgba(76,205,186,0)_70%)] blur-3xl" />
       </div>
 
-      <div className="relative z-10 flex h-full overflow-hidden">
-        <div className="app-sidebar-slot p-4 pr-0">
+      <div className="app-frame relative z-10 flex min-h-dvh items-stretch">
+        <div className="app-sidebar-slot">
           <Sidebar />
         </div>
 
@@ -46,8 +46,8 @@ export function Layout() {
           />
         </Modal>
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden pb-4">
-          <div className="app-topbar-shell content-shell-wide shrink-0 px-4 pb-4 pt-4 md:px-6 md:pb-6 md:pt-6 xl:px-8">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="app-topbar-shell content-shell-wide shrink-0 px-4 pb-3 pt-3 md:px-6 md:pb-4 md:pt-4 xl:px-8">
             <header className="app-topbar surface-card flex h-16 items-center px-4 md:px-6">
               <div className="flex w-full items-center gap-4">
                 <Button
@@ -77,10 +77,7 @@ export function Layout() {
                 : 'Demo data. Nodes and used traffic are examples.'}
             </div>
           )}
-          <main
-            className="min-h-0 flex-1 overflow-x-clip overflow-y-auto"
-            style={{ scrollbarGutter: 'stable' }}
-          >
+          <main className="min-w-0 flex-1 overflow-x-clip">
             {/* Route key remounts the wrapper so the enter animation plays on
                 each navigation. We drop the exit animation that AnimatePresence
                 used to provide — the new route renders immediately. */}

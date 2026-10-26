@@ -24,7 +24,16 @@ import { cn } from '@/src/utils/cn';
 import { formatDateTime } from '@/src/utils/dateTime';
 import { formatTraffic } from '@/src/utils/xuiClients';
 import { getFraudRiskMeta, isNodeQualityStale } from '@/src/utils/nodeQuality';
-import { buildClashInstallConfigUrl, maskSubscriptionUrl } from '@/src/utils/subscription';
+import { maskSubscriptionUrl } from '@/src/utils/subscription';
+import {
+  detectImportDevice,
+  importDeviceLabel,
+  importHint,
+  importPrimaryLabel,
+  IMPORT_DEVICES,
+  resolveImportAction,
+  type ImportDevice,
+} from '@/src/utils/subscriptionImport';
 import {
   parseSubscriptionNodeCards,
   type SubscriptionNodeCard,
@@ -82,8 +91,6 @@ export function HomeTab({
   // Route detail is heavy on a phone — start collapsed there, expanded on desktop.
   const [showRouteDetail, setShowRouteDetail] = useState(false);
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
-  const clashInstallUrl = buildClashInstallConfigUrl(subscriptionUniversalUrl);
-
   const latestAnnouncement = effectiveSettings?.announcementActive
     ? effectiveSettings.announcementText.trim()
     : '';
@@ -150,7 +157,7 @@ export function HomeTab({
   }
 
   return (
-    <div className="user-home-stack space-y-6">
+    <div className="user-home-stack">
       <MySubscriptionHero
         isZh={isZh}
         username={context?.user.username ?? ''}
@@ -161,7 +168,6 @@ export function HomeTab({
         isLoading={isStatsLoading}
         onCopy={onCopy}
         onSetSection={onSetSection}
-        clashInstallUrl={clashInstallUrl}
       />
 
       {hasSubscription ? (
@@ -177,7 +183,7 @@ export function HomeTab({
       ) : null}
 
       {hasSubscription || serverStatus || isStatsLoading ? (
-        <section className="surface-card p-5 md:p-6" data-testid="subscription-home-details">
+        <section className="user-flat-section" data-testid="subscription-home-details">
           <button
             type="button"
             className="flex w-full items-center justify-between gap-3 text-left"
@@ -186,10 +192,8 @@ export function HomeTab({
             data-testid="subscription-home-details-toggle"
           >
             <span>
-              <span className="block text-sm font-medium text-zinc-50">
-                {isZh ? '详细信息' : 'Details'}
-              </span>
-              <span className="mt-1 block text-xs leading-5 text-[var(--text-secondary)]">
+              <span className="user-section-label">{isZh ? '详细信息' : 'Details'}</span>
+              <span className="mt-1 block text-sm text-[var(--text-secondary)]">
                 {isZh ? '账单、已用流量和节点检测。' : 'Billing, used traffic, and the node check.'}
               </span>
             </span>
@@ -243,11 +247,6 @@ export function HomeTab({
   );
 }
 
-function formatExpiry(ms: number, isZh: boolean) {
-  if (ms === 0) return isZh ? '永不过期' : 'Never';
-  return formatDateTime(ms);
-}
-
 function daysUntilResetDay(resetDay: number): number {
   const now = new Date();
   const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
@@ -270,24 +269,10 @@ function formatSyncTime(ms: number | null | undefined, isZh: boolean): string {
   return isZh ? `${days} 天前` : `${days}d ago`;
 }
 
-const STATUS_BORDER = {
-  ready: 'border-emerald-500/30',
-  preparing: 'border-amber-500/30',
-  disabled: 'border-red-500/30',
-  unavailable: 'border-amber-500/30',
-} as const;
-const STATUS_PILL = {
-  ready: 'bg-emerald-500/10 text-emerald-500',
-  preparing: 'bg-amber-500/10 text-amber-500',
-  disabled: 'bg-red-500/10 text-red-500',
-  unavailable: 'bg-amber-500/10 text-amber-500',
-} as const;
-const STATUS_DOT = {
-  ready: 'bg-emerald-500',
-  preparing: 'bg-amber-500',
-  disabled: 'bg-red-500',
-  unavailable: 'bg-amber-500',
-} as const;
+function shortExpiry(ms: number, isZh: boolean) {
+  if (ms === 0) return isZh ? '永久' : 'Never';
+  return formatDateTime(ms).slice(0, 10);
+}
 
 function MySubscriptionHero({
   isZh,
@@ -299,7 +284,6 @@ function MySubscriptionHero({
   isLoading,
   onCopy,
   onSetSection,
-  clashInstallUrl,
 }: {
   isZh: boolean;
   username: string;
@@ -310,37 +294,50 @@ function MySubscriptionHero({
   isLoading?: boolean;
   onCopy: (text: string, key: string) => void;
   onSetSection: (tab: PortalTab) => void;
-  clashInstallUrl: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [importDevice, setImportDevice] = useState<ImportDevice>(() =>
+    detectImportDevice(typeof navigator === 'undefined' ? '' : navigator.userAgent),
+  );
 
-  const machineSummaryHelpText = isZh ? '拆分在详细信息里。' : 'The split is under Details.';
+  const importAction = subscriptionUniversalUrl
+    ? resolveImportAction(importDevice, subscriptionUniversalUrl)
+    : null;
+  const machineSummaryHelpText = isZh
+    ? '这是整台服务器的共享额度，不是你一个人的用量。拆分在详细信息里。'
+    : 'This is the whole server’s shared quota, not your personal usage. The split is under Details.';
 
   const used = stats ? stats.up + stats.down : 0;
   const hasPool = Boolean(usageSummary && usageSummary.machineTotal > 0);
 
+  let quotaLabel = '';
   let bigValue = '';
   let subtitle = '';
+  let personalUsage = '';
   let usedPercent = 0;
   let unlimited = false;
 
   if (hasPool && usageSummary) {
-    const { machineRemaining, machineTotal, machineUsed } = usageSummary;
+    const { machineRemaining, machineTotal, machineUsed, ownUsed } = usageSummary;
+    quotaLabel = isZh ? '服务器共享流量' : 'Shared server traffic';
     bigValue = formatTraffic(machineRemaining);
     usedPercent = Math.min(Math.max((machineUsed / machineTotal) * 100, 0), 100);
     subtitle = isZh
-      ? `已用流量 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
-      : `Used traffic ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
+      ? `剩余 · 已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
+      : `Left · used ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
+    personalUsage = formatTraffic(ownUsed);
   } else if (stats && stats.total > 0) {
     const remaining = Math.max(stats.total - used, 0);
+    quotaLabel = isZh ? '个人流量' : 'Personal traffic';
     bigValue = formatTraffic(remaining);
     usedPercent = Math.min((used / stats.total) * 100, 100);
     subtitle = isZh
-      ? `已用流量 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
-      : `Used traffic ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
+      ? `剩余 · 已用 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
+      : `Left · used ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
   } else {
     unlimited = true;
+    quotaLabel = isZh ? '已用流量' : 'Used traffic';
     bigValue = formatTraffic(used);
     subtitle = isZh ? '不限流量' : 'Unlimited';
   }
@@ -353,9 +350,9 @@ function MySubscriptionHero({
     : null;
 
   const isExpired = Boolean(stats && stats.expiryTime > 0 && stats.expiryTime < Date.now());
-  const expiryText = stats ? formatExpiry(stats.expiryTime, isZh) : null;
+  const expiryText = stats ? shortExpiry(stats.expiryTime, isZh) : null;
 
-  const status: keyof typeof STATUS_BORDER = !hasSubscription
+  const status = !hasSubscription
     ? 'preparing'
     : !stats
       ? 'unavailable'
@@ -376,35 +373,14 @@ function MySubscriptionHero({
   }[status];
 
   return (
-    <section
-      className={cn('user-hero surface-card space-y-6 border p-6 md:p-8', STATUS_BORDER[status])}
-      data-testid="subscription-home-account-status"
-    >
-      <div className="user-hero-intro flex flex-wrap items-start justify-between gap-4">
-        <div className="user-hero-title max-w-xl space-y-2">
-          <p className="section-kicker">{isZh ? '我的订阅' : 'My subscription'}</p>
-          <h2 className="user-display text-[var(--text-primary)]">
-            {isZh ? '复制订阅链接' : 'Copy subscription link'}
-          </h2>
-          {username ? <p className="text-sm text-[var(--text-secondary)]">{username}</p> : null}
-        </div>
-        <span
-          data-testid="subscription-home-status"
-          className={cn(
-            'user-hero-status inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
-            STATUS_PILL[status],
-          )}
-        >
-          <span
-            className={cn('user-hero-status-dot h-1.5 w-1.5 rounded-full', STATUS_DOT[status])}
-          />
-          <span className="user-hero-status-prefix">
-            {isZh ? '我的订阅' : 'My subscription'}
-            {username ? ` · ${username}` : ''}
-            {' · '}
-          </span>
-          {statusLabel}
-        </span>
+    <section className="user-sub" data-testid="subscription-home-account-status">
+      <div className="user-sub-head">
+        <h2 className="user-sub-title">{isZh ? '导入订阅' : 'Import subscription'}</h2>
+        <p className="user-section-label" data-testid="subscription-home-status">
+          {isZh ? '我的订阅' : 'My subscription'}
+          {username ? ` · ${username}` : ''}
+          {` · ${statusLabel}`}
+        </p>
       </div>
 
       {isLoading ? (
@@ -425,129 +401,131 @@ function MySubscriptionHero({
           </Button>
         </div>
       ) : hasSubscription ? (
-        <div className="user-hero-body grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_220px] lg:items-start">
-          <div className="space-y-4">
-            {subscriptionUniversalUrl ? (
-              <div className="user-link-well space-y-4">
-                <p className="text-xs font-semibold tracking-wide text-[var(--text-secondary)]">
-                  {isZh ? '订阅链接' : 'Subscription link'}
-                </p>
-                <p className="user-num user-hero-link break-all text-base leading-7 text-[var(--text-primary)]">
-                  {maskSubscriptionUrl(subscriptionUniversalUrl)}
-                </p>
-                <div className="user-hero-actions flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  <Button
-                    className="user-primary-action user-hero-copy h-12 gap-2 px-5 text-base sm:min-w-44"
-                    onClick={() => {
-                      onCopy(subscriptionUniversalUrl, 'home-universal');
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
-                  >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copied
-                      ? isZh
-                        ? '已复制'
-                        : 'Copied'
-                      : isZh
-                        ? '复制订阅链接'
-                        : 'Copy subscription link'}
-                  </Button>
-                  <div className="user-hero-secondary">
-                    {clashInstallUrl ? (
-                      <Button
-                        variant="secondary"
-                        className="user-hero-compact-btn h-12 gap-2 px-5"
-                        onClick={() => {
-                          window.location.href = clashInstallUrl;
-                        }}
-                        data-testid="subscription-home-flclash-import"
+        <>
+          {subscriptionUniversalUrl && importAction ? (
+            <div className="user-sub-import">
+              <div className="grid gap-3">
+                <div
+                  className="user-device-tabs"
+                  role="group"
+                  aria-label={isZh ? '选择设备' : 'Choose a device'}
+                >
+                  {IMPORT_DEVICES.map((device) => {
+                    const selected = device === importDevice;
+                    return (
+                      <button
+                        key={device}
+                        type="button"
+                        data-testid={`subscription-import-${device}`}
+                        aria-pressed={selected}
+                        className="user-device-tab"
+                        onClick={() => setImportDevice(device)}
                       >
-                        <Download className="h-4 w-4" />
-                        <span className="user-hero-label-long">
-                          {isZh ? '用 FlClash 打开' : 'Open in FlClash'}
-                        </span>
-                        <span className="user-hero-label-short">FlClash</span>
-                      </Button>
-                    ) : null}
+                        {importDeviceLabel(device, isZh)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="user-sub-actions">
+                  <Button
+                    className="user-primary-action"
+                    onClick={() => {
+                      window.location.href = importAction.openUrl;
+                    }}
+                    data-testid="subscription-home-import"
+                  >
+                    {importPrimaryLabel(importDevice, isZh)}
+                  </Button>
+                  <div className="user-sub-ghosts">
                     <Button
-                      variant="secondary"
-                      className="user-hero-compact-btn h-12 gap-2 px-5 lg:hidden"
-                      onClick={() => setShowQr((value) => !value)}
-                      aria-expanded={showQr}
+                      variant="ghost"
+                      className="gap-1.5"
+                      onClick={() => {
+                        onCopy(importAction.copyUrl, 'home-universal');
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
                     >
-                      <QrCode className="h-4 w-4" />
-                      <span className="user-hero-label-long">{isZh ? '二维码' : 'QR code'}</span>
-                      <span className="user-hero-label-short">{isZh ? '二维码' : 'QR'}</span>
+                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制' : 'Copy'}
                     </Button>
                     <Button
-                      variant="outline"
-                      className="user-hero-compact-btn h-12 gap-2 px-5"
+                      variant="ghost"
+                      className="gap-1.5 lg:hidden"
+                      onClick={() => setShowQr((value) => !value)}
+                      aria-expanded={showQr}
+                      data-testid="subscription-home-qr"
+                    >
+                      <QrCode className="h-4 w-4" />
+                      {isZh ? '二维码' : 'QR'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="gap-1.5"
                       onClick={() => onSetSection('setup')}
                     >
                       <Download className="h-4 w-4" />
-                      <span className="user-hero-label-long">
-                        {isZh ? '下载客户端' : 'Download client'}
-                      </span>
-                      <span className="user-hero-label-short">{isZh ? '下载' : 'Download'}</span>
+                      {isZh ? '下载' : 'Download'}
                     </Button>
                   </div>
                 </div>
-              </div>
-            ) : null}
-            <div className="user-hero-stats grid gap-3 sm:grid-cols-3">
-              <div className="user-stat">
-                <p>
-                  {unlimited ? (isZh ? '已用流量' : 'Used traffic') : isZh ? '还能用' : 'Remaining'}
+                <p className="user-section-label">{importHint(importDevice, isZh)}</p>
+                <p className="user-sub-link user-num">
+                  {maskSubscriptionUrl(subscriptionUniversalUrl)}
                 </p>
-                <strong>{bigValue}</strong>
-                <span className="inline-flex items-center gap-1">
-                  {subtitle}
-                  {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
-                </span>
+                <p className="user-section-label">
+                  {isZh ? '请勿转发订阅链接。' : 'Do not share this subscription link.'}
+                </p>
+                {showQr && subscriptionUniversalUrl ? (
+                  <div className="lg:hidden">
+                    <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} plain size={140} />
+                  </div>
+                ) : null}
               </div>
-              <div className="user-stat">
-                <p>{isZh ? '重置' : 'Reset'}</p>
-                <strong>{resetText ?? (isZh ? '未同步' : 'Not synced')}</strong>
+              <div className="user-sub-qr">
+                <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} plain size={112} />
+                <p className="user-section-label">{isZh ? '扫码导入' : 'Scan to import'}</p>
               </div>
-              <div className="user-stat">
-                <p>{isZh ? '到期' : 'Expires'}</p>
-                <strong className={cn(isExpired && 'text-red-500')}>
-                  {expiryText ?? (isZh ? '未同步' : 'Not synced')}
-                </strong>
-              </div>
-            </div>
-            {!unlimited ? (
-              <UsageMeter percent={usedPercent} value={`${Math.round(usedPercent)}%`} />
-            ) : null}
-            <p className="text-sm leading-6 text-[var(--text-secondary)]">
-              {isZh ? '请勿转发订阅链接。' : 'Do not share this subscription link.'}
-            </p>
-            <p className="text-sm leading-6 text-[var(--text-secondary)]">
-              {isZh
-                ? 'v2rayN：粘贴订阅链接，更新后选择节点。'
-                : 'v2rayN: paste the subscription link, update, then choose a node.'}
-            </p>
-            {showQr && subscriptionUniversalUrl ? (
-              <div className="lg:hidden">
-                <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
-              </div>
-            ) : null}
-          </div>
-          {subscriptionUniversalUrl ? (
-            <div className="hidden flex-col items-center gap-2 lg:flex">
-              <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
-              <p className="text-xs text-[var(--text-secondary)]">
-                {isZh ? '扫码导入' : 'Scan to import'}
-              </p>
             </div>
           ) : null}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="surface-panel p-4 text-sm font-medium text-amber-500">
-            {isZh ? '订阅链接还在准备。' : 'The subscription link is not ready yet.'}
+          <div className="user-sub-stats">
+            <div
+              className="user-sub-stat"
+              data-testid={hasPool ? 'subscription-shared-quota' : 'subscription-personal-quota'}
+            >
+              <p className="user-figure">{bigValue}</p>
+              <div className="user-section-label">
+                <span>{quotaLabel}</span>
+                {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
+              </div>
+              <p className="user-section-label">{subtitle}</p>
+            </div>
+            {personalUsage ? (
+              <div className="user-sub-stat" data-testid="subscription-personal-usage">
+                <p className="user-figure">{personalUsage}</p>
+                <p className="user-section-label">{isZh ? '你用了' : 'You used'}</p>
+              </div>
+            ) : null}
+            <div className="user-sub-stat">
+              <p className="user-figure">{resetText ?? (isZh ? '未同步' : 'Not synced')}</p>
+              <p className="user-section-label">{isZh ? '重置' : 'Reset'}</p>
+            </div>
+            <div className="user-sub-stat">
+              <p className={cn('user-figure', isExpired && 'text-red-500')}>
+                {expiryText ?? (isZh ? '未同步' : 'Not synced')}
+              </p>
+              <p className="user-section-label">{isZh ? '到期' : 'Expires'}</p>
+            </div>
           </div>
+          {!unlimited ? (
+            <UsageMeter percent={usedPercent} value={`${Math.round(usedPercent)}%`} />
+          ) : null}
+        </>
+      ) : (
+        <div className="grid gap-3">
+          <p className="user-section-label">
+            {isZh ? '订阅链接还在准备。' : 'The subscription link is not ready yet.'}
+          </p>
           <Button
             variant="secondary"
             size="sm"
@@ -591,20 +569,16 @@ function SubscriptionNodeCards({ url, isZh }: { url: string; isZh: boolean }) {
   });
 
   return (
-    <section className="space-y-3" data-testid="subscription-node-cards">
-      <div className="flex items-end justify-between gap-3">
-        <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-          {isZh ? '节点' : 'Nodes'}
-        </h3>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <section data-testid="subscription-node-cards">
+      <p className="user-section-label">{isZh ? '节点' : 'Nodes'}</p>
+      <div className="user-node-grid">
         {ordered.map((card) => (
-          <article key={card.id} className="user-node-card space-y-3">
-            <div className="flex items-center gap-3">
+          <article key={card.id}>
+            <div className="user-node-name">
               <span className="user-flag" aria-hidden="true">
                 {card.flag || '•'}
               </span>
-              <p className="min-w-0 truncate text-base font-semibold text-[var(--text-primary)]">
+              <p className="min-w-0 truncate font-semibold text-[var(--text-primary)]">
                 {card.name}
               </p>
             </div>
@@ -696,8 +670,8 @@ function UsageDetailCard({
   }
 
   return (
-    <section className="surface-card space-y-4 p-6 md:p-7">
-      <p className="section-kicker">{isZh ? '已用流量' : 'Used traffic'}</p>
+    <section className="grid gap-3">
+      <p className="user-section-label">{isZh ? '已用流量' : 'Used traffic'}</p>
       {isLoading ? (
         <div className="space-y-2.5">
           <Skeleton className="h-5 w-full" />
@@ -1324,30 +1298,22 @@ function AdminMessagesCard({
   const hasContent = Boolean(latestAnnouncement || supportContact);
 
   return (
-    <div
-      className="surface-card space-y-5 p-6 md:p-7"
-      data-testid="subscription-home-admin-messages"
-    >
-      <div className="space-y-2">
-        <p className="section-kicker">{isZh ? '最新说明' : 'Latest notes'}</p>
-        <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
-          {isZh ? '公告与联系渠道' : 'Announcements and support'}
-        </h2>
-      </div>
+    <div className="user-flat-section grid gap-3" data-testid="subscription-home-admin-messages">
+      <p className="user-section-label">{isZh ? '公告' : 'Notes'}</p>
 
       {hasContent ? (
-        <div className="space-y-3">
+        <div className="grid gap-2">
           {latestAnnouncement && (
-            <div className="surface-panel whitespace-pre-wrap p-4 text-sm leading-7 text-zinc-300">
+            <p className="whitespace-pre-wrap text-sm text-[var(--text-primary)]">
               {latestAnnouncement}
-            </div>
+            </p>
           )}
 
           {supportContact && (
-            <div className="surface-panel p-4 text-sm leading-7 text-zinc-300">
-              <span className="text-zinc-500">{isZh ? '联系渠道：' : 'Contact: '}</span>
+            <p className="text-sm text-[var(--text-secondary)]">
+              <span>{isZh ? '联系渠道：' : 'Contact: '}</span>
               {supportContact}
-            </div>
+            </p>
           )}
         </div>
       ) : (

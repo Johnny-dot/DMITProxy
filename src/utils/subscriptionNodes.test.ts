@@ -59,23 +59,20 @@ describe('parseSubscriptionNodeCards', () => {
     expect(card).toMatchObject({ flag: '🇸🇬', name: '新加坡', usedLabel: '120G', limitLabel: '8T' });
   });
 
-  it('skips billing decoration lines and still shows a plain user node', () => {
+  it('never renders account or billing lines as node cards', () => {
     const cards = parseSubscriptionNodeCards(
       [
+        'vless://uuid@sg.example.com:443?type=tcp#🇸🇬 新加坡｜已用 120G/8T',
+        'vless://uuid@user.example:443#用户｜toki18c',
         'vless://uuid@user.example:443?prism_info=prism-info-1#重置｜每月 3 日',
-        'vless://uuid@user.example:443#用户｜demo',
+        'vless://uuid@user.example:443#到期｜2028-03-04',
+        'vless://uuid@user.example:443#个人｜↑1 ↓2G',
+        'vless://uuid@user.example:443#他人｜↑3 ↓4G',
         'vless://uuid@user.example:443#机器｜剩10/100G',
+        'vless://uuid@user.example:443#账单重置｜每月 3 日',
+        'vless://uuid@user.example:443#流量｜已用 1G',
       ].join('\n'),
     );
-    expect(cards).toEqual([
-      {
-        id: '用户｜demo',
-        flag: '',
-        name: '用户｜demo',
-        usedLabel: null,
-        limitLabel: null,
-        usedRatio: null,
-      },
-    ]);
+    expect(cards.map((card) => card.name)).toEqual(['新加坡']);
   });
 });

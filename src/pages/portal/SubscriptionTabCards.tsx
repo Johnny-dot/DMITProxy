@@ -492,7 +492,17 @@ export function ClientCompactCard({
   );
 }
 
-export function QrCodeCanvas({ url, isZh }: { url: string; isZh: boolean }) {
+export function QrCodeCanvas({
+  url,
+  isZh,
+  plain = false,
+  size = 200,
+}: {
+  url: string;
+  isZh: boolean;
+  plain?: boolean;
+  size?: number;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -508,15 +518,15 @@ export function QrCodeCanvas({ url, isZh }: { url: string; isZh: boolean }) {
               options: object,
             ) => Promise<void>
           )(canvas, targetUrl, {
-            width: 200,
-            margin: 2,
-            color: { dark: '#111827', light: '#ffffff' },
+            width: size,
+            margin: 1,
+            color: { dark: '#111111', light: '#ffffff' },
           });
         })
         .then(() => setError(null))
         .catch(() => setError(isZh ? '生成二维码失败' : 'Failed to generate QR code'));
     },
-    [isZh],
+    [isZh, size],
   );
 
   useEffect(() => {
@@ -527,6 +537,14 @@ export function QrCodeCanvas({ url, isZh }: { url: string; isZh: boolean }) {
 
   if (error) {
     return <p className="text-xs text-red-400">{error}</p>;
+  }
+
+  if (plain) {
+    return (
+      <div className="user-qr-plain">
+        <canvas ref={canvasRef} className="block" />
+      </div>
+    );
   }
 
   return (
