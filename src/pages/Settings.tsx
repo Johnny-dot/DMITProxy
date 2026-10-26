@@ -318,7 +318,7 @@ export function SettingsPage() {
         ? '把提示型操作、维护工具和危险动作拆开，避免和表单混在一起。'
         : 'Separate guidance, maintenance, and destructive actions so they do not look like form fields.',
       securityHint: isZh
-        ? '密码和 2FA 仍由 3X-UI 面板管理，这里只保留清晰入口。'
+        ? '密码和双重认证仍由 3X-UI 面板管理，这里只保留清晰入口。'
         : 'Password and 2FA are still managed in 3X-UI. Keep the entry points explicit here.',
       passwordActionDesc: isZh
         ? '管理员密码需要在 3X-UI 面板内修改。'

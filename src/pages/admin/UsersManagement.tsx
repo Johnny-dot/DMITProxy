@@ -26,6 +26,7 @@ import { Input } from '@/src/components/ui/Input';
 import { Badge } from '@/src/components/ui/Badge';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
+import { UsageMeter } from '@/src/components/ui/UsageMeter';
 import { useToast } from '@/src/components/ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { cn } from '@/src/utils/cn';
@@ -170,7 +171,7 @@ function UserEditForm({
         {state.client ? (
           <>
             <label className={fieldLabel}>
-              <span>{isZh ? '流量上限(GB,0 = 不限)' : 'Traffic cap (GB, 0 = unlimited)'}</span>
+              <span>{isZh ? '流量上限（GB，0 为不限）' : 'Traffic cap (GB, 0 = unlimited)'}</span>
               <Input
                 className="h-9"
                 type="number"
@@ -201,7 +202,9 @@ function UserEditForm({
           </>
         ) : (
           <p className="self-center text-xs text-[var(--text-tertiary)]">
-            {isZh ? '关联订阅 ID 后可改到期与流量' : 'Link a sub ID to edit expiry & traffic'}
+            {isZh
+              ? '关联订阅 ID 后可改到期与流量'
+              : 'Link a subscription ID to edit expiry and traffic'}
           </p>
         )}
       </div>
@@ -214,6 +217,30 @@ function UserEditForm({
         </Button>
       </div>
     </div>
+  );
+}
+
+function UserTrafficMeter({
+  used,
+  total,
+  unlimitedLabel,
+}: {
+  used: number;
+  total: number;
+  unlimitedLabel: string;
+}) {
+  const capped = total > 0;
+  const pct = capped ? Math.min((used / total) * 100, 100) : 0;
+  return (
+    <UsageMeter
+      percent={capped ? pct : null}
+      widthPercent={pct}
+      value={
+        capped
+          ? `${formatTraffic(used)} / ${formatTraffic(total)}`
+          : `${formatTraffic(used)} · ${unlimitedLabel}`
+      }
+    />
   );
 }
 
@@ -717,10 +744,6 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
 
                       {sortedUsers.map((user) => {
                         const stats = statsFor(user);
-                        const pct =
-                          stats && stats.total > 0
-                            ? Math.min((stats.used / stats.total) * 100, 100)
-                            : 0;
                         const editing = editingSubId?.id === user.id ? editingSubId : null;
                         const assignLabel = user.sub_id
                           ? t('userAccounts.change')
@@ -760,29 +783,11 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                             </div>
 
                             {stats ? (
-                              <div className="space-y-1.5">
-                                <div className="flex justify-between font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">
-                                  <span>{formatTraffic(stats.used)}</span>
-                                  <span>
-                                    {stats.total > 0
-                                      ? formatTraffic(stats.total)
-                                      : t('common.unlimited')}
-                                  </span>
-                                </div>
-                                <div className="glass-progress-track h-1.5 w-full overflow-hidden">
-                                  <div
-                                    className={cn(
-                                      'h-full rounded-full transition-all duration-500',
-                                      pct < 70
-                                        ? 'bg-emerald-500'
-                                        : pct < 90
-                                          ? 'bg-yellow-500'
-                                          : 'bg-red-500',
-                                    )}
-                                    style={{ width: `${pct}%` }}
-                                  />
-                                </div>
-                              </div>
+                              <UserTrafficMeter
+                                used={stats.used}
+                                total={stats.total}
+                                unlimitedLabel={t('common.unlimited')}
+                              />
                             ) : null}
 
                             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)]">
@@ -910,10 +915,6 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                         <TableBody>
                           {sortedUsers.map((user) => {
                             const stats = statsFor(user);
-                            const pct =
-                              stats && stats.total > 0
-                                ? Math.min((stats.used / stats.total) * 100, 100)
-                                : 0;
                             const editing = editingSubId?.id === user.id ? editingSubId : null;
                             const assignLabel = user.sub_id
                               ? t('userAccounts.change')
@@ -951,28 +952,12 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                                   </TableCell>
                                   <TableCell>
                                     {stats ? (
-                                      <div className="flex min-w-[150px] max-w-[240px] flex-col gap-1.5">
-                                        <div className="flex justify-between font-mono text-[10px] tabular-nums text-[var(--text-secondary)]">
-                                          <span>{formatTraffic(stats.used)}</span>
-                                          <span>
-                                            {stats.total > 0
-                                              ? formatTraffic(stats.total)
-                                              : t('common.unlimited')}
-                                          </span>
-                                        </div>
-                                        <div className="glass-progress-track h-1.5 w-full overflow-hidden">
-                                          <div
-                                            className={cn(
-                                              'h-full rounded-full transition-all duration-500',
-                                              pct < 70
-                                                ? 'bg-emerald-500'
-                                                : pct < 90
-                                                  ? 'bg-yellow-500'
-                                                  : 'bg-red-500',
-                                            )}
-                                            style={{ width: `${pct}%` }}
-                                          />
-                                        </div>
+                                      <div className="min-w-[180px] max-w-[280px]">
+                                        <UserTrafficMeter
+                                          used={stats.used}
+                                          total={stats.total}
+                                          unlimitedLabel={t('common.unlimited')}
+                                        />
                                       </div>
                                     ) : (
                                       <span className="text-xs text-[var(--text-tertiary)]">—</span>

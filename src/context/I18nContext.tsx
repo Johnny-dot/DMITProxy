@@ -12,6 +12,11 @@ interface I18nContextType {
 
 const I18N_STORAGE_KEY = 'prism:lang';
 
+export function resolveInitialLanguage(stored: string | null): Language {
+  if (stored === 'zh-CN' || stored === 'en-US') return stored;
+  return 'zh-CN';
+}
+
 const dictionaries: Record<Language, Record<string, unknown>> = {
   'zh-CN': zhCN,
   'en-US': enUS,
@@ -20,12 +25,8 @@ const dictionaries: Record<Language, Record<string, unknown>> = {
 const I18nContext = createContext<I18nContextType | null>(null);
 
 function getInitialLanguage(): Language {
-  if (typeof window === 'undefined') return 'en-US';
-
-  const stored = window.localStorage.getItem(I18N_STORAGE_KEY);
-  if (stored === 'zh-CN' || stored === 'en-US') return stored;
-
-  return window.navigator.language.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US';
+  if (typeof window === 'undefined') return 'zh-CN';
+  return resolveInitialLanguage(window.localStorage.getItem(I18N_STORAGE_KEY));
 }
 
 function resolveByPath(dictionary: Record<string, unknown>, path: string): string | null {

@@ -11,7 +11,7 @@ export function getManagedMirrorStatusToast(
     return {
       type: 'success',
       message: isZh
-        ? '镜像已命中当前 VPS 缓存，正在开始下载。'
+        ? '镜像已命中当前站点缓存，正在开始下载。'
         : 'Mirror cache hit on this VPS. Your download is starting.',
     };
   }
@@ -29,7 +29,7 @@ export function getManagedMirrorStatusToast(
     return {
       type: 'info',
       message: isZh
-        ? '首次镜像下载会先由 VPS 从官方源拉取并缓存，可能需要等待几十秒。'
+        ? '首次镜像下载会先由服务器从官方源拉取并缓存，可能需要等待几十秒。'
         : 'The first mirror download fetches and caches the official package on this VPS, so it may take a little longer.',
     };
   }
@@ -37,7 +37,7 @@ export function getManagedMirrorStatusToast(
   return {
     type: 'info',
     message: isZh
-      ? '当前镜像缓存已过期，VPS 会先尝试刷新；如果上游较慢，可能临时回退旧缓存。'
+      ? '当前镜像缓存已过期，服务器会先尝试刷新；如果上游较慢，可能临时回退旧缓存。'
       : 'This mirror cache is stale. The VPS will try to refresh it first and may temporarily fall back to the older cache if upstream is slow.',
   };
 }
@@ -49,7 +49,7 @@ export function getManagedMirrorFallbackToast(isZh: boolean): {
   return {
     type: 'info',
     message: isZh
-      ? '镜像下载已开始。首次请求可能需要等待 VPS 从官方源准备缓存。'
+      ? '镜像下载已开始。首次请求可能需要等待服务器从官方源准备缓存。'
       : 'Mirror download started. The first request may wait while the VPS prepares the upstream cache.',
   };
 }

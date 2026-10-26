@@ -13,7 +13,7 @@ export function Layout() {
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
   useEffect(() => {
-    const desktop = window.matchMedia('(min-width: 768px)');
+    const desktop = window.matchMedia('(min-width: 960px)');
     const closeOnDesktop = () => {
       if (desktop.matches) setIsMobileMenuOpen(false);
     };
@@ -22,7 +22,7 @@ export function Layout() {
   }, []);
 
   return (
-    <div className="relative h-dvh min-h-dvh overflow-hidden text-[var(--text-primary)]">
+    <div className="user-surface relative h-dvh min-h-dvh overflow-hidden text-[var(--text-primary)]">
       <div className="pointer-events-none absolute inset-0 opacity-35">
         <div className="absolute left-[-9rem] top-[-7rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(255,255,255,0.74)_0%,_rgba(255,255,255,0)_68%)] blur-2xl" />
         <div className="absolute right-[-10rem] top-[4rem] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,_rgba(111,154,255,0.32)_0%,_rgba(111,154,255,0)_68%)] blur-3xl" />
@@ -30,7 +30,7 @@ export function Layout() {
       </div>
 
       <div className="relative z-10 flex h-full overflow-hidden">
-        <div className="hidden p-4 pr-0 md:block">
+        <div className="app-sidebar-slot p-4 pr-0">
           <Sidebar />
         </div>
 
@@ -38,7 +38,7 @@ export function Layout() {
           open={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
           ariaLabel={isZh ? '导航菜单' : 'Navigation menu'}
-          panelClassName="fixed inset-y-4 left-4 w-[min(280px,calc(100vw-2rem))] md:hidden"
+          panelClassName="user-surface app-nav-drawer fixed inset-y-4 left-4 w-[min(280px,calc(100vw-2rem))]"
         >
           <Sidebar
             onNavigate={() => setIsMobileMenuOpen(false)}
@@ -47,13 +47,13 @@ export function Layout() {
         </Modal>
 
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden pb-4">
-          <div className="content-shell-wide shrink-0 px-4 pb-4 pt-4 md:px-6 md:pb-6 md:pt-6 xl:px-8">
-            <header className="surface-card flex h-16 items-center px-4 md:px-6">
+          <div className="app-topbar-shell content-shell-wide shrink-0 px-4 pb-4 pt-4 md:px-6 md:pb-6 md:pt-6 xl:px-8">
+            <header className="app-topbar surface-card flex h-16 items-center px-4 md:px-6">
               <div className="flex w-full items-center gap-4">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="md:hidden"
+                  className="app-menu-button"
                   aria-label={isZh ? '打开导航菜单' : 'Open navigation menu'}
                   aria-expanded={isMobileMenuOpen}
                   onClick={() => setIsMobileMenuOpen(true)}
@@ -69,12 +69,12 @@ export function Layout() {
 
           {import.meta.env.VITE_DEMO_MODE === true && (
             <div
-              className="content-shell-wide shrink-0 px-4 pb-3 text-xs text-[var(--accent)] md:px-6 xl:px-8"
+              className="demo-mode-badge content-shell-wide shrink-0 px-4 pb-3 text-xs text-[var(--accent)] md:px-6 xl:px-8"
               data-testid="demo-mode-badge"
             >
               {isZh
-                ? '演示环境 · 节点、用量与账号均为示例数据'
-                : 'Demo environment · nodes, usage and accounts are sample data'}
+                ? '演示数据。节点和已用流量均为示例。'
+                : 'Demo data. Nodes and used traffic are examples.'}
             </div>
           )}
           <main

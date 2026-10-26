@@ -33,6 +33,26 @@ export function buildSubscriptionQrUrl(subId: string, format: SubscriptionFormat
   return httpUrl;
 }
 
+export function maskSubscriptionUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  try {
+    return `${new URL(trimmed).origin}/sub/••••••••`;
+  } catch {
+    return '••••••••';
+  }
+}
+
+/** FlClash and other Clash apps import a subscription through this scheme. */
+export function buildClashInstallConfigUrl(subscriptionUrl: string): string {
+  const normalized = subscriptionUrl.trim();
+  if (!normalized) return '';
+  const target = /[?&]flag=/.test(normalized)
+    ? normalized
+    : `${normalized}${normalized.includes('?') ? '&' : '?'}flag=clash`;
+  return `clash://install-config?url=${encodeURIComponent(target)}`;
+}
+
 export function buildSubscriptionUrl(
   subId: string,
   format: SubscriptionFormat = 'universal',

@@ -25,6 +25,7 @@ import {
   getUnlockStatusMeta,
 } from '@/src/utils/nodeQuality';
 import { NodeQualityCard } from './portal/NodeQualityCard';
+import { UsageMeter } from '@/src/components/ui/UsageMeter';
 
 type NodeCardData = {
   id: number;
@@ -80,18 +81,8 @@ const NodeCard = memo(function NodeCard({
     >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-lg',
-              node.status === 'online' ? 'bg-emerald-500/10' : 'bg-red-500/10',
-            )}
-          >
-            <Globe
-              className={cn(
-                'w-5 h-5',
-                node.status === 'online' ? 'text-emerald-500' : 'text-red-500',
-              )}
-            />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-inline)]">
+            <Globe className="h-5 w-5 text-[var(--text-primary)]" />
           </div>
           <div>
             <CardTitle className="text-base">{node.name}</CardTitle>
@@ -114,33 +105,21 @@ const NodeCard = memo(function NodeCard({
             <span className="font-medium">{node.clientCount}</span>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2 text-zinc-400">
-                <Zap className="w-4 h-4" />
+          <UsageMeter
+            label={
+              <span className="inline-flex items-center gap-2">
+                <Zap className="h-3.5 w-3.5" />
                 {t('nodes.traffic')}
-              </div>
-              <span className="font-medium">{formatTraffic(node.trafficUsed)}</span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-all',
-                  node.usagePercent < 50
-                    ? 'bg-emerald-500'
-                    : node.usagePercent < 80
-                      ? 'bg-yellow-500'
-                      : 'bg-red-500',
-                )}
-                style={{ width: `${node.usagePercent}%` }}
-              />
-            </div>
-            <p className="text-xs text-zinc-500">
-              {node.trafficLimit > 0
-                ? t('nodes.limit', { value: formatTraffic(node.trafficLimit) })
-                : t('nodes.unlimitedTraffic')}
-            </p>
-          </div>
+              </span>
+            }
+            percent={node.trafficLimit > 0 ? node.usagePercent : null}
+            widthPercent={node.trafficLimit > 0 ? node.usagePercent : 0}
+            value={
+              node.trafficLimit > 0
+                ? `${formatTraffic(node.trafficUsed)} / ${formatTraffic(node.trafficLimit)}`
+                : `${formatTraffic(node.trafficUsed)} · ${t('nodes.unlimitedTraffic')}`
+            }
+          />
         </div>
 
         {compact ? (

@@ -12,6 +12,7 @@ import {
 } from './xui-admin.js';
 import { getBillingConfig } from './xui-billing.js';
 import { db } from './db.js';
+import { resolveSharedNodeNames, extractLinkHost } from './shared-node-usage.js';
 import { getDmitTrafficSnapshot } from './dmit-traffic-store.js';
 import { computeMachineUsage } from './machine-usage.js';
 import { getDmitServiceId } from './dmit-config.js';
@@ -488,7 +489,15 @@ export async function buildSubscriptionPayload(subId: string): Promise<string> {
     throw new XuiAdminError(`No active client found for subscription ID: ${subId}`);
   }
 
-  links.push(...normalizeExtraSubscriptionLinks(getExtraSubscriptionLinks()));
+  const extraLinks = getExtraSubscriptionLinks();
+  const sharedNames = await resolveSharedNodeNames(extraLinks);
+  const normalizedExtra = normalizeExtraSubscriptionLinks(extraLinks);
+  links.push(
+    ...extraLinks.map((raw, i) => {
+      const name = sharedNames.get(extractLinkHost(raw));
+      return name ? replaceLinkName(raw, name) : normalizedExtra[i];
+    }),
+  );
 
   return links.join('\n');
 }

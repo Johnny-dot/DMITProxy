@@ -1,12 +1,11 @@
 import React from 'react';
 import { Bell } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
+import { formatDateTime } from '@/src/utils/dateTime';
 import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import type { PortalNotification } from './types';
-import { toMillis } from './types';
-
 interface NotificationsTabProps {
   notifications: PortalNotification[];
   readNotificationIds: string[];
@@ -27,16 +26,16 @@ export function localizePortalNotification(
   if (item.id === 'subscription-ready') {
     return {
       ...item,
-      title: '订阅已就绪',
-      message: '你的订阅链接已经可用，现在可以在客户端中导入或更新。',
+      title: '订阅可用',
+      message: '可以复制订阅链接。',
     };
   }
 
   if (item.id === 'subscription-pending') {
     return {
       ...item,
-      title: '订阅等待分配',
-      message: '账号已经建好，当前订阅还在准备中。如果卡住了，可以通过联系渠道问一声。',
+      title: '订阅准备中',
+      message: '订阅链接还在准备。',
     };
   }
 
@@ -69,9 +68,6 @@ export function NotificationsTab({
 }: NotificationsTabProps) {
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
-
-  const formatDateTime = (value: number) =>
-    new Date(toMillis(value)).toLocaleString(isZh ? 'zh-CN' : 'en-US', { hour12: false });
 
   return (
     <section
@@ -142,7 +138,9 @@ export function NotificationsTab({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-zinc-50">{localized.title}</p>
-                    <p className="mt-1 text-xs text-zinc-500">{formatDateTime(item.createdAt)}</p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {formatDateTime(item.createdAt) || (isZh ? '时间未知' : 'Unknown time')}
+                    </p>
                   </div>
 
                   {!isRead && (

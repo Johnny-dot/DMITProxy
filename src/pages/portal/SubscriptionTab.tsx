@@ -18,7 +18,7 @@ import { useI18n } from '@/src/context/I18nContext';
 import { cn } from '@/src/utils/cn';
 import { buildClientImportUrl, isClientImportFormat } from '@/src/utils/clientImport';
 import { getClientDownloadLinks, type ClientDownloadPlatform } from '@/src/utils/clientDownloads';
-import { buildSubscriptionUrl } from '@/src/utils/subscription';
+import { buildSubscriptionUrl, maskSubscriptionUrl } from '@/src/utils/subscription';
 import type { ClientCard, PortalTab, SetupFocus, SubscriptionFormat } from './types';
 import { COPY_RESET_DELAY_MS } from './types';
 import {
@@ -91,6 +91,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
   const [hasCopied, setHasCopied] = useState(false);
   const [hasMarkedConnected, setHasMarkedConnected] = useState(false);
   const [showQuickQr, setShowQuickQr] = useState(false);
+  const [showRawUrl, setShowRawUrl] = useState(false);
   const [mirrorDialog, setMirrorDialog] = useState<MirrorDialogState | null>(null);
 
   const subscriptionLinks = useMemo(
@@ -336,27 +337,27 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
       <section
         className="surface-card p-2.5 md:p-3"
         data-testid="portal-setup-roadmap"
-        aria-label={isZh ? '接入三步' : 'Setup in three steps'}
+        aria-label={isZh ? '导入' : 'Import'}
       >
         <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
           {[
             {
               n: 1,
               testId: 'portal-setup-platforms',
-              title: isZh ? '选择设备' : 'Pick your device',
-              desc: isZh ? '确认你的系统' : 'Confirm your OS',
+              title: isZh ? '选择设备' : 'Choose a device',
+              desc: isZh ? '确认系统' : 'Confirm the system',
             },
             {
               n: 2,
               testId: 'portal-setup-clients',
-              title: isZh ? '下载客户端' : 'Download the client',
-              desc: isZh ? '装好代理 App' : 'Install the proxy app',
+              title: isZh ? '下载客户端' : 'Download a client',
+              desc: isZh ? '安装客户端' : 'Install the client',
             },
             {
               n: 3,
               testId: 'portal-setup-guide',
-              title: isZh ? '导入并连接' : 'Import & connect',
-              desc: isZh ? '导入订阅就能用' : 'Import the link and go',
+              title: isZh ? '导入' : 'Import',
+              desc: isZh ? '粘贴订阅链接' : 'Paste the subscription link',
             },
           ].map((stepItem) => (
             <button
@@ -382,11 +383,9 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
       </section>
 
       <section
-        className="surface-card relative overflow-hidden p-5 md:p-7"
+        className="user-hero surface-card relative overflow-hidden p-5 md:p-7"
         data-testid="portal-setup-quick"
       >
-        <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-emerald-300/18 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-1/4 h-40 w-96 rounded-full bg-[var(--info-soft)] blur-3xl" />
         <div className="relative space-y-4 sm:space-y-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
@@ -395,17 +394,17 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   1
                 </span>
                 <p className="text-xs font-medium uppercase tracking-[0.22em] text-emerald-300/90">
-                  {isZh ? '第 1 步 · 选择设备' : 'Step 1 · Choose device'}
+                  {isZh ? '选择设备' : 'Choose a device'}
                 </p>
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold tracking-tight text-zinc-50 md:text-3xl">
-                  {isZh ? '连接，从这里开始。' : 'Your connection starts here.'}
+                <h2 className="text-[1.65rem] font-semibold leading-tight tracking-tight text-[var(--text-primary)] sm:text-4xl">
+                  {isZh ? '导入' : 'Import'}
                 </h2>
                 <p className="text-sm leading-7 text-zinc-400">
                   {isZh
-                    ? '已匹配当前设备。复制订阅或一键导入，随时切换其他客户端。'
-                    : 'Matched to your device. Copy the link or import directly, and switch clients anytime.'}
+                    ? '复制订阅链接，或一键导入。'
+                    : 'Copy the subscription link, or import it in one step.'}
                 </p>
               </div>
             </div>
@@ -431,13 +430,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   {isZh ? '状态' : 'Status'}
                 </p>
                 <p className="mt-1 truncate text-sm font-medium text-zinc-100">
-                  {hasCopied
-                    ? isZh
-                      ? '订阅已复制'
-                      : 'Link copied'
-                    : isZh
-                      ? '等待接入'
-                      : 'Ready to connect'}
+                  {hasCopied ? (isZh ? '已复制' : 'Copied') : isZh ? '未复制' : 'Not copied'}
                 </p>
               </div>
             </div>
@@ -451,12 +444,10 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-zinc-50">
-                    {isZh ? '选择设备平台' : 'Choose device'}
+                    {isZh ? '选择设备' : 'Choose a device'}
                   </p>
                   <p className="mt-1 text-xs leading-5 text-zinc-500">
-                    {isZh
-                      ? '已为你自动识别当前设备，可随时更换；客户端、格式和教程会自动联动。'
-                      : 'We auto-detected your device — change it anytime. Client, format, and guide stay in sync.'}
+                    {isZh ? '可更换设备。' : 'You can change the device.'}
                   </p>
                 </div>
                 <Monitor className="h-4 w-4 text-emerald-300" />
@@ -472,7 +463,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                     className={cn(
                       'group rounded-[18px] border px-3 py-2.5 text-left transition-all sm:rounded-[20px] sm:px-3.5 sm:py-3',
                       activePlatform === platform.key
-                        ? 'border-emerald-500/45 bg-emerald-500/12 shadow-[0_16px_45px_rgba(16,185,129,0.12)]'
+                        ? 'border-emerald-500/45 bg-emerald-500/12'
                         : 'border-white/10 bg-white/[0.035] hover:border-[color:var(--border-strong)] hover:bg-white/[0.06]',
                     )}
                   >
@@ -520,11 +511,11 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                     <p className="mt-1 text-xs leading-6 text-zinc-400">
                       {activeFormat === guide.recommendedFormat
                         ? isZh
-                          ? `${activePlatformLabel} 推荐使用 ${recommendedFormatOption.label}。`
+                          ? `${activePlatformLabel} 推荐 ${recommendedFormatOption.label}。`
                           : `${recommendedFormatOption.label} is recommended for ${activePlatformLabel}.`
                         : isZh
-                          ? `当前使用 ${activeFormatOption.label}，一键导入仍会使用 ${recommendedFormatOption.label}。`
-                          : `Using ${activeFormatOption.label}; one-click import still uses ${recommendedFormatOption.label}.`}
+                          ? `当前为 ${activeFormatOption.label}。一键导入使用 ${recommendedFormatOption.label}。`
+                          : `Current format is ${activeFormatOption.label}. One-click import uses ${recommendedFormatOption.label}.`}
                     </p>
                   </div>
                 </div>
@@ -584,24 +575,24 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   <>
                     <div className="space-y-2">
                       <div className="flex items-center gap-1 text-xs text-zinc-400">
-                        <span>{isZh ? '当前可导入订阅' : 'Current import link'}</span>
+                        <span>{isZh ? '订阅链接' : 'Subscription link'}</span>
                         <InfoTooltip
                           content={
                             importUsesRecommendedFormat
                               ? isZh
-                                ? '手动切换格式只影响复制链接；一键导入仍使用当前客户端推荐格式。'
-                                : 'Manual format switching only changes the copied link. One-click import keeps the client-recommended format.'
+                                ? '更换格式只影响复制的订阅链接。一键导入仍用推荐格式。'
+                                : 'Changing the format only changes the copied subscription link. One-click import keeps the recommended format.'
                               : isZh
-                                ? '复制后直接粘贴到客户端，或优先尝试一键导入。'
-                                : 'Copy it into the client, or try one-click import first.'
+                                ? '粘贴到客户端，或使用一键导入。'
+                                : 'Paste it into the client, or use one-click import.'
                           }
                         />
                       </div>
                       <p
-                        className="break-all rounded-[22px] border border-white/10 bg-[var(--surface-inline)] px-4 py-3 font-mono text-xs leading-6 text-zinc-300"
+                        className="break-all rounded-[22px] border border-white/10 bg-[var(--surface-inline)] px-4 py-3 font-mono text-xs leading-6 text-[var(--text-secondary)]"
                         data-testid="subscription-active-url"
                       >
-                        {activeSubUrl}
+                        {showRawUrl ? activeSubUrl : maskSubscriptionUrl(activeSubUrl)}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
@@ -610,7 +601,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                           type="button"
                           variant="default"
                           size="sm"
-                          className="gap-2"
+                          className="user-primary-action gap-2"
                           onClick={() => handleOneClickImport(oneClickImportUrl)}
                           data-testid="portal-setup-one-click-import"
                           title={
@@ -625,6 +616,21 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                       ) : null}
                       <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowRawUrl((current) => !current)}
+                        data-testid="subscription-url-visibility"
+                      >
+                        {showRawUrl
+                          ? isZh
+                            ? '隐藏链接'
+                            : 'Hide link'
+                          : isZh
+                            ? '显示链接'
+                            : 'Show link'}
+                      </Button>
+                      <Button
+                        type="button"
                         variant={oneClickImportUrl ? 'outline' : 'secondary'}
                         size="sm"
                         className="gap-2"
@@ -637,8 +643,8 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                             ? '已复制'
                             : 'Copied'
                           : isZh
-                            ? '复制订阅'
-                            : 'Copy link'}
+                            ? '复制订阅链接'
+                            : 'Copy subscription link'}
                       </Button>
                       <Button
                         type="button"
@@ -676,6 +682,9 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                         {isZh ? '下载客户端' : 'Download client'}
                       </Button>
                     </div>
+                    <p className="text-xs leading-5 text-[var(--text-secondary)]">
+                      {isZh ? '请勿转发订阅链接。' : 'Do not share this subscription link.'}
+                    </p>
                     {showQuickQr ? <QrCodeCanvas url={activeSubUrl} isZh={isZh} /> : null}
                   </>
                 ) : (
@@ -684,12 +693,12 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                     data-testid="portal-setup-not-ready"
                   >
                     <p className="font-medium text-zinc-100">
-                      {isZh ? '订阅还在准备中' : 'Your subscription is still being prepared'}
+                      {isZh ? '订阅链接还在准备' : 'The subscription link is not ready'}
                     </p>
                     <p>
                       {isZh
-                        ? '你可以先下载客户端并预览导入步骤，等订阅准备好后再回来复制链接。'
-                        : 'You can download the client and preview the guide now, then come back once the subscription is ready.'}
+                        ? '可以先下载客户端。订阅链接准备好后再复制。'
+                        : 'You can download a client now and copy the subscription link when it is ready.'}
                     </p>
                   </div>
                 )}
@@ -758,14 +767,14 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
           <StepHeader
             step={3}
             icon={Terminal}
-            title={isZh ? '按步骤导入并连接' : 'Import and connect'}
+            title={isZh ? '导入' : 'Import'}
             description={guideDescription}
           />
           <div className="surface-panel rounded-[24px] p-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-xs text-zinc-400">
-                  <span>{isZh ? '这个客户端建议使用的格式' : 'Best format for this client'}</span>
+                  <span>{isZh ? '推荐格式' : 'Recommended format'}</span>
                   <InfoTooltip
                     content={
                       isZh

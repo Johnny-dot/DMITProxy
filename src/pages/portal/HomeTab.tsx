@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Activity,
   ArrowDown,
@@ -19,9 +19,16 @@ import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 import { Skeleton } from '@/src/components/ui/Skeleton';
+import { UsageMeter } from '@/src/components/ui/UsageMeter';
 import { cn } from '@/src/utils/cn';
+import { formatDateTime } from '@/src/utils/dateTime';
 import { formatTraffic } from '@/src/utils/xuiClients';
-import { getFraudRiskMeta } from '@/src/utils/nodeQuality';
+import { getFraudRiskMeta, isNodeQualityStale } from '@/src/utils/nodeQuality';
+import { buildClashInstallConfigUrl, maskSubscriptionUrl } from '@/src/utils/subscription';
+import {
+  parseSubscriptionNodeCards,
+  type SubscriptionNodeCard,
+} from '@/src/utils/subscriptionNodes';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import type { ClientStats, PortalSettings, PortalTab, PortalUsageSummary, UserInfo } from './types';
 import {
@@ -73,9 +80,9 @@ export function HomeTab({
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
   // Route detail is heavy on a phone — start collapsed there, expanded on desktop.
-  const [showRouteDetail, setShowRouteDetail] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth >= 1024,
-  );
+  const [showRouteDetail, setShowRouteDetail] = useState(false);
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const clashInstallUrl = buildClashInstallConfigUrl(subscriptionUniversalUrl);
 
   const latestAnnouncement = effectiveSettings?.announcementActive
     ? effectiveSettings.announcementText.trim()
@@ -143,7 +150,7 @@ export function HomeTab({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="user-home-stack space-y-6">
       <MySubscriptionHero
         isZh={isZh}
         username={context?.user.username ?? ''}
@@ -154,57 +161,83 @@ export function HomeTab({
         isLoading={isStatsLoading}
         onCopy={onCopy}
         onSetSection={onSetSection}
+        clashInstallUrl={clashInstallUrl}
       />
 
-      {hasSubscription || serverStatus || isStatsLoading ? (
-        <MachineHealthCard
+      {hasSubscription ? (
+        <SubscriptionNodeCards url={subscriptionUniversalUrl} isZh={isZh} />
+      ) : null}
+
+      {showAnnouncement ? (
+        <AdminMessagesCard
           isZh={isZh}
-          serverStatus={serverStatus}
-          usageSummary={usageSummary}
-          isLoading={isStatsLoading}
+          latestAnnouncement={latestAnnouncement}
+          supportContact={supportContact}
         />
       ) : null}
 
-      {hasSubscription || showAnnouncement ? (
-        <section
-          className={cn('grid gap-6', hasSubscription && showAnnouncement && 'xl:grid-cols-2')}
-        >
-          {hasSubscription ? (
-            <UsageDetailCard
-              isZh={isZh}
-              stats={clientStats}
-              usageSummary={usageSummary}
-              isLoading={isStatsLoading}
+      {hasSubscription || serverStatus || isStatsLoading ? (
+        <section className="surface-card p-5 md:p-6" data-testid="subscription-home-details">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 text-left"
+            aria-expanded={showTechnicalDetails}
+            onClick={() => setShowTechnicalDetails((value) => !value)}
+            data-testid="subscription-home-details-toggle"
+          >
+            <span>
+              <span className="block text-sm font-medium text-zinc-50">
+                {isZh ? '详细信息' : 'Details'}
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-[var(--text-secondary)]">
+                {isZh ? '账单、已用流量和节点检测。' : 'Billing, used traffic, and the node check.'}
+              </span>
+            </span>
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 shrink-0 text-zinc-400 transition-transform',
+                showTechnicalDetails && 'rotate-180',
+              )}
             />
-          ) : null}
-          {showAnnouncement ? (
-            <AdminMessagesCard
-              isZh={isZh}
-              latestAnnouncement={latestAnnouncement}
-              supportContact={supportContact}
-            />
+          </button>
+          {showTechnicalDetails ? (
+            <div className="mt-5 space-y-6">
+              <MachineHealthCard
+                isZh={isZh}
+                serverStatus={serverStatus}
+                usageSummary={usageSummary}
+                isLoading={isStatsLoading}
+              />
+              {hasSubscription ? (
+                <UsageDetailCard
+                  isZh={isZh}
+                  stats={clientStats}
+                  usageSummary={usageSummary}
+                  isLoading={isStatsLoading}
+                />
+              ) : null}
+              {hasSubscription && clientStats ? (
+                <div className="space-y-3">
+                  <RouteStatusPill
+                    isZh={isZh}
+                    profile={nodeQuality}
+                    expanded={showRouteDetail}
+                    onToggle={() => setShowRouteDetail((value) => !value)}
+                  />
+                  {showRouteDetail ? (
+                    <NodeQualityCard
+                      isZh={isZh}
+                      inboundRemark={clientStats.inboundRemark}
+                      profile={nodeQuality}
+                      onRefresh={onRefreshNodeQuality}
+                      isRefreshing={isRefreshingNodeQuality}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </section>
-      ) : null}
-
-      {hasSubscription && clientStats ? (
-        <div className="space-y-3">
-          <RouteStatusPill
-            isZh={isZh}
-            profile={nodeQuality}
-            expanded={showRouteDetail}
-            onToggle={() => setShowRouteDetail((value) => !value)}
-          />
-          {showRouteDetail ? (
-            <NodeQualityCard
-              isZh={isZh}
-              inboundRemark={clientStats.inboundRemark}
-              profile={nodeQuality}
-              onRefresh={onRefreshNodeQuality}
-              isRefreshing={isRefreshingNodeQuality}
-            />
-          ) : null}
-        </div>
       ) : null}
     </div>
   );
@@ -212,11 +245,7 @@ export function HomeTab({
 
 function formatExpiry(ms: number, isZh: boolean) {
   if (ms === 0) return isZh ? '永不过期' : 'Never';
-  return new Date(ms).toLocaleDateString(isZh ? 'zh-CN' : 'en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatDateTime(ms);
 }
 
 function daysUntilResetDay(resetDay: number): number {
@@ -270,6 +299,7 @@ function MySubscriptionHero({
   isLoading,
   onCopy,
   onSetSection,
+  clashInstallUrl,
 }: {
   isZh: boolean;
   username: string;
@@ -280,13 +310,12 @@ function MySubscriptionHero({
   isLoading?: boolean;
   onCopy: (text: string, key: string) => void;
   onSetSection: (tab: PortalTab) => void;
+  clashInstallUrl: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
 
-  const machineSummaryHelpText = isZh
-    ? '个人/他人来自 3X-UI 应用层统计；机器余量来自 DMIT 网卡账单或 Prism 估算，两种口径不直接相加。'
-    : 'Personal and shared-user usage comes from 3X-UI. Machine remaining comes from DMIT billing or Prism estimation, so the two scopes are not additive.';
+  const machineSummaryHelpText = isZh ? '拆分在详细信息里。' : 'The split is under Details.';
 
   const used = stats ? stats.up + stats.down : 0;
   const hasPool = Boolean(usageSummary && usageSummary.machineTotal > 0);
@@ -297,48 +326,34 @@ function MySubscriptionHero({
   let unlimited = false;
 
   if (hasPool && usageSummary) {
-    const { machineRemaining, machineTotal, ownUsed, machineUsed, machineSource } = usageSummary;
-    const sourceLabel =
-      machineSource === 'dmit'
-        ? isZh
-          ? 'DMIT账单'
-          : 'DMIT billing'
-        : isZh
-          ? '机器估算'
-          : 'Machine estimate';
-    bigValue = isZh
-      ? `剩 ${formatTraffic(machineRemaining)}`
-      : `${formatTraffic(machineRemaining)} left`;
+    const { machineRemaining, machineTotal, machineUsed } = usageSummary;
+    bigValue = formatTraffic(machineRemaining);
     usedPercent = Math.min(Math.max((machineUsed / machineTotal) * 100, 0), 100);
     subtitle = isZh
-      ? `${sourceLabel} 已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} · 其中你(3X-UI) ${formatTraffic(ownUsed)}`
-      : `${sourceLabel} ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} used · you (3X-UI) ${formatTraffic(ownUsed)}`;
+      ? `已用流量 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
+      : `Used traffic ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
   } else if (stats && stats.total > 0) {
     const remaining = Math.max(stats.total - used, 0);
-    bigValue = isZh ? `剩 ${formatTraffic(remaining)}` : `${formatTraffic(remaining)} left`;
+    bigValue = formatTraffic(remaining);
     usedPercent = Math.min((used / stats.total) * 100, 100);
     subtitle = isZh
-      ? `共 ${formatTraffic(stats.total)} · 已用 ${formatTraffic(used)}`
-      : `Total ${formatTraffic(stats.total)} · used ${formatTraffic(used)}`;
+      ? `已用流量 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
+      : `Used traffic ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
   } else {
     unlimited = true;
-    bigValue = isZh ? `已用 ${formatTraffic(used)}` : `${formatTraffic(used)} used`;
-    subtitle = isZh ? '不限流量' : 'Unlimited traffic';
+    bigValue = formatTraffic(used);
+    subtitle = isZh ? '不限流量' : 'Unlimited';
   }
 
   const resetDay = usageSummary?.resetDay ?? null;
   const resetText = resetDay
     ? isZh
-      ? `重置 ${daysUntilResetDay(resetDay)} 天后（每月 ${resetDay} 日 UTC）`
-      : `Resets in ~${daysUntilResetDay(resetDay)}d (UTC day ${resetDay})`
+      ? `${daysUntilResetDay(resetDay)} 天后`
+      : `${daysUntilResetDay(resetDay)} days`
     : null;
 
   const isExpired = Boolean(stats && stats.expiryTime > 0 && stats.expiryTime < Date.now());
-  const expiryText = stats
-    ? isZh
-      ? `到期 ${formatExpiry(stats.expiryTime, isZh)}`
-      : `Expires ${formatExpiry(stats.expiryTime, isZh)}`
-    : null;
+  const expiryText = stats ? formatExpiry(stats.expiryTime, isZh) : null;
 
   const status: keyof typeof STATUS_BORDER = !hasSubscription
     ? 'preparing'
@@ -356,31 +371,38 @@ function MySubscriptionHero({
         ? '更新中'
         : 'Updating'
       : isZh
-        ? '用量暂不可用'
-        : 'Usage unavailable',
+        ? '已用流量暂不可用'
+        : 'Used traffic unavailable',
   }[status];
 
   return (
     <section
-      className={cn('surface-card space-y-5 border p-6 md:p-7', STATUS_BORDER[status])}
+      className={cn('user-hero surface-card space-y-6 border p-6 md:p-8', STATUS_BORDER[status])}
       data-testid="subscription-home-account-status"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1.5">
+      <div className="user-hero-intro flex flex-wrap items-start justify-between gap-4">
+        <div className="user-hero-title max-w-xl space-y-2">
           <p className="section-kicker">{isZh ? '我的订阅' : 'My subscription'}</p>
-          <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-            {isZh ? '订阅与用量' : 'Your subscription'}
+          <h2 className="user-display text-[var(--text-primary)]">
+            {isZh ? '复制订阅链接' : 'Copy subscription link'}
           </h2>
-          {username ? <p className="text-xs text-zinc-500">{username}</p> : null}
+          {username ? <p className="text-sm text-[var(--text-secondary)]">{username}</p> : null}
         </div>
         <span
           data-testid="subscription-home-status"
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+            'user-hero-status inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
             STATUS_PILL[status],
           )}
         >
-          <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT[status])} />
+          <span
+            className={cn('user-hero-status-dot h-1.5 w-1.5 rounded-full', STATUS_DOT[status])}
+          />
+          <span className="user-hero-status-prefix">
+            {isZh ? '我的订阅' : 'My subscription'}
+            {username ? ` · ${username}` : ''}
+            {' · '}
+          </span>
           {statusLabel}
         </span>
       </div>
@@ -395,63 +417,27 @@ function MySubscriptionHero({
         <div className="space-y-3" data-testid="subscription-home-usage-unavailable">
           <p className="text-sm leading-6 text-[var(--text-secondary)]">
             {isZh
-              ? '暂时无法获取最新用量。你仍可以查看订阅和导入步骤。'
-              : 'Latest usage is temporarily unavailable. You can still access your subscription and setup guide.'}
+              ? '已用流量暂不可用。订阅链接仍可复制。'
+              : 'Used traffic is unavailable. You can still copy the subscription link.'}
           </p>
           <Button onClick={() => onSetSection('setup')} size="sm">
-            {isZh ? '使用订阅' : 'Open subscription'}
+            {isZh ? '导入' : 'Import'}
           </Button>
         </div>
       ) : hasSubscription ? (
-        <div
-          className={cn(
-            'grid gap-6 lg:items-center',
-            subscriptionUniversalUrl && 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]',
-          )}
-        >
-          <div className="space-y-5">
-            <div className="space-y-2.5">
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <p className="text-3xl font-semibold tabular-nums text-zinc-50">{bigValue}</p>
-                <p className="inline-flex items-center gap-1 text-xs text-zinc-500">
-                  <span>{subtitle}</span>
-                  {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
+        <div className="user-hero-body grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_220px] lg:items-start">
+          <div className="space-y-4">
+            {subscriptionUniversalUrl ? (
+              <div className="user-link-well space-y-4">
+                <p className="text-xs font-semibold tracking-wide text-[var(--text-secondary)]">
+                  {isZh ? '订阅链接' : 'Subscription link'}
                 </p>
-              </div>
-
-              {!unlimited ? (
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all',
-                      usedPercent < 50
-                        ? 'bg-emerald-500'
-                        : usedPercent < 80
-                          ? 'bg-amber-500'
-                          : 'bg-red-500',
-                    )}
-                    style={{ width: `${usedPercent}%` }}
-                  />
-                </div>
-              ) : null}
-
-              {resetText || expiryText ? (
-                <p className="text-xs text-zinc-500">
-                  {resetText}
-                  {resetText && expiryText ? ' · ' : ''}
-                  {expiryText ? (
-                    <span className={cn(isExpired && 'text-red-500')}>{expiryText}</span>
-                  ) : null}
+                <p className="user-num user-hero-link break-all text-base leading-7 text-[var(--text-primary)]">
+                  {maskSubscriptionUrl(subscriptionUniversalUrl)}
                 </p>
-              ) : null}
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {subscriptionUniversalUrl ? (
+                <div className="user-hero-actions flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Button
-                    size="sm"
-                    className="gap-1.5"
+                    className="user-primary-action user-hero-copy h-12 gap-2 px-5 text-base sm:min-w-44"
                     onClick={() => {
                       onCopy(subscriptionUniversalUrl, 'home-universal');
                       setCopied(true);
@@ -459,52 +445,108 @@ function MySubscriptionHero({
                     }}
                   >
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制订阅' : 'Copy link'}
+                    {copied
+                      ? isZh
+                        ? '已复制'
+                        : 'Copied'
+                      : isZh
+                        ? '复制订阅链接'
+                        : 'Copy subscription link'}
                   </Button>
-                ) : null}
-                {subscriptionUniversalUrl ? (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="gap-1.5 lg:hidden"
-                    onClick={() => setShowQr((value) => !value)}
-                    aria-expanded={showQr}
-                  >
-                    <QrCode className="h-4 w-4" />
-                    {isZh ? '二维码' : 'QR code'}
-                  </Button>
-                ) : null}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => onSetSection('setup')}
-                >
-                  <Download className="h-4 w-4" />
-                  {isZh ? '下载客户端' : 'Download client'}
-                </Button>
-              </div>
-              {showQr && subscriptionUniversalUrl ? (
-                <div className="lg:hidden">
-                  <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
+                  <div className="user-hero-secondary">
+                    {clashInstallUrl ? (
+                      <Button
+                        variant="secondary"
+                        className="user-hero-compact-btn h-12 gap-2 px-5"
+                        onClick={() => {
+                          window.location.href = clashInstallUrl;
+                        }}
+                        data-testid="subscription-home-flclash-import"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span className="user-hero-label-long">
+                          {isZh ? '用 FlClash 打开' : 'Open in FlClash'}
+                        </span>
+                        <span className="user-hero-label-short">FlClash</span>
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="secondary"
+                      className="user-hero-compact-btn h-12 gap-2 px-5 lg:hidden"
+                      onClick={() => setShowQr((value) => !value)}
+                      aria-expanded={showQr}
+                    >
+                      <QrCode className="h-4 w-4" />
+                      <span className="user-hero-label-long">{isZh ? '二维码' : 'QR code'}</span>
+                      <span className="user-hero-label-short">{isZh ? '二维码' : 'QR'}</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="user-hero-compact-btn h-12 gap-2 px-5"
+                      onClick={() => onSetSection('setup')}
+                    >
+                      <Download className="h-4 w-4" />
+                      <span className="user-hero-label-long">
+                        {isZh ? '下载客户端' : 'Download client'}
+                      </span>
+                      <span className="user-hero-label-short">{isZh ? '下载' : 'Download'}</span>
+                    </Button>
+                  </div>
                 </div>
-              ) : null}
+              </div>
+            ) : null}
+            <div className="user-hero-stats grid gap-3 sm:grid-cols-3">
+              <div className="user-stat">
+                <p>
+                  {unlimited ? (isZh ? '已用流量' : 'Used traffic') : isZh ? '还能用' : 'Remaining'}
+                </p>
+                <strong>{bigValue}</strong>
+                <span className="inline-flex items-center gap-1">
+                  {subtitle}
+                  {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
+                </span>
+              </div>
+              <div className="user-stat">
+                <p>{isZh ? '重置' : 'Reset'}</p>
+                <strong>{resetText ?? (isZh ? '未同步' : 'Not synced')}</strong>
+              </div>
+              <div className="user-stat">
+                <p>{isZh ? '到期' : 'Expires'}</p>
+                <strong className={cn(isExpired && 'text-red-500')}>
+                  {expiryText ?? (isZh ? '未同步' : 'Not synced')}
+                </strong>
+              </div>
             </div>
+            {!unlimited ? (
+              <UsageMeter percent={usedPercent} value={`${Math.round(usedPercent)}%`} />
+            ) : null}
+            <p className="text-sm leading-6 text-[var(--text-secondary)]">
+              {isZh ? '请勿转发订阅链接。' : 'Do not share this subscription link.'}
+            </p>
+            <p className="text-sm leading-6 text-[var(--text-secondary)]">
+              {isZh
+                ? 'v2rayN：粘贴订阅链接，更新后选择节点。'
+                : 'v2rayN: paste the subscription link, update, then choose a node.'}
+            </p>
+            {showQr && subscriptionUniversalUrl ? (
+              <div className="lg:hidden">
+                <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
+              </div>
+            ) : null}
           </div>
-
           {subscriptionUniversalUrl ? (
-            <div className="hidden flex-col items-center gap-2 lg:flex lg:border-l lg:border-[var(--border-subtle)] lg:pl-6">
+            <div className="hidden flex-col items-center gap-2 lg:flex">
               <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
-              <p className="text-xs text-zinc-500">{isZh ? '手机扫码导入' : 'Scan to import'}</p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {isZh ? '扫码导入' : 'Scan to import'}
+              </p>
             </div>
           ) : null}
         </div>
       ) : (
         <div className="space-y-4">
           <div className="surface-panel p-4 text-sm font-medium text-amber-500">
-            {isZh
-              ? '订阅还在准备中，你可以先看看适合自己的客户端和导入步骤。'
-              : 'Your subscription is still being prepared. You can still check the recommended client and import steps first.'}
+            {isZh ? '订阅链接还在准备。' : 'The subscription link is not ready yet.'}
           </div>
           <Button
             variant="secondary"
@@ -512,11 +554,77 @@ function MySubscriptionHero({
             className="gap-1.5"
             onClick={() => onSetSection('setup')}
           >
-            {isZh ? '查看导入步骤' : 'View import steps'}
+            {isZh ? '查看导入' : 'View import'}
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </div>
       )}
+    </section>
+  );
+}
+
+function SubscriptionNodeCards({ url, isZh }: { url: string; isZh: boolean }) {
+  const [cards, setCards] = useState<SubscriptionNodeCard[] | null>(null);
+
+  useEffect(() => {
+    if (!url) return undefined;
+    let cancelled = false;
+    void fetch(url, { credentials: 'include' })
+      .then((response) => (response.ok ? response.text() : ''))
+      .then((body) => {
+        if (!cancelled) setCards(parseSubscriptionNodeCards(body));
+      })
+      .catch(() => {
+        if (!cancelled) setCards([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  if (!cards?.length) return null;
+
+  const ordered = [...cards].sort((left, right) => {
+    const rank = (card: SubscriptionNodeCard) =>
+      card.usedLabel && card.limitLabel ? 0 : card.limitLabel ? 1 : 2;
+    return rank(left) - rank(right);
+  });
+
+  return (
+    <section className="space-y-3" data-testid="subscription-node-cards">
+      <div className="flex items-end justify-between gap-3">
+        <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+          {isZh ? '节点' : 'Nodes'}
+        </h3>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {ordered.map((card) => (
+          <article key={card.id} className="user-node-card space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="user-flag" aria-hidden="true">
+                {card.flag || '•'}
+              </span>
+              <p className="min-w-0 truncate text-base font-semibold text-[var(--text-primary)]">
+                {card.name}
+              </p>
+            </div>
+            {card.usedLabel && card.limitLabel ? (
+              <UsageMeter
+                percent={(card.usedRatio ?? 0) * 100}
+                value={`${card.usedLabel} / ${card.limitLabel}`}
+              />
+            ) : card.limitLabel ? (
+              <p className="text-sm text-[var(--text-secondary)]">
+                {isZh ? `每月 ${card.limitLabel}` : `${card.limitLabel} / month`}
+              </p>
+            ) : (
+              <p className="text-sm text-[var(--text-secondary)]">
+                {isZh ? '未显示已用流量' : 'Used traffic is not shown'}
+              </p>
+            )}
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
@@ -540,8 +648,8 @@ function UsageDetailCard({
     const sourceLabel =
       usageSummary.machineSource === 'dmit'
         ? isZh
-          ? 'DMIT账单'
-          : 'DMIT billing'
+          ? '机器账单'
+          : 'Machine bill'
         : isZh
           ? '机器估算'
           : 'Machine estimate';
@@ -549,15 +657,15 @@ function UsageDetailCard({
     const xuiTotalUsed = usageSummary.xuiTotalUsed ?? usageSummary.totalUsed;
     const usageGap = usageSummary.usageGap ?? Math.max(0, usageSummary.machineUsed - xuiTotalUsed);
     rows.push({
-      label: isZh ? '你已用(3X-UI)' : 'You used (3X-UI)',
+      label: isZh ? '你用了' : 'You used',
       value: formatTraffic(usageSummary.ownUsed),
     });
     rows.push({
-      label: isZh ? '他人用量(3X-UI)' : 'Others (3X-UI)',
+      label: isZh ? '其他人用了' : 'Other people used',
       value: formatTraffic(usageSummary.otherUsersUsed),
     });
     rows.push({
-      label: isZh ? '3X-UI合计' : '3X-UI total',
+      label: isZh ? '面板合计' : 'Panel total',
       value: formatTraffic(xuiTotalUsed),
     });
     rows.push({
@@ -565,7 +673,7 @@ function UsageDetailCard({
       value: `${formatTraffic(usageSummary.machineUsed)} / ${formatTraffic(usageSummary.machineTotal)}`,
     });
     rows.push({
-      label: isZh ? '口径差值' : 'Scope gap',
+      label: isZh ? '统计差额' : 'Billing difference',
       value: formatTraffic(usageGap),
     });
     rows.push({
@@ -573,7 +681,7 @@ function UsageDetailCard({
       value: syncText,
     });
   } else if (stats) {
-    rows.push({ label: isZh ? '已用' : 'Used', value: formatTraffic(used) });
+    rows.push({ label: isZh ? '已用流量' : 'Used traffic', value: formatTraffic(used) });
     if (stats.total > 0) {
       rows.push({ label: isZh ? '总量' : 'Total', value: formatTraffic(stats.total) });
     }
@@ -581,12 +689,15 @@ function UsageDetailCard({
   if (stats) {
     rows.push({ label: isZh ? '上传' : 'Upload', value: formatTraffic(stats.up) });
     rows.push({ label: isZh ? '下载' : 'Download', value: formatTraffic(stats.down) });
-    rows.push({ label: isZh ? '协议' : 'Protocol', value: stats.protocol.toUpperCase() });
+    rows.push({
+      label: isZh ? '连接方式' : 'Connection',
+      value: plainConnectionLabel(stats.protocol, isZh),
+    });
   }
 
   return (
     <section className="surface-card space-y-4 p-6 md:p-7">
-      <p className="section-kicker">{isZh ? '用量明细' : 'Usage detail'}</p>
+      <p className="section-kicker">{isZh ? '已用流量' : 'Used traffic'}</p>
       {isLoading ? (
         <div className="space-y-2.5">
           <Skeleton className="h-5 w-full" />
@@ -657,14 +768,24 @@ function formatSpeed(bytesPerSecond: number): string {
   return `${(safe / 1024).toFixed(1)} KB/s`;
 }
 
-function formatDateTime(ms: number | null | undefined, isZh: boolean): string {
+function formatResetAt(ms: number | null | undefined, isZh: boolean): string {
   if (!ms) return isZh ? '暂未同步' : 'Not synced';
-  return new Date(ms).toLocaleString(isZh ? 'zh-CN' : 'en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTime(ms);
+}
+
+function plainConnectionLabel(protocol: string, isZh: boolean): string {
+  if (!isZh) return protocol.toUpperCase();
+  const value = protocol.toLowerCase();
+  if (
+    value.includes('vless') ||
+    value.includes('reality') ||
+    value.includes('vmess') ||
+    value.includes('trojan') ||
+    value.includes('shadowsocks')
+  ) {
+    return '加密线路';
+  }
+  return protocol ? '普通线路' : '加密线路';
 }
 
 function MachineHealthCard({
@@ -930,7 +1051,7 @@ function MachineHealthCard({
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-zinc-100">
-                    {isZh ? 'DMIT 流量账单' : 'DMIT traffic billing'}
+                    {isZh ? '流量账单' : 'Traffic bill'}
                   </p>
                   <p className="mt-1 text-xs leading-5 text-zinc-500">
                     {isZh
@@ -950,7 +1071,7 @@ function MachineHealthCard({
                   toneClass="text-emerald-400"
                 />
                 <MiniStat
-                  label={isZh ? '机器已用' : 'Used'}
+                  label={isZh ? '已用流量' : 'Used traffic'}
                   value={trafficTotal > 0 ? formatTraffic(trafficUsed) : '--'}
                   toneClass="text-zinc-100"
                 />
@@ -993,7 +1114,7 @@ function MachineHealthCard({
                     />
                     <TrafficRow
                       label={isZh ? '下次重置' : 'Next reset'}
-                      value={formatDateTime(usageSummary?.machineNextResetAt, isZh)}
+                      value={formatResetAt(usageSummary?.machineNextResetAt, isZh)}
                     />
                   </div>
                 </div>
@@ -1146,18 +1267,24 @@ function RouteStatusPill({
   const egress = profile?.egress;
   const location = egress ? [egress.city, egress.country].filter(Boolean).join(', ') : '';
   const score = profile?.fraudScore;
-  const summaryText = profile
-    ? [
-        isZh ? '线路' : 'Route',
-        fraudMeta.label,
-        location,
-        score != null ? (isZh ? `风险 ${score}` : `risk ${score}`) : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : isZh
-      ? '线路检测结果加载中…'
-      : 'Loading route status…';
+  const stale = isNodeQualityStale(profile?.updatedAt);
+  const checkedAt = formatDateTime(profile?.updatedAt);
+  const summaryText = stale
+    ? isZh
+      ? `线路检测已过期${checkedAt ? ` · ${checkedAt}` : ''}`
+      : `Route check expired${checkedAt ? ` · ${checkedAt}` : ''}`
+    : profile
+      ? [
+          isZh ? '节点' : 'Node',
+          fraudMeta.label,
+          location,
+          score != null ? (isZh ? `风险 ${score}` : `risk ${score}`) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : isZh
+        ? '线路检测结果加载中…'
+        : 'Loading route status…';
 
   return (
     <button

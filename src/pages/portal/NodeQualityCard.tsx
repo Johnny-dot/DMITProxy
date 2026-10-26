@@ -6,6 +6,7 @@ import { UnlockServiceIcon } from '@/src/components/icons/UnlockServiceIcon';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 import { cn } from '@/src/utils/cn';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
+import { formatDateTime } from '@/src/utils/dateTime';
 import {
   getFraudRiskMeta,
   getNodeQualityOverviewLines,
@@ -14,6 +15,7 @@ import {
   getNodeQualitySummary,
   getUnlockStatusMeta,
   hasMeaningfulNodeQuality,
+  isNodeQualityStale,
 } from '@/src/utils/nodeQuality';
 
 interface NodeQualityCardProps {
@@ -26,8 +28,9 @@ interface NodeQualityCardProps {
 }
 
 function formatCheckedAt(value: number | null | undefined, isZh: boolean) {
-  if (!value) return isZh ? '尚未检测' : 'Not checked yet';
-  return new Date(value).toLocaleString(isZh ? 'zh-CN' : 'en-US', { hour12: false });
+  const formatted = formatDateTime(value);
+  if (!formatted) return isZh ? '尚未检测' : 'Not checked yet';
+  return formatted;
 }
 
 export function getNodeQualityCardNotes(
@@ -62,6 +65,8 @@ export function NodeQualityCard({
   if (!profile && !inboundRemark) return null;
 
   const isProxyProbe = profile?.probeMode === 'proxy-outbound';
+  const checkedAtLabel = formatCheckedAt(profile?.updatedAt, isZh);
+  const stale = isNodeQualityStale(profile?.updatedAt);
   const fraudMeta = getFraudRiskMeta(profile?.fraudScore ?? null, isZh);
   const unlockItems = getNodeQualityServiceItems(profile);
   const hasDetails = hasMeaningfulNodeQuality(profile);
@@ -142,9 +147,21 @@ export function NodeQualityCard({
             <span>{isZh ? '风险值' : 'Risk score'}</span>
             <InfoTooltip content={riskHelpText} />
           </p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-50">{profile?.fraudScore ?? '--'}</p>
-          <p className={cn('mt-1 text-sm font-medium', fraudMeta.className)}>{fraudMeta.label}</p>
-          <p className="mt-2 text-xs leading-5 text-zinc-500">{fraudMeta.description}</p>
+          <p className="mt-2 text-2xl font-semibold text-zinc-50">
+            {stale ? (isZh ? '已过期' : 'Expired') : (profile?.fraudScore ?? '--')}
+          </p>
+          {stale ? (
+            <p className="mt-1 text-sm font-medium text-amber-500">
+              {isZh ? '不要按这个旧结果判断线路' : 'Do not judge the route from this old result'}
+            </p>
+          ) : (
+            <>
+              <p className={cn('mt-1 text-sm font-medium', fraudMeta.className)}>
+                {fraudMeta.label}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-zinc-500">{fraudMeta.description}</p>
+            </>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -154,24 +171,30 @@ export function NodeQualityCard({
                 <span>{isZh ? '最近检测' : 'Last checked'}</span>
                 <InfoTooltip content={checkedAtHelpText} />
               </p>
-              <p className="mt-2 text-sm font-medium text-zinc-50">
-                {formatCheckedAt(profile?.updatedAt, isZh)}
-              </p>
+              <p className="mt-2 text-sm font-medium text-zinc-50">{checkedAtLabel}</p>
             </div>
-            <span className="text-xs text-zinc-500">
-              {isZh
-                ? isProxyProbe
-                  ? '来自代理节点自动检测'
-                  : '来自服务器出口自动检测'
-                : isProxyProbe
-                  ? 'Automatic proxy-node check'
-                  : 'Automatic server-egress check'}
+            <span className={cn('text-xs', stale ? 'font-medium text-amber-500' : 'text-zinc-500')}>
+              {stale
+                ? isZh
+                  ? '结果已过期'
+                  : 'Result expired'
+                : isZh
+                  ? '手动检测后才会更新'
+                  : 'Updates only when refreshed'}
             </span>
           </div>
 
-          {summary ? (
+          {stale ? (
+            <div className="surface-panel p-4 text-sm leading-6 text-zinc-300">
+              {isZh
+                ? `这是旧结果，不代表现在的线路。上次检测 ${checkedAtLabel}。线路检测不会自动刷新，点右上角「重新检测」才会更新。`
+                : `This is an old result, not the route right now. Last checked ${checkedAtLabel}. The check does not refresh by itself — use Refresh.`}
+            </div>
+          ) : null}
+
+          {!stale && summary ? (
             <div className="surface-panel p-4 text-sm leading-6 text-zinc-300">{summary}</div>
-          ) : (
+          ) : stale ? null : (
             <div className="surface-panel p-4 text-sm leading-6 text-zinc-500">
               {isZh
                 ? '还没有检测结果，点右上角“重新检测”再试一次。'
@@ -179,37 +202,39 @@ export function NodeQualityCard({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {unlockItems.map((item) => {
-              const meta = getUnlockStatusMeta(item.status, isZh);
-              const tooltipText = getNodeQualityServiceTooltip(
-                item.id,
-                item.status,
-                item.detail,
-                isZh,
-              );
+          {stale ? null : (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {unlockItems.map((item) => {
+                const meta = getUnlockStatusMeta(item.status, isZh);
+                const tooltipText = getNodeQualityServiceTooltip(
+                  item.id,
+                  item.status,
+                  item.detail,
+                  isZh,
+                );
 
-              return (
-                <div
-                  key={item.id}
-                  className="surface-panel flex items-center justify-between gap-2 px-3 py-2"
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <UnlockServiceIcon service={item.id} />
-                    <p className="inline-flex min-w-0 items-center gap-1 text-[11px] uppercase tracking-[0.14em] text-zinc-400">
-                      <span className="truncate">{item.label}</span>
-                      <InfoTooltip content={tooltipText} />
-                    </p>
+                return (
+                  <div
+                    key={item.id}
+                    className="surface-panel flex items-center justify-between gap-2 px-3 py-2"
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <UnlockServiceIcon service={item.id} />
+                      <p className="inline-flex min-w-0 items-center gap-1 text-[11px] uppercase tracking-[0.14em] text-zinc-400">
+                        <span className="truncate">{item.label}</span>
+                        <InfoTooltip content={tooltipText} />
+                      </p>
+                    </div>
+                    <Badge className={cn('shrink-0 border', meta.className)}>{meta.label}</Badge>
                   </div>
-                  <Badge className={cn('shrink-0 border', meta.className)}>{meta.label}</Badge>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      {hasAnyNotes ? (
+      {!stale && hasAnyNotes ? (
         <div className="surface-panel space-y-4 p-4">
           <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
             <span>{isZh ? '检测备注' : 'Check notes'}</span>

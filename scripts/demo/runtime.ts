@@ -74,6 +74,38 @@ export async function startDemo(port = 4173) {
       '欢迎体验 Prism。这是独立的本地演示，节点、流量与账号均为示例数据。',
     );
     setting.run('announcementActive', 'true');
+    const usageDir = path.join(dataDir, 'shared-usage');
+    fs.mkdirSync(usageDir, { recursive: true });
+    const singaporeUsage = path.join(usageDir, 'sg.json');
+    const seoulUsage = path.join(usageDir, 'kr.json');
+    fs.writeFileSync(singaporeUsage, JSON.stringify({ used_bytes: 120e9 }));
+    fs.writeFileSync(seoulUsage, JSON.stringify({ used_bytes: 26e9 }));
+    setting.run(
+      'extraSubscriptionLinks',
+      [
+        'vless://00000000-0000-4000-8000-0000000000aa@sg.demo.invalid:443?encryption=none&security=none&type=tcp#placeholder',
+        'vless://00000000-0000-4000-8000-0000000000bb@kr.demo.invalid:443?encryption=none&security=none&type=tcp#placeholder',
+        'vless://00000000-0000-4000-8000-0000000000cc@jp.demo.invalid:443?encryption=none&security=none&type=tcp#placeholder',
+      ].join('\n'),
+    );
+    setting.run(
+      'sharedNodeUsage',
+      JSON.stringify([
+        {
+          host: 'sg.demo.invalid',
+          name: '🇸🇬 新加坡',
+          limitBytes: 8e12,
+          localFile: singaporeUsage,
+        },
+        {
+          host: 'kr.demo.invalid',
+          name: '限时🇰🇷 首尔',
+          limitBytes: 3e12,
+          localFile: seoulUsage,
+        },
+        { host: 'jp.demo.invalid', name: '🇯🇵 东京', limitBytes: 2e12 },
+      ]),
+    );
     setting.run(
       'communityLinks',
       JSON.stringify([
@@ -197,7 +229,7 @@ export async function startDemo(port = 4173) {
         host: '127.0.0.1',
         port,
         strictPort: true,
-        proxy: { '/local': apiUrl, '/api': apiUrl, '/sub': apiUrl },
+        proxy: { '/local': apiUrl, '/api': apiUrl, '/sub/': apiUrl },
       },
     } as Parameters<typeof createViteServer>[0]);
     cleanups.push(() => vite.close());

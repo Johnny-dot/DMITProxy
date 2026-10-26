@@ -1717,6 +1717,7 @@ export const enUS = {
             'Sing-box clients usually place imports under Profiles, Configs, or Servers.',
           helper:
             'On first launch you may need to allow network or VPN permission before importing.',
+          visualLabel: 'Profiles / Servers',
           visualItems: ['Profiles', 'Configs', 'Servers'],
           ctaLabel: 'Open import entry',
         },
@@ -1726,6 +1727,7 @@ export const enUS = {
             'Choose Sing-box on this page first, then import by URL or clipboard inside the client.',
           helper:
             'If the client talks about Profiles or JSON, that is usually the sing-box-native import path.',
+          visualLabel: 'Import Sing-box profile',
           visualItems: ['Sing-box format', 'URL / Clipboard', 'Save'],
           ctaLabel: 'Import profile',
         },
@@ -1735,6 +1737,7 @@ export const enUS = {
             'Make sure nodes, DNS, and rule resources have loaded before you hit connect.',
           helper:
             'These clients expose more low-level options, so avoid changing unfamiliar toggles until the import works.',
+          visualLabel: 'Connect',
           visualItems: ['Select imported profile', 'Refresh subscription', 'Allow system proxy'],
           ctaLabel: 'Connect',
         },

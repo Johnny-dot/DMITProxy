@@ -101,20 +101,18 @@ export function UserResetPasswordPage() {
 
   return (
     <PublicAuthLayout
-      eyebrow={isZh ? '找回访问' : 'Reset access'}
-      title={isZh ? '改好密码，继续登录。' : 'Reset your password, then sign back in.'}
-      description={
-        isZh ? '链接有效时，几步恢复访问。' : 'Valid link? A few steps to restore access.'
-      }
+      eyebrow={isZh ? '重置密码' : 'Reset password'}
+      title={isZh ? '重置密码' : 'Reset password'}
+      description={isZh ? '设置新密码。' : 'Choose a new password.'}
+      compactMobile
     >
-      <div className="space-y-8" data-testid="reset-password-page">
-        <div className="space-y-3">
-          <p className="section-kicker">{t('userAuth.resetTitle')}</p>
+      <div className="space-y-5 sm:space-y-8" data-testid="reset-password-page">
+        <div className="space-y-1.5">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-              {t('userAuth.resetTitle')}
+            <h2 className="user-display text-[var(--text-primary)]">
+              {isZh ? '重置密码' : 'Reset password'}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
+            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
               {status === 'ready' && username
                 ? t('userAuth.resetForUser', { username })
                 : t('userAuth.resetDesc')}
