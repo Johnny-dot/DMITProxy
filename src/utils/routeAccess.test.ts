@@ -36,6 +36,37 @@ describe('resolveProtectedRedirect', () => {
     expect(shouldShowSubscriptionLoginHint('/profile')).toBe(false);
   });
 
+  it('rejects post-login paths that normalize into another origin', () => {
+    const openRedirects = [
+      '/a/..//evil.example',
+      '/settings/%2e%2e/%2e%2e//evil.example',
+      '//evil.example',
+      '/\\evil.example',
+      '/a/../\\evil.example',
+      'https://evil.example/settings',
+      '/%2f%2fevil.example',
+      '/%5Cevil.example',
+    ];
+
+    for (const next of openRedirects) {
+      expect(resolvePostLoginPath(next, 'admin')).toBe('/');
+      expect(resolvePostLoginPath(next, 'user')).toBe('/my-subscription');
+      expect(buildLoginRedirect(next)).toBe('/login');
+    }
+
+    expect(resolvePostLoginPath('/not-a-route', 'admin')).toBe('/');
+    expect(resolvePostLoginPath('/not-a-route', 'user')).toBe('/my-subscription');
+    expect(shouldShowSubscriptionLoginHint('/a/..//evil.example')).toBe(false);
+  });
+
+  it('keeps allowlisted post-login paths after normalization', () => {
+    expect(resolvePostLoginPath('/traffic?range=7', 'admin')).toBe('/traffic?range=7');
+    expect(resolvePostLoginPath('/users/../admin/dmit-sync', 'admin')).toBe('/admin/dmit-sync');
+    expect(resolvePostLoginPath('/my-subscription', 'admin')).toBe('/');
+    expect(resolvePostLoginPath('/my-subscription/%2e%2e/profile', 'user')).toBe('/profile');
+    expect(buildLoginRedirect('/users/../profile')).toBe('/login?next=%2Fprofile');
+  });
+
   it('allows admins to open admin pages', () => {
     expect(resolveProtectedRedirect(true, 'admin', '/settings')).toBeNull();
     expect(resolveProtectedRedirect(true, 'admin', '/users')).toBeNull();

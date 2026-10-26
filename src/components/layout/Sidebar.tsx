@@ -160,7 +160,7 @@ export function Sidebar({
             ))}
       </nav>
 
-      {onClose && role === 'user' ? (
+      {onClose ? (
         <div className="user-drawer-tools items-center gap-2 px-1">
           <LanguageToggle compact testIdPrefix="drawer-language" />
           <ThemeToggle />
