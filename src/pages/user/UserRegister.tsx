@@ -193,7 +193,7 @@ export function UserRegisterPage() {
 
           <Button
             type="submit"
-            className="h-12 w-full gap-2 border-transparent bg-[#1d4ed8] text-[#f9fbff] hover:bg-[#1e40af] disabled:opacity-100"
+            className="user-primary-action h-14 w-full gap-2 text-base disabled:opacity-100"
             disabled={isLoading}
             data-testid="register-submit"
           >

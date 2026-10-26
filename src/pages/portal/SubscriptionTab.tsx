@@ -383,7 +383,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
       </section>
 
       <section
-        className="surface-card relative overflow-hidden p-5 md:p-7"
+        className="user-hero surface-card relative overflow-hidden p-5 md:p-7"
         data-testid="portal-setup-quick"
       >
         <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-emerald-300/18 blur-3xl" />
@@ -400,7 +400,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 </p>
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold tracking-tight text-zinc-50 md:text-3xl">
+                <h2 className="text-[1.65rem] font-semibold leading-tight tracking-tight text-[var(--text-primary)] sm:text-4xl">
                   {isZh ? '连接，从这里开始。' : 'Your connection starts here.'}
                 </h2>
                 <p className="text-sm leading-7 text-zinc-400">
@@ -611,7 +611,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                           type="button"
                           variant="default"
                           size="sm"
-                          className="gap-2"
+                          className="user-primary-action gap-2"
                           onClick={() => handleOneClickImport(oneClickImportUrl)}
                           data-testid="portal-setup-one-click-import"
                           title={

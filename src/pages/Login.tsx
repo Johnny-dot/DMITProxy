@@ -108,7 +108,7 @@ export function LoginPage() {
       <div className="space-y-5 sm:space-y-8" data-testid="login-page">
         <div className="space-y-5 sm:space-y-8">
           <div className="space-y-1.5 sm:space-y-3">
-            <h2 className="text-xl font-semibold tracking-normal text-[var(--text-primary)] sm:text-2xl">
+            <h2 className="user-display text-[var(--text-primary)]">
               {isZh ? '欢迎回来' : 'Welcome back'}
             </h2>
             {showSubscriptionHint ? (
@@ -239,7 +239,7 @@ export function LoginPage() {
 
             <Button
               type="submit"
-              className="h-11 w-full gap-2 border-transparent bg-[#1d4ed8] text-[#f9fbff] hover:bg-[#1e40af] disabled:opacity-100 sm:h-12"
+              className="user-primary-action h-14 w-full gap-2 text-base disabled:opacity-100"
               disabled={isLoading}
               data-testid="login-submit"
             >

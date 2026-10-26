@@ -550,10 +550,10 @@ export function ProfilePage() {
 
   return (
     <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 md:px-6 xl:px-8">
-      <section className="surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
+      <section className="user-hero surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
         <div className="space-y-3">
           <p className="section-kicker">{t('profile.title')}</p>
-          <h1 className="text-3xl font-semibold tracking-tight">{t('profile.title')}</h1>
+          <h1 className="user-display">{t('profile.title')}</h1>
           <p className="max-w-3xl text-sm leading-7 text-zinc-400">
             {isAdmin
               ? t('profile.subtitle')

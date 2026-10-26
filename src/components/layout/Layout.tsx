@@ -5,11 +5,13 @@ import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
+import { useAuth } from '@/src/context/AuthContext';
 import { useI18n } from '@/src/context/I18nContext';
 
 export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { role } = useAuth();
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
   useEffect(() => {
@@ -22,7 +24,9 @@ export function Layout() {
   }, []);
 
   return (
-    <div className="relative h-dvh min-h-dvh overflow-hidden text-[var(--text-primary)]">
+    <div
+      className={`relative h-dvh min-h-dvh overflow-hidden text-[var(--text-primary)] ${role === 'user' ? 'user-surface' : ''}`}
+    >
       <div className="pointer-events-none absolute inset-0 opacity-35">
         <div className="absolute left-[-9rem] top-[-7rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(255,255,255,0.74)_0%,_rgba(255,255,255,0)_68%)] blur-2xl" />
         <div className="absolute right-[-10rem] top-[4rem] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,_rgba(111,154,255,0.32)_0%,_rgba(111,154,255,0)_68%)] blur-3xl" />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Activity,
   ArrowDown,
@@ -23,7 +23,11 @@ import { cn } from '@/src/utils/cn';
 import { formatDateTime } from '@/src/utils/dateTime';
 import { formatTraffic } from '@/src/utils/xuiClients';
 import { getFraudRiskMeta, isNodeQualityStale } from '@/src/utils/nodeQuality';
-import { buildClashInstallConfigUrl } from '@/src/utils/subscription';
+import { buildClashInstallConfigUrl, maskSubscriptionUrl } from '@/src/utils/subscription';
+import {
+  parseSubscriptionNodeCards,
+  type SubscriptionNodeCard,
+} from '@/src/utils/subscriptionNodes';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import type { ClientStats, PortalSettings, PortalTab, PortalUsageSummary, UserInfo } from './types';
 import {
@@ -158,6 +162,10 @@ export function HomeTab({
         onSetSection={onSetSection}
         clashInstallUrl={clashInstallUrl}
       />
+
+      {hasSubscription ? (
+        <SubscriptionNodeCards url={subscriptionUniversalUrl} isZh={isZh} />
+      ) : null}
 
       {showAnnouncement ? (
         <AdminMessagesCard
@@ -378,16 +386,16 @@ function MySubscriptionHero({
 
   return (
     <section
-      className={cn('surface-card space-y-5 border p-6 md:p-7', STATUS_BORDER[status])}
+      className={cn('user-hero surface-card space-y-6 border p-6 md:p-8', STATUS_BORDER[status])}
       data-testid="subscription-home-account-status"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1.5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-xl space-y-2">
           <p className="section-kicker">{isZh ? '我的订阅' : 'My subscription'}</p>
-          <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-            {isZh ? '订阅与用量' : 'Your subscription'}
+          <h2 className="user-display text-[var(--text-primary)]">
+            {isZh ? '复制链接，马上导入。' : 'Copy the link and import it.'}
           </h2>
-          {username ? <p className="text-xs text-zinc-500">{username}</p> : null}
+          {username ? <p className="text-sm text-[var(--text-secondary)]">{username}</p> : null}
         </div>
         <span
           data-testid="subscription-home-status"
@@ -419,55 +427,19 @@ function MySubscriptionHero({
           </Button>
         </div>
       ) : hasSubscription ? (
-        <div
-          className={cn(
-            'grid gap-6 lg:items-center',
-            subscriptionUniversalUrl && 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]',
-          )}
-        >
-          <div className="space-y-5">
-            <div className="space-y-2.5">
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <p className="text-3xl font-semibold tabular-nums text-zinc-50">{bigValue}</p>
-                <p className="inline-flex items-center gap-1 text-xs text-zinc-500">
-                  <span>{subtitle}</span>
-                  {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_220px] lg:items-start">
+          <div className="space-y-4">
+            {subscriptionUniversalUrl ? (
+              <div className="user-link-well space-y-4">
+                <p className="text-xs font-semibold tracking-wide text-[var(--text-secondary)]">
+                  {isZh ? '订阅链接' : 'Subscription link'}
                 </p>
-              </div>
-
-              {!unlimited ? (
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all',
-                      usedPercent < 50
-                        ? 'bg-emerald-500'
-                        : usedPercent < 80
-                          ? 'bg-amber-500'
-                          : 'bg-red-500',
-                    )}
-                    style={{ width: `${usedPercent}%` }}
-                  />
-                </div>
-              ) : null}
-
-              {resetText || expiryText ? (
-                <p className="text-xs text-zinc-500">
-                  {resetText}
-                  {resetText && expiryText ? ' · ' : ''}
-                  {expiryText ? (
-                    <span className={cn(isExpired && 'text-red-500')}>{expiryText}</span>
-                  ) : null}
+                <p className="break-all font-mono text-base leading-7 text-[var(--text-primary)] sm:text-lg">
+                  {maskSubscriptionUrl(subscriptionUniversalUrl)}
                 </p>
-              ) : null}
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {subscriptionUniversalUrl ? (
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Button
-                    size="sm"
-                    className="gap-1.5"
+                    className="user-primary-action h-12 gap-2 px-5 text-base sm:min-w-44"
                     onClick={() => {
                       onCopy(subscriptionUniversalUrl, 'home-universal');
                       setCopied(true);
@@ -477,65 +449,86 @@ function MySubscriptionHero({
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制订阅' : 'Copy link'}
                   </Button>
-                ) : null}
-                {subscriptionUniversalUrl ? (
+                  {clashInstallUrl ? (
+                    <Button
+                      variant="secondary"
+                      className="h-12 gap-2 px-5"
+                      onClick={() => {
+                        window.location.href = clashInstallUrl;
+                      }}
+                      data-testid="subscription-home-flclash-import"
+                    >
+                      <Download className="h-4 w-4" />
+                      {isZh ? '用 FlClash 打开' : 'Open in FlClash'}
+                    </Button>
+                  ) : null}
                   <Button
                     variant="secondary"
-                    size="sm"
-                    className="gap-1.5 lg:hidden"
+                    className="h-12 gap-2 px-5 lg:hidden"
                     onClick={() => setShowQr((value) => !value)}
                     aria-expanded={showQr}
                   >
                     <QrCode className="h-4 w-4" />
                     {isZh ? '二维码' : 'QR code'}
                   </Button>
-                ) : null}
-                {clashInstallUrl ? (
                   <Button
-                    variant="secondary"
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => {
-                      window.location.href = clashInstallUrl;
-                    }}
-                    data-testid="subscription-home-flclash-import"
+                    variant="outline"
+                    className="h-12 gap-2 px-5"
+                    onClick={() => onSetSection('setup')}
                   >
                     <Download className="h-4 w-4" />
-                    {isZh ? '用 FlClash 打开' : 'Open in FlClash'}
+                    {isZh ? '下载客户端' : 'Download client'}
                   </Button>
-                ) : null}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => onSetSection('setup')}
-                >
-                  <Download className="h-4 w-4" />
-                  {isZh ? '下载客户端' : 'Download client'}
-                </Button>
-              </div>
-              <p className="text-xs leading-5 text-[var(--text-secondary)]">
-                {isZh
-                  ? '订阅链接相当于密码，只留给自己，不要发给别人。'
-                  : 'This subscription link is private. Do not share it.'}
-              </p>
-              <p className="text-xs leading-5 text-[var(--text-secondary)]">
-                {isZh
-                  ? 'v2rayN：订阅分组 → 添加 → 粘贴刚才复制的链接 → 更新订阅，再选一个节点。'
-                  : 'v2rayN: Subscription group → Add → paste the copied link → update, then pick a node.'}
-              </p>
-              {showQr && subscriptionUniversalUrl ? (
-                <div className="lg:hidden">
-                  <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
                 </div>
-              ) : null}
+              </div>
+            ) : null}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="user-stat">
+                <p>{isZh ? '还能用' : 'Left'}</p>
+                <strong>{bigValue}</strong>
+                <span className="inline-flex items-center gap-1">
+                  {subtitle}
+                  {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
+                </span>
+              </div>
+              <div className="user-stat">
+                <p>{isZh ? '重置' : 'Reset'}</p>
+                <strong>{resetText ?? (isZh ? '未同步' : 'Not synced')}</strong>
+              </div>
+              <div className="user-stat">
+                <p>{isZh ? '到期' : 'Expires'}</p>
+                <strong className={cn(isExpired && 'text-red-500')}>
+                  {expiryText ?? (isZh ? '未同步' : 'Not synced')}
+                </strong>
+              </div>
             </div>
+            {!unlimited ? (
+              <div className="user-meter" aria-hidden="true">
+                <span style={{ width: `${usedPercent}%` }} />
+              </div>
+            ) : null}
+            <p className="text-sm leading-6 text-[var(--text-secondary)]">
+              {isZh
+                ? '订阅链接相当于密码，只留给自己，不要发给别人。'
+                : 'This subscription link is private. Do not share it.'}
+            </p>
+            <p className="text-sm leading-6 text-[var(--text-secondary)]">
+              {isZh
+                ? 'v2rayN：订阅分组 → 添加 → 粘贴刚才复制的链接 → 更新订阅，再选一个节点。'
+                : 'v2rayN: Subscription group → Add → paste the copied link → update, then pick a node.'}
+            </p>
+            {showQr && subscriptionUniversalUrl ? (
+              <div className="lg:hidden">
+                <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
+              </div>
+            ) : null}
           </div>
-
           {subscriptionUniversalUrl ? (
-            <div className="hidden flex-col items-center gap-2 lg:flex lg:border-l lg:border-[var(--border-subtle)] lg:pl-6">
+            <div className="hidden flex-col items-center gap-2 lg:flex">
               <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
-              <p className="text-xs text-zinc-500">{isZh ? '手机扫码导入' : 'Scan to import'}</p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {isZh ? '手机扫码导入' : 'Scan to import'}
+              </p>
             </div>
           ) : null}
         </div>
@@ -557,6 +550,85 @@ function MySubscriptionHero({
           </Button>
         </div>
       )}
+    </section>
+  );
+}
+
+function SubscriptionNodeCards({ url, isZh }: { url: string; isZh: boolean }) {
+  const [cards, setCards] = useState<SubscriptionNodeCard[] | null>(null);
+
+  useEffect(() => {
+    if (!url) return undefined;
+    let cancelled = false;
+    void fetch(url, { credentials: 'include' })
+      .then((response) => (response.ok ? response.text() : ''))
+      .then((body) => {
+        if (!cancelled) setCards(parseSubscriptionNodeCards(body));
+      })
+      .catch(() => {
+        if (!cancelled) setCards([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  if (!cards?.length) return null;
+
+  const ordered = [...cards].sort((left, right) => {
+    const rank = (card: SubscriptionNodeCard) =>
+      card.usedLabel && card.limitLabel ? 0 : card.limitLabel ? 1 : 2;
+    return rank(left) - rank(right);
+  });
+
+  return (
+    <section className="space-y-3" data-testid="subscription-node-cards">
+      <div className="flex items-end justify-between gap-3">
+        <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+          {isZh ? '节点用量' : 'Node usage'}
+        </h3>
+        <p className="text-xs text-[var(--text-secondary)]">
+          {isZh ? '从节点名称里的已用流量读出来' : 'Read from the used/limit in each node name'}
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {ordered.map((card) => (
+          <article key={card.id} className="user-node-card space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="user-flag" aria-hidden="true">
+                {card.flag || '•'}
+              </span>
+              <p className="min-w-0 truncate text-base font-semibold text-[var(--text-primary)]">
+                {card.name}
+              </p>
+            </div>
+            {card.usedLabel && card.limitLabel ? (
+              <>
+                <p className="text-base font-semibold tabular-nums text-[var(--text-primary)]">
+                  {isZh
+                    ? `已用 ${card.usedLabel} / ${card.limitLabel}`
+                    : `${card.usedLabel} / ${card.limitLabel} used`}
+                </p>
+                <div className="user-meter" aria-hidden="true">
+                  <span
+                    style={{
+                      width: `${Math.max(8, Math.round((card.usedRatio ?? 0) * 100))}%`,
+                    }}
+                  />
+                </div>
+              </>
+            ) : card.limitLabel ? (
+              <p className="text-sm text-[var(--text-secondary)]">
+                {isZh ? `每月 ${card.limitLabel}` : `${card.limitLabel} / month`}
+              </p>
+            ) : (
+              <p className="text-sm text-[var(--text-secondary)]">
+                {isZh ? '这条名称里没有流量数字' : 'This name has no traffic figure'}
+              </p>
+            )}
+          </article>
+        ))}
+      </div>
     </section>
   );
 }

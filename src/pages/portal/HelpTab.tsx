@@ -121,6 +121,17 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
 
   return (
     <section className="space-y-6" data-testid="portal-help-tab">
+      <header className="user-hero surface-card space-y-2 p-6 md:p-8">
+        <p className="section-kicker">{isZh ? '帮助' : 'Help'}</p>
+        <h2 className="user-display">
+          {isZh ? '需要的时候，来这里找。' : 'Come here when you need it.'}
+        </h2>
+        <p className="max-w-2xl text-sm leading-7 text-[var(--text-secondary)]">
+          {isZh
+            ? '社群、共享资源和联系方式都在这一页，不用在设置里翻。'
+            : 'Community links, shared resources, and contact details live on this page.'}
+        </p>
+      </header>
       <Tabs className="gap-4">
         <section className="surface-card p-4 md:p-5" data-testid="portal-help-switcher">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
