@@ -160,18 +160,14 @@ export function MySubscriptionPage() {
       const data = await refreshCurrentNodeQuality();
       setClientStats(data.stats ?? null);
       setNodeQuality(data.nodeQuality ?? null);
-      toast(isZh ? '节点质量检测结果已刷新。' : 'Node quality refreshed.', 'success');
+      toast(isZh ? '节点检测已更新。' : 'Node check updated.', 'success');
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         await handleUnauthorized();
         return;
       }
       toast(
-        error instanceof Error
-          ? error.message
-          : isZh
-            ? '刷新节点质量检测结果失败。'
-            : 'Failed to refresh node quality.',
+        error instanceof Error ? error.message : isZh ? '节点检测失败。' : 'The node check failed.',
         'error',
       );
     } finally {
@@ -182,33 +178,29 @@ export function MySubscriptionPage() {
   const sectionMeta = useMemo(() => {
     if (activeTab === 'home') {
       return {
-        kicker: isZh ? '账户概览' : 'Account overview',
-        title: isZh ? '确认账户状态。' : 'Check account status.',
+        kicker: isZh ? '订阅' : 'Subscription',
+        title: isZh ? '订阅链接' : 'Subscription link',
         description: isZh
-          ? '订阅是否可用、流量还剩多少、当前线路表现如何，都能先在这里看到。'
-          : 'See whether your subscription is ready, how much traffic is left, and how your current route is performing.',
+          ? '复制订阅链接，查看节点和已用流量。'
+          : 'Copy the subscription link and check each node’s used traffic.',
       };
     }
 
     if (activeTab === 'setup') {
       return {
-        kicker: isZh ? '使用订阅' : 'Set up',
-        title: isZh ? '选设备，按步骤接入。' : 'Pick a device and follow the steps.',
+        kicker: isZh ? '导入' : 'Import',
+        title: isZh ? '导入' : 'Import',
         description: isZh
-          ? '页面会带你完成客户端下载、链接复制和导入连接。'
-          : 'This page walks you through the client download, link copy, and import steps.',
+          ? '下载客户端并复制订阅链接。'
+          : 'Download a client and copy the subscription link.',
       };
     }
 
     if (activeTab === 'help') {
       return {
-        kicker: isZh ? '帮助中心' : 'Help center',
-        title: isZh
-          ? '把支持、共享资源和排障都集中到这里。'
-          : 'Keep support, shared resources, and fixes in one place.',
-        description: isZh
-          ? '共享账号、联系渠道、公告和排障建议单独收进这一页，需要时直接来这里查，不再挤在设置流程底部。'
-          : 'Shared accounts, support contacts, announcements, and troubleshooting now live on their own page instead of being buried at the bottom of setup.',
+        kicker: isZh ? '帮助' : 'Help',
+        title: isZh ? '帮助' : 'Help',
+        description: isZh ? '社群和共享资源。' : 'Community and shared resources.',
       };
     }
 

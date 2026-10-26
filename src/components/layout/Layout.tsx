@@ -77,8 +77,8 @@ export function Layout() {
               data-testid="demo-mode-badge"
             >
               {isZh
-                ? '演示环境 · 节点、用量与账号均为示例数据'
-                : 'Demo environment · nodes, usage and accounts are sample data'}
+                ? '演示数据。节点和已用流量均为示例。'
+                : 'Demo data. Nodes and used traffic are examples.'}
             </div>
           )}
           <main

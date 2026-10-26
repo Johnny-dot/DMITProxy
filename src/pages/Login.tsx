@@ -100,17 +100,15 @@ export function LoginPage() {
 
   return (
     <PublicAuthLayout
-      eyebrow={isZh ? '账户' : 'Account'}
-      title={isZh ? '登录,继续使用。' : 'Sign in to continue.'}
-      description={isZh ? '订阅、教程、社群。' : 'Subscriptions, guides, community.'}
+      eyebrow={isZh ? '登录' : 'Sign in'}
+      title={isZh ? '查看订阅' : 'View your subscription'}
+      description={isZh ? '登录后复制订阅链接。' : 'Sign in, then copy your subscription link.'}
       compactMobile
     >
       <div className="space-y-5 sm:space-y-8" data-testid="login-page">
         <div className="space-y-5 sm:space-y-8">
           <div className="space-y-1.5 sm:space-y-3">
-            <h2 className="user-display text-[var(--text-primary)]">
-              {isZh ? '欢迎回来' : 'Welcome back'}
-            </h2>
+            <h2 className="user-display text-[var(--text-primary)]">{isZh ? '登录' : 'Sign in'}</h2>
             {showSubscriptionHint ? (
               <p
                 className="text-sm leading-6 text-[var(--text-secondary)]"
@@ -256,10 +254,10 @@ export function LoginPage() {
         <div className="flex items-center justify-between gap-3 border-t border-[color:var(--border-subtle)] pt-5 sm:surface-panel sm:border-t-0 sm:px-5 sm:py-5">
           <div className="space-y-1">
             <p className="text-sm font-semibold text-[var(--text-primary)]">
-              {isZh ? '有邀请码？' : 'Have an invite code?'}
+              {isZh ? '注册' : 'Register'}
             </p>
             <p className="hidden text-sm leading-6 text-[var(--text-secondary)] min-[380px]:block">
-              {isZh ? '注册后直接进订阅页。' : 'Register, then jump to your subscriptions.'}
+              {isZh ? '需要邀请码。' : 'An invite code is required.'}
             </p>
           </div>
           <Link to="/register" data-testid="login-register-link">
@@ -269,10 +267,6 @@ export function LoginPage() {
             </Button>
           </Link>
         </div>
-
-        <p className="hidden text-xs leading-5 text-[var(--text-secondary)] sm:block">
-          {t('login.footer')}
-        </p>
       </div>
     </PublicAuthLayout>
   );

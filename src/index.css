@@ -941,11 +941,74 @@ html[data-theme='dark'] .user-surface .user-hero-panel {
   border-color: transparent !important;
 }
 
-.user-surface .user-display {
-  font-size: clamp(2rem, 4vw, 3.4rem);
-  line-height: 1.02;
-  letter-spacing: -0.045em;
-  font-weight: 650;
+.user-surface {
+  font-family:
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'WenQuanYi Micro Hei',
+    system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+.user-surface
+  :is(
+    h1,
+    h2,
+    .user-display,
+    .page-title,
+    .text-3xl,
+    .text-4xl,
+    .text-\[1\.65rem\],
+    .text-\[1\.9rem\],
+    .sm\:text-4xl
+  ) {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+.user-surface :is(h3, .text-lg, .text-xl, .text-2xl) {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+.user-surface :is(.text-sm, .text-base, .sm\:text-sm, .sm\:text-base) {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.user-surface
+  :is(.section-kicker, .text-xs, .text-\[10px\], .text-\[11px\], .text-\[13px\], .sm\:text-xs) {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.user-surface :is(.font-medium, .font-semibold, .font-bold, strong, button) {
+  font-weight: 600;
+}
+
+.user-surface :is([class*='tracking-'], [class*='leading-'], .uppercase, button) {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.user-surface :is([class*='leading-']) {
+  line-height: 1.5;
+}
+
+.user-surface .font-mono,
+.user-surface .user-num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
 }
 
 .user-surface .user-link-well {
@@ -967,14 +1030,17 @@ html[data-theme='dark'] .user-surface .user-hero-panel {
 .user-surface .user-stat p,
 .user-surface .user-stat span {
   color: var(--text-secondary);
-  font-size: 0.75rem;
-  line-height: 1.4;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .user-surface .user-stat strong {
   color: var(--text-primary);
-  font-size: 1.05rem;
-  font-weight: 650;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .user-surface .user-node-card {

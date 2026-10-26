@@ -123,13 +123,9 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
     <section className="space-y-6" data-testid="portal-help-tab">
       <header className="user-hero surface-card space-y-2 p-6 md:p-8">
         <p className="section-kicker">{isZh ? '帮助' : 'Help'}</p>
-        <h2 className="user-display">
-          {isZh ? '需要的时候，来这里找。' : 'Come here when you need it.'}
-        </h2>
+        <h2 className="user-display">{isZh ? '帮助' : 'Help'}</h2>
         <p className="max-w-2xl text-sm leading-7 text-[var(--text-secondary)]">
-          {isZh
-            ? '社群、共享资源和联系方式都在这一页，不用在设置里翻。'
-            : 'Community links, shared resources, and contact details live on this page.'}
+          {isZh ? '社群和共享资源。' : 'Community and shared resources.'}
         </p>
       </header>
       <Tabs className="gap-4">
@@ -186,7 +182,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
             data-testid="portal-help-resources"
           >
             <div className="space-y-1">
-              <p className="section-kicker">{isZh ? '帮助中心' : 'Help center'}</p>
+              <p className="section-kicker">{isZh ? '资源' : 'Resources'}</p>
               <h3 className="text-xl font-semibold tracking-tight text-zinc-50">
                 {isZh ? '共享资源' : 'Shared resources'}
               </h3>
@@ -306,7 +302,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                               label={isZh ? '邀请链接' : 'Invite link'}
                               value={inviteLink}
                               copied={copiedKey === `resource-link-${resource.id}`}
-                              copyLabel={isZh ? '复制链接' : 'Copy link'}
+                              copyLabel={isZh ? '复制' : 'Copy'}
                               copiedLabel={isZh ? '已复制' : 'Copied'}
                               onCopy={() => handleCopy(inviteLink, `resource-link-${resource.id}`)}
                             />
@@ -326,7 +322,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                       ) : null}
 
                       {shouldShowGenericCopy ? (
-                        <div className="whitespace-pre-wrap surface-inline px-4 py-3 font-mono text-xs leading-6 text-zinc-300">
+                        <div className="whitespace-pre-wrap surface-inline px-4 py-3 text-xs leading-6 text-zinc-300">
                           {resource.content}
                         </div>
                       ) : null}

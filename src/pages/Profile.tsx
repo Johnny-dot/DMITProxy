@@ -154,14 +154,14 @@ function UserProfileView() {
 
   const resolvedPreviewName = resolveDisplayName(displayNameInput, username);
   const displayNameHelpText = isZh
-    ? '显示名称会出现在侧栏、个人资料页和通知面板里；不影响你的登录账号。'
-    : 'Your display name appears in the sidebar, profile page, and notifications. It does not change your sign-in username.';
+    ? '显示在侧栏。留空则用登录账号。'
+    : 'Shown in the sidebar. Leave empty to use the username.';
   const avatarStyleHelpText = isZh
-    ? '这里修改的是头像的配色样式；头像字母会继续根据你的显示名称或登录账号自动生成。'
-    : 'This changes the avatar color style. The initials still come from your display name or username.';
+    ? '只改颜色。字母来自显示名称。'
+    : 'Color only. Initials come from the display name.';
   const usernameHelpText = isZh
-    ? '这是你登录时使用的账号名；它和显示名称是分开的。'
-    : 'This is the username you use to sign in. It is separate from your display name.';
+    ? '登录时使用，不能在这里修改。'
+    : 'Used to sign in. It cannot be changed here.';
 
   async function saveProfile() {
     setIsSavingProfile(true);
@@ -189,11 +189,6 @@ function UserProfileView() {
             <User className="w-5 h-5 text-indigo-500" />
             <CardTitle>{isZh ? '个人资料' : 'Profile'}</CardTitle>
           </div>
-          <CardDescription>
-            {isZh
-              ? '在这里调整你的显示名称、头像样式和个人偏好。'
-              : 'Adjust your display name, avatar style, and personal preferences here.'}
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center gap-3">
@@ -210,7 +205,7 @@ function UserProfileView() {
               <Badge variant="secondary">{isZh ? '用户' : 'User'}</Badge>
               {username && (
                 <p className="text-xs text-zinc-500">
-                  {isZh ? '登录账号：' : 'Sign-in username: '}@{username}
+                  {isZh ? '登录账号' : 'Username'} @{username}
                 </p>
               )}
             </div>
@@ -232,11 +227,6 @@ function UserProfileView() {
               maxLength={32}
               disabled={isLoadingProfile}
             />
-            <p className="text-xs text-[var(--text-secondary)]">
-              {isZh
-                ? '显示名称会同步到侧栏、个人资料页和通知面板。留空时默认使用登录账号。'
-                : 'Your display name appears in the sidebar, profile page, and notifications. Leave it empty to fall back to your username.'}
-            </p>
           </div>
 
           <div className="space-y-3">
@@ -244,11 +234,6 @@ function UserProfileView() {
               <p className="inline-flex items-center gap-1 text-sm font-medium">
                 <span>{isZh ? '头像样式' : 'Avatar style'}</span>
                 <InfoTooltip content={avatarStyleHelpText} />
-              </p>
-              <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                {isZh
-                  ? '选择一个你喜欢的底色，头像会自动使用你的名称首字母。'
-                  : 'Choose the tone you like. The avatar uses the initials from your name automatically.'}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -298,7 +283,7 @@ function UserProfileView() {
                 <span>{isZh ? '登录账号' : 'Username'}</span>
                 <InfoTooltip content={usernameHelpText} />
               </p>
-              <p className="mt-1 break-all font-mono text-sm">{username ?? '-'}</p>
+              <p className="mt-1 break-all text-sm">{username ?? '-'}</p>
             </div>
           </div>
 
@@ -318,7 +303,7 @@ function UserProfileView() {
               onClick={() => navigate('/my-subscription')}
             >
               <Key className="w-4 h-4" />
-              {isZh ? '查看我的订阅' : 'View my subscription'}
+              {isZh ? '查看订阅' : 'View subscription'}
             </Button>
           </div>
         </CardContent>
@@ -552,14 +537,14 @@ export function ProfilePage() {
     <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 md:px-6 xl:px-8">
       <section className="user-hero surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
         <div className="space-y-3">
-          <p className="section-kicker">{t('profile.title')}</p>
+          <p className="section-kicker">{isZh ? '账号' : 'Account'}</p>
           <h1 className="user-display">{t('profile.title')}</h1>
           <p className="max-w-3xl text-sm leading-7 text-zinc-400">
             {isAdmin
               ? t('profile.subtitle')
               : isZh
-                ? '在这里管理你的显示名称、头像样式和偏好设置'
-                : 'Manage your display name, avatar style, and preferences here'}
+                ? '显示名称和头像。'
+                : 'Display name and avatar.'}
           </p>
         </div>
         {isAdmin && (

@@ -13,6 +13,8 @@ interface PublicAuthLayoutProps {
 }
 
 function BrandBadge({ compact = false }: { compact?: boolean }) {
+  const { language } = useI18n();
+  const isZh = language === 'zh-CN';
   return (
     <div
       className={`glass-pill inline-flex items-center gap-3 ${compact ? 'px-3 py-2' : 'px-4 py-3'}`}
@@ -27,7 +29,7 @@ function BrandBadge({ compact = false }: { compact?: boolean }) {
         <span
           className={`${compact ? 'block truncate text-xs' : 'text-sm'} text-[var(--text-secondary)]`}
         >
-          {compact ? 'Your connection, simplified.' : 'Subscription workspace'}
+          {compact ? (isZh ? '订阅' : 'Subscription') : isZh ? '订阅链接' : 'Subscription link'}
         </span>
       </div>
     </div>
@@ -101,22 +103,18 @@ export function PublicAuthLayout({
   const highlights = [
     {
       icon: PanelsTopLeft,
-      title: isZh ? '常用操作，一眼找到' : 'Common tasks, easy to find',
-      description: isZh
-        ? '登录后，常用入口触手可及。'
-        : 'Your most-used links, right at hand after sign-in.',
+      title: isZh ? '订阅链接' : 'Subscription link',
+      description: isZh ? '登录后复制。' : 'Copy it after you sign in.',
     },
     {
       icon: ShieldCheck,
-      title: isZh ? '状态清楚，少走弯路' : 'Clear status, fewer detours',
-      description: isZh
-        ? '哪些已就绪、下一步做什么，一眼看清。'
-        : "See what's ready and what's next at a glance.",
+      title: isZh ? '节点' : 'Nodes',
+      description: isZh ? '查看每个节点的已用流量。' : 'See used traffic for each node.',
     },
     {
       icon: Waypoints,
-      title: isZh ? '第一次来，也能跟着走' : 'Easy even on the first visit',
-      description: isZh ? '按提示操作，无需熟悉术语。' : 'Follow the prompts — no jargon needed.',
+      title: isZh ? '导入' : 'Import',
+      description: isZh ? '用 FlClash 或 v2rayN。' : 'Use FlClash or v2rayN.',
     },
   ];
 
