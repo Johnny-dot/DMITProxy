@@ -354,6 +354,16 @@ export function Navbar() {
     return () => window.removeEventListener('focus', handleWindowFocus);
   }, [role, refreshNotifications]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const openFromMenu = () => {
+      setIsNotificationsOpen(true);
+      void refreshNotifications();
+    };
+    window.addEventListener('prism:open-notifications', openFromMenu);
+    return () => window.removeEventListener('prism:open-notifications', openFromMenu);
+  }, [refreshNotifications]);
+
   function openNotifications() {
     setIsNotificationsOpen(true);
     void refreshNotifications();
@@ -448,12 +458,16 @@ export function Navbar() {
 
   return (
     <div className="flex w-full items-center justify-end gap-2 md:gap-3">
-      <LanguageToggle compact className="hidden sm:inline-flex" testIdPrefix="navbar-language" />
-      <ThemeToggle testId="navbar-theme-toggle" />
+      <LanguageToggle
+        compact
+        className="user-topbar-language hidden sm:inline-flex"
+        testIdPrefix="navbar-language"
+      />
+      <ThemeToggle className="user-topbar-theme" testId="navbar-theme-toggle" />
       <Button
         variant="outline"
         size="icon"
-        className="relative"
+        className="user-topbar-bell relative"
         onClick={openNotifications}
         title={t('notifications.title')}
         data-testid="navbar-notifications"
@@ -463,7 +477,7 @@ export function Navbar() {
           <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-emerald-500" />
         )}
       </Button>
-      <div className="hidden h-8 w-px bg-[var(--border-subtle)] sm:block" />
+      <div className="user-topbar-divider hidden h-8 w-px bg-[var(--border-subtle)] sm:block" />
       <Button
         variant={location.pathname === '/profile' ? 'secondary' : 'outline'}
         size="sm"

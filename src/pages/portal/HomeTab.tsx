@@ -149,7 +149,7 @@ export function HomeTab({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="user-home-stack space-y-6">
       <MySubscriptionHero
         isZh={isZh}
         username={context?.user.username ?? ''}
@@ -379,8 +379,8 @@ function MySubscriptionHero({
       className={cn('user-hero surface-card space-y-6 border p-6 md:p-8', STATUS_BORDER[status])}
       data-testid="subscription-home-account-status"
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-xl space-y-2">
+      <div className="user-hero-intro flex flex-wrap items-start justify-between gap-4">
+        <div className="user-hero-title max-w-xl space-y-2">
           <p className="section-kicker">{isZh ? '我的订阅' : 'My subscription'}</p>
           <h2 className="user-display text-[var(--text-primary)]">
             {isZh ? '复制订阅链接' : 'Copy subscription link'}
@@ -390,11 +390,18 @@ function MySubscriptionHero({
         <span
           data-testid="subscription-home-status"
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+            'user-hero-status inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
             STATUS_PILL[status],
           )}
         >
-          <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT[status])} />
+          <span
+            className={cn('user-hero-status-dot h-1.5 w-1.5 rounded-full', STATUS_DOT[status])}
+          />
+          <span className="user-hero-status-prefix">
+            {isZh ? '我的订阅' : 'My subscription'}
+            {username ? ` · ${username}` : ''}
+            {' · '}
+          </span>
           {statusLabel}
         </span>
       </div>
@@ -417,19 +424,19 @@ function MySubscriptionHero({
           </Button>
         </div>
       ) : hasSubscription ? (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_220px] lg:items-start">
+        <div className="user-hero-body grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_220px] lg:items-start">
           <div className="space-y-4">
             {subscriptionUniversalUrl ? (
               <div className="user-link-well space-y-4">
                 <p className="text-xs font-semibold tracking-wide text-[var(--text-secondary)]">
                   {isZh ? '订阅链接' : 'Subscription link'}
                 </p>
-                <p className="user-num break-all text-base leading-7 text-[var(--text-primary)]">
+                <p className="user-num user-hero-link break-all text-base leading-7 text-[var(--text-primary)]">
                   {maskSubscriptionUrl(subscriptionUniversalUrl)}
                 </p>
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <div className="user-hero-actions flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Button
-                    className="user-primary-action h-12 gap-2 px-5 text-base sm:min-w-44"
+                    className="user-primary-action user-hero-copy h-12 gap-2 px-5 text-base sm:min-w-44"
                     onClick={() => {
                       onCopy(subscriptionUniversalUrl, 'home-universal');
                       setCopied(true);
@@ -445,40 +452,49 @@ function MySubscriptionHero({
                         ? '复制订阅链接'
                         : 'Copy subscription link'}
                   </Button>
-                  {clashInstallUrl ? (
+                  <div className="user-hero-secondary">
+                    {clashInstallUrl ? (
+                      <Button
+                        variant="secondary"
+                        className="user-hero-compact-btn h-12 gap-2 px-5"
+                        onClick={() => {
+                          window.location.href = clashInstallUrl;
+                        }}
+                        data-testid="subscription-home-flclash-import"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span className="user-hero-label-long">
+                          {isZh ? '用 FlClash 打开' : 'Open in FlClash'}
+                        </span>
+                        <span className="user-hero-label-short">FlClash</span>
+                      </Button>
+                    ) : null}
                     <Button
                       variant="secondary"
-                      className="h-12 gap-2 px-5"
-                      onClick={() => {
-                        window.location.href = clashInstallUrl;
-                      }}
-                      data-testid="subscription-home-flclash-import"
+                      className="user-hero-compact-btn h-12 gap-2 px-5 lg:hidden"
+                      onClick={() => setShowQr((value) => !value)}
+                      aria-expanded={showQr}
+                    >
+                      <QrCode className="h-4 w-4" />
+                      <span className="user-hero-label-long">{isZh ? '二维码' : 'QR code'}</span>
+                      <span className="user-hero-label-short">{isZh ? '二维码' : 'QR'}</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="user-hero-compact-btn h-12 gap-2 px-5"
+                      onClick={() => onSetSection('setup')}
                     >
                       <Download className="h-4 w-4" />
-                      {isZh ? '用 FlClash 打开' : 'Open in FlClash'}
+                      <span className="user-hero-label-long">
+                        {isZh ? '下载客户端' : 'Download client'}
+                      </span>
+                      <span className="user-hero-label-short">{isZh ? '下载' : 'Download'}</span>
                     </Button>
-                  ) : null}
-                  <Button
-                    variant="secondary"
-                    className="h-12 gap-2 px-5 lg:hidden"
-                    onClick={() => setShowQr((value) => !value)}
-                    aria-expanded={showQr}
-                  >
-                    <QrCode className="h-4 w-4" />
-                    {isZh ? '二维码' : 'QR code'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-12 gap-2 px-5"
-                    onClick={() => onSetSection('setup')}
-                  >
-                    <Download className="h-4 w-4" />
-                    {isZh ? '下载客户端' : 'Download client'}
-                  </Button>
+                  </div>
                 </div>
               </div>
             ) : null}
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="user-hero-stats grid gap-3 sm:grid-cols-3">
               <div className="user-stat">
                 <p>
                   {unlimited ? (isZh ? '已用流量' : 'Used traffic') : isZh ? '还能用' : 'Remaining'}

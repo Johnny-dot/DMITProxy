@@ -247,7 +247,7 @@ export function MySubscriptionPage() {
   return (
     <div
       className={cn(
-        'content-shell-wide reveal-stagger flex flex-col gap-4 px-4 py-2 md:px-6 xl:px-8',
+        'user-page-stack content-shell-wide reveal-stagger flex flex-col gap-4 px-4 py-2 md:px-6 xl:px-8',
       )}
       data-testid="my-subscription-page"
     >

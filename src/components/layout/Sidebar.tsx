@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
+  Bell,
   LayoutDashboard,
   LifeBuoy,
   Link as LinkIcon,
@@ -12,6 +13,8 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { ThemeToggle } from '../ui/ThemeToggle';
+import { LanguageToggle } from '../ui/LanguageToggle';
 import { cn } from '@/src/utils/cn';
 import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
@@ -156,6 +159,24 @@ export function Sidebar({
               </NavLink>
             ))}
       </nav>
+
+      {onClose && role === 'user' ? (
+        <div className="user-drawer-tools items-center gap-2 px-1">
+          <LanguageToggle compact testIdPrefix="drawer-language" />
+          <ThemeToggle />
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--border-subtle)] text-[var(--text-secondary)]"
+            aria-label={t('notifications.title')}
+            onClick={() => {
+              window.dispatchEvent(new Event('prism:open-notifications'));
+              onClose();
+            }}
+          >
+            <Bell className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
 
       <div className="soft-divider border-t pt-5">
         <NavLink

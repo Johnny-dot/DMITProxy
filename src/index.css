@@ -1087,6 +1087,173 @@ html[data-theme='dark'] .user-surface .user-meter-warn > span {
   background: #d97706;
 }
 
+.user-hero-status-prefix,
+.user-hero-label-short {
+  display: none;
+}
+
+.user-drawer-tools {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .user-drawer-tools {
+    display: flex;
+  }
+
+  .user-surface .app-topbar-shell {
+    padding: 8px 16px 4px;
+  }
+
+  .user-surface .app-topbar {
+    height: 2.5rem;
+    padding: 0;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .user-surface .app-topbar button {
+    height: 2rem;
+    width: 2rem;
+    padding: 0;
+  }
+
+  .user-surface .app-topbar .user-topbar-language,
+  .user-surface .app-topbar .user-topbar-theme,
+  .user-surface .app-topbar .user-topbar-bell,
+  .user-surface .app-topbar .user-topbar-divider {
+    display: none;
+  }
+
+  .user-surface .demo-mode-badge {
+    padding-bottom: 2px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .user-surface .user-page-stack {
+    gap: 0.75rem;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .user-surface .user-home-stack > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem;
+  }
+
+  .user-surface .user-hero {
+    padding: 12px;
+  }
+
+  .user-surface .user-hero.space-y-6 > :not([hidden]) ~ :not([hidden]),
+  .user-surface .user-hero .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem;
+  }
+
+  .user-surface .user-hero .user-link-well.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.5rem;
+  }
+
+  .user-surface .user-hero-title,
+  .user-surface .user-hero-status-dot {
+    display: none;
+  }
+
+  .user-surface .user-hero-intro {
+    display: block;
+  }
+
+  .user-surface .user-hero-status {
+    display: block;
+    padding: 0;
+    border-radius: 0;
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .user-surface .user-hero-status-prefix {
+    display: inline;
+    font-weight: 400;
+  }
+
+  .user-surface .user-hero .user-link-well {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .user-surface .user-hero-link {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: normal;
+    overflow-wrap: normal;
+    line-height: 1.4;
+  }
+
+  .user-surface .user-hero-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .user-surface .user-hero-copy {
+    width: 100%;
+    height: 2.75rem;
+  }
+
+  .user-surface .user-hero-secondary {
+    display: flex;
+    gap: 8px;
+  }
+
+  .user-surface .user-hero-secondary > * {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 2.25rem;
+    padding-inline: 0.35rem;
+    font-size: 0.75rem;
+  }
+
+  .user-surface .user-hero-compact-btn svg,
+  .user-surface .user-hero-label-long {
+    display: none;
+  }
+
+  .user-surface .user-hero-label-short {
+    display: inline;
+  }
+
+  .user-surface .user-hero-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .user-surface .user-hero .user-stat {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .user-surface .user-hero-body {
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 641px) {
+  .user-hero-secondary {
+    display: contents;
+  }
+}
+
 .user-surface .rounded-\[18px\],
 .user-surface .rounded-\[20px\],
 .user-surface .rounded-\[22px\],

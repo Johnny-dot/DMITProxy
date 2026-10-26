@@ -51,8 +51,8 @@ export function Layout() {
         </Modal>
 
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden pb-4">
-          <div className="content-shell-wide shrink-0 px-4 pb-4 pt-4 md:px-6 md:pb-6 md:pt-6 xl:px-8">
-            <header className="surface-card flex h-16 items-center px-4 md:px-6">
+          <div className="app-topbar-shell content-shell-wide shrink-0 px-4 pb-4 pt-4 md:px-6 md:pb-6 md:pt-6 xl:px-8">
+            <header className="app-topbar surface-card flex h-16 items-center px-4 md:px-6">
               <div className="flex w-full items-center gap-4">
                 <Button
                   variant="ghost"
@@ -73,7 +73,7 @@ export function Layout() {
 
           {import.meta.env.VITE_DEMO_MODE === true && (
             <div
-              className="content-shell-wide shrink-0 px-4 pb-3 text-xs text-[var(--accent)] md:px-6 xl:px-8"
+              className="demo-mode-badge content-shell-wide shrink-0 px-4 pb-3 text-xs text-[var(--accent)] md:px-6 xl:px-8"
               data-testid="demo-mode-badge"
             >
               {isZh
