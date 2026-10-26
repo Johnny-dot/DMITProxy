@@ -1,5 +1,9 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseSharedNodeUsage } from './shared-node-usage.js';
+import { db } from './db.js';
+import { extractLinkHost, resolveSharedNodeNames } from './shared-node-usage.js';
 import {
   buildDecoratedSubscriptionLinks,
   buildUserNodeName,
@@ -84,17 +88,54 @@ describe('normalizeExtraSubscriptionLinks', () => {
     ]);
   });
 
-  it('appends live shared-node usage to the display name', () => {
-    const usage = parseSharedNodeUsage(
-      JSON.stringify({
-        nodes: [{ name: '日本 IEPL 01', usedBytes: 20 * 1024 ** 3, totalBytes: 100 * 1024 ** 3 }],
-      }),
+  it('keeps the shared-node prefix only when that host has no usage config', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shared-node-link-'));
+    const file = path.join(dir, 'usage.json');
+    fs.writeFileSync(file, JSON.stringify({ used_bytes: 120e9 }));
+    const previous = db
+      .prepare('SELECT value FROM app_settings WHERE key = ?')
+      .get('sharedNodeUsage') as { value: string } | undefined;
+    db.prepare(
+      `INSERT INTO app_settings (key, value, updated_at)
+       VALUES ('sharedNodeUsage', ?, unixepoch())
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+    ).run(
+      JSON.stringify([
+        {
+          host: 'sg.example.com',
+          name: '🇸🇬 新加坡',
+          limitBytes: 8e12,
+          localFile: file,
+        },
+      ]),
     );
-    expect(
-      normalizeExtraSubscriptionLinks(['vless://first@example.com:443#日本 IEPL 01'], usage),
-    ).toEqual([
-      'vless://first@example.com:443#%E5%85%B1%E4%BA%AB%E8%8A%82%E7%82%B9%EF%BD%9C%E6%97%A5%E6%9C%AC%20IEPL%2001%EF%BD%9C%E5%89%A980%2F100G',
-    ]);
+
+    try {
+      const extraLinks = [
+        'vless://uuid@sg.example.com:443#旧名字',
+        'trojan://secret@other.example.com:443#其它',
+      ];
+      const sharedNames = await resolveSharedNodeNames(extraLinks);
+      const normalizedExtra = normalizeExtraSubscriptionLinks(extraLinks);
+      const links = extraLinks.map((raw, i) => {
+        const name = sharedNames.get(extractLinkHost(raw));
+        return name ? replaceLinkName(raw, name) : normalizedExtra[i];
+      });
+      expect(decodeURIComponent(links[0].split('#')[1])).toBe('🇸🇬 新加坡｜已用 120G/8T');
+      expect(links[0]).not.toContain(encodeURIComponent('共享节点'));
+      expect(links[0]).not.toContain(encodeURIComponent('旧名字'));
+      expect(decodeURIComponent(links[1].split('#')[1])).toBe('共享节点｜其它');
+    } finally {
+      if (previous) {
+        db.prepare('UPDATE app_settings SET value = ? WHERE key = ?').run(
+          previous.value,
+          'sharedNodeUsage',
+        );
+      } else {
+        db.prepare("DELETE FROM app_settings WHERE key = 'sharedNodeUsage'").run();
+      }
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

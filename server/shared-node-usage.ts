@@ -1,191 +1,97 @@
+import fs from 'node:fs';
 import { db } from './db.js';
 
-/**
- * Live usage for shared extra nodes, stored in app_settings under `sharedNodeUsage`.
- *
- * Canonical JSON:
- * {
- *   "updatedAt": 1710000000000,
- *   "nodes": [
- *     { "name": "日本 IEPL 01", "usedBytes": 123, "totalBytes": 456 }
- *   ]
- * }
- *
- * `name` matches the sanitized title of an extra subscription link.
- * `index` is the 0-based position in that list when the link has no name.
- * Also accepted: an entries array, a name-to-usage map, and up/down byte fields.
- */
-export const SHARED_NODE_USAGE_KEY = 'sharedNodeUsage';
-
 export interface SharedNodeUsageEntry {
+  host: string;
   name: string;
-  index: number | null;
-  usedBytes: number | null;
-  totalBytes: number | null;
-  remainingBytes: number | null;
-  label: string | null;
+  limitBytes: number;
+  usageUrl?: string;
+  token?: string;
+  localFile?: string;
 }
 
-const GB = 1024 ** 3;
-
-export function sanitizeSharedNodeName(name: string): string {
-  return name
-    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, '')
-    .replace(/\p{Extended_Pictographic}/gu, '')
-    .replace(/[｜|·•]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 24);
+interface UsageResult {
+  usedBytes: number;
+  at: number;
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  return value as Record<string, unknown>;
-}
+const CACHE_TTL_MS = 60_000;
+const FETCH_TIMEOUT_MS = 2_000;
+const cache = new Map<string, UsageResult>();
 
-function numberOrNull(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) return Math.max(0, value);
-  if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value))) {
-    return Math.max(0, Number(value));
-  }
-  return null;
-}
-
-function readEntry(
-  value: unknown,
-  fallbackName = '',
-  fallbackIndex: number | null = null,
-): SharedNodeUsageEntry | null {
-  if (typeof value === 'string') {
-    const label = value.trim();
-    if (!label) return null;
-    return {
-      name: fallbackName,
-      index: fallbackIndex,
-      usedBytes: null,
-      totalBytes: null,
-      remainingBytes: null,
-      label,
-    };
-  }
-
-  const record = asRecord(value);
-  if (!record) return null;
-
-  const upload = numberOrNull(record.upload ?? record.up);
-  const download = numberOrNull(record.download ?? record.down);
-  const usedFromParts = upload != null || download != null ? (upload ?? 0) + (download ?? 0) : null;
-  const usedBytes = numberOrNull(record.usedBytes ?? record.used ?? record.usage) ?? usedFromParts;
-  const totalBytes = numberOrNull(record.totalBytes ?? record.total ?? record.quota);
-  const remainingBytes = numberOrNull(record.remainingBytes ?? record.remaining ?? record.remain);
-  const rawLabel = record.label ?? record.text;
-  const label = typeof rawLabel === 'string' && rawLabel.trim() ? rawLabel.trim() : null;
-  const name = String(record.name ?? record.remark ?? record.title ?? fallbackName).trim();
-  const indexRaw = numberOrNull(record.index);
-  const index = indexRaw == null ? fallbackIndex : Math.trunc(indexRaw);
-
-  if (
-    !name &&
-    index == null &&
-    !label &&
-    usedBytes == null &&
-    totalBytes == null &&
-    remainingBytes == null
-  ) {
-    return null;
-  }
-
-  return { name, index, usedBytes, totalBytes, remainingBytes, label };
-}
-
-function collectEntries(value: unknown): SharedNodeUsageEntry[] {
-  if (Array.isArray(value)) {
-    return value
-      .map((item, index) => readEntry(item, '', index))
-      .filter((item): item is SharedNodeUsageEntry => Boolean(item));
-  }
-
-  const record = asRecord(value);
-  if (!record) return [];
-
-  if (Array.isArray(record.nodes)) return collectEntries(record.nodes);
-  if (Array.isArray(record.entries)) return collectEntries(record.entries);
-
-  const nested = asRecord(record.nodes);
-  if (nested) {
-    return Object.entries(nested)
-      .map(([name, item], index) => readEntry(item, name, index))
-      .filter((item): item is SharedNodeUsageEntry => Boolean(item));
-  }
-
-  const reserved = new Set(['nodes', 'entries', 'updatedAt', 'updated_at']);
-  const pairs = Object.entries(record).filter(([key]) => !reserved.has(key));
-  if (pairs.length === 0) return [];
-
-  const single = readEntry(record);
-  if (single && (single.usedBytes != null || single.totalBytes != null || single.label)) {
-    return [single];
-  }
-
-  return pairs
-    .map(([name, item], index) => readEntry(item, name, index))
-    .filter((item): item is SharedNodeUsageEntry => Boolean(item));
-}
-
-export function parseSharedNodeUsage(raw: string | null | undefined): SharedNodeUsageEntry[] {
-  if (!raw?.trim()) return [];
+export function getSharedNodeUsageConfig(): SharedNodeUsageEntry[] {
   try {
-    return collectEntries(JSON.parse(raw) as unknown);
+    const row = db
+      .prepare('SELECT value FROM app_settings WHERE key = ?')
+      .get('sharedNodeUsage') as { value: string } | undefined;
+    if (!row?.value) return [];
+    const parsed = JSON.parse(row.value);
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
 
-function briefGb(bytes: number): string {
-  return (Math.max(0, bytes) / GB).toFixed(1).replace(/\.0$/, '');
+export function formatUsageBytes(bytes: number): string {
+  const g = bytes / 1e9;
+  if (g < 1000) return `${Math.round(g)}G`;
+  const t = g / 1000;
+  return `${Number.isInteger(t) ? t.toFixed(0) : t.toFixed(1).replace(/\.0$/, '')}T`;
 }
 
-export function formatSharedNodeUsageLabel(entry: SharedNodeUsageEntry): string | null {
-  if (entry.label) {
-    return entry.label.replace(/[｜|]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 24);
-  }
-  if (entry.remainingBytes != null && entry.totalBytes != null) {
-    return `剩${briefGb(entry.remainingBytes)}/${briefGb(entry.totalBytes)}G`;
-  }
-  if (entry.usedBytes != null && entry.totalBytes != null) {
-    const remaining = Math.max(0, entry.totalBytes - entry.usedBytes);
-    return `剩${briefGb(remaining)}/${briefGb(entry.totalBytes)}G`;
-  }
-  if (entry.usedBytes != null) return `已用${briefGb(entry.usedBytes)}G`;
-  return null;
+export function extractLinkHost(link: string): string {
+  const m = link.match(/^[a-z0-9]+:\/\/[^@]*@(\[[^\]]+\]|[^:/?#]+)/i);
+  return m ? m[1].replace(/^\[|\]$/g, '') : '';
 }
 
-export function findSharedNodeUsageLabel(
-  entries: SharedNodeUsageEntry[],
-  input: { name: string; index: number },
-): string | null {
-  const name = sanitizeSharedNodeName(input.name);
-  const named = name
-    ? entries.find((entry) => {
-        const entryName = sanitizeSharedNodeName(entry.name);
-        return entryName === name || entryName === `共享节点 ${name}`;
-      })
-    : undefined;
-  const indexed = entries.find((entry) => entry.index === input.index && !entry.name.trim());
-  const entry = named ?? indexed ?? entries.find((entry) => entry.index === input.index);
-  if (!entry) return null;
-  return formatSharedNodeUsageLabel(entry);
+async function readUsage(entry: SharedNodeUsageEntry): Promise<number | null> {
+  if (entry.localFile) {
+    const data = JSON.parse(fs.readFileSync(entry.localFile, 'utf8'));
+    return Number(data.used_bytes);
+  }
+  if (!entry.usageUrl) return null;
+  const res = await fetch(entry.usageUrl, {
+    headers: entry.token ? { Authorization: `Bearer ${entry.token}` } : {},
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = (await res.json()) as { used_bytes?: unknown };
+  const used = Number(data.used_bytes);
+  if (!Number.isFinite(used) || used < 0) throw new Error('bad used_bytes');
+  return used;
 }
 
-export function loadSharedNodeUsageEntries(): SharedNodeUsageEntry[] {
+async function getUsage(entry: SharedNodeUsageEntry): Promise<number | null> {
+  const cached = cache.get(entry.host);
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.usedBytes;
   try {
-    const row = db
-      .prepare('SELECT value FROM app_settings WHERE key = ?')
-      .get(SHARED_NODE_USAGE_KEY) as { value: string } | undefined;
-    return parseSharedNodeUsage(row?.value);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`[shared-node-usage] unable to read ${SHARED_NODE_USAGE_KEY}: ${message}`);
-    return [];
+    const used = await readUsage(entry);
+    if (used == null || !Number.isFinite(used)) return cached?.usedBytes ?? null;
+    cache.set(entry.host, { usedBytes: used, at: Date.now() });
+    return used;
+  } catch {
+    return cached?.usedBytes ?? null;
   }
+}
+
+/** Returns host -> display name for configured shared nodes. */
+export async function resolveSharedNodeNames(links: string[]): Promise<Map<string, string>> {
+  const config = getSharedNodeUsageConfig();
+  const names = new Map<string, string>();
+  const hosts = new Set(links.map(extractLinkHost));
+  await Promise.all(
+    config
+      .filter((e) => hosts.has(e.host))
+      .map(async (e) => {
+        const used = await getUsage(e);
+        const limit = formatUsageBytes(e.limitBytes);
+        names.set(
+          e.host,
+          used == null
+            ? `${e.name}｜${limit}/月`
+            : `${e.name}｜已用 ${formatUsageBytes(used)}/${limit}`,
+        );
+      }),
+  );
+  return names;
 }
