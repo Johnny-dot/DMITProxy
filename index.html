@@ -17,7 +17,8 @@
           document.documentElement.setAttribute('data-theme', t);
           document.documentElement.style.colorScheme = t;
           var lang = window.localStorage.getItem('prism:lang');
-          document.documentElement.lang = lang === 'en-US' ? 'en-US' : 'zh-CN';
+          var explicit = window.localStorage.getItem('prism:lang-explicit');
+          document.documentElement.lang = explicit === '1' && lang === 'en-US' ? 'en-US' : 'zh-CN';
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'light');
           document.documentElement.style.colorScheme = 'light';

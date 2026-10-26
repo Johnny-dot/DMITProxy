@@ -148,7 +148,7 @@ try {
   });
   await darkContext.addInitScript({
     content:
-      "localStorage.setItem('prism-theme', 'dark'); localStorage.setItem('prism:lang', 'en-US');",
+      "localStorage.setItem('prism-theme', 'dark'); localStorage.setItem('prism:lang', 'en-US'); localStorage.setItem('prism:lang-explicit', '1');",
   });
   const darkPage = await darkContext.newPage();
   darkPage.setDefaultTimeout(15000);

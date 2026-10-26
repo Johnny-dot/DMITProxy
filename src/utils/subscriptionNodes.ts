@@ -8,7 +8,8 @@ export interface SubscriptionNodeCard {
   usedRatio: number | null;
 }
 
-const DECORATION_NAME = /^(重置|到期|个人|他人|机器)｜/;
+/** Account and billing lines shipped inside the subscription. These are not nodes. */
+const INFO_ENTRY_NAME = /^(用户|重置|到期|个人|他人|机器|账单重置|流量)｜/;
 const FLAG_PATTERN = /\p{Regional_Indicator}{2}/u;
 const USED_PATTERN = /已用\s*([\d.]+)\s*([KMGT])\s*\/\s*([\d.]+)\s*([KMGT])/i;
 const MONTHLY_PATTERN = /([\d.]+)\s*([KMGT])\s*\/\s*月/i;
@@ -80,7 +81,7 @@ export function parseSubscriptionNodeCards(body: string): SubscriptionNodeCard[]
     const line = rawLine.trim();
     if (!line || line.startsWith('#') || line.includes('prism_info=')) continue;
     const fullName = linkName(line);
-    if (!fullName || DECORATION_NAME.test(fullName)) continue;
+    if (!fullName || INFO_ENTRY_NAME.test(fullName)) continue;
     const flagMatch = fullName.match(FLAG_PATTERN);
     const flag = flagMatch?.[0] ?? '';
     const usedMatch = fullName.match(USED_PATTERN);

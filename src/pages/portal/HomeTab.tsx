@@ -24,7 +24,16 @@ import { cn } from '@/src/utils/cn';
 import { formatDateTime } from '@/src/utils/dateTime';
 import { formatTraffic } from '@/src/utils/xuiClients';
 import { getFraudRiskMeta, isNodeQualityStale } from '@/src/utils/nodeQuality';
-import { buildClashInstallConfigUrl, maskSubscriptionUrl } from '@/src/utils/subscription';
+import { maskSubscriptionUrl } from '@/src/utils/subscription';
+import {
+  detectImportDevice,
+  importDeviceLabel,
+  importHint,
+  importPrimaryLabel,
+  IMPORT_DEVICES,
+  resolveImportAction,
+  type ImportDevice,
+} from '@/src/utils/subscriptionImport';
 import {
   parseSubscriptionNodeCards,
   type SubscriptionNodeCard,
@@ -82,8 +91,6 @@ export function HomeTab({
   // Route detail is heavy on a phone — start collapsed there, expanded on desktop.
   const [showRouteDetail, setShowRouteDetail] = useState(false);
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
-  const clashInstallUrl = buildClashInstallConfigUrl(subscriptionUniversalUrl);
-
   const latestAnnouncement = effectiveSettings?.announcementActive
     ? effectiveSettings.announcementText.trim()
     : '';
@@ -161,7 +168,6 @@ export function HomeTab({
         isLoading={isStatsLoading}
         onCopy={onCopy}
         onSetSection={onSetSection}
-        clashInstallUrl={clashInstallUrl}
       />
 
       {hasSubscription ? (
@@ -299,7 +305,6 @@ function MySubscriptionHero({
   isLoading,
   onCopy,
   onSetSection,
-  clashInstallUrl,
 }: {
   isZh: boolean;
   username: string;
@@ -310,37 +315,54 @@ function MySubscriptionHero({
   isLoading?: boolean;
   onCopy: (text: string, key: string) => void;
   onSetSection: (tab: PortalTab) => void;
-  clashInstallUrl: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [importDevice, setImportDevice] = useState<ImportDevice>(() =>
+    detectImportDevice(typeof navigator === 'undefined' ? '' : navigator.userAgent),
+  );
 
-  const machineSummaryHelpText = isZh ? '拆分在详细信息里。' : 'The split is under Details.';
+  const importAction = subscriptionUniversalUrl
+    ? resolveImportAction(importDevice, subscriptionUniversalUrl)
+    : null;
+  const machineSummaryHelpText = isZh
+    ? '这是整台服务器的共享额度，不是你一个人的用量。拆分在详细信息里。'
+    : 'This is the whole server’s shared quota, not your personal usage. The split is under Details.';
 
   const used = stats ? stats.up + stats.down : 0;
   const hasPool = Boolean(usageSummary && usageSummary.machineTotal > 0);
 
+  let quotaLabel = '';
   let bigValue = '';
   let subtitle = '';
+  let personalUsage = '';
   let usedPercent = 0;
   let unlimited = false;
 
   if (hasPool && usageSummary) {
-    const { machineRemaining, machineTotal, machineUsed } = usageSummary;
-    bigValue = formatTraffic(machineRemaining);
+    const { machineRemaining, machineTotal, machineUsed, ownUsed } = usageSummary;
+    quotaLabel = isZh ? '服务器共享流量' : 'Shared server traffic';
+    bigValue = isZh
+      ? `剩余 ${formatTraffic(machineRemaining)}`
+      : `${formatTraffic(machineRemaining)} left`;
     usedPercent = Math.min(Math.max((machineUsed / machineTotal) * 100, 0), 100);
     subtitle = isZh
-      ? `已用流量 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
-      : `Used traffic ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
+      ? `已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
+      : `Used ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
+    personalUsage = isZh
+      ? `你用了 ${formatTraffic(ownUsed)}`
+      : `You used ${formatTraffic(ownUsed)}`;
   } else if (stats && stats.total > 0) {
     const remaining = Math.max(stats.total - used, 0);
-    bigValue = formatTraffic(remaining);
+    quotaLabel = isZh ? '个人流量' : 'Personal traffic';
+    bigValue = isZh ? `剩余 ${formatTraffic(remaining)}` : `${formatTraffic(remaining)} left`;
     usedPercent = Math.min((used / stats.total) * 100, 100);
     subtitle = isZh
-      ? `已用流量 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
-      : `Used traffic ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
+      ? `已用 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
+      : `Used ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
   } else {
     unlimited = true;
+    quotaLabel = isZh ? '已用流量' : 'Used traffic';
     bigValue = formatTraffic(used);
     subtitle = isZh ? '不限流量' : 'Unlimited';
   }
@@ -384,7 +406,7 @@ function MySubscriptionHero({
         <div className="user-hero-title max-w-xl space-y-2">
           <p className="section-kicker">{isZh ? '我的订阅' : 'My subscription'}</p>
           <h2 className="user-display text-[var(--text-primary)]">
-            {isZh ? '复制订阅链接' : 'Copy subscription link'}
+            {isZh ? '导入订阅' : 'Import subscription'}
           </h2>
           {username ? <p className="text-sm text-[var(--text-secondary)]">{username}</p> : null}
         </div>
@@ -427,54 +449,69 @@ function MySubscriptionHero({
       ) : hasSubscription ? (
         <div className="user-hero-body grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_220px] lg:items-start">
           <div className="space-y-4">
-            {subscriptionUniversalUrl ? (
+            {subscriptionUniversalUrl && importAction ? (
               <div className="user-link-well space-y-4">
-                <p className="text-xs font-semibold tracking-wide text-[var(--text-secondary)]">
-                  {isZh ? '订阅链接' : 'Subscription link'}
-                </p>
-                <p className="user-num user-hero-link break-all text-base leading-7 text-[var(--text-primary)]">
-                  {maskSubscriptionUrl(subscriptionUniversalUrl)}
-                </p>
-                <div className="user-hero-actions flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <div
+                  className="flex flex-wrap gap-2"
+                  role="group"
+                  aria-label={isZh ? '选择设备' : 'Choose a device'}
+                >
+                  {IMPORT_DEVICES.map((device) => {
+                    const selected = device === importDevice;
+                    return (
+                      <button
+                        key={device}
+                        type="button"
+                        data-testid={`subscription-import-${device}`}
+                        aria-pressed={selected}
+                        className={cn(
+                          'h-9 rounded-full border px-3 text-sm',
+                          selected
+                            ? 'user-primary-action border-transparent'
+                            : 'border-[var(--border-subtle)] bg-transparent text-[var(--text-secondary)]',
+                        )}
+                        onClick={() => setImportDevice(device)}
+                      >
+                        {importDeviceLabel(device, isZh)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="user-hero-actions flex flex-col gap-2">
                   <Button
-                    className="user-primary-action user-hero-copy h-12 gap-2 px-5 text-base sm:min-w-44"
+                    className="user-primary-action user-hero-copy h-12 gap-2 px-5 text-base"
                     onClick={() => {
-                      onCopy(subscriptionUniversalUrl, 'home-universal');
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
+                      window.location.href = importAction.openUrl;
                     }}
+                    data-testid="subscription-home-import"
                   >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copied
-                      ? isZh
-                        ? '已复制'
-                        : 'Copied'
-                      : isZh
-                        ? '复制订阅链接'
-                        : 'Copy subscription link'}
+                    <Download className="h-4 w-4" />
+                    {importPrimaryLabel(importDevice, isZh)}
                   </Button>
                   <div className="user-hero-secondary">
-                    {clashInstallUrl ? (
-                      <Button
-                        variant="secondary"
-                        className="user-hero-compact-btn h-12 gap-2 px-5"
-                        onClick={() => {
-                          window.location.href = clashInstallUrl;
-                        }}
-                        data-testid="subscription-home-flclash-import"
-                      >
-                        <Download className="h-4 w-4" />
-                        <span className="user-hero-label-long">
-                          {isZh ? '用 FlClash 打开' : 'Open in FlClash'}
-                        </span>
-                        <span className="user-hero-label-short">FlClash</span>
-                      </Button>
-                    ) : null}
                     <Button
-                      variant="secondary"
+                      variant="outline"
+                      className="user-hero-compact-btn h-12 gap-2 px-5"
+                      onClick={() => {
+                        onCopy(importAction.copyUrl, 'home-universal');
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                    >
+                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      <span className="user-hero-label-long">
+                        {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制链接' : 'Copy link'}
+                      </span>
+                      <span className="user-hero-label-short">
+                        {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制' : 'Copy'}
+                      </span>
+                    </Button>
+                    <Button
+                      variant="outline"
                       className="user-hero-compact-btn h-12 gap-2 px-5 lg:hidden"
                       onClick={() => setShowQr((value) => !value)}
                       aria-expanded={showQr}
+                      data-testid="subscription-home-qr"
                     >
                       <QrCode className="h-4 w-4" />
                       <span className="user-hero-label-long">{isZh ? '二维码' : 'QR code'}</span>
@@ -493,18 +530,31 @@ function MySubscriptionHero({
                     </Button>
                   </div>
                 </div>
+                <p className="text-sm leading-6 text-[var(--text-secondary)]">
+                  {importHint(importDevice, isZh)}
+                </p>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {isZh ? '订阅链接' : 'Subscription link'}
+                </p>
+                <p className="user-num user-hero-link break-all text-sm leading-6 text-[var(--text-primary)]">
+                  {maskSubscriptionUrl(subscriptionUniversalUrl)}
+                </p>
               </div>
             ) : null}
             <div className="user-hero-stats grid gap-3 sm:grid-cols-3">
-              <div className="user-stat">
-                <p>
-                  {unlimited ? (isZh ? '已用流量' : 'Used traffic') : isZh ? '还能用' : 'Remaining'}
+              <div
+                className="user-stat"
+                data-testid={hasPool ? 'subscription-shared-quota' : 'subscription-personal-quota'}
+              >
+                <p className="inline-flex items-center gap-1">
+                  <span>{quotaLabel}</span>
+                  {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
                 </p>
                 <strong>{bigValue}</strong>
-                <span className="inline-flex items-center gap-1">
-                  {subtitle}
-                  {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
-                </span>
+                <span>{subtitle}</span>
+                {personalUsage ? (
+                  <span data-testid="subscription-personal-usage">{personalUsage}</span>
+                ) : null}
               </div>
               <div className="user-stat">
                 <p>{isZh ? '重置' : 'Reset'}</p>
@@ -522,11 +572,6 @@ function MySubscriptionHero({
             ) : null}
             <p className="text-sm leading-6 text-[var(--text-secondary)]">
               {isZh ? '请勿转发订阅链接。' : 'Do not share this subscription link.'}
-            </p>
-            <p className="text-sm leading-6 text-[var(--text-secondary)]">
-              {isZh
-                ? 'v2rayN：粘贴订阅链接，更新后选择节点。'
-                : 'v2rayN: paste the subscription link, update, then choose a node.'}
             </p>
             {showQr && subscriptionUniversalUrl ? (
               <div className="lg:hidden">

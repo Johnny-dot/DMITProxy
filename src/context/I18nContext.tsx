@@ -11,9 +11,14 @@ interface I18nContextType {
 }
 
 const I18N_STORAGE_KEY = 'prism:lang';
+const I18N_EXPLICIT_KEY = 'prism:lang-explicit';
 
-export function resolveInitialLanguage(stored: string | null): Language {
-  if (stored === 'zh-CN' || stored === 'en-US') return stored;
+/**
+ * Chinese unless this browser has a language the user picked.
+ * A stored `en-US` from an older browser-locale guess does not count.
+ */
+export function resolveInitialLanguage(stored: string | null, explicit: string | null): Language {
+  if (explicit === '1' && (stored === 'zh-CN' || stored === 'en-US')) return stored;
   return 'zh-CN';
 }
 
@@ -26,7 +31,10 @@ const I18nContext = createContext<I18nContextType | null>(null);
 
 function getInitialLanguage(): Language {
   if (typeof window === 'undefined') return 'zh-CN';
-  return resolveInitialLanguage(window.localStorage.getItem(I18N_STORAGE_KEY));
+  return resolveInitialLanguage(
+    window.localStorage.getItem(I18N_STORAGE_KEY),
+    window.localStorage.getItem(I18N_EXPLICIT_KEY),
+  );
 }
 
 function resolveByPath(dictionary: Record<string, unknown>, path: string): string | null {
@@ -56,6 +64,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [languageState]);
 
   const setLanguage = useCallback((language: Language) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(I18N_EXPLICIT_KEY, '1');
+      window.localStorage.setItem(I18N_STORAGE_KEY, language);
+    }
     setLanguageState(language);
   }, []);
 

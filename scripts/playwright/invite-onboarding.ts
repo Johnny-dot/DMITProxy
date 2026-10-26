@@ -227,6 +227,7 @@ async function setStableClientState(page: Page, language: 'zh-CN' | 'en-US' = 'z
   await page.addInitScript((selectedLanguage) => {
     if (!window.localStorage.getItem('prism:lang')) {
       window.localStorage.setItem('prism:lang', selectedLanguage);
+      window.localStorage.setItem('prism:lang-explicit', '1');
     }
     if (!window.localStorage.getItem('prism-theme')) {
       window.localStorage.setItem('prism-theme', 'dark');
@@ -238,6 +239,7 @@ async function setClientLanguage(page: Page, language: 'zh-CN' | 'en-US') {
   if (!/^https?:/i.test(page.url())) return;
   await page.evaluate((selectedLanguage) => {
     window.localStorage.setItem('prism:lang', selectedLanguage);
+    window.localStorage.setItem('prism:lang-explicit', '1');
   }, language);
 }
 
