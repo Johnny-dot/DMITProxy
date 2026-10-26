@@ -149,10 +149,15 @@ export function MySubscriptionPage() {
     }
   }, [activeTab, context, loadStats]);
 
-  const handleCopy = useCallback((text: string) => {
-    if (!text) return;
-    void navigator.clipboard.writeText(text);
-  }, []);
+  const handleCopy = useCallback(
+    (text: string) => {
+      if (!text) return;
+      void navigator.clipboard.writeText(text).then(() => {
+        toast(isZh ? '已复制。' : 'Copied.', 'success');
+      });
+    },
+    [isZh, toast],
+  );
 
   const handleRefreshNodeQuality = useCallback(async () => {
     setIsRefreshingNodeQuality(true);

@@ -62,7 +62,7 @@ function PreferencesCard() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Palette className="w-5 h-5 text-emerald-500" />
+          <Palette className="h-5 w-5 text-emerald-500" />
           <CardTitle>{t('profile.preferences')}</CardTitle>
         </div>
       </CardHeader>
@@ -184,13 +184,13 @@ function UserProfileView() {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-2">
-        <CardHeader>
+        <CardHeader className="max-[640px]:hidden">
           <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-indigo-500" />
+            <User className="h-5 w-5 text-[var(--text-secondary)]" />
             <CardTitle>{isZh ? '个人资料' : 'Profile'}</CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="user-profile-body space-y-6">
           <div className="flex items-center gap-3">
             <div
               className={cn(
@@ -534,7 +534,7 @@ export function ProfilePage() {
   const isAdmin = role !== 'user';
 
   return (
-    <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 md:px-6 xl:px-8">
+    <div className="user-page-stack content-shell-wide reveal-stagger w-full min-w-0 space-y-6 px-4 py-2 md:px-6 xl:px-8">
       <section className="user-hero surface-card flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-7">
         <div className="space-y-3">
           <p className="section-kicker">{isZh ? '账号' : 'Account'}</p>

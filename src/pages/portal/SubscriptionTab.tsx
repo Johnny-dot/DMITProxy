@@ -386,8 +386,6 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
         className="user-hero surface-card relative overflow-hidden p-5 md:p-7"
         data-testid="portal-setup-quick"
       >
-        <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-emerald-300/18 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-1/4 h-40 w-96 rounded-full bg-[var(--info-soft)] blur-3xl" />
         <div className="relative space-y-4 sm:space-y-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">

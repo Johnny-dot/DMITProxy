@@ -42,7 +42,7 @@ export function Layout() {
           open={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
           ariaLabel={isZh ? '导航菜单' : 'Navigation menu'}
-          panelClassName="app-nav-drawer fixed inset-y-4 left-4 w-[min(280px,calc(100vw-2rem))]"
+          panelClassName={`app-nav-drawer fixed inset-y-4 left-4 w-[min(280px,calc(100vw-2rem))] ${role === 'user' ? 'user-surface' : ''}`}
         >
           <Sidebar
             onNavigate={() => setIsMobileMenuOpen(false)}

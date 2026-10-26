@@ -76,41 +76,27 @@ export function UserRegisterPage() {
 
   return (
     <PublicAuthLayout
-      eyebrow={isZh ? '邀请码注册' : 'Invite registration'}
-      title={isZh ? '完成注册，开始使用。' : 'Create your account and get started.'}
-      description={
-        isZh
-          ? '邀请码、用户名、密码，注册后直达个人页。'
-          : 'Invite code, username, password — then straight to your page.'
-      }
+      eyebrow={isZh ? '注册' : 'Register'}
+      title={isZh ? '注册' : 'Register'}
+      description={isZh ? '需要邀请码。' : 'An invite code is required.'}
+      compactMobile
     >
-      <div className="space-y-8" data-testid="register-page">
-        <div className="space-y-3">
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-              {t('userAuth.createAccount')}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-              {isZh
-                ? '注册必须有邀请码。向已经在用 Prism 的朋友索取。'
-                : 'An invite code is required. Ask someone who already uses Prism.'}
-            </p>
-          </div>
+      <div className="space-y-5 sm:space-y-8" data-testid="register-page">
+        <div className="space-y-1.5">
+          <h2 className="user-display text-[var(--text-primary)]">{isZh ? '注册' : 'Register'}</h2>
+          <p className="text-sm leading-6 text-[var(--text-secondary)]">
+            {isZh ? '向已经在用的朋友索取邀请码。' : 'Ask someone who already uses Prism.'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-3">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="register-invite"
-                className="text-sm font-medium text-[var(--text-primary)]"
-              >
-                {isZh ? '邀请码（必填）' : 'Invite code (required)'}
-              </label>
-              <p className="text-sm leading-6 text-[var(--text-secondary)]">
-                {isZh ? '没有邀请码不能注册。' : 'You cannot register without an invite code.'}
-              </p>
-            </div>
+            <label
+              htmlFor="register-invite"
+              className="text-sm font-medium text-[var(--text-primary)]"
+            >
+              {isZh ? '邀请码' : 'Invite code'}
+            </label>
             <Input
               id="register-invite"
               type="text"
@@ -202,19 +188,20 @@ export function UserRegisterPage() {
             ) : (
               <UserPlus className="h-4 w-4" />
             )}
-            {isLoading ? t('userAuth.creating') : t('userAuth.create')}
+            {isLoading
+              ? isZh
+                ? '注册中'
+                : t('userAuth.creating')
+              : isZh
+                ? '注册'
+                : t('userAuth.create')}
           </Button>
         </form>
 
-        <div className="surface-panel flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-3 border-t border-[color:var(--border-subtle)] pt-5 sm:surface-panel sm:border-t-0 sm:px-5 sm:py-5">
           <div className="space-y-1">
             <p className="text-sm font-semibold text-[var(--text-primary)]">
               {t('userAuth.alreadyHave')}
-            </p>
-            <p className="text-sm leading-6 text-[var(--text-secondary)]">
-              {isZh
-                ? '如果之前已经注册过，直接回到登录页即可。'
-                : 'If you already registered before, just head back to sign-in.'}
             </p>
           </div>
           <Link to="/login" data-testid="register-login-link">

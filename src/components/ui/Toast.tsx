@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
+import { useI18n } from '@/src/context/I18nContext';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -36,6 +37,7 @@ const EXIT_ANIM_MS = 180;
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const { language } = useI18n();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const timersRef = useRef<Map<string, number>>(new Map());
   const exitTimersRef = useRef<Map<string, number>>(new Map());
@@ -109,7 +111,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       <div
-        className="pointer-events-none fixed inset-x-4 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-[110] flex flex-col gap-3 sm:inset-x-auto sm:bottom-6 sm:right-6"
+        className="app-toast pointer-events-none fixed inset-x-4 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-[110] flex flex-col gap-3 sm:inset-x-auto sm:bottom-6 sm:right-6"
         aria-live="polite"
         aria-atomic="false"
       >
@@ -139,7 +141,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <button
               type="button"
               onClick={() => removeToast(t.id)}
-              aria-label="Dismiss notification"
+              aria-label={language === 'zh-CN' ? '关闭' : 'Dismiss'}
               className="rounded-full p-1 transition-colors hover:bg-[var(--surface-panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
             >
               <X className="h-4 w-4 opacity-50 hover:opacity-100" aria-hidden="true" />

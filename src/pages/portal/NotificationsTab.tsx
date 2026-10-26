@@ -26,16 +26,16 @@ export function localizePortalNotification(
   if (item.id === 'subscription-ready') {
     return {
       ...item,
-      title: '订阅已就绪',
-      message: '你的订阅链接已经可用，现在可以在客户端中导入或更新。',
+      title: '订阅可用',
+      message: '可以复制订阅链接。',
     };
   }
 
   if (item.id === 'subscription-pending') {
     return {
       ...item,
-      title: '订阅等待分配',
-      message: '账号已经建好，当前订阅还在准备中。如果卡住了，可以通过联系渠道问一声。',
+      title: '订阅准备中',
+      message: '订阅链接还在准备。',
     };
   }
 

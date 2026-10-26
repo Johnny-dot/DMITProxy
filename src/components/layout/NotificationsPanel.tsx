@@ -159,7 +159,10 @@ export function NotificationsPanel({
       />
       <aside
         data-anim-state={animState}
-        className="anim-side-panel-right fixed inset-x-4 bottom-4 top-4 z-[90] flex flex-col sm:left-auto sm:w-[410px]"
+        className={cn(
+          'anim-side-panel-right fixed inset-x-4 bottom-4 top-4 z-[90] flex flex-col sm:left-auto sm:w-[410px]',
+          !adminMode && 'user-surface',
+        )}
       >
         <div className="surface-card flex h-full flex-col overflow-hidden">
           <div className="soft-divider border-b px-5 py-5">
@@ -182,7 +185,9 @@ export function NotificationsPanel({
                 ? isZh
                   ? '在这里直接发布公告、查看历史，并把已发送公告从用户侧同步删除。'
                   : 'Publish announcements here, review sent history, and remove them for users.'
-                : t('notifications.subtitle')}
+                : isZh
+                  ? '公告和提醒。'
+                  : 'Announcements and reminders.'}
             </p>
             {viewerName && (
               <div className="glass-pill mt-4 inline-flex items-center gap-2 px-3 py-2">

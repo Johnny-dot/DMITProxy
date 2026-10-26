@@ -103,11 +103,11 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
   const activePanelDescription =
     activePanel === 'community'
       ? isZh
-        ? `当前共有 ${visibleCommunityLinks.length} 个可加入的社群入口。`
-        : `${visibleCommunityLinks.length} community link${visibleCommunityLinks.length === 1 ? '' : 's'} available.`
+        ? `${visibleCommunityLinks.length} 个社群。`
+        : `${visibleCommunityLinks.length} communities.`
       : isZh
-        ? `当前共有 ${sharedResources.length} 个可用的共享资源。`
-        : `${sharedResources.length} shared resource${sharedResources.length === 1 ? '' : 's'} available.`;
+        ? `${sharedResources.length} 个共享资源。`
+        : `${sharedResources.length} shared resources.`;
 
   function handleCopy(text: string, key: string) {
     if (!text.trim()) return;
@@ -120,9 +120,8 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
   }
 
   return (
-    <section className="space-y-6" data-testid="portal-help-tab">
+    <section className="user-help-stack space-y-6" data-testid="portal-help-tab">
       <header className="user-hero surface-card space-y-2 p-6 md:p-8">
-        <p className="section-kicker">{isZh ? '帮助' : 'Help'}</p>
         <h2 className="user-display">{isZh ? '帮助' : 'Help'}</h2>
         <p className="max-w-2xl text-sm leading-7 text-[var(--text-secondary)]">
           {isZh ? '社群和共享资源。' : 'Community and shared resources.'}
@@ -137,7 +136,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                 onClick={() => setActivePanel('community')}
                 className="gap-2"
               >
-                <span>{isZh ? '社区入口' : 'Community links'}</span>
+                <span>{isZh ? '社群' : 'Community'}</span>
                 <span
                   className={cn(
                     'rounded-full px-2 py-0.5 text-[11px]',

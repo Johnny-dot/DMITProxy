@@ -18,7 +18,7 @@ function Wrapper({ className, children }: { className?: string; children: React.
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[20px] border border-white/10 shadow-[0_12px_30px_rgba(15,23,42,0.16)]',
+        'community-platform-icon inline-flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[20px] border border-white/10 shadow-[0_12px_30px_rgba(15,23,42,0.16)]',
         className,
       )}
     >

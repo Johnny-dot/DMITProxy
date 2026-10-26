@@ -102,12 +102,12 @@ function getCommunityDescription(entry: CommunityLink, isZh: boolean, hasQrImage
     return isZh ? '支持通过二维码内容加入。' : 'Join with the QR content.';
   }
 
-  return isZh ? '社区入口即将开放。' : 'Coming soon.';
+  return isZh ? '尚未发布。' : 'Not published yet.';
 }
 
 function getCommunityQrHint(entry: CommunityLink, isZh: boolean, hasQrImage: boolean) {
   if (entry.url.trim()) {
-    return isZh ? '扫码或点击链接都可以加入。' : 'Scan or use the invite link.';
+    return isZh ? '扫码或打开链接。' : 'Scan or open the link.';
   }
 
   if (hasQrImage) {
@@ -173,7 +173,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
             <h2 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">
-              {isZh ? '暂无社群入口。' : 'No community links yet.'}
+              {isZh ? '暂无社群。' : 'No communities yet.'}
             </h2>
             <p className="text-sm leading-7 text-[var(--text-secondary)]">
               {isZh ? '发布后显示在这里。' : 'Published links will appear here.'}
@@ -229,12 +229,6 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
 
   return (
     <section className="space-y-6" data-testid="portal-community-tab">
-      <p className="text-sm leading-7 text-[var(--text-secondary)]">
-        {isZh
-          ? `当前共有 ${visibleLinks.length} 个可加入的社群入口。`
-          : `${visibleLinks.length} community link${visibleLinks.length > 1 ? 's are' : ' is'} available.`}
-      </p>
-
       <div className="grid gap-4 xl:grid-cols-2">
         {visibleLinks.map((entry) => {
           const qrValue = entry.qrContent.trim() || entry.url.trim();
@@ -375,7 +369,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
                     </p>
                     <p className="mt-1 flex items-center justify-center gap-1 text-[11px] text-[var(--text-tertiary)] transition-colors group-hover:text-[var(--text-primary)]">
                       <ZoomIn className="h-3.5 w-3.5" />
-                      {isZh ? '点击放大查看' : 'Click to enlarge'}
+                      {isZh ? '放大' : 'Enlarge'}
                     </p>
                   </button>
                 ) : null}
@@ -389,7 +383,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
         open={Boolean(previewQr)}
         onClose={() => setPreviewQr(null)}
         ariaLabel={isZh ? '二维码预览' : 'QR preview'}
-        panelClassName="w-full max-w-3xl"
+        panelClassName="user-surface w-full max-w-3xl"
       >
         {previewQr ? (
           <div className="surface-card w-full rounded-[32px] p-5 shadow-[var(--shadow-strong)] md:p-6">
