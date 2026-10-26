@@ -503,7 +503,10 @@ function MySubscriptionHero({
               </div>
             </div>
             {!unlimited ? (
-              <div className="user-meter" aria-hidden="true">
+              <div
+                className={cn('user-meter', usedPercent >= 85 && 'user-meter-warn')}
+                aria-hidden="true"
+              >
                 <span style={{ width: `${usedPercent}%` }} />
               </div>
             ) : null}
@@ -609,7 +612,10 @@ function SubscriptionNodeCards({ url, isZh }: { url: string; isZh: boolean }) {
                     ? `已用 ${card.usedLabel} / ${card.limitLabel}`
                     : `${card.usedLabel} / ${card.limitLabel} used`}
                 </p>
-                <div className="user-meter" aria-hidden="true">
+                <div
+                  className={cn('user-meter', (card.usedRatio ?? 0) >= 0.85 && 'user-meter-warn')}
+                  aria-hidden="true"
+                >
                   <span
                     style={{
                       width: `${Math.max(8, Math.round((card.usedRatio ?? 0) * 100))}%`,

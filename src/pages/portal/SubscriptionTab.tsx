@@ -473,7 +473,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                     className={cn(
                       'group rounded-[18px] border px-3 py-2.5 text-left transition-all sm:rounded-[20px] sm:px-3.5 sm:py-3',
                       activePlatform === platform.key
-                        ? 'border-emerald-500/45 bg-emerald-500/12 shadow-[0_16px_45px_rgba(16,185,129,0.12)]'
+                        ? 'border-emerald-500/45 bg-emerald-500/12'
                         : 'border-white/10 bg-white/[0.035] hover:border-[color:var(--border-strong)] hover:bg-white/[0.06]',
                     )}
                   >
