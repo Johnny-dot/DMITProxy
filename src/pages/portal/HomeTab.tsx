@@ -157,7 +157,7 @@ export function HomeTab({
   }
 
   return (
-    <div className="user-home-stack space-y-6">
+    <div className="user-home-stack">
       <MySubscriptionHero
         isZh={isZh}
         username={context?.user.username ?? ''}
@@ -183,7 +183,7 @@ export function HomeTab({
       ) : null}
 
       {hasSubscription || serverStatus || isStatsLoading ? (
-        <section className="surface-card p-5 md:p-6" data-testid="subscription-home-details">
+        <section className="user-flat-section" data-testid="subscription-home-details">
           <button
             type="button"
             className="flex w-full items-center justify-between gap-3 text-left"
@@ -192,10 +192,8 @@ export function HomeTab({
             data-testid="subscription-home-details-toggle"
           >
             <span>
-              <span className="block text-sm font-medium text-zinc-50">
-                {isZh ? '详细信息' : 'Details'}
-              </span>
-              <span className="mt-1 block text-xs leading-5 text-[var(--text-secondary)]">
+              <span className="user-section-label">{isZh ? '详细信息' : 'Details'}</span>
+              <span className="mt-1 block text-sm text-[var(--text-secondary)]">
                 {isZh ? '账单、已用流量和节点检测。' : 'Billing, used traffic, and the node check.'}
               </span>
             </span>
@@ -249,11 +247,6 @@ export function HomeTab({
   );
 }
 
-function formatExpiry(ms: number, isZh: boolean) {
-  if (ms === 0) return isZh ? '永不过期' : 'Never';
-  return formatDateTime(ms);
-}
-
 function daysUntilResetDay(resetDay: number): number {
   const now = new Date();
   const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
@@ -276,24 +269,10 @@ function formatSyncTime(ms: number | null | undefined, isZh: boolean): string {
   return isZh ? `${days} 天前` : `${days}d ago`;
 }
 
-const STATUS_BORDER = {
-  ready: 'border-emerald-500/30',
-  preparing: 'border-amber-500/30',
-  disabled: 'border-red-500/30',
-  unavailable: 'border-amber-500/30',
-} as const;
-const STATUS_PILL = {
-  ready: 'bg-emerald-500/10 text-emerald-500',
-  preparing: 'bg-amber-500/10 text-amber-500',
-  disabled: 'bg-red-500/10 text-red-500',
-  unavailable: 'bg-amber-500/10 text-amber-500',
-} as const;
-const STATUS_DOT = {
-  ready: 'bg-emerald-500',
-  preparing: 'bg-amber-500',
-  disabled: 'bg-red-500',
-  unavailable: 'bg-amber-500',
-} as const;
+function shortExpiry(ms: number, isZh: boolean) {
+  if (ms === 0) return isZh ? '永久' : 'Never';
+  return formatDateTime(ms).slice(0, 10);
+}
 
 function MySubscriptionHero({
   isZh,
@@ -342,24 +321,20 @@ function MySubscriptionHero({
   if (hasPool && usageSummary) {
     const { machineRemaining, machineTotal, machineUsed, ownUsed } = usageSummary;
     quotaLabel = isZh ? '服务器共享流量' : 'Shared server traffic';
-    bigValue = isZh
-      ? `剩余 ${formatTraffic(machineRemaining)}`
-      : `${formatTraffic(machineRemaining)} left`;
+    bigValue = formatTraffic(machineRemaining);
     usedPercent = Math.min(Math.max((machineUsed / machineTotal) * 100, 0), 100);
     subtitle = isZh
-      ? `已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
-      : `Used ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
-    personalUsage = isZh
-      ? `你用了 ${formatTraffic(ownUsed)}`
-      : `You used ${formatTraffic(ownUsed)}`;
+      ? `剩余 · 已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
+      : `Left · used ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
+    personalUsage = formatTraffic(ownUsed);
   } else if (stats && stats.total > 0) {
     const remaining = Math.max(stats.total - used, 0);
     quotaLabel = isZh ? '个人流量' : 'Personal traffic';
-    bigValue = isZh ? `剩余 ${formatTraffic(remaining)}` : `${formatTraffic(remaining)} left`;
+    bigValue = formatTraffic(remaining);
     usedPercent = Math.min((used / stats.total) * 100, 100);
     subtitle = isZh
-      ? `已用 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
-      : `Used ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
+      ? `剩余 · 已用 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
+      : `Left · used ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
   } else {
     unlimited = true;
     quotaLabel = isZh ? '已用流量' : 'Used traffic';
@@ -375,9 +350,9 @@ function MySubscriptionHero({
     : null;
 
   const isExpired = Boolean(stats && stats.expiryTime > 0 && stats.expiryTime < Date.now());
-  const expiryText = stats ? formatExpiry(stats.expiryTime, isZh) : null;
+  const expiryText = stats ? shortExpiry(stats.expiryTime, isZh) : null;
 
-  const status: keyof typeof STATUS_BORDER = !hasSubscription
+  const status = !hasSubscription
     ? 'preparing'
     : !stats
       ? 'unavailable'
@@ -398,35 +373,22 @@ function MySubscriptionHero({
   }[status];
 
   return (
-    <section
-      className={cn('user-hero surface-card space-y-6 border p-6 md:p-8', STATUS_BORDER[status])}
-      data-testid="subscription-home-account-status"
-    >
-      <div className="user-hero-intro flex flex-wrap items-start justify-between gap-4">
-        <div className="user-hero-title max-w-xl space-y-2">
-          <p className="section-kicker">{isZh ? '我的订阅' : 'My subscription'}</p>
-          <h2 className="user-display text-[var(--text-primary)]">
-            {isZh ? '导入订阅' : 'Import subscription'}
-          </h2>
-          {username ? <p className="text-sm text-[var(--text-secondary)]">{username}</p> : null}
-        </div>
-        <span
-          data-testid="subscription-home-status"
-          className={cn(
-            'user-hero-status inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
-            STATUS_PILL[status],
-          )}
-        >
-          <span
-            className={cn('user-hero-status-dot h-1.5 w-1.5 rounded-full', STATUS_DOT[status])}
-          />
-          <span className="user-hero-status-prefix">
+    <section className="user-sub" data-testid="subscription-home-account-status">
+      <div className="user-sub-head">
+        <div className="min-w-0">
+          <h2 className="user-sub-title">{isZh ? '导入订阅' : 'Import subscription'}</h2>
+          <p className="user-section-label" data-testid="subscription-home-status">
             {isZh ? '我的订阅' : 'My subscription'}
             {username ? ` · ${username}` : ''}
-            {' · '}
-          </span>
-          {statusLabel}
-        </span>
+            {` · ${statusLabel}`}
+          </p>
+        </div>
+        {subscriptionUniversalUrl ? (
+          <div className="user-sub-qr">
+            <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} plain size={140} />
+            <p className="user-section-label">{isZh ? '扫码导入' : 'Scan to import'}</p>
+          </div>
+        ) : null}
       </div>
 
       {isLoading ? (
@@ -447,152 +409,121 @@ function MySubscriptionHero({
           </Button>
         </div>
       ) : hasSubscription ? (
-        <div className="user-hero-body grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_220px] lg:items-start">
-          <div className="space-y-4">
-            {subscriptionUniversalUrl && importAction ? (
-              <div className="user-link-well space-y-4">
-                <div
-                  className="flex flex-wrap gap-2"
-                  role="group"
-                  aria-label={isZh ? '选择设备' : 'Choose a device'}
-                >
-                  {IMPORT_DEVICES.map((device) => {
-                    const selected = device === importDevice;
-                    return (
-                      <button
-                        key={device}
-                        type="button"
-                        data-testid={`subscription-import-${device}`}
-                        aria-pressed={selected}
-                        className={cn(
-                          'h-9 rounded-full border px-3 text-sm',
-                          selected
-                            ? 'user-primary-action border-transparent'
-                            : 'border-[var(--border-subtle)] bg-transparent text-[var(--text-secondary)]',
-                        )}
-                        onClick={() => setImportDevice(device)}
-                      >
-                        {importDeviceLabel(device, isZh)}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="user-hero-actions flex flex-col gap-2">
-                  <Button
-                    className="user-primary-action user-hero-copy h-12 gap-2 px-5 text-base"
-                    onClick={() => {
-                      window.location.href = importAction.openUrl;
-                    }}
-                    data-testid="subscription-home-import"
-                  >
-                    <Download className="h-4 w-4" />
-                    {importPrimaryLabel(importDevice, isZh)}
-                  </Button>
-                  <div className="user-hero-secondary">
-                    <Button
-                      variant="outline"
-                      className="user-hero-compact-btn h-12 gap-2 px-5"
-                      onClick={() => {
-                        onCopy(importAction.copyUrl, 'home-universal');
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
-                      }}
-                    >
-                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      <span className="user-hero-label-long">
-                        {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制链接' : 'Copy link'}
-                      </span>
-                      <span className="user-hero-label-short">
-                        {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制' : 'Copy'}
-                      </span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="user-hero-compact-btn h-12 gap-2 px-5 lg:hidden"
-                      onClick={() => setShowQr((value) => !value)}
-                      aria-expanded={showQr}
-                      data-testid="subscription-home-qr"
-                    >
-                      <QrCode className="h-4 w-4" />
-                      <span className="user-hero-label-long">{isZh ? '二维码' : 'QR code'}</span>
-                      <span className="user-hero-label-short">{isZh ? '二维码' : 'QR'}</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="user-hero-compact-btn h-12 gap-2 px-5"
-                      onClick={() => onSetSection('setup')}
-                    >
-                      <Download className="h-4 w-4" />
-                      <span className="user-hero-label-long">
-                        {isZh ? '下载客户端' : 'Download client'}
-                      </span>
-                      <span className="user-hero-label-short">{isZh ? '下载' : 'Download'}</span>
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-sm leading-6 text-[var(--text-secondary)]">
-                  {importHint(importDevice, isZh)}
-                </p>
-                <p className="text-xs text-[var(--text-secondary)]">
-                  {isZh ? '订阅链接' : 'Subscription link'}
-                </p>
-                <p className="user-num user-hero-link break-all text-sm leading-6 text-[var(--text-primary)]">
-                  {maskSubscriptionUrl(subscriptionUniversalUrl)}
-                </p>
-              </div>
-            ) : null}
-            <div className="user-hero-stats grid gap-3 sm:grid-cols-3">
+        <>
+          {subscriptionUniversalUrl && importAction ? (
+            <div className="grid gap-3">
               <div
-                className="user-stat"
-                data-testid={hasPool ? 'subscription-shared-quota' : 'subscription-personal-quota'}
+                className="user-device-tabs"
+                role="group"
+                aria-label={isZh ? '选择设备' : 'Choose a device'}
               >
-                <p className="inline-flex items-center gap-1">
-                  <span>{quotaLabel}</span>
-                  {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
-                </p>
-                <strong>{bigValue}</strong>
-                <span>{subtitle}</span>
-                {personalUsage ? (
-                  <span data-testid="subscription-personal-usage">{personalUsage}</span>
-                ) : null}
+                {IMPORT_DEVICES.map((device) => {
+                  const selected = device === importDevice;
+                  return (
+                    <button
+                      key={device}
+                      type="button"
+                      data-testid={`subscription-import-${device}`}
+                      aria-pressed={selected}
+                      className="user-device-tab"
+                      onClick={() => setImportDevice(device)}
+                    >
+                      {importDeviceLabel(device, isZh)}
+                    </button>
+                  );
+                })}
               </div>
-              <div className="user-stat">
-                <p>{isZh ? '重置' : 'Reset'}</p>
-                <strong>{resetText ?? (isZh ? '未同步' : 'Not synced')}</strong>
+              <div className="user-sub-actions">
+                <Button
+                  className="user-primary-action"
+                  onClick={() => {
+                    window.location.href = importAction.openUrl;
+                  }}
+                  data-testid="subscription-home-import"
+                >
+                  {importPrimaryLabel(importDevice, isZh)}
+                </Button>
+                <div className="user-sub-ghosts">
+                  <Button
+                    variant="ghost"
+                    className="gap-1.5"
+                    onClick={() => {
+                      onCopy(importAction.copyUrl, 'home-universal');
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copied ? (isZh ? '已复制' : 'Copied') : isZh ? '复制' : 'Copy'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="gap-1.5 lg:hidden"
+                    onClick={() => setShowQr((value) => !value)}
+                    aria-expanded={showQr}
+                    data-testid="subscription-home-qr"
+                  >
+                    <QrCode className="h-4 w-4" />
+                    {isZh ? '二维码' : 'QR'}
+                  </Button>
+                  <Button variant="ghost" className="gap-1.5" onClick={() => onSetSection('setup')}>
+                    <Download className="h-4 w-4" />
+                    {isZh ? '下载' : 'Download'}
+                  </Button>
+                </div>
               </div>
-              <div className="user-stat">
-                <p>{isZh ? '到期' : 'Expires'}</p>
-                <strong className={cn(isExpired && 'text-red-500')}>
-                  {expiryText ?? (isZh ? '未同步' : 'Not synced')}
-                </strong>
-              </div>
-            </div>
-            {!unlimited ? (
-              <UsageMeter percent={usedPercent} value={`${Math.round(usedPercent)}%`} />
-            ) : null}
-            <p className="text-sm leading-6 text-[var(--text-secondary)]">
-              {isZh ? '请勿转发订阅链接。' : 'Do not share this subscription link.'}
-            </p>
-            {showQr && subscriptionUniversalUrl ? (
-              <div className="lg:hidden">
-                <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
-              </div>
-            ) : null}
-          </div>
-          {subscriptionUniversalUrl ? (
-            <div className="hidden flex-col items-center gap-2 lg:flex">
-              <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
-              <p className="text-xs text-[var(--text-secondary)]">
-                {isZh ? '扫码导入' : 'Scan to import'}
+              <p className="user-section-label">{importHint(importDevice, isZh)}</p>
+              <p className="user-sub-link user-num">
+                {maskSubscriptionUrl(subscriptionUniversalUrl)}
               </p>
+              <p className="user-section-label">
+                {isZh ? '请勿转发订阅链接。' : 'Do not share this subscription link.'}
+              </p>
+              {showQr && subscriptionUniversalUrl ? (
+                <div className="lg:hidden">
+                  <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} plain size={140} />
+                </div>
+              ) : null}
             </div>
           ) : null}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="surface-panel p-4 text-sm font-medium text-amber-500">
-            {isZh ? '订阅链接还在准备。' : 'The subscription link is not ready yet.'}
+          <div className="user-sub-stats">
+            <div
+              className="user-sub-stat"
+              data-testid={hasPool ? 'subscription-shared-quota' : 'subscription-personal-quota'}
+            >
+              <p className="user-figure">{bigValue}</p>
+              <div className="user-section-label">
+                <span>{quotaLabel}</span>
+                {hasPool ? <InfoTooltip content={machineSummaryHelpText} /> : null}
+              </div>
+              <p className="user-section-label">{subtitle}</p>
+            </div>
+            {personalUsage ? (
+              <div className="user-sub-stat" data-testid="subscription-personal-usage">
+                <p className="user-figure">{personalUsage}</p>
+                <p className="user-section-label">{isZh ? '你用了' : 'You used'}</p>
+              </div>
+            ) : null}
+            <div className="user-sub-stat">
+              <p className="user-figure">{resetText ?? (isZh ? '未同步' : 'Not synced')}</p>
+              <p className="user-section-label">{isZh ? '重置' : 'Reset'}</p>
+            </div>
+            <div className="user-sub-stat">
+              <p className={cn('user-figure', isExpired && 'text-red-500')}>
+                {expiryText ?? (isZh ? '未同步' : 'Not synced')}
+              </p>
+              <p className="user-section-label">{isZh ? '到期' : 'Expires'}</p>
+            </div>
           </div>
+          {!unlimited ? (
+            <UsageMeter percent={usedPercent} value={`${Math.round(usedPercent)}%`} />
+          ) : null}
+        </>
+      ) : (
+        <div className="grid gap-3">
+          <p className="user-section-label">
+            {isZh ? '订阅链接还在准备。' : 'The subscription link is not ready yet.'}
+          </p>
           <Button
             variant="secondary"
             size="sm"
@@ -636,20 +567,16 @@ function SubscriptionNodeCards({ url, isZh }: { url: string; isZh: boolean }) {
   });
 
   return (
-    <section className="space-y-3" data-testid="subscription-node-cards">
-      <div className="flex items-end justify-between gap-3">
-        <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-          {isZh ? '节点' : 'Nodes'}
-        </h3>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <section data-testid="subscription-node-cards">
+      <p className="user-section-label">{isZh ? '节点' : 'Nodes'}</p>
+      <div className="user-node-grid">
         {ordered.map((card) => (
-          <article key={card.id} className="user-node-card space-y-3">
-            <div className="flex items-center gap-3">
+          <article key={card.id}>
+            <div className="user-node-name">
               <span className="user-flag" aria-hidden="true">
                 {card.flag || '•'}
               </span>
-              <p className="min-w-0 truncate text-base font-semibold text-[var(--text-primary)]">
+              <p className="min-w-0 truncate font-semibold text-[var(--text-primary)]">
                 {card.name}
               </p>
             </div>
@@ -741,8 +668,8 @@ function UsageDetailCard({
   }
 
   return (
-    <section className="surface-card space-y-4 p-6 md:p-7">
-      <p className="section-kicker">{isZh ? '已用流量' : 'Used traffic'}</p>
+    <section className="grid gap-3">
+      <p className="user-section-label">{isZh ? '已用流量' : 'Used traffic'}</p>
       {isLoading ? (
         <div className="space-y-2.5">
           <Skeleton className="h-5 w-full" />
@@ -1369,30 +1296,22 @@ function AdminMessagesCard({
   const hasContent = Boolean(latestAnnouncement || supportContact);
 
   return (
-    <div
-      className="surface-card space-y-5 p-6 md:p-7"
-      data-testid="subscription-home-admin-messages"
-    >
-      <div className="space-y-2">
-        <p className="section-kicker">{isZh ? '最新说明' : 'Latest notes'}</p>
-        <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
-          {isZh ? '公告与联系渠道' : 'Announcements and support'}
-        </h2>
-      </div>
+    <div className="user-flat-section grid gap-3" data-testid="subscription-home-admin-messages">
+      <p className="user-section-label">{isZh ? '公告' : 'Notes'}</p>
 
       {hasContent ? (
-        <div className="space-y-3">
+        <div className="grid gap-2">
           {latestAnnouncement && (
-            <div className="surface-panel whitespace-pre-wrap p-4 text-sm leading-7 text-zinc-300">
+            <p className="whitespace-pre-wrap text-sm text-[var(--text-primary)]">
               {latestAnnouncement}
-            </div>
+            </p>
           )}
 
           {supportContact && (
-            <div className="surface-panel p-4 text-sm leading-7 text-zinc-300">
-              <span className="text-zinc-500">{isZh ? '联系渠道：' : 'Contact: '}</span>
+            <p className="text-sm text-[var(--text-secondary)]">
+              <span>{isZh ? '联系渠道：' : 'Contact: '}</span>
               {supportContact}
-            </div>
+            </p>
           )}
         </div>
       ) : (

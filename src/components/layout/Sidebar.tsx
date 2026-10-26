@@ -91,7 +91,7 @@ export function Sidebar({
         : t('nav.dashboard');
 
   return (
-    <aside className="surface-card flex h-[calc(100dvh-2rem)] w-full flex-col gap-5 p-3 md:w-64">
+    <aside className="user-sidebar surface-card w-full md:w-64">
       <div className="relative overflow-hidden px-3 py-4">
         <div className="absolute inset-x-6 top-0 h-px bg-white/25" />
         <div className="flex items-center gap-3">
@@ -178,20 +178,20 @@ export function Sidebar({
         </div>
       ) : null}
 
-      <div className="soft-divider border-t pt-5">
+      <div className="user-sidebar-account">
         <NavLink
           to="/profile"
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              'surface-panel flex items-center gap-3 px-4 py-4 transition-colors',
-              isActive && 'border-[color:var(--border-strong)]',
+              'flex items-center gap-3 px-3 py-3 transition-colors',
+              isActive && 'text-[var(--text-primary)]',
             )
           }
         >
           <div
             className={cn(
-              'glass-pill flex h-11 w-11 items-center justify-center text-sm font-semibold',
+              'flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] text-sm font-semibold',
               role === 'user' ? getAvatarToneClasses(avatarStyle) : 'text-[var(--accent)]',
             )}
           >
