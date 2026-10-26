@@ -146,7 +146,10 @@ try {
     viewport: { width: 1440, height: 1000 },
     locale: 'en-US',
   });
-  await darkContext.addInitScript({ content: "localStorage.setItem('prism-theme', 'dark');" });
+  await darkContext.addInitScript({
+    content:
+      "localStorage.setItem('prism-theme', 'dark'); localStorage.setItem('prism:lang', 'en-US');",
+  });
   const darkPage = await darkContext.newPage();
   darkPage.setDefaultTimeout(15000);
   darkPage.on('pageerror', (error) => pageErrors.push(error.message));

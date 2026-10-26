@@ -1,12 +1,11 @@
 import React from 'react';
 import { Bell } from 'lucide-react';
 import { cn } from '@/src/utils/cn';
+import { formatDateTime } from '@/src/utils/dateTime';
 import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import type { PortalNotification } from './types';
-import { toMillis } from './types';
-
 interface NotificationsTabProps {
   notifications: PortalNotification[];
   readNotificationIds: string[];
@@ -69,9 +68,6 @@ export function NotificationsTab({
 }: NotificationsTabProps) {
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
-
-  const formatDateTime = (value: number) =>
-    new Date(toMillis(value)).toLocaleString(isZh ? 'zh-CN' : 'en-US', { hour12: false });
 
   return (
     <section
@@ -142,7 +138,9 @@ export function NotificationsTab({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-zinc-50">{localized.title}</p>
-                    <p className="mt-1 text-xs text-zinc-500">{formatDateTime(item.createdAt)}</p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {formatDateTime(item.createdAt) || (isZh ? '时间未知' : 'Unknown time')}
+                    </p>
                   </div>
 
                   {!isRead && (

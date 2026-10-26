@@ -31,6 +31,20 @@ export function UserRegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (!inviteCode.trim()) {
+      setError(
+        isZh ? '请填写邀请码。没有邀请码不能注册。' : 'Enter an invite code. It is required.',
+      );
+      return;
+    }
+    if (username.trim().length < 3 || password.length < 6) {
+      setError(
+        isZh
+          ? '用户名至少 3 个字符，密码至少 6 个字符。'
+          : 'Use at least 3 characters for the username and 6 for the password.',
+      );
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await fetch('/local/auth/register', {
@@ -72,20 +86,31 @@ export function UserRegisterPage() {
     >
       <div className="space-y-8" data-testid="register-page">
         <div className="space-y-3">
-          <p className="section-kicker">{t('userAuth.createAccount')}</p>
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
+            <h2 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
               {t('userAuth.createAccount')}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">{t('userAuth.createDesc')}</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+              {isZh
+                ? '注册必须有邀请码。向已经在用 Prism 的朋友索取。'
+                : 'An invite code is required. Ask someone who already uses Prism.'}
+            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-3">
-            <label htmlFor="register-invite" className="sr-only">
-              {t('userAuth.inviteCode')}
-            </label>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="register-invite"
+                className="text-sm font-medium text-[var(--text-primary)]"
+              >
+                {isZh ? '邀请码（必填）' : 'Invite code (required)'}
+              </label>
+              <p className="text-sm leading-6 text-[var(--text-secondary)]">
+                {isZh ? '没有邀请码不能注册。' : 'You cannot register without an invite code.'}
+              </p>
+            </div>
             <Input
               id="register-invite"
               type="text"
@@ -168,13 +193,8 @@ export function UserRegisterPage() {
 
           <Button
             type="submit"
-            className="h-12 w-full gap-2"
-            disabled={
-              isLoading ||
-              inviteCode.trim().length === 0 ||
-              username.trim().length < 3 ||
-              password.length < 6
-            }
+            className="h-12 w-full gap-2 border-transparent bg-[#1d4ed8] text-[#f9fbff] hover:bg-[#1e40af] disabled:opacity-100"
+            disabled={isLoading}
             data-testid="register-submit"
           >
             {isLoading ? (
@@ -188,8 +208,10 @@ export function UserRegisterPage() {
 
         <div className="surface-panel flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-zinc-50">{t('userAuth.alreadyHave')}</p>
-            <p className="text-sm leading-6 text-zinc-400">
+            <p className="text-sm font-semibold text-[var(--text-primary)]">
+              {t('userAuth.alreadyHave')}
+            </p>
+            <p className="text-sm leading-6 text-[var(--text-secondary)]">
               {isZh
                 ? '如果之前已经注册过，直接回到登录页即可。'
                 : 'If you already registered before, just head back to sign-in.'}

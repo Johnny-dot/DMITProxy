@@ -398,6 +398,20 @@ export function getNodeQualityServiceNote(
   }
 }
 
+/** Route checks are stored until someone refreshes them. Older than this, they are stale. */
+export const NODE_QUALITY_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+
+export function nodeQualityCheckedAtMs(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value) || value <= 0) return null;
+  return value > 1_000_000_000_000 ? value : value * 1000;
+}
+
+export function isNodeQualityStale(value: number | null | undefined, now = Date.now()): boolean {
+  const checkedAt = nodeQualityCheckedAtMs(value);
+  if (checkedAt == null) return false;
+  return now - checkedAt > NODE_QUALITY_STALE_AFTER_MS;
+}
+
 export function hasMeaningfulNodeQuality(profile: NodeQualityProfile | null | undefined) {
   if (!profile) return false;
   return Boolean(

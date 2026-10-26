@@ -16,7 +16,7 @@ function InviteRedirect() {
 import { ToastProvider } from './components/ui/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { resolveProtectedRedirect } from './utils/routeAccess';
+import { buildLoginRedirect, resolveProtectedRedirect } from './utils/routeAccess';
 
 const Layout = lazy(() =>
   import('./components/layout/Layout').then((m) => ({ default: m.Layout })),
@@ -73,6 +73,9 @@ function ProtectedRoutes() {
   }
 
   const redirectTo = resolveProtectedRedirect(isAuthenticated, role, location.pathname);
+  if (redirectTo === '/login') {
+    return <Navigate to={buildLoginRedirect(`${location.pathname}${location.search}`)} replace />;
+  }
   if (redirectTo) {
     return <Navigate to={redirectTo} replace />;
   }
@@ -94,6 +97,22 @@ export default function App() {
                 {/* Friendly invite link: /invite?code=xxx → /register?invite=xxx */}
                 <Route path="/invite" element={<InviteRedirect />} />
                 <Route path="/reset-password" element={<UserResetPasswordPage />} />
+                <Route
+                  path="/guides"
+                  element={<Navigate to="/my-subscription?section=setup" replace />}
+                />
+                <Route
+                  path="/guides/*"
+                  element={<Navigate to="/my-subscription?section=setup" replace />}
+                />
+                <Route
+                  path="/community"
+                  element={<Navigate to="/my-subscription?section=help" replace />}
+                />
+                <Route
+                  path="/community/*"
+                  element={<Navigate to="/my-subscription?section=help" replace />}
+                />
                 {/* Legacy portal redirect */}
                 <Route path="/portal" element={<Navigate to="/my-subscription" replace />} />
                 {/* Main layout (admin + user) */}

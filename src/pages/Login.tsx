@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, LockKeyhole, LogIn, UserRound } from 'lucide-react';
 import { LOGGED_OUT_KEY, useAuth } from '@/src/context/AuthContext';
 import { Button } from '@/src/components/ui/Button';
@@ -7,25 +7,30 @@ import { Input } from '@/src/components/ui/Input';
 import { useI18n } from '@/src/context/I18nContext';
 import { isXuiConfigured } from '@/src/api/client';
 import { PublicAuthLayout } from '@/src/components/public/PublicAuthLayout';
+import { resolvePostLoginPath, shouldShowSubscriptionLoginHint } from '@/src/utils/routeAccess';
 
 export function LoginPage() {
   const { login: adminLogin, isAuthenticated, isChecking, refreshAuth } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t, language } = useI18n();
   const isZh = language === 'zh-CN';
+  const nextPath = searchParams.get('next');
+  const showSubscriptionHint = shouldShowSubscriptionLoginHint(nextPath);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const hasConfiguredXui = isXuiConfigured();
-  const redirectToUserPortal = () => {
+  const redirectAfterLogin = (role: 'admin' | 'user') => {
+    const target = resolvePostLoginPath(nextPath, role);
     if (typeof window !== 'undefined') {
       window.sessionStorage.removeItem(LOGGED_OUT_KEY);
-      window.location.replace('/my-subscription');
+      window.location.replace(target);
       return;
     }
-    navigate('/my-subscription', { replace: true });
+    navigate(target, { replace: true });
   };
   const adminLoginUnavailableMessage = t('login.adminLoginUnavailable');
 
@@ -36,17 +41,21 @@ export function LoginPage() {
     void (async () => {
       const nextRole = await refreshAuth();
       if (cancelled || !nextRole) return;
-      navigate(nextRole === 'user' ? '/my-subscription' : '/', { replace: true });
+      navigate(resolvePostLoginPath(nextPath, nextRole), { replace: true });
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, isChecking, navigate, refreshAuth]);
+  }, [isAuthenticated, isChecking, navigate, nextPath, refreshAuth]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (username.trim().length < 3 || password.length < 6) {
+      setError(isZh ? '请输入用户名和密码。' : 'Enter your username and password.');
+      return;
+    }
     setIsLoading(true);
     let userLoginError = '';
     try {
@@ -59,7 +68,7 @@ export function LoginPage() {
 
       const localData = await localRes.json().catch(() => null);
       if (localRes.ok) {
-        redirectToUserPortal();
+        redirectAfterLogin('user');
         return;
       }
 
@@ -72,7 +81,7 @@ export function LoginPage() {
       }
 
       await adminLogin(username, password);
-      navigate('/', { replace: true });
+      redirectAfterLogin('admin');
     } catch (err) {
       const adminError = err instanceof Error ? err.message : t('login.loginFailed');
       setError(adminError || userLoginError || t('login.loginFailed'));
@@ -91,7 +100,7 @@ export function LoginPage() {
 
   return (
     <PublicAuthLayout
-      eyebrow={isZh ? '登录' : 'Sign in'}
+      eyebrow={isZh ? '账户' : 'Account'}
       title={isZh ? '登录,继续使用。' : 'Sign in to continue.'}
       description={isZh ? '订阅、教程、社群。' : 'Subscriptions, guides, community.'}
       compactMobile
@@ -99,10 +108,17 @@ export function LoginPage() {
       <div className="space-y-5 sm:space-y-8" data-testid="login-page">
         <div className="space-y-5 sm:space-y-8">
           <div className="space-y-1.5 sm:space-y-3">
-            <p className="section-kicker">{isZh ? '登录' : 'Sign in'}</p>
-            <h2 className="text-xl font-semibold tracking-normal text-zinc-50 sm:text-2xl">
+            <h2 className="text-xl font-semibold tracking-normal text-[var(--text-primary)] sm:text-2xl">
               {isZh ? '欢迎回来' : 'Welcome back'}
             </h2>
+            {showSubscriptionHint ? (
+              <p
+                className="text-sm leading-6 text-[var(--text-secondary)]"
+                data-testid="login-subscription-hint"
+              >
+                {isZh ? '登录后查看你的订阅' : 'Sign in to view your subscription.'}
+              </p>
+            ) : null}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
@@ -149,7 +165,7 @@ export function LoginPage() {
               </label>
               <div className="relative">
                 <UserRound
-                  className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+                  className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-secondary)]"
                   aria-hidden="true"
                 />
                 <Input
@@ -173,7 +189,7 @@ export function LoginPage() {
               </label>
               <div className="relative">
                 <LockKeyhole
-                  className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+                  className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-secondary)]"
                   aria-hidden="true"
                 />
                 <Input
@@ -201,7 +217,7 @@ export function LoginPage() {
                         : 'Show password'
                   }
                   aria-pressed={showPassword}
-                  className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-zinc-500 transition-colors hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+                  className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -223,8 +239,8 @@ export function LoginPage() {
 
             <Button
               type="submit"
-              className="h-11 w-full gap-2 sm:h-12"
-              disabled={isLoading || username.trim().length < 3 || password.length < 6}
+              className="h-11 w-full gap-2 border-transparent bg-[#1d4ed8] text-[#f9fbff] hover:bg-[#1e40af] disabled:opacity-100 sm:h-12"
+              disabled={isLoading}
               data-testid="login-submit"
             >
               {isLoading ? (
@@ -239,10 +255,10 @@ export function LoginPage() {
 
         <div className="flex items-center justify-between gap-3 border-t border-[color:var(--border-subtle)] pt-5 sm:surface-panel sm:border-t-0 sm:px-5 sm:py-5">
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-zinc-50">
+            <p className="text-sm font-semibold text-[var(--text-primary)]">
               {isZh ? '有邀请码？' : 'Have an invite code?'}
             </p>
-            <p className="hidden text-sm leading-6 text-zinc-400 min-[380px]:block">
+            <p className="hidden text-sm leading-6 text-[var(--text-secondary)] min-[380px]:block">
               {isZh ? '注册后直接进订阅页。' : 'Register, then jump to your subscriptions.'}
             </p>
           </div>
@@ -254,7 +270,9 @@ export function LoginPage() {
           </Link>
         </div>
 
-        <p className="hidden text-xs leading-5 text-zinc-500 sm:block">{t('login.footer')}</p>
+        <p className="hidden text-xs leading-5 text-[var(--text-secondary)] sm:block">
+          {t('login.footer')}
+        </p>
       </div>
     </PublicAuthLayout>
   );

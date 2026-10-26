@@ -20,8 +20,10 @@ import { Button } from '@/src/components/ui/Button';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { cn } from '@/src/utils/cn';
+import { formatDateTime } from '@/src/utils/dateTime';
 import { formatTraffic } from '@/src/utils/xuiClients';
-import { getFraudRiskMeta } from '@/src/utils/nodeQuality';
+import { getFraudRiskMeta, isNodeQualityStale } from '@/src/utils/nodeQuality';
+import { buildClashInstallConfigUrl } from '@/src/utils/subscription';
 import type { NodeQualityProfile } from '@/src/types/nodeQuality';
 import type { ClientStats, PortalSettings, PortalTab, PortalUsageSummary, UserInfo } from './types';
 import {
@@ -73,9 +75,9 @@ export function HomeTab({
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
   // Route detail is heavy on a phone — start collapsed there, expanded on desktop.
-  const [showRouteDetail, setShowRouteDetail] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth >= 1024,
-  );
+  const [showRouteDetail, setShowRouteDetail] = useState(false);
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const clashInstallUrl = buildClashInstallConfigUrl(subscriptionUniversalUrl);
 
   const latestAnnouncement = effectiveSettings?.announcementActive
     ? effectiveSettings.announcementText.trim()
@@ -154,57 +156,81 @@ export function HomeTab({
         isLoading={isStatsLoading}
         onCopy={onCopy}
         onSetSection={onSetSection}
+        clashInstallUrl={clashInstallUrl}
       />
 
-      {hasSubscription || serverStatus || isStatsLoading ? (
-        <MachineHealthCard
+      {showAnnouncement ? (
+        <AdminMessagesCard
           isZh={isZh}
-          serverStatus={serverStatus}
-          usageSummary={usageSummary}
-          isLoading={isStatsLoading}
+          latestAnnouncement={latestAnnouncement}
+          supportContact={supportContact}
         />
       ) : null}
 
-      {hasSubscription || showAnnouncement ? (
-        <section
-          className={cn('grid gap-6', hasSubscription && showAnnouncement && 'xl:grid-cols-2')}
-        >
-          {hasSubscription ? (
-            <UsageDetailCard
-              isZh={isZh}
-              stats={clientStats}
-              usageSummary={usageSummary}
-              isLoading={isStatsLoading}
+      {hasSubscription || serverStatus || isStatsLoading ? (
+        <section className="surface-card p-5 md:p-6" data-testid="subscription-home-details">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 text-left"
+            aria-expanded={showTechnicalDetails}
+            onClick={() => setShowTechnicalDetails((value) => !value)}
+            data-testid="subscription-home-details-toggle"
+          >
+            <span>
+              <span className="block text-sm font-medium text-zinc-50">
+                {isZh ? '详细信息' : 'Details'}
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-[var(--text-secondary)]">
+                {isZh
+                  ? '流量账单、用量拆分和线路检测都在这里。平时不用打开。'
+                  : 'Traffic billing, the usage split, and the route check. You can leave this closed.'}
+              </span>
+            </span>
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 shrink-0 text-zinc-400 transition-transform',
+                showTechnicalDetails && 'rotate-180',
+              )}
             />
-          ) : null}
-          {showAnnouncement ? (
-            <AdminMessagesCard
-              isZh={isZh}
-              latestAnnouncement={latestAnnouncement}
-              supportContact={supportContact}
-            />
+          </button>
+          {showTechnicalDetails ? (
+            <div className="mt-5 space-y-6">
+              <MachineHealthCard
+                isZh={isZh}
+                serverStatus={serverStatus}
+                usageSummary={usageSummary}
+                isLoading={isStatsLoading}
+              />
+              {hasSubscription ? (
+                <UsageDetailCard
+                  isZh={isZh}
+                  stats={clientStats}
+                  usageSummary={usageSummary}
+                  isLoading={isStatsLoading}
+                />
+              ) : null}
+              {hasSubscription && clientStats ? (
+                <div className="space-y-3">
+                  <RouteStatusPill
+                    isZh={isZh}
+                    profile={nodeQuality}
+                    expanded={showRouteDetail}
+                    onToggle={() => setShowRouteDetail((value) => !value)}
+                  />
+                  {showRouteDetail ? (
+                    <NodeQualityCard
+                      isZh={isZh}
+                      inboundRemark={clientStats.inboundRemark}
+                      profile={nodeQuality}
+                      onRefresh={onRefreshNodeQuality}
+                      isRefreshing={isRefreshingNodeQuality}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </section>
-      ) : null}
-
-      {hasSubscription && clientStats ? (
-        <div className="space-y-3">
-          <RouteStatusPill
-            isZh={isZh}
-            profile={nodeQuality}
-            expanded={showRouteDetail}
-            onToggle={() => setShowRouteDetail((value) => !value)}
-          />
-          {showRouteDetail ? (
-            <NodeQualityCard
-              isZh={isZh}
-              inboundRemark={clientStats.inboundRemark}
-              profile={nodeQuality}
-              onRefresh={onRefreshNodeQuality}
-              isRefreshing={isRefreshingNodeQuality}
-            />
-          ) : null}
-        </div>
       ) : null}
     </div>
   );
@@ -212,11 +238,7 @@ export function HomeTab({
 
 function formatExpiry(ms: number, isZh: boolean) {
   if (ms === 0) return isZh ? '永不过期' : 'Never';
-  return new Date(ms).toLocaleDateString(isZh ? 'zh-CN' : 'en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatDateTime(ms);
 }
 
 function daysUntilResetDay(resetDay: number): number {
@@ -270,6 +292,7 @@ function MySubscriptionHero({
   isLoading,
   onCopy,
   onSetSection,
+  clashInstallUrl,
 }: {
   isZh: boolean;
   username: string;
@@ -280,13 +303,14 @@ function MySubscriptionHero({
   isLoading?: boolean;
   onCopy: (text: string, key: string) => void;
   onSetSection: (tab: PortalTab) => void;
+  clashInstallUrl: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
 
   const machineSummaryHelpText = isZh
-    ? '个人/他人来自 3X-UI 应用层统计；机器余量来自 DMIT 网卡账单或 Prism 估算，两种口径不直接相加。'
-    : 'Personal and shared-user usage comes from 3X-UI. Machine remaining comes from DMIT billing or Prism estimation, so the two scopes are not additive.';
+    ? '这是当前还能用的流量。更细的数字在下面的详细信息里。'
+    : 'This is the traffic you can still use. The breakdown is under Details.';
 
   const used = stats ? stats.up + stats.down : 0;
   const hasPool = Boolean(usageSummary && usageSummary.machineTotal > 0);
@@ -297,22 +321,14 @@ function MySubscriptionHero({
   let unlimited = false;
 
   if (hasPool && usageSummary) {
-    const { machineRemaining, machineTotal, ownUsed, machineUsed, machineSource } = usageSummary;
-    const sourceLabel =
-      machineSource === 'dmit'
-        ? isZh
-          ? 'DMIT账单'
-          : 'DMIT billing'
-        : isZh
-          ? '机器估算'
-          : 'Machine estimate';
+    const { machineRemaining, machineTotal, machineUsed } = usageSummary;
     bigValue = isZh
       ? `剩 ${formatTraffic(machineRemaining)}`
       : `${formatTraffic(machineRemaining)} left`;
     usedPercent = Math.min(Math.max((machineUsed / machineTotal) * 100, 0), 100);
     subtitle = isZh
-      ? `${sourceLabel} 已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} · 其中你(3X-UI) ${formatTraffic(ownUsed)}`
-      : `${sourceLabel} ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} used · you (3X-UI) ${formatTraffic(ownUsed)}`;
+      ? `已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
+      : `${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)} used`;
   } else if (stats && stats.total > 0) {
     const remaining = Math.max(stats.total - used, 0);
     bigValue = isZh ? `剩 ${formatTraffic(remaining)}` : `${formatTraffic(remaining)} left`;
@@ -474,6 +490,20 @@ function MySubscriptionHero({
                     {isZh ? '二维码' : 'QR code'}
                   </Button>
                 ) : null}
+                {clashInstallUrl ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => {
+                      window.location.href = clashInstallUrl;
+                    }}
+                    data-testid="subscription-home-flclash-import"
+                  >
+                    <Download className="h-4 w-4" />
+                    {isZh ? '用 FlClash 打开' : 'Open in FlClash'}
+                  </Button>
+                ) : null}
                 <Button
                   variant="secondary"
                   size="sm"
@@ -484,6 +514,16 @@ function MySubscriptionHero({
                   {isZh ? '下载客户端' : 'Download client'}
                 </Button>
               </div>
+              <p className="text-xs leading-5 text-[var(--text-secondary)]">
+                {isZh
+                  ? '订阅链接相当于密码，只留给自己，不要发给别人。'
+                  : 'This subscription link is private. Do not share it.'}
+              </p>
+              <p className="text-xs leading-5 text-[var(--text-secondary)]">
+                {isZh
+                  ? 'v2rayN：订阅分组 → 添加 → 粘贴刚才复制的链接 → 更新订阅，再选一个节点。'
+                  : 'v2rayN: Subscription group → Add → paste the copied link → update, then pick a node.'}
+              </p>
               {showQr && subscriptionUniversalUrl ? (
                 <div className="lg:hidden">
                   <QrCodeCanvas url={subscriptionUniversalUrl} isZh={isZh} />
@@ -540,8 +580,8 @@ function UsageDetailCard({
     const sourceLabel =
       usageSummary.machineSource === 'dmit'
         ? isZh
-          ? 'DMIT账单'
-          : 'DMIT billing'
+          ? '机器账单'
+          : 'Machine bill'
         : isZh
           ? '机器估算'
           : 'Machine estimate';
@@ -549,15 +589,15 @@ function UsageDetailCard({
     const xuiTotalUsed = usageSummary.xuiTotalUsed ?? usageSummary.totalUsed;
     const usageGap = usageSummary.usageGap ?? Math.max(0, usageSummary.machineUsed - xuiTotalUsed);
     rows.push({
-      label: isZh ? '你已用(3X-UI)' : 'You used (3X-UI)',
+      label: isZh ? '你用了' : 'You used',
       value: formatTraffic(usageSummary.ownUsed),
     });
     rows.push({
-      label: isZh ? '他人用量(3X-UI)' : 'Others (3X-UI)',
+      label: isZh ? '其他人用了' : 'Other people used',
       value: formatTraffic(usageSummary.otherUsersUsed),
     });
     rows.push({
-      label: isZh ? '3X-UI合计' : '3X-UI total',
+      label: isZh ? '面板合计' : 'Panel total',
       value: formatTraffic(xuiTotalUsed),
     });
     rows.push({
@@ -565,7 +605,7 @@ function UsageDetailCard({
       value: `${formatTraffic(usageSummary.machineUsed)} / ${formatTraffic(usageSummary.machineTotal)}`,
     });
     rows.push({
-      label: isZh ? '口径差值' : 'Scope gap',
+      label: isZh ? '统计差额' : 'Billing difference',
       value: formatTraffic(usageGap),
     });
     rows.push({
@@ -581,7 +621,10 @@ function UsageDetailCard({
   if (stats) {
     rows.push({ label: isZh ? '上传' : 'Upload', value: formatTraffic(stats.up) });
     rows.push({ label: isZh ? '下载' : 'Download', value: formatTraffic(stats.down) });
-    rows.push({ label: isZh ? '协议' : 'Protocol', value: stats.protocol.toUpperCase() });
+    rows.push({
+      label: isZh ? '连接方式' : 'Connection',
+      value: plainConnectionLabel(stats.protocol, isZh),
+    });
   }
 
   return (
@@ -657,14 +700,24 @@ function formatSpeed(bytesPerSecond: number): string {
   return `${(safe / 1024).toFixed(1)} KB/s`;
 }
 
-function formatDateTime(ms: number | null | undefined, isZh: boolean): string {
+function formatResetAt(ms: number | null | undefined, isZh: boolean): string {
   if (!ms) return isZh ? '暂未同步' : 'Not synced';
-  return new Date(ms).toLocaleString(isZh ? 'zh-CN' : 'en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTime(ms);
+}
+
+function plainConnectionLabel(protocol: string, isZh: boolean): string {
+  if (!isZh) return protocol.toUpperCase();
+  const value = protocol.toLowerCase();
+  if (
+    value.includes('vless') ||
+    value.includes('reality') ||
+    value.includes('vmess') ||
+    value.includes('trojan') ||
+    value.includes('shadowsocks')
+  ) {
+    return '加密线路';
+  }
+  return protocol ? '普通线路' : '加密线路';
 }
 
 function MachineHealthCard({
@@ -930,7 +983,7 @@ function MachineHealthCard({
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-zinc-100">
-                    {isZh ? 'DMIT 流量账单' : 'DMIT traffic billing'}
+                    {isZh ? '流量账单' : 'Traffic bill'}
                   </p>
                   <p className="mt-1 text-xs leading-5 text-zinc-500">
                     {isZh
@@ -993,7 +1046,7 @@ function MachineHealthCard({
                     />
                     <TrafficRow
                       label={isZh ? '下次重置' : 'Next reset'}
-                      value={formatDateTime(usageSummary?.machineNextResetAt, isZh)}
+                      value={formatResetAt(usageSummary?.machineNextResetAt, isZh)}
                     />
                   </div>
                 </div>
@@ -1146,18 +1199,24 @@ function RouteStatusPill({
   const egress = profile?.egress;
   const location = egress ? [egress.city, egress.country].filter(Boolean).join(', ') : '';
   const score = profile?.fraudScore;
-  const summaryText = profile
-    ? [
-        isZh ? '线路' : 'Route',
-        fraudMeta.label,
-        location,
-        score != null ? (isZh ? `风险 ${score}` : `risk ${score}`) : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : isZh
-      ? '线路检测结果加载中…'
-      : 'Loading route status…';
+  const stale = isNodeQualityStale(profile?.updatedAt);
+  const checkedAt = formatDateTime(profile?.updatedAt);
+  const summaryText = stale
+    ? isZh
+      ? `线路检测已过期${checkedAt ? ` · ${checkedAt}` : ''}`
+      : `Route check expired${checkedAt ? ` · ${checkedAt}` : ''}`
+    : profile
+      ? [
+          isZh ? '线路' : 'Route',
+          fraudMeta.label,
+          location,
+          score != null ? (isZh ? `风险 ${score}` : `risk ${score}`) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : isZh
+        ? '线路检测结果加载中…'
+        : 'Loading route status…';
 
   return (
     <button

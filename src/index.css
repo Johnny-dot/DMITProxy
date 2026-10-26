@@ -46,7 +46,7 @@
   --surface-contrast: rgba(222, 232, 244, 0.72);
   --text-primary: #122033;
   --text-secondary: #415168;
-  --text-tertiary: #6f7f92;
+  --text-tertiary: #3c4e64;
   --text-inverse: #f9fbff;
   --border-subtle: rgba(94, 120, 158, 0.15);
   --border-strong: rgba(94, 120, 158, 0.28);
@@ -113,7 +113,7 @@
   --surface-contrast: rgba(52, 65, 82, 0.82);
   --text-primary: #edf4ff;
   --text-secondary: #bdc9d8;
-  --text-tertiary: #8d9ab0;
+  --text-tertiary: #c5d0e0;
   --text-inverse: #0d1523;
   --border-subtle: rgba(255, 255, 255, 0.14);
   --border-strong: rgba(255, 255, 255, 0.3);
@@ -721,6 +721,25 @@
 }
 .reveal-stagger > *:nth-child(n + 7) {
   animation-delay: 460ms;
+}
+
+.app-sidebar-slot {
+  display: none;
+}
+
+.app-menu-button {
+  display: inline-flex;
+}
+
+@media (min-width: 960px) {
+  .app-sidebar-slot {
+    display: block;
+  }
+
+  .app-menu-button,
+  .app-nav-drawer {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

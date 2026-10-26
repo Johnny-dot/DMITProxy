@@ -71,6 +71,11 @@ export function buildClientImportUrl({
     return appendFragment(`sing-box://import-remote-profile?url=${encodedUrl}`, subscriptionName);
   }
 
+  if (clientId === 'flClash') {
+    if (format !== 'clash') return null;
+    return `clash://install-config?url=${encodedUrl}`;
+  }
+
   if (clientId === 'clashMeta') {
     if (platform !== 'android' || format !== 'clash') return null;
     return `clashmeta://install-config?url=${encodedUrl}`;

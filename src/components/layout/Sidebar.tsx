@@ -17,6 +17,7 @@ import { useI18n } from '@/src/context/I18nContext';
 import { useAuth } from '@/src/context/AuthContext';
 import { getAvatarInitials, getAvatarToneClasses } from '@/src/utils/userProfile';
 import { resolveUserPortalSection } from '@/src/pages/portal/types';
+import { getSidebarSubtitle } from '@/src/utils/sidebarSubtitle';
 
 export function Sidebar({
   onNavigate,
@@ -79,12 +80,12 @@ export function Sidebar({
     role === 'user' && username && username !== resolvedDisplayName ? username : '';
   const subtitle =
     role === 'user'
-      ? activeUserSection === 'setup'
-        ? setupLabel
-        : activeUserSection === 'help'
-          ? helpLabel
-          : overviewLabel
-      : t('nav.dashboard');
+      ? getSidebarSubtitle(location.pathname, activeUserSection, isZh)
+      : location.pathname === '/profile'
+        ? isZh
+          ? '个人资料'
+          : 'Profile'
+        : t('nav.dashboard');
 
   return (
     <aside className="surface-card flex h-[calc(100dvh-2rem)] w-full flex-col gap-5 p-3 md:w-64">
@@ -96,7 +97,9 @@ export function Sidebar({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold text-[var(--text-primary)]">Prism</p>
-            <p className="mt-1 text-xs text-[var(--text-secondary)]">{subtitle}</p>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]" data-testid="sidebar-subtitle">
+              {subtitle}
+            </p>
           </div>
           {onClose && (
             <button

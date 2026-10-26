@@ -217,13 +217,13 @@ function UserProfileView() {
           </div>
 
           <div className="grid gap-2">
-            <label htmlFor="user-display-name" className="text-sm font-medium">
-              {isZh ? '显示名称' : 'Display name'}
-            </label>
-            <div className="flex items-center gap-1 text-xs text-zinc-500">
-              <span>{isZh ? '显示名称说明' : 'Display name note'}</span>
+            <label
+              htmlFor="user-display-name"
+              className="inline-flex items-center gap-1 text-sm font-medium"
+            >
+              <span>{isZh ? '显示名称' : 'Display name'}</span>
               <InfoTooltip content={displayNameHelpText} />
-            </div>
+            </label>
             <Input
               id="user-display-name"
               value={displayNameInput}
@@ -232,7 +232,7 @@ function UserProfileView() {
               maxLength={32}
               disabled={isLoadingProfile}
             />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-[var(--text-secondary)]">
               {isZh
                 ? '显示名称会同步到侧栏、个人资料页和通知面板。留空时默认使用登录账号。'
                 : 'Your display name appears in the sidebar, profile page, and notifications. Leave it empty to fall back to your username.'}
@@ -241,12 +241,11 @@ function UserProfileView() {
 
           <div className="space-y-3">
             <div>
-              <p className="text-sm font-medium">{isZh ? '头像样式' : 'Avatar style'}</p>
-              <div className="mt-1 flex items-center gap-1 text-xs text-zinc-500">
-                <span>{isZh ? '头像说明' : 'Avatar note'}</span>
+              <p className="inline-flex items-center gap-1 text-sm font-medium">
+                <span>{isZh ? '头像样式' : 'Avatar style'}</span>
                 <InfoTooltip content={avatarStyleHelpText} />
-              </div>
-              <p className="mt-1 text-xs text-zinc-500">
+              </p>
+              <p className="mt-1 text-xs text-[var(--text-secondary)]">
                 {isZh
                   ? '选择一个你喜欢的底色，头像会自动使用你的名称首字母。'
                   : 'Choose the tone you like. The avatar uses the initials from your name automatically.'}
@@ -295,13 +294,10 @@ function UserProfileView() {
               <p className="mt-1 text-sm">{resolvedPreviewName}</p>
             </div>
             <div className="surface-panel p-3">
-              <p className="text-[11px] uppercase tracking-wider text-zinc-500">
-                {isZh ? '登录账号' : 'Username'}
-              </p>
-              <div className="mt-1 flex items-center gap-1 text-[11px] text-zinc-500">
-                <span>{isZh ? '登录账号说明' : 'Username note'}</span>
+              <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-[var(--text-secondary)]">
+                <span>{isZh ? '登录账号' : 'Username'}</span>
                 <InfoTooltip content={usernameHelpText} />
-              </div>
+              </p>
               <p className="mt-1 break-all font-mono text-sm">{username ?? '-'}</p>
             </div>
           </div>

@@ -18,7 +18,7 @@ import { useI18n } from '@/src/context/I18nContext';
 import { cn } from '@/src/utils/cn';
 import { buildClientImportUrl, isClientImportFormat } from '@/src/utils/clientImport';
 import { getClientDownloadLinks, type ClientDownloadPlatform } from '@/src/utils/clientDownloads';
-import { buildSubscriptionUrl } from '@/src/utils/subscription';
+import { buildSubscriptionUrl, maskSubscriptionUrl } from '@/src/utils/subscription';
 import type { ClientCard, PortalTab, SetupFocus, SubscriptionFormat } from './types';
 import { COPY_RESET_DELAY_MS } from './types';
 import {
@@ -91,6 +91,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
   const [hasCopied, setHasCopied] = useState(false);
   const [hasMarkedConnected, setHasMarkedConnected] = useState(false);
   const [showQuickQr, setShowQuickQr] = useState(false);
+  const [showRawUrl, setShowRawUrl] = useState(false);
   const [mirrorDialog, setMirrorDialog] = useState<MirrorDialogState | null>(null);
 
   const subscriptionLinks = useMemo(
@@ -598,10 +599,10 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                         />
                       </div>
                       <p
-                        className="break-all rounded-[22px] border border-white/10 bg-[var(--surface-inline)] px-4 py-3 font-mono text-xs leading-6 text-zinc-300"
+                        className="break-all rounded-[22px] border border-white/10 bg-[var(--surface-inline)] px-4 py-3 font-mono text-xs leading-6 text-[var(--text-secondary)]"
                         data-testid="subscription-active-url"
                       >
-                        {activeSubUrl}
+                        {showRawUrl ? activeSubUrl : maskSubscriptionUrl(activeSubUrl)}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
@@ -623,6 +624,21 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                           {isZh ? '一键导入' : 'One-click import'}
                         </Button>
                       ) : null}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowRawUrl((current) => !current)}
+                        data-testid="subscription-url-visibility"
+                      >
+                        {showRawUrl
+                          ? isZh
+                            ? '隐藏链接'
+                            : 'Hide link'
+                          : isZh
+                            ? '显示链接'
+                            : 'Show link'}
+                      </Button>
                       <Button
                         type="button"
                         variant={oneClickImportUrl ? 'outline' : 'secondary'}
@@ -676,6 +692,11 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                         {isZh ? '下载客户端' : 'Download client'}
                       </Button>
                     </div>
+                    <p className="text-xs leading-5 text-[var(--text-secondary)]">
+                      {isZh
+                        ? '订阅链接相当于密码，只留给自己，不要发给别人。'
+                        : 'This subscription link is private. Do not share it.'}
+                    </p>
                     {showQuickQr ? <QrCodeCanvas url={activeSubUrl} isZh={isZh} /> : null}
                   </>
                 ) : (

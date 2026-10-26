@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { buildClashInstallConfigUrl, maskSubscriptionUrl } from './subscription';
 
 const originalWindow = globalThis.window;
 
@@ -58,6 +59,20 @@ describe('buildSubscriptionUrl', () => {
     );
     expect(buildSubscriptionUrl('41b215b8b2f90467', 'v2ray')).toBe(
       'https://prismproxy.uk/sub/41b215b8b2f90467?flag=v2ray',
+    );
+  });
+});
+
+describe('subscription link helpers', () => {
+  it('hides the subscription token', () => {
+    expect(maskSubscriptionUrl('https://portal.example.com/sub/secret-token?flag=clash')).toBe(
+      'https://portal.example.com/sub/••••••••',
+    );
+  });
+
+  it('builds a FlClash install-config link from the plain subscription URL', () => {
+    expect(buildClashInstallConfigUrl('https://portal.example.com/sub/secret-token')).toBe(
+      'clash://install-config?url=https%3A%2F%2Fportal.example.com%2Fsub%2Fsecret-token%3Fflag%3Dclash',
     );
   });
 });

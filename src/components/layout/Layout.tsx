@@ -13,7 +13,7 @@ export function Layout() {
   const { language } = useI18n();
   const isZh = language === 'zh-CN';
   useEffect(() => {
-    const desktop = window.matchMedia('(min-width: 768px)');
+    const desktop = window.matchMedia('(min-width: 960px)');
     const closeOnDesktop = () => {
       if (desktop.matches) setIsMobileMenuOpen(false);
     };
@@ -30,7 +30,7 @@ export function Layout() {
       </div>
 
       <div className="relative z-10 flex h-full overflow-hidden">
-        <div className="hidden p-4 pr-0 md:block">
+        <div className="app-sidebar-slot p-4 pr-0">
           <Sidebar />
         </div>
 
@@ -38,7 +38,7 @@ export function Layout() {
           open={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
           ariaLabel={isZh ? '导航菜单' : 'Navigation menu'}
-          panelClassName="fixed inset-y-4 left-4 w-[min(280px,calc(100vw-2rem))] md:hidden"
+          panelClassName="app-nav-drawer fixed inset-y-4 left-4 w-[min(280px,calc(100vw-2rem))]"
         >
           <Sidebar
             onNavigate={() => setIsMobileMenuOpen(false)}
@@ -53,7 +53,7 @@ export function Layout() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="md:hidden"
+                  className="app-menu-button"
                   aria-label={isZh ? '打开导航菜单' : 'Open navigation menu'}
                   aria-expanded={isMobileMenuOpen}
                   onClick={() => setIsMobileMenuOpen(true)}

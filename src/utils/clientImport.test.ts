@@ -78,11 +78,22 @@ describe('buildClientImportUrl', () => {
     ).toBe('shadowrocket://add/sub://aHR0cHM6Ly9leGFtcGxlLmNvbS9zdWIvMTIz?remark=Prism');
   });
 
-  it('returns null when the client does not support a direct import link', () => {
+  it('builds a FlClash install-config link', () => {
     expect(
       buildClientImportUrl({
         clientId: 'flClash',
-        platform: 'android',
+        platform: 'windows',
+        subscriptionUrl: clashUrl,
+        format: 'clash',
+      }),
+    ).toBe(`clash://install-config?url=${encodeURIComponent(clashUrl)}`);
+  });
+
+  it('returns null when the client does not support a direct import link', () => {
+    expect(
+      buildClientImportUrl({
+        clientId: 'v2rayN',
+        platform: 'windows',
         subscriptionUrl: clashUrl,
         format: 'clash',
       }),

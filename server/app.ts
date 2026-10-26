@@ -20,6 +20,7 @@ import { buildSubscriptionProfileTitleHeader } from './subscription-profile.js';
 import { ClashInlineRenderError, renderClashInlineSubscription } from './clash-inline.js';
 import { renderSingboxInlineSubscription, SingboxInlineRenderError } from './singbox-inline.js';
 import { requestXuiTransport, stripHopByHopHeaders, XuiTransportError } from './xui-transport.js';
+import { legacyPortalRedirectPath } from './legacy-routes.js';
 
 const XUI_NOT_CONFIGURED_ERROR =
   '3X-UI admin capability is not configured. Set VITE_3XUI_SERVER and VITE_3XUI_BASE_PATH in .env.';
@@ -474,6 +475,19 @@ export function createApp() {
     console.warn('[Prism] VITE_3XUI_SERVER is not set. /api proxy is disabled.');
     app.use('/api', (_req, res) => res.status(503).json({ error: XUI_NOT_CONFIGURED_ERROR }));
   }
+
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      next();
+      return;
+    }
+    const target = legacyPortalRedirectPath(req.path);
+    if (!target) {
+      next();
+      return;
+    }
+    res.redirect(302, target);
+  });
 
   // Serve React build in production
   const distPath = path.resolve('./dist');

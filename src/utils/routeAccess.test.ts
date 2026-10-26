@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { resolveProtectedRedirect } from './routeAccess';
+import {
+  buildLoginRedirect,
+  resolvePostLoginPath,
+  resolveProtectedRedirect,
+  shouldShowSubscriptionLoginHint,
+} from './routeAccess';
 
 describe('resolveProtectedRedirect', () => {
   it('redirects anonymous visitors to the login page', () => {
@@ -19,6 +24,16 @@ describe('resolveProtectedRedirect', () => {
 
   it('redirects admins away from user-only pages', () => {
     expect(resolveProtectedRedirect(true, 'admin', '/my-subscription')).toBe('/');
+  });
+
+  it('keeps the subscription page as the post-login destination', () => {
+    expect(buildLoginRedirect('/my-subscription')).toBe('/login?next=%2Fmy-subscription');
+    expect(resolvePostLoginPath('/my-subscription?section=setup', 'user')).toBe(
+      '/my-subscription?section=setup',
+    );
+    expect(resolvePostLoginPath('https://evil.example', 'user')).toBe('/my-subscription');
+    expect(shouldShowSubscriptionLoginHint('/my-subscription')).toBe(true);
+    expect(shouldShowSubscriptionLoginHint('/profile')).toBe(false);
   });
 
   it('allows admins to open admin pages', () => {
