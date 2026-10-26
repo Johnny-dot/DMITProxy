@@ -16,6 +16,7 @@ function InviteRedirect() {
 import { ToastProvider } from './components/ui/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { useI18n } from './context/I18nContext';
 import { buildLoginRedirect, resolveProtectedRedirect } from './utils/routeAccess';
 
 const Layout = lazy(() =>
@@ -54,11 +55,12 @@ const UserResetPasswordPage = lazy(() =>
 );
 
 function RouteLoading() {
+  const { t } = useI18n();
   return (
-    <div className="flex min-h-screen items-center justify-center px-6">
+    <div className="user-surface flex min-h-svh items-center justify-center px-6">
       <div className="surface-card flex items-center gap-4 px-6 py-5">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--border-subtle)] border-t-[var(--accent)]" />
-        <span className="text-sm text-[var(--text-secondary)]">Loading</span>
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--border-subtle)] border-t-[var(--text-primary)]" />
+        <span className="text-sm text-[var(--text-secondary)]">{t('common.loading')}</span>
       </div>
     </div>
   );

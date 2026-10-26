@@ -156,8 +156,6 @@ export function Dashboard() {
       value: String(clients.length),
       icon: Users,
       trend: t('dashboard.inboundsTrend', { count: inbounds.length }),
-      iconClass: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-500',
-      glowClass: 'bg-emerald-500/20',
     },
     {
       key: 'activeClients',
@@ -165,8 +163,6 @@ export function Dashboard() {
       value: String(activeClients.length),
       icon: Activity,
       trend: t('dashboard.trafficDetected'),
-      iconClass: 'border-indigo-400/25 bg-indigo-500/10 text-indigo-500',
-      glowClass: 'bg-indigo-500/20',
     },
     {
       key: 'inboundTraffic',
@@ -174,8 +170,6 @@ export function Dashboard() {
       value: formatTraffic(totalInboundTraffic),
       icon: Zap,
       trend: t('dashboard.uploadDownload'),
-      iconClass: 'border-amber-400/25 bg-amber-500/10 text-amber-500',
-      glowClass: 'bg-amber-500/20',
     },
     {
       key: 'serverLoad',
@@ -185,15 +179,12 @@ export function Dashboard() {
       trend: serverStatus
         ? t('dashboard.cores', { count: serverStatus.cpuCores })
         : t('common.unavailable'),
-      iconClass: 'border-rose-400/25 bg-rose-500/10 text-rose-500',
-      glowClass: 'bg-rose-500/20',
     },
   ] as const;
 
   return (
     <div className="content-shell-wide reveal-stagger w-full min-w-0 space-y-8 px-4 md:px-6 xl:px-8">
-      <section className="surface-card relative overflow-hidden p-6 md:p-7">
-        <div className="pointer-events-none absolute right-[-5rem] top-[-4rem] h-32 w-32 rounded-full bg-[radial-gradient(circle,_rgba(111,154,255,0.3)_0%,_rgba(111,154,255,0)_72%)] blur-2xl" />
+      <section className="surface-card p-6 md:p-7">
         <p className="section-kicker">{t('dashboard.title')}</p>
         <h1 className="text-3xl font-semibold tracking-tight">{t('dashboard.title')}</h1>
         <p className="max-w-3xl text-sm leading-7 text-[var(--text-secondary)]">
@@ -203,18 +194,13 @@ export function Dashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.key} className="relative overflow-hidden">
-            <div
-              className={`pointer-events-none absolute inset-x-8 top-0 h-20 rounded-full blur-3xl ${stat.glowClass}`}
-            />
+          <Card key={stat.key}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="flex items-center gap-1 text-sm font-medium text-[var(--text-secondary)]">
                 <span>{stat.title}</span>
                 <InfoTooltip content={t(`dashboard.help.${stat.key}`)} />
               </CardTitle>
-              <div
-                className={`glass-pill flex h-10 w-10 items-center justify-center border ${stat.iconClass}`}
-              >
+              <div className="glass-pill flex h-10 w-10 items-center justify-center border border-[var(--border-subtle)] bg-[var(--surface-inline)] text-[var(--text-primary)]">
                 <stat.icon className="h-4 w-4" />
               </div>
             </CardHeader>

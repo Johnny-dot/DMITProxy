@@ -929,38 +929,23 @@ html[data-theme='dark']:has(.user-surface) body {
   border-width: 1px;
 }
 
-.user-surface .user-hero-panel {
-  background: #111111;
-  color: #ffffff;
-  border: 1px solid #111111;
-  border-radius: 12px;
-  box-shadow: none;
+.user-surface :is(.text-zinc-50, .text-zinc-100, .text-zinc-200) {
+  color: var(--text-primary);
 }
 
-html[data-theme='dark'] .user-surface .user-hero-panel {
-  background: #050505;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+.user-surface :is(.text-zinc-300, .text-zinc-400, .text-zinc-500, .text-zinc-600) {
+  color: var(--text-secondary);
 }
 
-.user-surface .user-hero-panel .section-kicker,
-.user-surface .user-hero-panel .page-title,
-.user-surface .user-hero-panel .page-copy,
-.user-surface .user-hero-panel p,
-.user-surface .user-hero-panel span {
-  color: #ffffff;
-}
-
-.user-surface .user-hero-panel .surface-panel,
-.user-surface .user-hero-panel .surface-inline,
-.user-surface .user-hero-panel .glass-pill {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: none;
-  color: #f6fffb;
-}
-
-.user-surface .user-hero-panel svg {
-  color: #ffffff;
+.user-surface
+  :is(
+    .rounded-\[18px\],
+    .rounded-\[20px\],
+    .rounded-\[22px\],
+    .rounded-\[24px\],
+    .rounded-\[26px\]
+  ) {
+  border-radius: var(--radius-card);
 }
 
 .user-surface button {

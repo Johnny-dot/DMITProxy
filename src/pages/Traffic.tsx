@@ -20,13 +20,13 @@ import { useI18n } from '@/src/context/I18nContext';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 
 const COLORS = [
-  'var(--success)',
-  'var(--accent)',
-  'var(--warning)',
-  'var(--danger)',
-  'var(--info)',
-  'var(--color-violet-500)',
-  'var(--color-emerald-300)',
+  'var(--text-primary)',
+  'var(--text-secondary)',
+  'var(--text-tertiary)',
+  'var(--border-strong)',
+  '#8a8a8a',
+  '#cfcfcf',
+  '#5c5c5c',
 ];
 
 export function TrafficPage() {

@@ -311,7 +311,7 @@ export function SubscriptionsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <Tabs>
-              <TabsList className="flex w-full justify-start overflow-x-auto sm:grid sm:grid-cols-4">
+              <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
                 {SUBSCRIPTION_LINK_TABS.map((tab) => (
                   <TabsTrigger
                     key={tab.key}
@@ -456,16 +456,16 @@ export function SubscriptionsPage() {
               key: 'universal' as const,
               name: 'Shadowrocket / V2Ray',
               icon: Shield,
-              color: 'text-indigo-500',
-              bg: 'bg-indigo-500/10',
+              color: 'text-[var(--text-primary)]',
+              bg: 'bg-[var(--surface-panel)]',
               link: generatedLinks.universal,
             },
             {
               key: 'clash' as const,
               name: 'Clash',
               icon: Lock,
-              color: 'text-amber-500',
-              bg: 'bg-amber-500/10',
+              color: 'text-[var(--text-primary)]',
+              bg: 'bg-[var(--surface-panel)]',
               link: generatedLinks.clash,
               qrLink: buildSubscriptionQrUrl(subId, 'clash'),
             },
@@ -473,16 +473,16 @@ export function SubscriptionsPage() {
               key: 'singbox' as const,
               name: 'Sing-box',
               icon: Zap,
-              color: 'text-emerald-500',
-              bg: 'bg-emerald-500/10',
+              color: 'text-[var(--text-primary)]',
+              bg: 'bg-[var(--surface-panel)]',
               link: generatedLinks.singbox,
             },
             {
               key: 'surge' as const,
               name: 'Surge',
               icon: Terminal,
-              color: 'text-sky-500',
-              bg: 'bg-sky-500/10',
+              color: 'text-[var(--text-primary)]',
+              bg: 'bg-[var(--surface-panel)]',
               link: generatedLinks.surge,
             },
           ].map((proto) => (
@@ -507,7 +507,7 @@ export function SubscriptionsPage() {
                     {copiedId === proto.name ? t('common.copied') : t('common.copyLink')}
                   </Button>
                 </div>
-                <div className="p-6 flex flex-col items-center justify-center bg-zinc-900/20">
+                <div className="flex flex-col items-center justify-center bg-[var(--surface-panel)] p-6">
                   <button
                     type="button"
                     onClick={() =>
@@ -548,7 +548,7 @@ export function SubscriptionsPage() {
         <p className="text-sm text-zinc-400">{t('subscriptions.subtitle')}</p>
         <p className="text-xs leading-6 text-zinc-500">
           {isZh
-            ? '“官方源”会打开 GitHub 或应用商店；“镜像下载”走当前站点 VPS 的缓存。首次请求可能需要等待 VPS 从官方源拉取并准备缓存。'
+            ? '“官方源”会打开 GitHub 或应用商店；“镜像下载”走当前站点的缓存。首次请求可能需要等待服务器从官方源拉取并准备缓存。'
             : 'Official opens GitHub or the app store. Mirror serves the cached package from this VPS, and the first request may take longer while upstream is cached.'}
         </p>
         <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -624,7 +624,7 @@ export function SubscriptionsPage() {
                       links.vps
                         ? links.vpsManaged
                           ? isZh
-                            ? '通过当前站点 VPS 缓存分发；首次请求可能需要等待官方包缓存完成'
+                            ? '通过当前站点缓存分发；首次请求可能需要等待官方包缓存完成'
                             : 'Served through this VPS cache. The first request may wait while the official package is cached.'
                           : isZh
                             ? '打开已配置的镜像下载地址'
@@ -661,7 +661,7 @@ export function SubscriptionsPage() {
         <Card>
           <CardContent className="p-6 space-y-6">
             <Tabs>
-              <TabsList className="flex w-full justify-start overflow-x-auto md:grid md:grid-cols-6">
+              <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
                 <TabsTrigger
                   active={activeOsTab === 'windows'}
                   onClick={() => setActiveOsTab('windows')}
@@ -726,7 +726,7 @@ export function SubscriptionsPage() {
       </div>
 
       {activeLink && (
-        <Card className="border-emerald-500/20 bg-emerald-500/5">
+        <Card className="border-[var(--border-subtle)] bg-[var(--surface-panel)]">
           <CardContent className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <p className="text-sm text-zinc-300">
               {t('subscriptions.currentLinkReady', { type: activeLinkLabel })}

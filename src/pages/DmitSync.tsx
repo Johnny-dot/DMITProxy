@@ -40,10 +40,8 @@ function relativeTime(ts: number): string {
 
 /** Threshold colors for the usage gauge — used% rising toward the cap is "worse". */
 function gaugeTone(pct: number) {
-  if (pct < 60)
-    return { bar: 'bg-emerald-500', text: 'text-emerald-400', glow: 'bg-emerald-500/20' };
-  if (pct < 85) return { bar: 'bg-amber-500', text: 'text-amber-400', glow: 'bg-amber-500/20' };
-  return { bar: 'bg-red-500', text: 'text-red-400', glow: 'bg-red-500/20' };
+  if (pct < 85) return { bar: 'bg-[var(--accent)]', text: 'text-[var(--text-primary)]' };
+  return { bar: 'bg-[var(--text-primary)]', text: 'text-[var(--text-primary)]' };
 }
 
 export function DmitSyncPage() {
@@ -131,7 +129,7 @@ export function DmitSyncPage() {
     setSyncingBilling(true);
     try {
       const r = await postAdminDmitBillingSync();
-      toast(`已为 ${r.updated} 个 inbound 设置 billing_day = ${r.billing_day}`, 'success');
+      toast(`已为 ${r.updated} 个入站设置账单日 ${r.billing_day}`, 'success');
       void refresh();
     } catch (err) {
       toast(err instanceof Error ? err.message : 'sync failed', 'error');
@@ -145,8 +143,7 @@ export function DmitSyncPage() {
     return (
       <div className="content-shell-wide px-4 pb-6 md:px-6 xl:px-8">
         <div className="surface-card relative overflow-hidden p-10 text-center" style={reveal(0)}>
-          <div className="pointer-events-none absolute inset-x-0 top-0 mx-auto h-24 w-2/3 rounded-full bg-amber-500/15 blur-3xl" />
-          <div className="glass-pill mx-auto flex h-14 w-14 items-center justify-center border border-amber-400/25 bg-amber-500/10 text-amber-400">
+          <div className="glass-pill mx-auto flex h-14 w-14 items-center justify-center text-[var(--text-primary)]">
             <ShieldAlert className="h-6 w-6" />
           </div>
           <h2 className="mt-5 text-xl font-semibold tracking-tight">DMIT 同步未启用</h2>
@@ -170,20 +167,13 @@ export function DmitSyncPage() {
     <div className="content-shell-wide w-full min-w-0 space-y-6 px-4 pb-8 md:px-6 xl:px-8">
       {/* ── Hero: the bandwidth gauge ───────────────────────────────────── */}
       <section className="surface-card relative overflow-hidden p-6 md:p-7" style={reveal(0)}>
-        <div
-          className={cn(
-            'pointer-events-none absolute right-[-6rem] top-[-5rem] h-48 w-48 rounded-full blur-3xl transition-colors duration-700',
-            initialLoaded && exists ? tone.glow : 'bg-[var(--accent-soft)]',
-          )}
-        />
-
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="glass-pill flex h-11 w-11 items-center justify-center border border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]">
               <SatelliteDish className="h-5 w-5" />
             </div>
             <div>
-              <p className="section-kicker">DMIT TRAFFIC</p>
+              <p className="section-kicker">流量</p>
               <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">DMIT 流量同步</h1>
             </div>
           </div>
@@ -194,7 +184,7 @@ export function DmitSyncPage() {
                 <span
                   className={cn(
                     'h-1.5 w-1.5 rounded-full',
-                    data.is_stale ? 'bg-red-500' : 'animate-pulse bg-emerald-500',
+                    data.is_stale ? 'bg-[var(--text-tertiary)]' : 'bg-[var(--text-primary)]',
                   )}
                 />
                 {relativeTime(data.updated_at)}
@@ -269,25 +259,25 @@ export function DmitSyncPage() {
                   icon={Activity}
                   label="已用"
                   value={formatGB(data.bwusage_mb)}
-                  tone="border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                  tone="border-[var(--border-subtle)] bg-[var(--surface-inline)] text-[var(--text-primary)]"
                 />
                 <StatChip
                   icon={Database}
                   label="总量"
                   value={formatGB(data.bwlimit_mb)}
-                  tone="border-white/10 bg-white/5 text-[var(--text-secondary)]"
+                  tone="border-[var(--border-subtle)] bg-[var(--surface-inline)] text-[var(--text-primary)]"
                 />
                 <StatChip
                   icon={ArrowDownToLine}
                   label="入站"
                   value={formatGB(data.bwusage_in_mb)}
-                  tone="border-emerald-400/25 bg-emerald-500/10 text-emerald-400"
+                  tone="border-[var(--border-subtle)] bg-[var(--surface-inline)] text-[var(--text-primary)]"
                 />
                 <StatChip
                   icon={ArrowUpFromLine}
                   label="出站"
                   value={formatGB(data.bwusage_out_mb)}
-                  tone="border-indigo-400/25 bg-indigo-500/10 text-indigo-400"
+                  tone="border-[var(--border-subtle)] bg-[var(--surface-inline)] text-[var(--text-primary)]"
                 />
               </div>
             </div>
@@ -304,7 +294,7 @@ export function DmitSyncPage() {
                 <CalendarClock className="h-5 w-5" />
               </div>
               <div>
-                <p className="section-kicker">BILLING DAY</p>
+                <p className="section-kicker">账单日</p>
                 <p className="text-base font-semibold tracking-tight">
                   每月 <span className="font-mono text-[var(--accent)]">{data.next_reset_day}</span>{' '}
                   日 · UTC 重置
@@ -312,7 +302,7 @@ export function DmitSyncPage() {
                 <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
                   {data.auto_applied_billing_day != null ? (
                     <span className="inline-flex items-center gap-1 text-emerald-400">
-                      <Check className="h-3 w-3" /> 已自动同步至 3X-UI（={' '}
+                      <Check className="h-3 w-3" /> 已自动同步至 3X-UI（
                       {data.auto_applied_billing_day}）
                     </span>
                   ) : (
@@ -327,7 +317,7 @@ export function DmitSyncPage() {
               disabled={syncingBilling}
             >
               <ShieldAlert className={cn('mr-2 h-4 w-4', syncingBilling && 'animate-spin')} />
-              强制同步所有 inbound
+              强制同步所有入站
             </Button>
           </div>
         </section>
@@ -339,14 +329,11 @@ export function DmitSyncPage() {
           className="surface-card relative flex flex-col overflow-hidden p-6"
           style={reveal(2)}
         >
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-16 rounded-full bg-emerald-500/10 blur-3xl" />
-          <p className="section-kicker">AUTO SYNC</p>
-          <h2 className="mt-1 text-lg font-semibold tracking-tight">NIC 自动同步</h2>
+          <p className="section-kicker">自动同步</p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight">网卡自动同步</h2>
           <p className="mt-2 flex-1 text-sm leading-7 text-[var(--text-secondary)]">
-            机器流量由代理节点上的 vnstat{' '}
-            <span className="text-[var(--text-primary)]">NIC agent</span> 每 30
-            分钟自动上报，基于网卡计数（= DMIT
-            计费口径），无需浏览器脚本。上方状态点变红即表示同步滞后。
+            机器流量由代理节点上的 vnstat 网卡采集每 30 分钟自动上报，按网卡计数对齐 DMIT
+            计费口径，不需要浏览器脚本。上方状态点变深即表示同步滞后。
           </p>
           <div className="mt-4 surface-panel rounded-xl p-3 text-xs leading-6 text-[var(--text-secondary)]">
             滞后排查（在代理节点上）：
@@ -361,10 +348,10 @@ export function DmitSyncPage() {
         </section>
 
         <section className="surface-card relative overflow-hidden p-6" style={reveal(3)}>
-          <p className="section-kicker">MANUAL</p>
+          <p className="section-kicker">手动</p>
           <h2 className="mt-1 text-lg font-semibold tracking-tight">手动同步（兜底）</h2>
           <p className="mt-2 text-sm leading-7 text-[var(--text-secondary)]">
-            仅在 Tampermonkey 失效时使用，单位为 GB。
+            仅在自动上报失效时使用，单位为 GB。
           </p>
           <form
             className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2"

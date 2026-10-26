@@ -356,7 +356,7 @@ export function ClientHighlightCard({
               client.links.vps
                 ? client.links.vpsManaged
                   ? isZh
-                    ? '通过当前站点 VPS 缓存分发；首次请求可能需要等待官方包缓存完成'
+                    ? '通过当前站点缓存分发；首次请求可能需要等待官方包缓存完成'
                     : 'Served through this VPS cache. The first request may wait while the official package is cached.'
                   : isZh
                     ? '打开已配置的镜像下载地址'
@@ -465,7 +465,7 @@ export function ClientCompactCard({
             client.links.vps
               ? client.links.vpsManaged
                 ? isZh
-                  ? '通过当前站点 VPS 缓存分发；首次请求可能需要等待官方包缓存完成'
+                  ? '通过当前站点缓存分发；首次请求可能需要等待官方包缓存完成'
                   : 'Served through this VPS cache. The first request may wait while the official package is cached.'
                 : isZh
                   ? '打开已配置的镜像下载地址'

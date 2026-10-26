@@ -229,7 +229,7 @@ export async function startDemo(port = 4173) {
         host: '127.0.0.1',
         port,
         strictPort: true,
-        proxy: { '/local': apiUrl, '/api': apiUrl, '/sub': apiUrl },
+        proxy: { '/local': apiUrl, '/api': apiUrl, '/sub/': apiUrl },
       },
     } as Parameters<typeof createViteServer>[0]);
     cleanups.push(() => vite.close());

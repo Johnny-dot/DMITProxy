@@ -170,7 +170,7 @@ function UserEditForm({
         {state.client ? (
           <>
             <label className={fieldLabel}>
-              <span>{isZh ? '流量上限(GB,0 = 不限)' : 'Traffic cap (GB, 0 = unlimited)'}</span>
+              <span>{isZh ? '流量上限（GB，0 为不限）' : 'Traffic cap (GB, 0 = unlimited)'}</span>
               <Input
                 className="h-9"
                 type="number"
@@ -201,7 +201,9 @@ function UserEditForm({
           </>
         ) : (
           <p className="self-center text-xs text-[var(--text-tertiary)]">
-            {isZh ? '关联订阅 ID 后可改到期与流量' : 'Link a sub ID to edit expiry & traffic'}
+            {isZh
+              ? '关联订阅 ID 后可改到期与流量'
+              : 'Link a subscription ID to edit expiry and traffic'}
           </p>
         )}
       </div>
@@ -771,14 +773,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                                 </div>
                                 <div className="glass-progress-track h-1.5 w-full overflow-hidden">
                                   <div
-                                    className={cn(
-                                      'h-full rounded-full transition-all duration-500',
-                                      pct < 70
-                                        ? 'bg-emerald-500'
-                                        : pct < 90
-                                          ? 'bg-yellow-500'
-                                          : 'bg-red-500',
-                                    )}
+                                    className="h-full rounded-full bg-[var(--text-primary)] transition-all duration-500"
                                     style={{ width: `${pct}%` }}
                                   />
                                 </div>
@@ -962,14 +957,7 @@ export function UsersManagementPage({ embedded = false }: UsersManagementPagePro
                                         </div>
                                         <div className="glass-progress-track h-1.5 w-full overflow-hidden">
                                           <div
-                                            className={cn(
-                                              'h-full rounded-full transition-all duration-500',
-                                              pct < 70
-                                                ? 'bg-emerald-500'
-                                                : pct < 90
-                                                  ? 'bg-yellow-500'
-                                                  : 'bg-red-500',
-                                            )}
+                                            className="h-full rounded-full bg-[var(--text-primary)] transition-all duration-500"
                                             style={{ width: `${pct}%` }}
                                           />
                                         </div>

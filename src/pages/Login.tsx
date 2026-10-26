@@ -92,8 +92,8 @@ export function LoginPage() {
 
   if (isChecking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <div className="h-7 w-7 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+      <div className="user-surface flex min-h-svh items-center justify-center">
+        <div className="h-7 w-7 animate-spin rounded-full border-2 border-[color:var(--border-subtle)] border-t-[var(--text-primary)]" />
       </div>
     );
   }

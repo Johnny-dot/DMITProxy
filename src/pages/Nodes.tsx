@@ -80,18 +80,8 @@ const NodeCard = memo(function NodeCard({
     >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-lg',
-              node.status === 'online' ? 'bg-emerald-500/10' : 'bg-red-500/10',
-            )}
-          >
-            <Globe
-              className={cn(
-                'w-5 h-5',
-                node.status === 'online' ? 'text-emerald-500' : 'text-red-500',
-              )}
-            />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-inline)]">
+            <Globe className="h-5 w-5 text-[var(--text-primary)]" />
           </div>
           <div>
             <CardTitle className="text-base">{node.name}</CardTitle>
@@ -122,16 +112,9 @@ const NodeCard = memo(function NodeCard({
               </div>
               <span className="font-medium">{formatTraffic(node.trafficUsed)}</span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-contrast)]">
               <div
-                className={cn(
-                  'h-full rounded-full transition-all',
-                  node.usagePercent < 50
-                    ? 'bg-emerald-500'
-                    : node.usagePercent < 80
-                      ? 'bg-yellow-500'
-                      : 'bg-red-500',
-                )}
+                className="h-full rounded-full bg-[var(--text-primary)] transition-all"
                 style={{ width: `${node.usagePercent}%` }}
               />
             </div>

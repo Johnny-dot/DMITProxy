@@ -82,20 +82,8 @@ export function InboundsPage() {
     return new Date(expiryTime).toLocaleString();
   };
 
-  const getProtocolColor = (protocol: string) => {
-    switch (protocol) {
-      case 'VLESS':
-        return 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20';
-      case 'VMess':
-        return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-      case 'Trojan':
-        return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-      case 'Shadowsocks':
-        return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
-      default:
-        return 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20';
-    }
-  };
+  const getProtocolColor = (_protocol: string) =>
+    'border-[var(--border-subtle)] bg-[var(--surface-inline)] text-[var(--text-primary)]';
 
   const filteredInbounds = inbounds.filter(
     (inbound) =>
@@ -310,12 +298,9 @@ export function InboundsPage() {
                             <span>{formatTraffic(used)}</span>
                             <span>{formatTraffic(total)}</span>
                           </div>
-                          <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
+                          <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--surface-contrast)]">
                             <div
-                              className={cn(
-                                'h-full rounded-full',
-                                total > 0 && used / total > 0.9 ? 'bg-red-500' : 'bg-indigo-500',
-                              )}
+                              className="h-full rounded-full bg-[var(--text-primary)]"
                               style={{
                                 width: total > 0 ? `${(used / total) * 100}%` : '0%',
                               }}

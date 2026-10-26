@@ -388,14 +388,14 @@ function AdminProfileView() {
       <Card className="lg:col-span-2">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-indigo-500" />
+            <User className="h-5 w-5 text-[var(--text-primary)]" />
             <CardTitle>{t('profile.adminAccount')}</CardTitle>
           </div>
           <CardDescription>{t('profile.accountDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-semibold">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-inline)] font-semibold text-[var(--text-primary)]">
               {displayName.slice(0, 1).toUpperCase()}
             </div>
             <div className="space-y-1">

@@ -109,14 +109,7 @@ export function ServerStatusCard({
               </div>
               <div className="glass-progress-track h-2 w-full overflow-hidden">
                 <div
-                  className={cn(
-                    'h-full rounded-full transition-all',
-                    (serverStatus?.cpu ?? 0) < 50
-                      ? 'bg-emerald-500'
-                      : (serverStatus?.cpu ?? 0) < 80
-                        ? 'bg-amber-500'
-                        : 'bg-red-500',
-                  )}
+                  className="h-full rounded-full bg-[var(--text-primary)] transition-all"
                   style={{ width: `${serverStatus?.cpu ?? 0}%` }}
                 />
               </div>
@@ -137,7 +130,7 @@ export function ServerStatusCard({
               </div>
               <div className="glass-progress-track h-2 w-full overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-indigo-500 transition-all"
+                  className="h-full rounded-full bg-[var(--text-primary)] transition-all"
                   style={{
                     width: serverStatus
                       ? `${usagePercent(serverStatus.mem.current, serverStatus.mem.total)}%`
