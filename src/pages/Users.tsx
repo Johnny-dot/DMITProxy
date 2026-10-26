@@ -16,6 +16,7 @@ import { Skeleton } from '@/src/components/ui/Skeleton';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { Modal } from '@/src/components/ui/Modal';
 import { useToast } from '@/src/components/ui/Toast';
+import { UsageMeter } from '@/src/components/ui/UsageMeter';
 import QRCode from 'qrcode';
 import {
   Activity,
@@ -588,28 +589,16 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                         {user.subId || t('users.noSubId')}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1.5 min-w-[140px]">
-                          <div className="flex justify-between text-[10px] text-[var(--text-secondary)]">
-                            <span>{formatTraffic(trafficUsed)}</span>
-                            <span>
-                              {user.totalGB > 0
-                                ? formatTraffic(user.totalGB)
-                                : t('common.unlimited')}
-                            </span>
-                          </div>
-                          <div className="glass-progress-track h-1.5 w-full overflow-hidden">
-                            <div
-                              className={cn(
-                                'h-full rounded-full transition-all duration-500',
-                                usagePercent < 70
-                                  ? 'bg-emerald-500'
-                                  : usagePercent < 90
-                                    ? 'bg-yellow-500'
-                                    : 'bg-red-500',
-                              )}
-                              style={{ width: `${Math.min(usagePercent, 100)}%` }}
-                            />
-                          </div>
+                        <div className="min-w-[180px] max-w-[260px]">
+                          <UsageMeter
+                            percent={user.totalGB > 0 ? Math.min(usagePercent, 100) : null}
+                            widthPercent={user.totalGB > 0 ? Math.min(usagePercent, 100) : 0}
+                            value={
+                              user.totalGB > 0
+                                ? `${formatTraffic(trafficUsed)} / ${formatTraffic(user.totalGB)}`
+                                : `${formatTraffic(trafficUsed)} · ${t('common.unlimited')}`
+                            }
+                          />
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">

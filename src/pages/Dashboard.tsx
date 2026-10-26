@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Users, Activity, Zap, Cpu, ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getInbounds, getServerStatus, Inbound, ServerStatus } from '@/src/api/client';
 import { Skeleton } from '@/src/components/ui/Skeleton';
+import { QuietStat, shareWidth, UsageMeter } from '@/src/components/ui/UsageMeter';
 import {
   flattenInboundClients,
   formatTraffic,
@@ -149,33 +148,34 @@ export function Dashboard() {
       : inbounds.reduce((sum, inbound) => sum + inboundClientTraffic(inbound).total, 0);
   }, [inbounds, usage]);
 
+  const maxInboundSample = useMemo(
+    () => inboundTrafficData.reduce((max, row) => Math.max(max, row.downloadMB, row.uploadMB), 0),
+    [inboundTrafficData],
+  );
+
   const stats = [
     {
       key: 'totalClients',
       title: t('dashboard.totalClients'),
       value: String(clients.length),
-      icon: Users,
       trend: t('dashboard.inboundsTrend', { count: inbounds.length }),
     },
     {
       key: 'activeClients',
       title: t('dashboard.activeClients'),
       value: String(activeClients.length),
-      icon: Activity,
       trend: t('dashboard.trafficDetected'),
     },
     {
       key: 'inboundTraffic',
       title: t('dashboard.inboundTraffic'),
       value: formatTraffic(totalInboundTraffic),
-      icon: Zap,
       trend: t('dashboard.uploadDownload'),
     },
     {
       key: 'serverLoad',
       title: t('dashboard.serverLoad'),
       value: serverStatus ? `${serverStatus.cpu.toFixed(1)}%` : '--',
-      icon: Cpu,
       trend: serverStatus
         ? t('dashboard.cores', { count: serverStatus.cpuCores })
         : t('common.unavailable'),
@@ -192,35 +192,23 @@ export function Dashboard() {
         </p>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.key}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="flex items-center gap-1 text-sm font-medium text-[var(--text-secondary)]">
-                <span>{stat.title}</span>
-                <InfoTooltip content={t(`dashboard.help.${stat.key}`)} />
-              </CardTitle>
-              <div className="glass-pill flex h-10 w-10 items-center justify-center border border-[var(--border-subtle)] bg-[var(--surface-inline)] text-[var(--text-primary)]">
-                <stat.icon className="h-4 w-4" />
+          <div key={stat.key}>
+            {isLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-4 w-20" />
               </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-8 w-24" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
-              ) : (
-                <>
-                  <div className="text-3xl font-semibold tracking-tight">{stat.value}</div>
-                  <p className="mt-2 flex items-center gap-1 text-xs text-[var(--text-secondary)]">
-                    <ArrowUpRight className="w-3 h-3" />
-                    {stat.trend}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+            ) : (
+              <QuietStat
+                value={stat.value}
+                label={stat.title}
+                hint={<InfoTooltip content={t(`dashboard.help.${stat.key}`)} />}
+                extra={stat.trend}
+              />
+            )}
+          </div>
         ))}
       </div>
 
@@ -232,62 +220,31 @@ export function Dashboard() {
               <InfoTooltip content={t('dashboard.help.inboundTrafficOverview')} />
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent>
             {isLoading ? (
-              <Skeleton className="w-full h-full" />
+              <Skeleton className="h-40 w-full" />
             ) : inboundTrafficData.length === 0 ? (
-              <div className="flex h-full items-center justify-center gap-2 text-sm text-[var(--text-secondary)]">
-                <ShieldCheck className="w-4 h-4" />
+              <p className="text-sm text-[var(--text-secondary)]">
                 {t('dashboard.noInboundTrafficData')}
-              </div>
+              </p>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={inboundTrafficData}
-                  layout="vertical"
-                  margin={{ left: 8, right: 16, top: 4, bottom: 4 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="var(--border-subtle)"
-                    horizontal={false}
-                  />
-                  <XAxis
-                    type="number"
-                    stroke="var(--text-tertiary)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => `${v}MB`}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    stroke="var(--text-tertiary)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    width={120}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--surface-card-strong)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: '18px',
-                      boxShadow: 'var(--shadow-card)',
-                      backdropFilter: 'blur(20px) saturate(180%)',
-                    }}
-                    itemStyle={{ fontSize: '12px', color: 'var(--text-secondary)' }}
-                    labelStyle={{ color: 'var(--text-primary)' }}
-                    formatter={(value, name) => [
-                      `${value} MB`,
-                      name === 'downloadMB' ? t('dashboard.download') : t('dashboard.upload'),
-                    ]}
-                  />
-                  <Bar dataKey="downloadMB" stackId="io" fill="var(--success)" />
-                  <Bar dataKey="uploadMB" stackId="io" fill="var(--accent)" radius={[0, 6, 6, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="usage-rank-list">
+                {inboundTrafficData.map((row) => (
+                  <div key={row.name}>
+                    <p className="usage-rank-label">{row.name}</p>
+                    <div className="usage-rank-pair">
+                      <UsageMeter
+                        widthPercent={shareWidth(row.downloadMB, maxInboundSample)}
+                        value={`${t('dashboard.download')} ${row.downloadMB} MB`}
+                      />
+                      <UsageMeter
+                        widthPercent={shareWidth(row.uploadMB, maxInboundSample)}
+                        value={`${t('dashboard.upload')} ${row.uploadMB} MB`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>

@@ -19,6 +19,7 @@ import { useI18n } from '@/src/context/I18nContext';
 import { Button } from '@/src/components/ui/Button';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
 import { Skeleton } from '@/src/components/ui/Skeleton';
+import { UsageMeter } from '@/src/components/ui/UsageMeter';
 import { cn } from '@/src/utils/cn';
 import { formatDateTime } from '@/src/utils/dateTime';
 import { formatTraffic } from '@/src/utils/xuiClients';
@@ -517,12 +518,7 @@ function MySubscriptionHero({
               </div>
             </div>
             {!unlimited ? (
-              <div
-                className={cn('user-meter', usedPercent >= 85 && 'user-meter-warn')}
-                aria-hidden="true"
-              >
-                <span style={{ width: `${usedPercent}%` }} />
-              </div>
+              <UsageMeter percent={usedPercent} value={`${Math.round(usedPercent)}%`} />
             ) : null}
             <p className="text-sm leading-6 text-[var(--text-secondary)]">
               {isZh ? '请勿转发订阅链接。' : 'Do not share this subscription link.'}
@@ -613,23 +609,10 @@ function SubscriptionNodeCards({ url, isZh }: { url: string; isZh: boolean }) {
               </p>
             </div>
             {card.usedLabel && card.limitLabel ? (
-              <>
-                <p className="user-num text-base font-semibold text-[var(--text-primary)]">
-                  {isZh
-                    ? `已用流量 ${card.usedLabel} / ${card.limitLabel}`
-                    : `Used traffic ${card.usedLabel} / ${card.limitLabel}`}
-                </p>
-                <div
-                  className={cn('user-meter', (card.usedRatio ?? 0) >= 0.85 && 'user-meter-warn')}
-                  aria-hidden="true"
-                >
-                  <span
-                    style={{
-                      width: `${Math.max(8, Math.round((card.usedRatio ?? 0) * 100))}%`,
-                    }}
-                  />
-                </div>
-              </>
+              <UsageMeter
+                percent={(card.usedRatio ?? 0) * 100}
+                value={`${card.usedLabel} / ${card.limitLabel}`}
+              />
             ) : card.limitLabel ? (
               <p className="text-sm text-[var(--text-secondary)]">
                 {isZh ? `每月 ${card.limitLabel}` : `${card.limitLabel} / month`}

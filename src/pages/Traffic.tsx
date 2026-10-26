@@ -1,33 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
 import { Skeleton } from '@/src/components/ui/Skeleton';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+import { QuietStat, shareWidth, UsageMeter } from '@/src/components/ui/UsageMeter';
 import { getInbounds, Inbound } from '@/src/api/client';
 import { flattenInboundClients, formatTraffic, inboundClientTraffic } from '@/src/utils/xuiClients';
 import { useToast } from '@/src/components/ui/Toast';
 import { useI18n } from '@/src/context/I18nContext';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
-
-const COLORS = [
-  'var(--text-primary)',
-  'var(--text-secondary)',
-  'var(--text-tertiary)',
-  'var(--border-strong)',
-  '#8a8a8a',
-  '#cfcfcf',
-  '#5c5c5c',
-];
 
 export function TrafficPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +72,33 @@ export function TrafficPage() {
     [clients.length, totalTraffic],
   );
 
+  const clientRankRows = useMemo(() => {
+    const max = userRanking.reduce((peak, row) => Math.max(peak, row.traffic), 0);
+    return userRanking.map((row) => ({
+      key: row.name,
+      label: row.name,
+      width: shareWidth(row.traffic, max),
+      value: `${row.traffic} GB`,
+    }));
+  }, [userRanking]);
+
+  const protocolRankRows = useMemo(() => {
+    const max = protocolUsage.reduce((peak, row) => Math.max(peak, row.value), 0);
+    return [...protocolUsage]
+      .sort((a, b) => b.value - a.value)
+      .map((row) => ({
+        key: row.name,
+        label: row.name,
+        width: shareWidth(row.value, max),
+        value: row.display,
+      }));
+  }, [protocolUsage]);
+
+  const inboundScale = useMemo(
+    () => inboundUsage.reduce((peak, row) => Math.max(peak, row.downloadGB, row.uploadGB), 0),
+    [inboundUsage],
+  );
+
   const summaryCards = [
     {
       key: 'totalTraffic',
@@ -135,23 +141,19 @@ export function TrafficPage() {
         <p className="text-xs text-zinc-500">{t('traffic.note')}</p>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
         {summaryCards.map((card) => (
-          <Card key={card.key}>
-            <CardContent className="py-4">
-              {isLoading ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (
-                <div className="space-y-1">
-                  <p className="inline-flex items-center gap-1 text-zinc-500 text-xs">
-                    <span>{card.label}</span>
-                    <InfoTooltip content={card.hint} />
-                  </p>
-                  <p className="text-lg font-semibold">{card.value}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div key={card.key}>
+            {isLoading ? (
+              <Skeleton className="h-14 w-full" />
+            ) : (
+              <QuietStat
+                value={card.value}
+                label={card.label}
+                hint={<InfoTooltip content={card.hint} />}
+              />
+            )}
+          </div>
         ))}
       </div>
 
@@ -163,45 +165,11 @@ export function TrafficPage() {
               <InfoTooltip content={t('traffic.help.topClients')} />
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px]">
+          <CardContent>
             {isLoading ? (
-              <Skeleton className="w-full h-full" />
+              <Skeleton className="h-40 w-full" />
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={userRanking} layout="vertical" margin={{ left: 50, right: 12 }}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="var(--border-subtle)"
-                    horizontal={false}
-                  />
-                  <XAxis
-                    type="number"
-                    stroke="var(--text-tertiary)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    stroke="var(--text-tertiary)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    width={120}
-                  />
-                  <Tooltip
-                    cursor={{ fill: 'var(--border-subtle)' }}
-                    contentStyle={{
-                      backgroundColor: 'var(--surface-card-strong)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: '8px',
-                    }}
-                    formatter={(value) => [`${value} GB`, t('traffic.traffic')]}
-                  />
-                  <Bar dataKey="traffic" fill="var(--accent)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <RankedMeters rows={clientRankRows} />
             )}
           </CardContent>
         </Card>
@@ -213,45 +181,11 @@ export function TrafficPage() {
               <InfoTooltip content={t('traffic.help.protocolDist')} />
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px] flex items-center justify-center relative">
+          <CardContent>
             {isLoading ? (
-              <Skeleton className="w-full h-full rounded-full" />
+              <Skeleton className="h-40 w-full" />
             ) : (
-              <>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={protocolUsage}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={80}
-                      outerRadius={120}
-                      paddingAngle={4}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {protocolUsage.map((entry, index) => (
-                        <Cell key={`protocol-${entry.name}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(_value, _name, item) => {
-                        const payload = item?.payload as { display?: string; name?: string };
-                        return [payload.display ?? '0 B', payload.name ?? t('traffic.protocol')];
-                      }}
-                      contentStyle={{
-                        backgroundColor: 'var(--surface-card-strong)',
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: '8px',
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold">{formatTraffic(totalTraffic)}</span>
-                  <span className="text-xs text-zinc-500">{t('traffic.totalTraffic')}</span>
-                </div>
-              </>
+              <RankedMeters rows={protocolRankRows} />
             )}
           </CardContent>
         </Card>
@@ -264,49 +198,48 @@ export function TrafficPage() {
             <InfoTooltip content={t('traffic.help.inboundUploadDownload')} />
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-[320px]">
+        <CardContent>
           {isLoading ? (
-            <Skeleton className="w-full h-full" />
+            <Skeleton className="h-40 w-full" />
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={inboundUsage}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--border-subtle)"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="name"
-                  stroke="var(--text-tertiary)"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="var(--text-tertiary)"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip
-                  cursor={{ fill: 'var(--border-subtle)' }}
-                  formatter={(value, name) => [
-                    `${value} GB`,
-                    name === 'downloadGB' ? t('traffic.download') : t('traffic.upload'),
-                  ]}
-                  contentStyle={{
-                    backgroundColor: 'var(--surface-card-strong)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Bar dataKey="downloadGB" fill="var(--success)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="uploadGB" fill="var(--accent)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="usage-rank-list">
+              {inboundUsage.map((row) => (
+                <div key={row.name}>
+                  <p className="usage-rank-label">{row.name}</p>
+                  <div className="usage-rank-pair">
+                    <UsageMeter
+                      widthPercent={shareWidth(row.downloadGB, inboundScale)}
+                      value={`${t('traffic.download')} ${row.downloadGB} GB`}
+                    />
+                    <UsageMeter
+                      widthPercent={shareWidth(row.uploadGB, inboundScale)}
+                      value={`${t('traffic.upload')} ${row.uploadGB} GB`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function RankedMeters({
+  rows,
+}: {
+  rows: Array<{ key: string; label: string; width: number; value: string }>;
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="usage-rank-list">
+      {rows.map((row) => (
+        <div key={row.key}>
+          <p className="usage-rank-label">{row.label}</p>
+          <UsageMeter widthPercent={row.width} value={row.value} />
+        </div>
+      ))}
     </div>
   );
 }

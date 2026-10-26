@@ -31,6 +31,7 @@ import {
 } from '@/src/api/admin';
 import { cn } from '@/src/utils/cn';
 import { resolveInboundMachineUsage } from '@/src/utils/xuiClients';
+import { UsageMeter } from '@/src/components/ui/UsageMeter';
 import { useMachineUsage } from '@/src/hooks/useMachineUsage';
 import { useI18n } from '@/src/context/I18nContext';
 import { InfoTooltip } from '@/src/components/ui/InfoTooltip';
@@ -293,19 +294,16 @@ export function InboundsPage() {
                         {inbound.port}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1 min-w-[100px]">
-                          <div className="flex justify-between text-[10px] text-zinc-500">
-                            <span>{formatTraffic(used)}</span>
-                            <span>{formatTraffic(total)}</span>
-                          </div>
-                          <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--surface-contrast)]">
-                            <div
-                              className="h-full rounded-full bg-[var(--text-primary)]"
-                              style={{
-                                width: total > 0 ? `${(used / total) * 100}%` : '0%',
-                              }}
-                            />
-                          </div>
+                        <div className="min-w-[160px] max-w-[240px]">
+                          <UsageMeter
+                            percent={total > 0 ? Math.min((used / total) * 100, 100) : null}
+                            widthPercent={total > 0 ? Math.min((used / total) * 100, 100) : 0}
+                            value={
+                              total > 0
+                                ? `${formatTraffic(used)} / ${formatTraffic(total)}`
+                                : formatTraffic(used)
+                            }
+                          />
                         </div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">{clientCount}</TableCell>

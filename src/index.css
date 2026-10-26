@@ -1336,6 +1336,120 @@ html[data-theme='dark'] .user-surface .user-meter-warn > span {
   border-radius: 10px;
 }
 
+.usage-meter {
+  min-width: 0;
+}
+
+.usage-meter-label,
+.usage-rank-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.usage-rank-label {
+  color: var(--text-primary);
+}
+
+.usage-meter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.usage-meter-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 2.5rem;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eee;
+}
+
+html[data-theme='dark'] .usage-meter-track {
+  background: #222;
+}
+
+.usage-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #2a2a2a;
+}
+
+html[data-theme='dark'] .usage-meter-fill {
+  background: #bdbdbd;
+}
+
+.usage-meter-fill.is-warn,
+html[data-theme='dark'] .usage-meter-fill.is-warn {
+  background: #d97706;
+}
+
+.usage-meter-fill.is-danger,
+html[data-theme='dark'] .usage-meter-fill.is-danger {
+  background: #dc2626;
+}
+
+.usage-meter-value {
+  flex: none;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}
+
+.usage-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+
+.usage-rank-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.quiet-stat-value {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+
+.quiet-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}
+
+.quiet-stat-extra {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim-toast,
   .anim-toast[data-exiting='true'],

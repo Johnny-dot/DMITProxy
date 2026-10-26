@@ -15,6 +15,7 @@ import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { Skeleton } from '@/src/components/ui/Skeleton';
 import { useToast } from '@/src/components/ui/Toast';
+import { UsageMeter } from '@/src/components/ui/UsageMeter';
 import { cn } from '@/src/utils/cn';
 import {
   getAdminDmitTraffic,
@@ -36,12 +37,6 @@ function relativeTime(ts: number): string {
   if (diff < 3600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
   if (diff < 86400_000) return `${Math.floor(diff / 3600_000)} 小时前`;
   return `${Math.floor(diff / 86400_000)} 天前`;
-}
-
-/** Threshold colors for the usage gauge — used% rising toward the cap is "worse". */
-function gaugeTone(pct: number) {
-  if (pct < 85) return { bar: 'bg-[var(--accent)]', text: 'text-[var(--text-primary)]' };
-  return { bar: 'bg-[var(--text-primary)]', text: 'text-[var(--text-primary)]' };
 }
 
 export function DmitSyncPage() {
@@ -161,7 +156,6 @@ export function DmitSyncPage() {
   const limitMb = data?.bwlimit_mb ?? 0;
   const remainingMb = Math.max(0, limitMb - usedMb);
   const pct = limitMb > 0 ? Math.min(100, (usedMb / limitMb) * 100) : 0;
-  const tone = gaugeTone(pct);
 
   return (
     <div className="content-shell-wide w-full min-w-0 space-y-6 px-4 pb-8 md:px-6 xl:px-8">
@@ -222,37 +216,19 @@ export function DmitSyncPage() {
             </div>
           ) : (
             <div className="space-y-5">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                    机器余量
-                  </p>
-                  <p className="mt-1 font-mono text-4xl font-semibold tracking-tight text-[var(--text-primary)] md:text-5xl">
-                    {(remainingMb / MB_PER_GB).toFixed(2)}
-                    <span className="ml-1.5 text-lg font-normal text-[var(--text-tertiary)] md:text-xl">
-                      / {formatGB(limitMb)}
-                    </span>
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className={cn('font-mono text-3xl font-semibold', tone.text)}>
-                    {pct.toFixed(1)}%
-                  </p>
-                  <p className="text-[11px] uppercase tracking-wider text-[var(--text-tertiary)]">
-                    已用占比
-                  </p>
-                </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                  机器余量
+                </p>
+                <p className="mt-1 font-mono text-4xl font-semibold tracking-tight text-[var(--text-primary)] md:text-5xl">
+                  {(remainingMb / MB_PER_GB).toFixed(2)}
+                  <span className="ml-1.5 text-lg font-normal text-[var(--text-tertiary)] md:text-xl">
+                    / {formatGB(limitMb)}
+                  </span>
+                </p>
               </div>
 
-              <div className="glass-progress-track h-3 w-full overflow-hidden">
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-[width] duration-700 ease-out',
-                    tone.bar,
-                  )}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
+              <UsageMeter percent={limitMb > 0 ? pct : null} value={`${pct.toFixed(1)}%`} />
 
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 <StatChip

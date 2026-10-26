@@ -25,6 +25,7 @@ import {
   getUnlockStatusMeta,
 } from '@/src/utils/nodeQuality';
 import { NodeQualityCard } from './portal/NodeQualityCard';
+import { UsageMeter } from '@/src/components/ui/UsageMeter';
 
 type NodeCardData = {
   id: number;
@@ -104,26 +105,21 @@ const NodeCard = memo(function NodeCard({
             <span className="font-medium">{node.clientCount}</span>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2 text-zinc-400">
-                <Zap className="w-4 h-4" />
+          <UsageMeter
+            label={
+              <span className="inline-flex items-center gap-2">
+                <Zap className="h-3.5 w-3.5" />
                 {t('nodes.traffic')}
-              </div>
-              <span className="font-medium">{formatTraffic(node.trafficUsed)}</span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-contrast)]">
-              <div
-                className="h-full rounded-full bg-[var(--text-primary)] transition-all"
-                style={{ width: `${node.usagePercent}%` }}
-              />
-            </div>
-            <p className="text-xs text-zinc-500">
-              {node.trafficLimit > 0
-                ? t('nodes.limit', { value: formatTraffic(node.trafficLimit) })
-                : t('nodes.unlimitedTraffic')}
-            </p>
-          </div>
+              </span>
+            }
+            percent={node.trafficLimit > 0 ? node.usagePercent : null}
+            widthPercent={node.trafficLimit > 0 ? node.usagePercent : 0}
+            value={
+              node.trafficLimit > 0
+                ? `${formatTraffic(node.trafficUsed)} / ${formatTraffic(node.trafficLimit)}`
+                : `${formatTraffic(node.trafficUsed)} · ${t('nodes.unlimitedTraffic')}`
+            }
+          />
         </div>
 
         {compact ? (
