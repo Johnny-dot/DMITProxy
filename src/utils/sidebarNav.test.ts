@@ -2,16 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { resolveSidebarNav } from './sidebarNav';
 
 describe('resolveSidebarNav', () => {
-  it('treats the subscription import page as 使用订阅, not 概览', () => {
-    expect(resolveSidebarNav('/my-subscription', '')).toBe('user-subscription');
-    expect(resolveSidebarNav('/my-subscription', '?section=home')).toBe('user-subscription');
-    expect(resolveSidebarNav('/my-subscription/', '')).toBe('user-subscription');
+  it('treats the subscription home as 概览', () => {
+    expect(resolveSidebarNav('/my-subscription', '')).toBe('user-overview');
+    expect(resolveSidebarNav('/my-subscription', '?section=home')).toBe('user-overview');
+    expect(resolveSidebarNav('/my-subscription/', '')).toBe('user-overview');
   });
 
   it('keeps the other user pages on their own rows', () => {
-    expect(resolveSidebarNav('/my-subscription', '?section=setup')).toBe('user-overview');
-    expect(resolveSidebarNav('/my-subscription', '?section=clients')).toBe('user-overview');
-    expect(resolveSidebarNav('/my-subscription', '?section=subscription')).toBe('user-overview');
+    expect(resolveSidebarNav('/my-subscription', '?section=setup')).toBe('user-subscription');
+    expect(resolveSidebarNav('/my-subscription', '?section=clients')).toBe('user-subscription');
+    expect(resolveSidebarNav('/my-subscription', '?section=subscription')).toBe(
+      'user-subscription',
+    );
     expect(resolveSidebarNav('/my-subscription', '?section=help')).toBe('user-help');
     expect(resolveSidebarNav('/my-subscription', '?section=community')).toBe('user-help');
     expect(resolveSidebarNav('/my-subscription', '?section=support')).toBe('user-help');

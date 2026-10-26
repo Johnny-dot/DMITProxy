@@ -8,8 +8,8 @@ describe('getSidebarSubtitle', () => {
   });
 
   it('follows the user portal section everywhere else', () => {
-    expect(getSidebarSubtitle('/my-subscription', 'home', true)).toBe('使用订阅');
-    expect(getSidebarSubtitle('/my-subscription', 'setup', true)).toBe('概览');
+    expect(getSidebarSubtitle('/my-subscription', 'home', true)).toBe('概览');
+    expect(getSidebarSubtitle('/my-subscription', 'setup', true)).toBe('使用订阅');
     expect(getSidebarSubtitle('/my-subscription', 'help', false)).toBe('Help');
   });
 });

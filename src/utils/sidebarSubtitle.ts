@@ -6,7 +6,7 @@ export function getSidebarSubtitle(
   isZh: boolean,
 ): string {
   if (pathname === '/profile') return isZh ? '个人资料' : 'Profile';
+  if (section === 'setup') return isZh ? '使用订阅' : 'Set up';
   if (section === 'help') return isZh ? '帮助' : 'Help';
-  if (section === 'setup') return isZh ? '概览' : 'Overview';
-  return isZh ? '使用订阅' : 'Set up';
+  return isZh ? '概览' : 'Overview';
 }

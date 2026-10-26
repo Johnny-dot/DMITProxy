@@ -28,8 +28,8 @@ function normalizePath(pathname: string): string {
 
 /**
  * One sidebar row per route.
- * `/my-subscription` is the import page, so it belongs to 使用订阅.
- * The client guide (`section=setup`) is the separate 概览 row.
+ * `/my-subscription` is the home page, so it belongs to 概览.
+ * The client guide (`section=setup`) is 使用订阅.
  */
 export function resolveSidebarNav(pathname: string, search = ''): SidebarNavId | null {
   const path = normalizePath(pathname);
@@ -39,8 +39,8 @@ export function resolveSidebarNav(pathname: string, search = ''): SidebarNavId |
     const query = search.startsWith('?') ? search.slice(1) : search;
     const tab = resolveUserPortalSection(new URLSearchParams(query).get('section')).tab;
     if (tab === 'help') return 'user-help';
-    if (tab === 'setup') return 'user-overview';
-    return 'user-subscription';
+    if (tab === 'setup') return 'user-subscription';
+    return 'user-overview';
   }
 
   for (const route of ADMIN_ROUTES) {

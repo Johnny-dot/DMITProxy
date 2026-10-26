@@ -114,14 +114,14 @@ export function Sidebar({
       id: 'user-overview',
       icon: LayoutDashboard,
       label: overviewLabel,
-      to: '/my-subscription?section=setup',
+      to: '/my-subscription?section=home',
       testId: 'sidebar-user-overview',
     },
     {
       id: 'user-subscription',
       icon: LinkIcon,
       label: setupLabel,
-      to: '/my-subscription?section=home',
+      to: '/my-subscription?section=setup',
       testId: 'sidebar-user-setup',
     },
     {
