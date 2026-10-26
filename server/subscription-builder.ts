@@ -20,6 +20,12 @@ import {
   getClientTrafficBreakdown,
   getInboundClientTrafficBreakdown,
 } from './subscription-usage.js';
+import {
+  findSharedNodeUsageLabel,
+  loadSharedNodeUsageEntries,
+  sanitizeSharedNodeName,
+  type SharedNodeUsageEntry,
+} from './shared-node-usage.js';
 
 interface StreamSettings {
   network?: string;
@@ -308,16 +314,6 @@ function extractLinkName(link: string): string {
   }
 }
 
-function sanitizeSharedNodeName(name: string): string {
-  return name
-    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, '')
-    .replace(/\p{Extended_Pictographic}/gu, '')
-    .replace(/[｜|·•]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 24);
-}
-
 export function buildUserNodeName(client: Record<string, unknown>, inbound: XuiInbound): string {
   const raw = String(client.email ?? inbound.remark ?? '默认节点').trim() || '默认节点';
   const compact = (raw.includes('@') ? raw.split('@')[0] : raw).replace(/\s+/g, ' ').trim();
@@ -347,11 +343,16 @@ export function getExtraSubscriptionLinks(
     .filter((link) => link && !link.startsWith('#'));
 }
 
-export function normalizeExtraSubscriptionLinks(links: string[]): string[] {
+export function normalizeExtraSubscriptionLinks(
+  links: string[],
+  usageEntries: SharedNodeUsageEntry[] = [],
+): string[] {
   return links.map((link, index) => {
     const originalName = sanitizeSharedNodeName(extractLinkName(link));
     const suffix = originalName || String(index + 1).padStart(2, '0');
-    return replaceLinkName(link, `共享节点｜${suffix}`);
+    const usageLabel = findSharedNodeUsageLabel(usageEntries, { name: originalName, index });
+    const displayName = usageLabel ? `共享节点｜${suffix}｜${usageLabel}` : `共享节点｜${suffix}`;
+    return replaceLinkName(link, displayName);
   });
 }
 
@@ -488,7 +489,9 @@ export async function buildSubscriptionPayload(subId: string): Promise<string> {
     throw new XuiAdminError(`No active client found for subscription ID: ${subId}`);
   }
 
-  links.push(...normalizeExtraSubscriptionLinks(getExtraSubscriptionLinks()));
+  links.push(
+    ...normalizeExtraSubscriptionLinks(getExtraSubscriptionLinks(), loadSharedNodeUsageEntries()),
+  );
 
   return links.join('\n');
 }

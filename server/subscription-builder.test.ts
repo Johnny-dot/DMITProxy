@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { parseSharedNodeUsage } from './shared-node-usage.js';
 import {
   buildDecoratedSubscriptionLinks,
   buildUserNodeName,
@@ -80,6 +81,19 @@ describe('normalizeExtraSubscriptionLinks', () => {
     ).toEqual([
       'vless://first@example.com:443#%E5%85%B1%E4%BA%AB%E8%8A%82%E7%82%B9%EF%BD%9C%E6%97%A5%E6%9C%AC%20IEPL%2001',
       'trojan://second@example.com:443#%E5%85%B1%E4%BA%AB%E8%8A%82%E7%82%B9%EF%BD%9C02',
+    ]);
+  });
+
+  it('appends live shared-node usage to the display name', () => {
+    const usage = parseSharedNodeUsage(
+      JSON.stringify({
+        nodes: [{ name: '日本 IEPL 01', usedBytes: 20 * 1024 ** 3, totalBytes: 100 * 1024 ** 3 }],
+      }),
+    );
+    expect(
+      normalizeExtraSubscriptionLinks(['vless://first@example.com:443#日本 IEPL 01'], usage),
+    ).toEqual([
+      'vless://first@example.com:443#%E5%85%B1%E4%BA%AB%E8%8A%82%E7%82%B9%EF%BD%9C%E6%97%A5%E6%9C%AC%20IEPL%2001%EF%BD%9C%E5%89%A980%2F100G',
     ]);
   });
 });
