@@ -47,7 +47,7 @@ function ResourceCopyRow({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">{label}</p>
+          <p className="text-[11px] text-zinc-500">{label}</p>
           <p className="mt-2 break-all font-mono text-sm leading-6 text-zinc-200">{value}</p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-3 py-1.5 text-[13px] text-[var(--text-primary)]">
@@ -283,7 +283,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
 
                           {credentialNote ? (
                             <div className="surface-inline px-4 py-3">
-                              <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                              <p className="text-[11px] text-zinc-500">
                                 {isZh ? '补充说明' : 'Extra note'}
                               </p>
                               <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-zinc-300">
@@ -309,7 +309,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
 
                           {inviteNote ? (
                             <div className="surface-inline px-4 py-3">
-                              <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                              <p className="text-[11px] text-zinc-500">
                                 {isZh ? '补充说明' : 'Extra note'}
                               </p>
                               <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-zinc-300">

@@ -24,9 +24,9 @@ export function Layout() {
   return (
     <div className="user-surface app-shell relative min-h-dvh text-[var(--text-primary)]">
       <div className="pointer-events-none absolute inset-0 opacity-35">
-        <div className="absolute left-[-9rem] top-[-7rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(255,255,255,0.74)_0%,_rgba(255,255,255,0)_68%)] blur-2xl" />
-        <div className="absolute right-[-10rem] top-[4rem] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,_rgba(111,154,255,0.32)_0%,_rgba(111,154,255,0)_68%)] blur-3xl" />
-        <div className="absolute bottom-[-10rem] left-[18%] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(76,205,186,0.24)_0%,_rgba(76,205,186,0)_70%)] blur-3xl" />
+        <div className="absolute left-[-9rem] top-[-7rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,var(--orb-white)_0%,transparent_68%)] blur-2xl" />
+        <div className="absolute right-[-10rem] top-[4rem] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,var(--orb-blue)_0%,transparent_68%)] blur-3xl" />
+        <div className="absolute bottom-[-10rem] left-[18%] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,var(--orb-teal)_0%,transparent_70%)] blur-3xl" />
       </div>
 
       <div className="app-frame relative z-10 flex min-h-dvh items-stretch">

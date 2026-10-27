@@ -67,7 +67,7 @@ export function GuideStepCard({ step, index }: { step: GuideStep; index: number 
   return (
     <article className={cn('rounded-[28px] border p-5', toneClasses.border)}>
       <div className="flex items-center justify-between gap-3">
-        <span className="rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-zinc-400">
+        <span className="rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-1 text-[11px] text-zinc-400">
           {`Step ${index + 1}`}
         </span>
         <span className={cn('rounded-full border px-3 py-1 text-[11px]', toneClasses.badge)}>
@@ -152,7 +152,7 @@ export function GuideScreenshotStepCard({ step, index }: { step: GuideStep; inde
     <article className={cn('rounded-[28px] border p-4 md:p-5', toneClasses.border)}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-zinc-400">
+          <span className="rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-1 text-[11px] text-zinc-400">
             {`Step ${index + 1}`}
           </span>
           <span className={cn('rounded-full border px-3 py-1 text-[11px]', toneClasses.badge)}>
@@ -201,7 +201,7 @@ export function GuideScreenshotStepCard({ step, index }: { step: GuideStep; inde
                   {highlights.map((highlight, highlightIndex) => (
                     <div
                       key={`${step.screenshot?.src}-${highlightIndex}`}
-                      className="absolute rounded-[16px] border-2 border-red-500/95 bg-red-500/10 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_16px_40px_rgba(220,38,38,0.18)]"
+                      className="absolute rounded-[16px] border-2 border-red-500/95 bg-red-500/10 shadow-[var(--shadow-highlight)]"
                       style={{
                         left: `${highlight.x}%`,
                         top: `${highlight.y}%`,
@@ -542,7 +542,12 @@ export function QrCodeCanvas({
   if (plain) {
     return (
       <div className="user-qr-plain">
-        <canvas ref={canvasRef} className="block" />
+        <canvas
+          ref={canvasRef}
+          className="block"
+          role="img"
+          aria-label={isZh ? '订阅二维码' : 'Subscription QR code'}
+        />
       </div>
     );
   }
@@ -550,7 +555,12 @@ export function QrCodeCanvas({
   return (
     <div className="flex justify-start pt-2">
       <div className="surface-panel overflow-hidden rounded-[22px] p-2">
-        <canvas ref={canvasRef} className="block" />
+        <canvas
+          ref={canvasRef}
+          className="block"
+          role="img"
+          aria-label={isZh ? '订阅二维码' : 'Subscription QR code'}
+        />
       </div>
     </div>
   );

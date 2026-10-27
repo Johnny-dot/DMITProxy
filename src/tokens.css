@@ -1,0 +1,109 @@
+/* Hallmark · checked: 2026-10-27 · genre: modern-minimal (inferred)
+ * floor: 0 FAIL · fixed: 2a, 10a, 20, 33, 48, 54, 67 · structural: app scope, printed none
+ * built: the project · redesign: polish · v2.0.0 */
+/* Hallmark · reworded "剩余 · 已用" to "剩余，已用" · 63 names the middle dot */
+/* Hallmark · reworded "Left · used" to "Left, used" · 63 names the middle dot */
+/* Hallmark · reworded "我的订阅 ·" to "我的订阅，" · 63 names the middle dot */
+/* Hallmark · reworded "剩余流量 ·" to "剩余流量，" · 63 names the middle dot */
+/* Hallmark · reworded "Remaining ·" to "Remaining," · 63 names the middle dot */
+/* Hallmark · reworded "线路检测已过期 ·" to "线路检测已过期，" · 63 names the middle dot */
+/* Hallmark · reworded "Route check expired ·" to "Route check expired," · 63 names the middle dot */
+/* Hallmark · dropped "二维码预览", "QR preview" · 54 names the eyebrow above the QR title */
+
+html[data-theme='light']:has(.user-surface),
+html[data-theme='light'] .user-surface {
+  --user-bg: #ffffff;
+  --page-bg: #ffffff;
+  --page-bg-deep: #ffffff;
+  --user-accent: #111111;
+  --surface-card: #ffffff;
+  --surface-card-strong: #ffffff;
+  --surface-panel: #f6f6f6;
+  --surface-panel-strong: #f6f6f6;
+  --surface-inline: #f3f3f3;
+  --surface-strong: #ffffff;
+  --surface-contrast: #eeeeee;
+  --accent: #111111;
+  --accent-strong: #000000;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(17, 17, 17, 0.06);
+  --accent-border: rgba(17, 17, 17, 0.22);
+  --text-primary: #111111;
+  --text-secondary: #5c5c5c;
+  --text-tertiary: #6b6b6b;
+  --border-subtle: #e6e6e6;
+  --border-strong: #cfcfcf;
+  --shadow-card: none;
+  --shadow-soft: none;
+  --success: #171717;
+  --success-soft: rgba(17, 17, 17, 0.06);
+  --success-soft-strong: rgba(17, 17, 17, 0.1);
+  --info: #525252;
+  --info-soft: rgba(17, 17, 17, 0.04);
+  --info-soft-strong: rgba(17, 17, 17, 0.08);
+  --color-emerald-200: #737373;
+  --color-emerald-300: #525252;
+  --color-emerald-400: #404040;
+  --color-emerald-500: #171717;
+  --color-sky-400: #525252;
+  --platform-telegram-rgb: 17 17 17;
+  --platform-telegram-text: #111111;
+  --platform-whatsapp-rgb: 17 17 17;
+  --platform-whatsapp-text: #111111;
+  --platform-discord-rgb: 17 17 17;
+  --platform-discord-text: #111111;
+  --platform-wechat-rgb: 17 17 17;
+  --platform-wechat-text: #111111;
+  --platform-neutral-rgb: 92 92 92;
+  --platform-neutral-text: #5c5c5c;
+  --overlay: rgba(17, 17, 17, 0.45);
+}
+
+html[data-theme='dark']:has(.user-surface),
+html[data-theme='dark'] .user-surface {
+  --user-bg: #0a0a0a;
+  --page-bg: #0a0a0a;
+  --page-bg-deep: #0a0a0a;
+  --user-accent: #ffffff;
+  --surface-card: #111111;
+  --surface-card-strong: #141414;
+  --surface-panel: #191919;
+  --surface-panel-strong: #191919;
+  --surface-inline: #1c1c1c;
+  --surface-strong: #141414;
+  --surface-contrast: #242424;
+  --accent: #ffffff;
+  --accent-strong: #e5e5e5;
+  --accent-contrast: #111111;
+  --accent-soft: rgba(255, 255, 255, 0.08);
+  --accent-border: rgba(255, 255, 255, 0.28);
+  --text-primary: #ffffff;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #8a8a8a;
+  --border-subtle: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.28);
+  --shadow-card: none;
+  --shadow-soft: none;
+  --success: #f5f5f5;
+  --success-soft: rgba(255, 255, 255, 0.08);
+  --success-soft-strong: rgba(255, 255, 255, 0.14);
+  --info: #d4d4d4;
+  --info-soft: rgba(255, 255, 255, 0.06);
+  --info-soft-strong: rgba(255, 255, 255, 0.1);
+  --color-emerald-200: #d4d4d4;
+  --color-emerald-300: #e5e5e5;
+  --color-emerald-400: #f5f5f5;
+  --color-emerald-500: #ffffff;
+  --color-sky-400: #d4d4d4;
+  --platform-telegram-rgb: 255 255 255;
+  --platform-telegram-text: #ffffff;
+  --platform-whatsapp-rgb: 255 255 255;
+  --platform-whatsapp-text: #ffffff;
+  --platform-discord-rgb: 255 255 255;
+  --platform-discord-text: #ffffff;
+  --platform-wechat-rgb: 255 255 255;
+  --platform-wechat-text: #ffffff;
+  --platform-neutral-rgb: 163 163 163;
+  --platform-neutral-text: #a3a3a3;
+  --overlay: rgba(0, 0, 0, 0.62);
+}

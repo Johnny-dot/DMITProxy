@@ -143,7 +143,7 @@ export function NodeQualityCard({
 
       <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
         <div className="surface-panel p-4">
-          <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+          <p className="inline-flex items-center gap-1 text-[11px] text-zinc-500">
             <span>{isZh ? '风险值' : 'Risk score'}</span>
             <InfoTooltip content={riskHelpText} />
           </p>
@@ -167,7 +167,7 @@ export function NodeQualityCard({
         <div className="space-y-4">
           <div className="surface-panel flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
-              <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+              <p className="inline-flex items-center gap-1 text-[11px] text-zinc-500">
                 <span>{isZh ? '最近检测' : 'Last checked'}</span>
                 <InfoTooltip content={checkedAtHelpText} />
               </p>
@@ -220,7 +220,7 @@ export function NodeQualityCard({
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <UnlockServiceIcon service={item.id} />
-                      <p className="inline-flex min-w-0 items-center gap-1 text-[11px] uppercase tracking-[0.14em] text-zinc-400">
+                      <p className="inline-flex min-w-0 items-center gap-1 text-[11px] text-zinc-400">
                         <span className="truncate">{item.label}</span>
                         <InfoTooltip content={tooltipText} />
                       </p>
@@ -236,7 +236,7 @@ export function NodeQualityCard({
 
       {!stale && hasAnyNotes ? (
         <div className="surface-panel space-y-4 p-4">
-          <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+          <p className="inline-flex items-center gap-1 text-[11px] text-zinc-500">
             <span>{isZh ? '检测备注' : 'Check notes'}</span>
             <InfoTooltip content={notesHelpText} />
           </p>
