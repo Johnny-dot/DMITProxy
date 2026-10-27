@@ -118,17 +118,13 @@ export function HomeTab({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="surface-panel p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
-                {isZh ? '当前角色' : 'Current role'}
-              </p>
+              <p className="text-xs text-zinc-500">{isZh ? '当前角色' : 'Current role'}</p>
               <p className="mt-2 text-sm font-medium text-zinc-50">
                 {isZh ? '管理员' : 'Administrator'}
               </p>
             </div>
             <div className="surface-panel p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
-                {isZh ? '工作区' : 'Workspace'}
-              </p>
+              <p className="text-xs text-zinc-500">{isZh ? '工作区' : 'Workspace'}</p>
               <p className="mt-2 text-sm font-medium text-zinc-50">
                 {isZh ? '统一用户中心' : 'Unified user center'}
               </p>
@@ -324,8 +320,8 @@ function MySubscriptionHero({
     bigValue = formatTraffic(machineRemaining);
     usedPercent = Math.min(Math.max((machineUsed / machineTotal) * 100, 0), 100);
     subtitle = isZh
-      ? `剩余 · 已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
-      : `Left · used ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
+      ? `剩余，已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
+      : `Left, used ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
     personalUsage = formatTraffic(ownUsed);
   } else if (stats && stats.total > 0) {
     const remaining = Math.max(stats.total - used, 0);
@@ -333,8 +329,8 @@ function MySubscriptionHero({
     bigValue = formatTraffic(remaining);
     usedPercent = Math.min((used / stats.total) * 100, 100);
     subtitle = isZh
-      ? `剩余 · 已用 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
-      : `Left · used ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
+      ? `剩余，已用 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
+      : `Left, used ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
   } else {
     unlimited = true;
     quotaLabel = isZh ? '已用流量' : 'Used traffic';
@@ -378,8 +374,8 @@ function MySubscriptionHero({
         <h2 className="user-sub-title">{isZh ? '导入订阅' : 'Import subscription'}</h2>
         <p className="user-section-label" data-testid="subscription-home-status">
           {isZh ? '我的订阅' : 'My subscription'}
-          {username ? ` · ${username}` : ''}
-          {` · ${statusLabel}`}
+          {username ? `，${username}` : ''}
+          {`，${statusLabel}`}
         </p>
       </div>
 
@@ -879,7 +875,7 @@ function MachineHealthCard({
       ) : (
         <div className="relative space-y-4">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="min-h-[176px] rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.025))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] md:p-6">
+            <div className="min-h-[176px] rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,var(--sheen-10),var(--sheen-015))] p-5 shadow-[inset_0_1px_0_var(--sheen-14)] md:p-6">
               <div className="flex h-full flex-col justify-between gap-5 sm:flex-row sm:items-end">
                 <div className="space-y-3">
                   <p className="section-kicker">{isZh ? '机器健康' : 'Machine health'}</p>
@@ -925,23 +921,21 @@ function MachineHealthCard({
                   </p>
                   <p className="mt-1 text-xs leading-5 text-zinc-500">
                     {isZh
-                      ? `剩余流量 · ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`
-                      : `Remaining · ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`}
+                      ? `剩余流量，${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`
+                      : `Remaining, ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`}
                   </p>
                 </div>
                 <div
                   className="relative flex h-28 w-28 shrink-0 items-center justify-center rounded-full p-2"
                   style={{
-                    background: `conic-gradient(${dmitDialColor} ${Math.max(0, Math.min(dmitUsagePercent ?? 0, 100))}%, rgba(255,255,255,0.08) 0)`,
+                    background: `conic-gradient(${dmitDialColor} ${Math.max(0, Math.min(dmitUsagePercent ?? 0, 100))}%, var(--sheen-08) 0)`,
                   }}
                 >
-                  <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-[var(--surface-card)] text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
+                  <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-[var(--surface-card)] text-center shadow-[inset_0_1px_0_var(--sheen-10)]">
                     <span className="font-mono text-2xl font-semibold text-zinc-50">
                       {dmitUsagePercent == null ? '--' : dmitUsagePercent.toFixed(0)}
                     </span>
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
-                      {isZh ? '已用%' : 'Used %'}
-                    </span>
+                    <span className="text-[10px] text-zinc-500">{isZh ? '已用%' : 'Used %'}</span>
                   </div>
                 </div>
               </div>
@@ -987,7 +981,7 @@ function MachineHealthCard({
                   >
                     <div
                       className={cn(
-                        'pointer-events-none absolute inset-y-0 left-0 opacity-20 transition-all',
+                        'pointer-events-none absolute inset-y-0 left-0 opacity-20 transition-colors',
                         bar.key === 'up' ? 'bg-sky-400' : 'bg-emerald-400',
                       )}
                       style={{ width: `${bar.percent}%` }}
@@ -1009,7 +1003,7 @@ function MachineHealthCard({
                       <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-zinc-800/70">
                         <div
                           className={cn(
-                            'h-full rounded-full transition-all',
+                            'h-full rounded-full transition-colors',
                             bar.key === 'up' ? 'bg-sky-400' : 'bg-emerald-400',
                           )}
                           style={{ width: `${bar.percent}%` }}
@@ -1141,7 +1135,7 @@ function ResourceMeter({
       <p className="mt-2 truncate text-xs tabular-nums text-zinc-500">{value}</p>
       <div className="mt-7 h-2 overflow-hidden rounded-full bg-zinc-800/80">
         <div
-          className={cn('h-full rounded-full transition-all', toneClass.bg)}
+          className={cn('h-full rounded-full transition-colors', toneClass.bg)}
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -1211,7 +1205,7 @@ function MiniStat({
 }) {
   return (
     <div className="rounded-[22px] border border-white/10 bg-[var(--surface-inline)] px-4 py-3">
-      <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">{label}</p>
+      <p className="text-[10px] text-zinc-500">{label}</p>
       <p className={cn('mt-1 truncate text-lg font-semibold tabular-nums', toneClass)}>{value}</p>
     </div>
   );
@@ -1245,8 +1239,8 @@ function RouteStatusPill({
   const checkedAt = formatDateTime(profile?.updatedAt);
   const summaryText = stale
     ? isZh
-      ? `线路检测已过期${checkedAt ? ` · ${checkedAt}` : ''}`
-      : `Route check expired${checkedAt ? ` · ${checkedAt}` : ''}`
+      ? `线路检测已过期${checkedAt ? `，${checkedAt}` : ''}`
+      : `Route check expired${checkedAt ? `, ${checkedAt}` : ''}`
     : profile
       ? [
           isZh ? '节点' : 'Node',
@@ -1255,7 +1249,7 @@ function RouteStatusPill({
           score != null ? (isZh ? `风险 ${score}` : `risk ${score}`) : null,
         ]
           .filter(Boolean)
-          .join(' · ')
+          .join(', ')
       : isZh
         ? '线路检测结果加载中…'
         : 'Loading route status…';

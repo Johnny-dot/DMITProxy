@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './tokens.css';
 
 @theme {
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
@@ -28,6 +29,40 @@
   --info: #5f88c9;
   --info-soft: rgba(95, 136, 201, 0.16);
   --info-soft-strong: rgba(95, 136, 201, 0.22);
+
+  --sheen-015: rgba(255, 255, 255, 0.015);
+  --sheen-04: rgba(255, 255, 255, 0.04);
+  --sheen-035: rgba(255, 255, 255, 0.035);
+  --sheen-05: rgba(255, 255, 255, 0.05);
+  --sheen-055: rgba(255, 255, 255, 0.055);
+  --sheen-06: rgba(255, 255, 255, 0.06);
+  --sheen-08: rgba(255, 255, 255, 0.08);
+  --sheen-10: rgba(255, 255, 255, 0.1);
+  --sheen-12: rgba(255, 255, 255, 0.12);
+  --sheen-14: rgba(255, 255, 255, 0.14);
+  --sheen-16: rgba(255, 255, 255, 0.16);
+  --sheen-18: rgba(255, 255, 255, 0.18);
+  --sheen-20: rgba(255, 255, 255, 0.2);
+  --sheen-22: rgba(255, 255, 255, 0.22);
+  --sheen-24: rgba(255, 255, 255, 0.24);
+  --sheen-26: rgba(255, 255, 255, 0.26);
+  --sheen-28: rgba(255, 255, 255, 0.28);
+  --sheen-32: rgba(255, 255, 255, 0.32);
+  --font-user:
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'WenQuanYi Micro Hei',
+    system-ui, sans-serif;
+  --meter-track: #eee;
+  --meter-track-dark: #222;
+  --meter-fill: #2a2a2a;
+  --meter-fill-dark: #bdbdbd;
+  --meter-warn: #b45309;
+  --meter-warn-dark: #d97706;
+  --meter-danger: #dc2626;
+  --orb-white: rgba(255, 255, 255, 0.74);
+  --orb-blue: rgba(111, 154, 255, 0.32);
+  --orb-teal: rgba(76, 205, 186, 0.24);
+  --shadow-qr: 0 24px 64px rgba(15, 23, 42, 0.18);
+  --shadow-highlight: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 16px 40px rgba(220, 38, 38, 0.18);
 }
 
 :root[data-theme='light'] {
@@ -207,9 +242,9 @@
       radial-gradient(circle at 12% 88%, var(--page-glow-4) 0%, transparent 34%),
       linear-gradient(
         115deg,
-        rgba(255, 255, 255, 0.24) 0%,
+        var(--sheen-24) 0%,
         transparent 18% 62%,
-        rgba(255, 255, 255, 0.12) 78%,
+        var(--sheen-12) 78%,
         transparent 100%
       ),
       linear-gradient(135deg, var(--page-bg-deep) 0%, var(--page-bg) 46%, var(--page-bg-deep) 100%);
@@ -223,16 +258,16 @@
     inset: 0;
     pointer-events: none;
     background:
-      radial-gradient(ellipse at 28% 8%, rgba(255, 255, 255, 0.28), transparent 36%),
+      radial-gradient(ellipse at 28% 8%, var(--sheen-28), transparent 36%),
       linear-gradient(
         120deg,
-        rgba(255, 255, 255, 0.16) 0%,
+        var(--sheen-16) 0%,
         transparent 16%,
         transparent 52%,
-        rgba(255, 255, 255, 0.1) 72%,
+        var(--sheen-10) 72%,
         transparent 100%
       ),
-      radial-gradient(circle at top, rgba(255, 255, 255, 0.14), transparent 40%);
+      radial-gradient(circle at top, var(--sheen-14), transparent 40%);
     opacity: 0.5;
     mix-blend-mode: screen;
   }
@@ -246,13 +281,13 @@
       linear-gradient(
         100deg,
         transparent 0 18%,
-        rgba(255, 255, 255, 0.08) 19%,
+        var(--sheen-08) 19%,
         transparent 21% 52%,
-        rgba(255, 255, 255, 0.06) 54%,
+        var(--sheen-06) 54%,
         transparent 56%
       ),
-      radial-gradient(circle at 45% 35%, rgba(255, 255, 255, 0.08), transparent 24%),
-      radial-gradient(circle at 62% 68%, rgba(255, 255, 255, 0.06), transparent 22%);
+      radial-gradient(circle at 45% 35%, var(--sheen-08), transparent 24%),
+      radial-gradient(circle at 62% 68%, var(--sheen-06), transparent 22%);
     opacity: 0.42;
     mix-blend-mode: soft-light;
   }
@@ -311,36 +346,31 @@
       linear-gradient(
         135deg,
         var(--glass-specular) 0%,
-        rgba(255, 255, 255, 0.08) 18%,
-        rgba(255, 255, 255, 0.015) 50%,
+        var(--sheen-08) 18%,
+        var(--sheen-015) 50%,
         var(--glass-depth) 100%
       ),
       linear-gradient(
         160deg,
         var(--surface-card-strong) 0%,
-        var(--glass-tint) 42%,
+        var(--glass-specular) 42%,
         var(--surface-card) 100%
       ),
       linear-gradient(135deg, var(--surface-card-strong) 0%, var(--surface-card) 100%);
     border-radius: var(--radius-card);
     box-shadow:
       inset 0 1px 0 var(--glass-rim),
-      inset 1px 0 0 rgba(255, 255, 255, 0.18),
-      inset -1px 0 0 rgba(255, 255, 255, 0.08),
+      inset 1px 0 0 var(--sheen-18),
+      inset -1px 0 0 var(--sheen-08),
       inset 0 -1px 0 var(--glass-rim-shadow),
-      0 1px 0 rgba(255, 255, 255, 0.18),
+      0 1px 0 var(--sheen-18),
       var(--shadow-card);
   }
 
   .surface-panel {
     background:
       radial-gradient(ellipse at 15% 0%, var(--glass-caustic) 0%, transparent 44%),
-      linear-gradient(
-        145deg,
-        rgba(255, 255, 255, 0.2) 0%,
-        rgba(255, 255, 255, 0.035) 45%,
-        var(--glass-depth) 100%
-      ),
+      linear-gradient(145deg, var(--sheen-20) 0%, var(--sheen-035) 45%, var(--glass-depth) 100%),
       linear-gradient(135deg, var(--surface-panel-strong) 0%, var(--surface-panel) 100%);
     border-radius: var(--radius-panel);
     box-shadow:
@@ -352,12 +382,7 @@
   .surface-inline,
   .glass-pill {
     background:
-      linear-gradient(
-        145deg,
-        rgba(255, 255, 255, 0.24) 0%,
-        rgba(255, 255, 255, 0.05) 52%,
-        var(--glass-depth) 100%
-      ),
+      linear-gradient(145deg, var(--sheen-24) 0%, var(--sheen-05) 52%, var(--glass-depth) 100%),
       var(--surface-inline);
     border-radius: var(--radius-control);
     box-shadow:
@@ -377,13 +402,8 @@
     border-radius: inherit;
     pointer-events: none;
     background:
-      linear-gradient(
-        115deg,
-        rgba(255, 255, 255, 0.32) 0%,
-        transparent 22% 68%,
-        rgba(255, 255, 255, 0.08) 100%
-      ),
-      radial-gradient(circle at 82% 14%, rgba(255, 255, 255, 0.22), transparent 26%);
+      linear-gradient(115deg, var(--sheen-32) 0%, transparent 22% 68%, var(--sheen-08) 100%),
+      radial-gradient(circle at 82% 14%, var(--sheen-22), transparent 26%);
     opacity: 0.18;
     mix-blend-mode: soft-light;
   }
@@ -398,8 +418,8 @@
     border-radius: inherit;
     pointer-events: none;
     box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-      inset 0 -18px 36px rgba(255, 255, 255, 0.035);
+      inset 0 0 0 1px var(--sheen-08),
+      inset 0 -18px 36px var(--sheen-035);
   }
 
   .surface-card > *,
@@ -416,13 +436,12 @@
 
   .glass-progress-track {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.04) 100%),
-      var(--surface-inline);
+      linear-gradient(180deg, var(--sheen-24) 0%, var(--sheen-04) 100%), var(--surface-inline);
     border: 1px solid var(--border-subtle);
     border-radius: 999px;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+      inset 0 1px 0 var(--sheen-18),
+      inset 0 -1px 0 var(--sheen-04);
   }
 
   .glass-nav-item,
@@ -439,8 +458,7 @@
 
   .glass-nav-item:hover {
     background:
-      linear-gradient(145deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.035) 100%),
-      var(--surface-panel);
+      linear-gradient(145deg, var(--sheen-22) 0%, var(--sheen-035) 100%), var(--surface-panel);
     border-color: var(--border-subtle);
     color: var(--text-primary);
     box-shadow: var(--shadow-soft);
@@ -449,13 +467,12 @@
 
   .glass-nav-item-active {
     background:
-      linear-gradient(145deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.055) 100%),
-      var(--accent-soft);
+      linear-gradient(145deg, var(--sheen-28) 0%, var(--sheen-055) 100%), var(--accent-soft);
     border-color: var(--accent-border);
     color: var(--accent-strong);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.26),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+      inset 0 1px 0 var(--sheen-26),
+      inset 0 -1px 0 var(--sheen-04),
       var(--shadow-soft);
   }
 
@@ -463,8 +480,8 @@
     color: var(--text-tertiary);
     font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   .page-title {
@@ -792,106 +809,8 @@
 }
 
 html[data-theme='light']:has(.user-surface),
-html[data-theme='light'] .user-surface {
-  --user-bg: #ffffff;
-  --page-bg: #ffffff;
-  --page-bg-deep: #ffffff;
-  --user-accent: #111111;
-  --surface-card: #ffffff;
-  --surface-card-strong: #ffffff;
-  --surface-panel: #f6f6f6;
-  --surface-panel-strong: #f6f6f6;
-  --surface-inline: #f3f3f3;
-  --surface-strong: #ffffff;
-  --surface-contrast: #eeeeee;
-  --accent: #111111;
-  --accent-strong: #000000;
-  --accent-contrast: #ffffff;
-  --accent-soft: rgba(17, 17, 17, 0.06);
-  --accent-border: rgba(17, 17, 17, 0.22);
-  --text-primary: #111111;
-  --text-secondary: #5c5c5c;
-  --text-tertiary: #6b6b6b;
-  --border-subtle: #e6e6e6;
-  --border-strong: #cfcfcf;
-  --shadow-card: none;
-  --shadow-soft: none;
-  --success: #171717;
-  --success-soft: rgba(17, 17, 17, 0.06);
-  --success-soft-strong: rgba(17, 17, 17, 0.1);
-  --info: #525252;
-  --info-soft: rgba(17, 17, 17, 0.04);
-  --info-soft-strong: rgba(17, 17, 17, 0.08);
-  --color-emerald-200: #737373;
-  --color-emerald-300: #525252;
-  --color-emerald-400: #404040;
-  --color-emerald-500: #171717;
-  --color-sky-400: #525252;
-  --platform-telegram-rgb: 17 17 17;
-  --platform-telegram-text: #111111;
-  --platform-whatsapp-rgb: 17 17 17;
-  --platform-whatsapp-text: #111111;
-  --platform-discord-rgb: 17 17 17;
-  --platform-discord-text: #111111;
-  --platform-wechat-rgb: 17 17 17;
-  --platform-wechat-text: #111111;
-  --platform-neutral-rgb: 92 92 92;
-  --platform-neutral-text: #5c5c5c;
-  --overlay: rgba(17, 17, 17, 0.45);
-}
-
-html[data-theme='dark']:has(.user-surface),
-html[data-theme='dark'] .user-surface {
-  --user-bg: #0a0a0a;
-  --page-bg: #0a0a0a;
-  --page-bg-deep: #0a0a0a;
-  --user-accent: #ffffff;
-  --surface-card: #111111;
-  --surface-card-strong: #141414;
-  --surface-panel: #191919;
-  --surface-panel-strong: #191919;
-  --surface-inline: #1c1c1c;
-  --surface-strong: #141414;
-  --surface-contrast: #242424;
-  --accent: #ffffff;
-  --accent-strong: #e5e5e5;
-  --accent-contrast: #111111;
-  --accent-soft: rgba(255, 255, 255, 0.08);
-  --accent-border: rgba(255, 255, 255, 0.28);
-  --text-primary: #ffffff;
-  --text-secondary: #a3a3a3;
-  --text-tertiary: #8a8a8a;
-  --border-subtle: rgba(255, 255, 255, 0.14);
-  --border-strong: rgba(255, 255, 255, 0.28);
-  --shadow-card: none;
-  --shadow-soft: none;
-  --success: #f5f5f5;
-  --success-soft: rgba(255, 255, 255, 0.08);
-  --success-soft-strong: rgba(255, 255, 255, 0.14);
-  --info: #d4d4d4;
-  --info-soft: rgba(255, 255, 255, 0.06);
-  --info-soft-strong: rgba(255, 255, 255, 0.1);
-  --color-emerald-200: #d4d4d4;
-  --color-emerald-300: #e5e5e5;
-  --color-emerald-400: #f5f5f5;
-  --color-emerald-500: #ffffff;
-  --color-sky-400: #d4d4d4;
-  --platform-telegram-rgb: 255 255 255;
-  --platform-telegram-text: #ffffff;
-  --platform-whatsapp-rgb: 255 255 255;
-  --platform-whatsapp-text: #ffffff;
-  --platform-discord-rgb: 255 255 255;
-  --platform-discord-text: #ffffff;
-  --platform-wechat-rgb: 255 255 255;
-  --platform-wechat-text: #ffffff;
-  --platform-neutral-rgb: 163 163 163;
-  --platform-neutral-text: #a3a3a3;
-  --overlay: rgba(0, 0, 0, 0.62);
-}
-
-html[data-theme='light']:has(.user-surface),
 html[data-theme='light']:has(.user-surface) body {
-  background: #ffffff;
+  background: var(--user-bg);
 }
 
 html:has(.user-surface) body::before,
@@ -915,14 +834,9 @@ html[data-theme='dark'] .user-surface img[src$='logo.svg'] {
 }
 
 .user-surface .community-platform-icon {
-  background: #111111 !important;
-  color: #ffffff;
+  background: var(--user-accent) !important;
+  color: var(--accent-contrast);
   box-shadow: none;
-}
-
-html[data-theme='dark'] .user-surface .community-platform-icon {
-  background: #ffffff !important;
-  color: #111111;
 }
 
 .user-surface .community-platform-icon svg path {
@@ -931,14 +845,14 @@ html[data-theme='dark'] .user-surface .community-platform-icon {
 
 html[data-theme='dark']:has(.user-surface),
 html[data-theme='dark']:has(.user-surface) body {
-  background: #0a0a0a;
+  background: var(--user-bg);
 }
 
 .user-surface {
   --radius-card: 12px;
   --radius-panel: 10px;
   --radius-control: 8px;
-  background: var(--user-bg, #ffffff);
+  background: var(--user-bg);
   color: var(--text-primary);
 }
 
@@ -1035,9 +949,7 @@ html[data-theme='dark']:has(.user-surface) body {
 }
 
 .user-surface {
-  font-family:
-    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'WenQuanYi Micro Hei',
-    system-ui, sans-serif;
+  font-family: var(--font-user);
   font-size: 0.9375rem;
   font-weight: 400;
   letter-spacing: 0;
@@ -1349,11 +1261,11 @@ html[data-theme='dark']:has(.user-surface) body {
 }
 
 .user-surface .user-meter-warn > span {
-  background: #b45309;
+  background: var(--meter-warn);
 }
 
 html[data-theme='dark'] .user-surface .user-meter-warn > span {
-  background: #d97706;
+  background: var(--meter-warn-dark);
 }
 
 .user-hero-status-prefix,
@@ -1600,32 +1512,32 @@ html[data-theme='dark'] .user-surface .user-meter-warn > span {
   height: 5px;
   overflow: hidden;
   border-radius: 999px;
-  background: #eee;
+  background: var(--meter-track);
 }
 
 html[data-theme='dark'] .usage-meter-track {
-  background: #222;
+  background: var(--meter-track-dark);
 }
 
 .usage-meter-fill {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: #2a2a2a;
+  background: var(--meter-fill);
 }
 
 html[data-theme='dark'] .usage-meter-fill {
-  background: #bdbdbd;
+  background: var(--meter-fill-dark);
 }
 
 .usage-meter-fill.is-warn,
 html[data-theme='dark'] .usage-meter-fill.is-warn {
-  background: #d97706;
+  background: var(--meter-warn-dark);
 }
 
 .usage-meter-fill.is-danger,
 html[data-theme='dark'] .usage-meter-fill.is-danger {
-  background: #dc2626;
+  background: var(--meter-danger);
 }
 
 .usage-meter-value {

@@ -393,7 +393,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-[13px] font-semibold text-emerald-300">
                   1
                 </span>
-                <p className="text-xs font-medium uppercase tracking-[0.22em] text-emerald-300/90">
+                <p className="text-xs font-medium text-emerald-300/90">
                   {isZh ? '选择设备' : 'Choose a device'}
                 </p>
               </div>
@@ -410,25 +410,19 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             </div>
             <div className="hidden grid-cols-3 gap-2 lg:grid lg:min-w-[360px]">
               <div className="min-w-0 surface-inline px-3 py-2.5 sm:px-4 sm:py-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
-                  {isZh ? '设备' : 'Device'}
-                </p>
+                <p className="text-[10px] text-zinc-500">{isZh ? '设备' : 'Device'}</p>
                 <p className="mt-1 truncate text-sm font-medium text-zinc-100">
                   {activePlatformLabel}
                 </p>
               </div>
               <div className="min-w-0 surface-inline px-3 py-2.5 sm:px-4 sm:py-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
-                  {isZh ? '客户端' : 'Client'}
-                </p>
+                <p className="text-[10px] text-zinc-500">{isZh ? '客户端' : 'Client'}</p>
                 <p className="mt-1 truncate text-sm font-medium text-zinc-100">
                   {activeClient.name}
                 </p>
               </div>
               <div className="min-w-0 surface-inline px-3 py-2.5 sm:px-4 sm:py-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
-                  {isZh ? '状态' : 'Status'}
-                </p>
+                <p className="text-[10px] text-zinc-500">{isZh ? '状态' : 'Status'}</p>
                 <p className="mt-1 truncate text-sm font-medium text-zinc-100">
                   {hasCopied ? (isZh ? '已复制' : 'Copied') : isZh ? '未复制' : 'Not copied'}
                 </p>
@@ -461,23 +455,15 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                     data-testid={`portal-setup-platform-${platform.key}`}
                     aria-pressed={activePlatform === platform.key}
                     className={cn(
-                      'group rounded-[18px] border px-3 py-2.5 text-left transition-all sm:rounded-[20px] sm:px-3.5 sm:py-3',
+                      'group rounded-[18px] border px-3 py-2.5 text-left transition-colors sm:rounded-[20px] sm:px-3.5 sm:py-3',
                       activePlatform === platform.key
                         ? 'border-emerald-500/45 bg-emerald-500/12'
                         : 'border-white/10 bg-white/[0.035] hover:border-[color:var(--border-strong)] hover:bg-white/[0.06]',
                     )}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-medium text-zinc-50">
-                        {isZh ? platform.zhLabel : platform.label}
-                      </p>
-                      <span
-                        className={cn(
-                          'h-2 w-2 rounded-full transition-colors',
-                          activePlatform === platform.key ? 'bg-emerald-300' : 'bg-white/20',
-                        )}
-                      />
-                    </div>
+                    <p className="truncate text-sm font-medium text-zinc-50">
+                      {isZh ? platform.zhLabel : platform.label}
+                    </p>
                     <p className="mt-1 hidden text-xs leading-5 text-zinc-500 sm:line-clamp-2">
                       {getPlatformBlurb(platform.key, isZh)}
                     </p>
@@ -734,9 +720,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
               onOpenDownload={openDownload}
             />
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
-                {isZh ? '备选客户端' : 'Alternatives'}
-              </p>
+              <p className="text-xs text-zinc-500">{isZh ? '备选客户端' : 'Alternatives'}</p>
               {alternativeClients.length > 0 ? (
                 <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
                   {alternativeClients.map((client) => (
@@ -803,9 +787,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 </div>
               </div>
               <div className="rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-inline)] px-4 py-3 text-right">
-                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  {isZh ? '当前教程' : 'Current guide'}
-                </p>
+                <p className="text-xs text-zinc-500">{isZh ? '当前教程' : 'Current guide'}</p>
                 <p className="mt-2 text-sm font-medium text-zinc-100">
                   {activeClient.name} / {guidePlatformLabel}
                 </p>

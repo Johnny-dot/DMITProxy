@@ -335,7 +335,7 @@ export function NotificationsPanel({
                   <section className="space-y-2">
                     <div className="flex items-center justify-between px-1">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                        <p className="text-xs font-semibold text-[var(--text-secondary)]">
                           {isZh ? '已发送公告' : 'History'}
                         </p>
                         <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
@@ -404,7 +404,7 @@ export function NotificationsPanel({
                 <section className="space-y-3">
                   <div className="flex items-start justify-between gap-3 px-1">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                      <p className="text-xs font-semibold text-[var(--text-secondary)]">
                         {isZh ? '系统提醒' : 'System reminders'}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">

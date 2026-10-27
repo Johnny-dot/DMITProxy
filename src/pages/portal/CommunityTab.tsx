@@ -294,7 +294,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
 
                   {entry.url.trim() ? (
                     <div className="surface-panel px-4 py-3">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                      <p className="text-[11px] text-[var(--text-tertiary)]">
                         {isZh ? '加入链接' : 'Invite link'}
                       </p>
                       <p className="mt-2 break-all text-sm leading-6 text-[var(--text-primary)]">
@@ -354,7 +354,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
                     }
                     aria-label={isZh ? `查看 ${title} 的二维码大图` : `Preview ${title} QR code`}
                   >
-                    <p className="text-center text-[11px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                    <p className="text-center text-[11px] text-[var(--text-tertiary)]">
                       {isZh ? '扫码加入' : 'Scan to join'}
                     </p>
                     <div className="mt-3 flex min-h-[180px] items-center justify-center rounded-[20px] border border-[color:var(--border-subtle)] bg-white/95 p-3 shadow-[var(--shadow-soft)]">
@@ -389,9 +389,6 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
           <div className="surface-card w-full rounded-[32px] p-5 shadow-[var(--shadow-strong)] md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                  {isZh ? '二维码预览' : 'QR preview'}
-                </p>
                 <h3 className="text-lg font-semibold text-[var(--text-primary)]">
                   {previewQr.title}
                 </h3>
@@ -425,7 +422,7 @@ export function CommunityTab({ communityLinks, isZh, onSetSection }: CommunityTa
                   className="max-h-[72vh] w-auto rounded-[24px] object-contain"
                 />
               ) : (
-                <div className="rounded-[28px] bg-white p-5 shadow-[0_24px_64px_rgba(15,23,42,0.18)]">
+                <div className="rounded-[28px] bg-white p-5 shadow-[var(--shadow-qr)]">
                   <CommunityQr value={previewQr.value} isZh={isZh} size={320} />
                 </div>
               )}
@@ -490,6 +487,12 @@ function CommunityQr({ value, isZh, size = 160 }: { value: string; isZh: boolean
   }
 
   return (
-    <canvas ref={canvasRef} className="block h-auto w-full" style={{ maxWidth: `${size}px` }} />
+    <canvas
+      ref={canvasRef}
+      className="block h-auto w-full"
+      style={{ maxWidth: `${size}px` }}
+      role="img"
+      aria-label={isZh ? '社群二维码' : 'Community QR code'}
+    />
   );
 }
