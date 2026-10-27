@@ -26,15 +26,15 @@ export function StepHeader({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-sm font-medium text-emerald-300">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[color:color-mix(in_oklab,var(--color-emerald-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)] text-sm font-medium text-[var(--color-emerald-300)]">
           {step}
         </span>
-        <div className="flex items-center gap-2 text-lg font-semibold text-zinc-50">
-          <Icon className="h-4 w-4 text-emerald-400" />
+        <div className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
+          <Icon className="h-4 w-4 text-[var(--color-emerald-400)]" />
           <span>{title}</span>
         </div>
       </div>
-      <p className="max-w-3xl text-sm leading-7 text-zinc-400">{description}</p>
+      <p className="max-w-3xl text-sm leading-7 text-[var(--text-secondary)]">{description}</p>
     </div>
   );
 }
@@ -43,23 +43,29 @@ export function GuideStepCard({ step, index }: { step: GuideStep; index: number 
   const toneClasses =
     step.tone === 'launch'
       ? {
-          border: 'border-sky-500/25',
-          panel: 'border-sky-500/20 bg-sky-500/8',
-          badge: 'border-sky-500/30 bg-sky-500/10 text-sky-200',
-          icon: 'text-sky-300',
+          border: 'border-[color:color-mix(in_oklab,var(--color-sky-500)_25%,transparent)]',
+          panel:
+            'border-[color:color-mix(in_oklab,var(--color-sky-500)_20%,transparent)] bg-[color-mix(in_oklab,var(--color-sky-500)_8%,transparent)]',
+          badge:
+            'border-[color:color-mix(in_oklab,var(--color-sky-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-sky-500)_10%,transparent)] text-[var(--color-sky-200)]',
+          icon: 'text-[var(--color-sky-300)]',
         }
       : step.tone === 'import'
         ? {
-            border: 'border-amber-500/25',
-            panel: 'border-amber-500/20 bg-amber-500/8',
-            badge: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
-            icon: 'text-amber-300',
+            border: 'border-[color:color-mix(in_oklab,var(--color-amber-500)_25%,transparent)]',
+            panel:
+              'border-[color:color-mix(in_oklab,var(--color-amber-500)_20%,transparent)] bg-[color-mix(in_oklab,var(--color-amber-500)_8%,transparent)]',
+            badge:
+              'border-[color:color-mix(in_oklab,var(--color-amber-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-amber-500)_10%,transparent)] text-[var(--color-amber-200)]',
+            icon: 'text-[var(--color-amber-300)]',
           }
         : {
-            border: 'border-emerald-500/25',
-            panel: 'border-emerald-500/20 bg-emerald-500/8',
-            badge: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
-            icon: 'text-emerald-300',
+            border: 'border-[color:color-mix(in_oklab,var(--color-emerald-500)_25%,transparent)]',
+            panel:
+              'border-[color:color-mix(in_oklab,var(--color-emerald-500)_20%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_8%,transparent)]',
+            badge:
+              'border-[color:color-mix(in_oklab,var(--color-emerald-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)] text-[var(--color-emerald-200)]',
+            icon: 'text-[var(--color-emerald-300)]',
           };
 
   const VisualIcon = step.tone === 'launch' ? Monitor : step.tone === 'import' ? LinkIcon : Check;
@@ -67,7 +73,7 @@ export function GuideStepCard({ step, index }: { step: GuideStep; index: number 
   return (
     <article className={cn('rounded-[28px] border p-5', toneClasses.border)}>
       <div className="flex items-center justify-between gap-3">
-        <span className="rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-1 text-[11px] text-zinc-400">
+        <span className="rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-1 text-[11px] text-[var(--text-secondary)]">
           {`Step ${index + 1}`}
         </span>
         <span className={cn('rounded-full border px-3 py-1 text-[11px]', toneClasses.badge)}>
@@ -75,8 +81,8 @@ export function GuideStepCard({ step, index }: { step: GuideStep; index: number 
         </span>
       </div>
       <div className="mt-4 space-y-2">
-        <h3 className="text-base font-semibold text-zinc-50">{step.title}</h3>
-        <p className="text-sm leading-7 text-zinc-400">{step.description}</p>
+        <h3 className="text-base font-semibold text-[var(--text-primary)]">{step.title}</h3>
+        <p className="text-sm leading-7 text-[var(--text-secondary)]">{step.description}</p>
       </div>
       <div className={cn('mt-5 rounded-[24px] border p-4', toneClasses.panel)}>
         <div className="flex items-center justify-between gap-3">
@@ -84,9 +90,11 @@ export function GuideStepCard({ step, index }: { step: GuideStep; index: number 
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[var(--surface-inline)]">
               <VisualIcon className={cn('h-4 w-4', toneClasses.icon)} />
             </span>
-            <span className="text-sm font-medium text-zinc-100">{step.visualLabel}</span>
+            <span className="text-sm font-medium text-[var(--text-primary)]">
+              {step.visualLabel}
+            </span>
           </div>
-          <span className="rounded-full border border-white/10 bg-[var(--surface-inline)] px-3 py-1 text-[11px] text-zinc-300">
+          <span className="rounded-full border border-white/10 bg-[var(--surface-inline)] px-3 py-1 text-[11px] text-[var(--text-secondary)]">
             {step.ctaLabel}
           </span>
         </div>
@@ -96,13 +104,13 @@ export function GuideStepCard({ step, index }: { step: GuideStep; index: number 
               key={item}
               className="flex items-center justify-between rounded-[18px] border border-white/10 bg-[var(--surface-inline)] px-3 py-2"
             >
-              <span className="text-xs text-zinc-200">{item}</span>
+              <span className="text-xs text-[var(--text-primary)]">{item}</span>
               <span className="h-2 w-2 rounded-full bg-white/50" />
             </div>
           ))}
         </div>
       </div>
-      <p className="mt-4 text-xs leading-6 text-zinc-500">{step.helper}</p>
+      <p className="mt-4 text-xs leading-6 text-[var(--text-secondary)]">{step.helper}</p>
     </article>
   );
 }
@@ -132,27 +140,33 @@ export function GuideScreenshotStepCard({ step, index }: { step: GuideStep; inde
   const toneClasses =
     step.tone === 'launch'
       ? {
-          border: 'border-sky-500/25',
-          panel: 'border-sky-500/20 bg-sky-500/8',
-          badge: 'border-sky-500/30 bg-sky-500/10 text-sky-200',
+          border: 'border-[color:color-mix(in_oklab,var(--color-sky-500)_25%,transparent)]',
+          panel:
+            'border-[color:color-mix(in_oklab,var(--color-sky-500)_20%,transparent)] bg-[color-mix(in_oklab,var(--color-sky-500)_8%,transparent)]',
+          badge:
+            'border-[color:color-mix(in_oklab,var(--color-sky-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-sky-500)_10%,transparent)] text-[var(--color-sky-200)]',
         }
       : step.tone === 'import'
         ? {
-            border: 'border-amber-500/25',
-            panel: 'border-amber-500/20 bg-amber-500/8',
-            badge: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+            border: 'border-[color:color-mix(in_oklab,var(--color-amber-500)_25%,transparent)]',
+            panel:
+              'border-[color:color-mix(in_oklab,var(--color-amber-500)_20%,transparent)] bg-[color-mix(in_oklab,var(--color-amber-500)_8%,transparent)]',
+            badge:
+              'border-[color:color-mix(in_oklab,var(--color-amber-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-amber-500)_10%,transparent)] text-[var(--color-amber-200)]',
           }
         : {
-            border: 'border-emerald-500/25',
-            panel: 'border-emerald-500/20 bg-emerald-500/8',
-            badge: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
+            border: 'border-[color:color-mix(in_oklab,var(--color-emerald-500)_25%,transparent)]',
+            panel:
+              'border-[color:color-mix(in_oklab,var(--color-emerald-500)_20%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_8%,transparent)]',
+            badge:
+              'border-[color:color-mix(in_oklab,var(--color-emerald-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)] text-[var(--color-emerald-200)]',
           };
 
   return (
     <article className={cn('rounded-[28px] border p-4 md:p-5', toneClasses.border)}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-1 text-[11px] text-zinc-400">
+          <span className="rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-1 text-[11px] text-[var(--text-secondary)]">
             {`Step ${index + 1}`}
           </span>
           <span className={cn('rounded-full border px-3 py-1 text-[11px]', toneClasses.badge)}>
@@ -163,7 +177,7 @@ export function GuideScreenshotStepCard({ step, index }: { step: GuideStep; inde
           href={step.screenshot.src}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-100"
+          className="inline-flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         >
           {step.ctaLabel}
           <ExternalLink className="h-3.5 w-3.5" />
@@ -188,7 +202,7 @@ export function GuideScreenshotStepCard({ step, index }: { step: GuideStep; inde
               <img
                 src={step.screenshot.src}
                 alt={step.screenshot.alt}
-                loading="lazy"
+                fetchPriority="high"
                 className="block h-auto w-full"
                 onLoad={(event) => {
                   const { naturalWidth, naturalHeight } = event.currentTarget;
@@ -201,7 +215,7 @@ export function GuideScreenshotStepCard({ step, index }: { step: GuideStep; inde
                   {highlights.map((highlight, highlightIndex) => (
                     <div
                       key={`${step.screenshot?.src}-${highlightIndex}`}
-                      className="absolute rounded-[16px] border-2 border-red-500/95 bg-red-500/10 shadow-[var(--shadow-highlight)]"
+                      className="absolute rounded-[16px] border-2 border-[color:color-mix(in_oklab,var(--color-red-500)_95%,transparent)] bg-[color-mix(in_oklab,var(--color-red-500)_10%,transparent)] shadow-[var(--shadow-highlight)]"
                       style={{
                         left: `${highlight.x}%`,
                         top: `${highlight.y}%`,
@@ -209,7 +223,7 @@ export function GuideScreenshotStepCard({ step, index }: { step: GuideStep; inde
                         height: `${highlight.h}%`,
                       }}
                     >
-                      <span className="absolute left-2 top-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white shadow-lg">
+                      <span className="absolute left-2 top-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--color-red-500)] px-1.5 text-[11px] font-semibold text-white shadow-lg">
                         {highlightIndex + 1}
                       </span>
                     </div>
@@ -221,22 +235,22 @@ export function GuideScreenshotStepCard({ step, index }: { step: GuideStep; inde
         </a>
 
         <div className={cn('rounded-[24px] border p-4', toneClasses.panel)}>
-          <h3 className="text-base font-semibold text-zinc-50">{step.title}</h3>
-          <p className="mt-2 text-sm leading-7 text-zinc-300">{step.description}</p>
+          <h3 className="text-base font-semibold text-[var(--text-primary)]">{step.title}</h3>
+          <p className="mt-2 text-sm leading-7 text-[var(--text-secondary)]">{step.description}</p>
           <div className="mt-4 space-y-2">
             {step.visualItems.map((item, itemIndex) => (
               <div
                 key={`${step.title}-${item}`}
                 className="flex items-start gap-3 rounded-[18px] border border-white/10 bg-[var(--surface-inline)] px-3 py-3"
               >
-                <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-[11px] text-zinc-200">
+                <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-[11px] text-[var(--text-primary)]">
                   {itemIndex + 1}
                 </span>
-                <span className="text-sm leading-6 text-zinc-100">{item}</span>
+                <span className="text-sm leading-6 text-[var(--text-primary)]">{item}</span>
               </div>
             ))}
           </div>
-          <p className="mt-4 text-xs leading-6 text-zinc-400">{step.helper}</p>
+          <p className="mt-4 text-xs leading-6 text-[var(--text-secondary)]">{step.helper}</p>
         </div>
       </div>
     </article>
@@ -286,26 +300,26 @@ export function ClientHighlightCard({
         onSelect(client.id);
       }}
       className={cn(
-        'cursor-pointer rounded-[28px] border p-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]',
+        'cursor-pointer rounded-[28px] border p-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_oklab,var(--color-emerald-500)_60%,transparent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]',
         isActive
-          ? 'border-emerald-500/40 bg-emerald-500/10'
+          ? 'border-[color:color-mix(in_oklab,var(--color-emerald-500)_40%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)]'
           : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] hover:border-[color:var(--border-strong)]',
       )}
     >
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="space-y-3">
-          <span className="inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-300">
+          <span className="inline-flex rounded-full border border-[color:color-mix(in_oklab,var(--color-emerald-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)] px-2.5 py-1 text-[11px] text-[var(--color-emerald-300)]">
             {isZh ? '主推荐' : 'Primary pick'}
           </span>
           <div className="flex items-center gap-3">
-            <client.icon className="h-5 w-5 text-zinc-300" />
+            <client.icon className="h-5 w-5 text-[var(--text-secondary)]" />
             <div>
-              <p className="text-base font-semibold text-zinc-50">{client.name}</p>
-              <p className="text-xs leading-6 text-zinc-400">{client.os}</p>
+              <p className="text-base font-semibold text-[var(--text-primary)]">{client.name}</p>
+              <p className="text-xs leading-6 text-[var(--text-secondary)]">{client.os}</p>
             </div>
           </div>
-          <p className="max-w-xl text-sm leading-7 text-zinc-300">{client.desc}</p>
-          <p className="text-xs leading-6 text-zinc-500">
+          <p className="max-w-xl text-sm leading-7 text-[var(--text-secondary)]">{client.desc}</p>
+          <p className="text-xs leading-6 text-[var(--text-secondary)]">
             {isZh
               ? `当前按 ${getPlatformLabel(activePlatform, true)} 给你推荐这款客户端。`
               : `Recommended for ${getPlatformLabel(activePlatform, false)} right now.`}
@@ -423,18 +437,18 @@ export function ClientCompactCard({
         onSelect(client.id);
       }}
       className={cn(
-        'surface-panel flex h-full cursor-pointer flex-col justify-between rounded-[24px] border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]',
+        'surface-panel flex h-full cursor-pointer flex-col justify-between rounded-[24px] border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_oklab,var(--color-emerald-500)_60%,transparent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]',
         isActive
-          ? 'border-emerald-500/30 bg-emerald-500/5'
+          ? 'border-[color:color-mix(in_oklab,var(--color-emerald-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_5%,transparent)]'
           : 'hover:border-[color:var(--border-strong)]',
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <client.icon className="h-4 w-4 text-zinc-400" />
+          <client.icon className="h-4 w-4 text-[var(--text-secondary)]" />
           <div>
-            <p className="text-sm font-medium text-zinc-100">{client.name}</p>
-            <p className="text-xs leading-6 text-zinc-400">{client.desc}</p>
+            <p className="text-sm font-medium text-[var(--text-primary)]">{client.name}</p>
+            <p className="text-xs leading-6 text-[var(--text-secondary)]">{client.desc}</p>
           </div>
         </div>
       </div>
@@ -536,7 +550,7 @@ export function QrCodeCanvas({
   }, [url, render]);
 
   if (error) {
-    return <p className="text-xs text-red-400">{error}</p>;
+    return <p className="text-xs text-[var(--color-red-400)]">{error}</p>;
   }
 
   if (plain) {

@@ -73,7 +73,7 @@ const NodeCard = memo(function NodeCard({
   return (
     <Card
       className={cn(
-        'group transition-all hover:border-white/20',
+        'group transition-colors hover:border-white/20',
         isSelected &&
           canSelect &&
           'border-[var(--accent-border)] ring-1 ring-[var(--accent-border)]/60',
@@ -125,9 +125,7 @@ const NodeCard = memo(function NodeCard({
         {compact ? (
           <div className="surface-panel flex items-center justify-between gap-3 px-4 py-3">
             <span className="inline-flex items-center gap-2">
-              <span className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                {isZh ? '风险' : 'Risk'}
-              </span>
+              <span className="text-[11px] text-zinc-500">{isZh ? '风险' : 'Risk'}</span>
               <span className={cn('text-sm font-medium', fraudMeta.className)}>
                 {fraudMeta.label}
               </span>
@@ -139,9 +137,7 @@ const NodeCard = memo(function NodeCard({
         ) : (
           <div className="surface-panel space-y-3 p-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                {isZh ? '自动探测结果' : 'Auto probe'}
-              </p>
+              <p className="text-[11px] text-zinc-500">{isZh ? '自动探测结果' : 'Auto probe'}</p>
               <span className={cn('text-xs font-medium', fraudMeta.className)}>
                 {fraudMeta.label}
               </span>

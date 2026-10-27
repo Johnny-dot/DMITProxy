@@ -58,9 +58,6 @@
   --meter-warn: #b45309;
   --meter-warn-dark: #d97706;
   --meter-danger: #dc2626;
-  --orb-white: rgba(255, 255, 255, 0.74);
-  --orb-blue: rgba(111, 154, 255, 0.32);
-  --orb-teal: rgba(76, 205, 186, 0.24);
   --shadow-qr: 0 24px 64px rgba(15, 23, 42, 0.18);
   --shadow-highlight: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 16px 40px rgba(220, 38, 38, 0.18);
 }
@@ -306,6 +303,7 @@
   h6 {
     color: var(--text-primary);
     font-weight: 600;
+    text-wrap: balance;
   }
 
   * {
@@ -530,10 +528,12 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .surface-card {
     background: var(--surface-card-strong);
+    color: var(--text-primary);
   }
 
   .surface-panel {
     background: var(--surface-panel-strong);
+    color: var(--text-primary);
   }
 
   .surface-inline,
@@ -846,6 +846,7 @@ html[data-theme='dark'] .user-surface img[src$='logo.svg'] {
 html[data-theme='dark']:has(.user-surface),
 html[data-theme='dark']:has(.user-surface) body {
   background: var(--user-bg);
+  color: var(--text-primary);
 }
 
 .user-surface {
@@ -865,6 +866,7 @@ html[data-theme='dark']:has(.user-surface) body {
 .user-surface .surface-inline,
 .user-surface .glass-pill {
   background: var(--surface-card);
+  color: var(--text-primary);
   border: 1px solid var(--border-subtle);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -875,6 +877,7 @@ html[data-theme='dark']:has(.user-surface) body {
 .user-surface .surface-inline,
 .user-surface .glass-pill {
   background: var(--surface-panel);
+  color: var(--text-primary);
   box-shadow: none;
 }
 
@@ -1052,6 +1055,7 @@ html[data-theme='dark']:has(.user-surface) body {
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   background: var(--surface-card);
+  color: var(--text-primary);
   padding: 1.05rem 1.1rem;
   box-shadow: none;
 }
@@ -1517,6 +1521,7 @@ html[data-theme='dark'] .user-surface .user-meter-warn > span {
 
 html[data-theme='dark'] .usage-meter-track {
   background: var(--meter-track-dark);
+  color: var(--text-primary);
 }
 
 .usage-meter-fill {

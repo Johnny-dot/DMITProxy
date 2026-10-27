@@ -47,8 +47,10 @@ function ResourceCopyRow({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] text-zinc-500">{label}</p>
-          <p className="mt-2 break-all font-mono text-sm leading-6 text-zinc-200">{value}</p>
+          <p className="text-[11px] text-[var(--text-secondary)]">{label}</p>
+          <p className="mt-2 break-all font-mono text-sm leading-6 text-[var(--text-primary)]">
+            {value}
+          </p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-subtle)] bg-[var(--surface-card)] px-3 py-1.5 text-[13px] text-[var(--text-primary)]">
           <Copy className="h-4 w-4" />
@@ -142,7 +144,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                     'rounded-full px-2 py-0.5 text-[11px]',
                     activePanel === 'community'
                       ? 'bg-[var(--surface-panel)] text-[var(--text-primary)]'
-                      : 'bg-[var(--surface-card)] text-zinc-400',
+                      : 'bg-[var(--surface-card)] text-[var(--text-secondary)]',
                   )}
                 >
                   {visibleCommunityLinks.length}
@@ -159,7 +161,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                     'rounded-full px-2 py-0.5 text-[11px]',
                     activePanel === 'resources'
                       ? 'bg-[var(--surface-panel)] text-[var(--text-primary)]'
-                      : 'bg-[var(--surface-card)] text-zinc-400',
+                      : 'bg-[var(--surface-card)] text-[var(--text-secondary)]',
                   )}
                 >
                   {sharedResources.length}
@@ -167,7 +169,9 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
               </TabsTrigger>
             </TabsList>
 
-            <p className="text-sm leading-7 text-zinc-400">{activePanelDescription}</p>
+            <p className="text-sm leading-7 text-[var(--text-secondary)]">
+              {activePanelDescription}
+            </p>
           </div>
         </section>
 
@@ -182,7 +186,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
           >
             <div className="space-y-1">
               <p className="section-kicker">{isZh ? '资源' : 'Resources'}</p>
-              <h3 className="text-xl font-semibold tracking-tight text-zinc-50">
+              <h3 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">
                 {isZh ? '共享资源' : 'Shared resources'}
               </h3>
             </div>
@@ -215,20 +219,22 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                           <SharedResourceKindIcon kind={resource.kind} />
                           <div className="min-w-0 space-y-2">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-300">
+                              <span className="rounded-full border border-[color:color-mix(in_oklab,var(--color-emerald-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)] px-2.5 py-1 text-[11px] text-[var(--color-emerald-300)]">
                                 {kindLabel}
                               </span>
-                              <span className="glass-pill px-2.5 py-1 text-[11px] text-zinc-400">
+                              <span className="glass-pill px-2.5 py-1 text-[11px] text-[var(--text-secondary)]">
                                 {getSharedResourceAccessLabel(resource.access, isZh)}
                               </span>
                             </div>
                             {showHeadline ? (
-                              <h4 className="text-base font-semibold text-zinc-100">
+                              <h4 className="text-base font-semibold text-[var(--text-primary)]">
                                 {resource.title}
                               </h4>
                             ) : null}
                             {resource.summary ? (
-                              <p className="text-sm leading-7 text-zinc-400">{resource.summary}</p>
+                              <p className="text-sm leading-7 text-[var(--text-secondary)]">
+                                {resource.summary}
+                              </p>
                             ) : null}
                           </div>
                         </div>
@@ -283,10 +289,10 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
 
                           {credentialNote ? (
                             <div className="surface-inline px-4 py-3">
-                              <p className="text-[11px] text-zinc-500">
+                              <p className="text-[11px] text-[var(--text-secondary)]">
                                 {isZh ? '补充说明' : 'Extra note'}
                               </p>
-                              <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-zinc-300">
+                              <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--text-secondary)]">
                                 {credentialNote}
                               </p>
                             </div>
@@ -309,10 +315,10 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
 
                           {inviteNote ? (
                             <div className="surface-inline px-4 py-3">
-                              <p className="text-[11px] text-zinc-500">
+                              <p className="text-[11px] text-[var(--text-secondary)]">
                                 {isZh ? '补充说明' : 'Extra note'}
                               </p>
-                              <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-zinc-300">
+                              <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--text-secondary)]">
                                 {inviteNote}
                               </p>
                             </div>
@@ -321,7 +327,7 @@ export function HelpTab({ portalSettings, communityLinks, isZh, onSetSection }: 
                       ) : null}
 
                       {shouldShowGenericCopy ? (
-                        <div className="whitespace-pre-wrap surface-inline px-4 py-3 text-xs leading-6 text-zinc-300">
+                        <div className="whitespace-pre-wrap surface-inline px-4 py-3 text-xs leading-6 text-[var(--text-secondary)]">
                           {resource.content}
                         </div>
                       ) : null}

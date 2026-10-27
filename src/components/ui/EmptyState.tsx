@@ -26,7 +26,7 @@ export function EmptyState({
           src={`/illustrations/${illustration}`}
           alt=""
           className="mx-auto mb-5 h-30 w-40 opacity-70"
-          loading="lazy"
+          fetchPriority="high"
         />
       ) : (
         <div className="surface-panel mb-5 flex h-16 w-16 items-center justify-center">

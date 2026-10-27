@@ -217,9 +217,7 @@ export function DmitSyncPage() {
           ) : (
             <div className="space-y-5">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                  机器余量
-                </p>
+                <p className="text-[11px] font-semibold text-[var(--text-tertiary)]">机器余量</p>
                 <p className="mt-1 font-mono text-4xl font-semibold tracking-tight text-[var(--text-primary)] md:text-5xl">
                   {(remainingMb / MB_PER_GB).toFixed(2)}
                   <span className="ml-1.5 text-lg font-normal text-[var(--text-tertiary)] md:text-xl">
@@ -385,9 +383,7 @@ function StatChip({
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
-          {label}
-        </div>
+        <div className="text-[10px] font-semibold text-[var(--text-tertiary)]">{label}</div>
         <div className="truncate font-mono text-sm font-semibold text-[var(--text-primary)]">
           {value}
         </div>

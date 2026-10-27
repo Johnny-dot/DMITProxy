@@ -142,7 +142,7 @@ export function ServerStatusCard({
 
             <div className="grid grid-cols-2 gap-4 border-t border-[color:var(--border-subtle)] pt-4">
               <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+                <p className="text-[10px] text-[var(--text-secondary)]">
                   <span className="inline-flex items-center gap-1">
                     <span>{t('dashboard.networkSpeed')}</span>
                     <InfoTooltip content={t('dashboard.help.networkSpeed')} />
@@ -160,7 +160,7 @@ export function ServerStatusCard({
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+                <p className="text-[10px] text-[var(--text-secondary)]">
                   <span className="inline-flex items-center gap-1">
                     <span>{t('dashboard.uptime')}</span>
                     <InfoTooltip content={t('dashboard.help.uptime')} />

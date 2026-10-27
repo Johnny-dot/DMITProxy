@@ -48,9 +48,11 @@ interface NotificationsPanelProps {
 }
 
 function LevelIcon({ level }: { level: NotificationItem['level'] }) {
-  if (level === 'success') return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
-  if (level === 'warning') return <TriangleAlert className="h-4 w-4 text-amber-500" />;
-  if (level === 'error') return <AlertCircle className="h-4 w-4 text-red-500" />;
+  if (level === 'success')
+    return <CheckCircle2 className="h-4 w-4 text-[var(--color-emerald-500)]" />;
+  if (level === 'warning')
+    return <TriangleAlert className="h-4 w-4 text-[var(--color-amber-500)]" />;
+  if (level === 'error') return <AlertCircle className="h-4 w-4 text-[var(--color-red-500)]" />;
   return <Info className="h-4 w-4 text-[var(--text-secondary)]" />;
 }
 
@@ -113,7 +115,9 @@ export function NotificationsPanel({
             </div>
             <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{item.message}</p>
           </div>
-          {!item.read && <span className="mt-1.5 h-2 w-2 rounded-full bg-emerald-500" />}
+          {!item.read && (
+            <span className="mt-1.5 h-2 w-2 rounded-full bg-[var(--color-emerald-500)]" />
+          )}
         </div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-[11px] text-[var(--text-secondary)]">
@@ -376,7 +380,7 @@ export function NotificationsPanel({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 gap-1.5 px-2.5 text-red-300 hover:bg-[var(--danger-soft)] hover:text-red-200"
+                              className="h-8 gap-1.5 px-2.5 text-[var(--color-red-300)] hover:bg-[var(--danger-soft)] hover:text-[var(--color-red-200)]"
                               onClick={() => onAnnouncementDelete?.(item.id)}
                               disabled={deletingAnnouncementId === item.id}
                             >

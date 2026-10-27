@@ -419,13 +419,13 @@ export function InboundsPage() {
             <div className="space-y-5 px-5 py-5">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('inbounds.remark')}
                   </label>
                   <Input value={editingInbound.remark} readOnly disabled />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('inbounds.protocol')}
                   </label>
                   <Input value={editingInbound.protocol.toUpperCase()} readOnly disabled />
@@ -433,20 +433,20 @@ export function InboundsPage() {
               </div>
 
               <div className="space-y-3 rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4">
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                <p className="text-xs font-medium text-[var(--text-secondary)]">
                   {t('inbounds.trafficPolicy')}
                 </p>
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
-                    <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                    <label className="text-xs font-medium text-[var(--text-secondary)]">
                       {t('inbounds.totalTraffic')}
                     </label>
                     <Input value={formatTraffic(editingInbound.total)} readOnly disabled />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                    <label className="inline-flex items-center gap-1 text-xs font-medium text-[var(--text-secondary)]">
                       <span>{t('inbounds.trafficReset')}</span>
                       <InfoTooltip content={t('inbounds.help.trafficReset')} />
                     </label>
@@ -467,7 +467,7 @@ export function InboundsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                    <label className="text-xs font-medium text-[var(--text-secondary)]">
                       {t('inbounds.expiryTime')}
                     </label>
                     <Input value={formatExpiry(editingInbound.expiryTime)} readOnly disabled />
@@ -482,7 +482,7 @@ export function InboundsPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                    <label className="inline-flex items-center gap-1 text-xs font-medium text-[var(--text-secondary)]">
                       <span>{t('inbounds.billingDay')}</span>
                       <InfoTooltip content={t('inbounds.help.billingDay')} />
                     </label>

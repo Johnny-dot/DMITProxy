@@ -501,7 +501,7 @@ export function SubscriptionsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 text-[10px] uppercase tracking-wider"
+                    className="h-7 px-2 text-[10px]"
                     onClick={() => copyToClipboard(proto.link, proto.name)}
                   >
                     {copiedId === proto.name ? t('common.copied') : t('common.copyLink')}
@@ -528,7 +528,7 @@ export function SubscriptionsPage() {
                       </div>
                     )}
                   </button>
-                  <p className="mt-3 text-[10px] text-zinc-500 uppercase tracking-widest">
+                  <p className="mt-3 text-[10px] text-zinc-500">
                     {proto.link
                       ? t('subscriptions.scanToImport', { name: proto.name })
                       : t('subscriptions.waitingSubId')}
