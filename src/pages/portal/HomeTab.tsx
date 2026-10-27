@@ -106,10 +106,10 @@ export function HomeTab({
         >
           <div className="space-y-3">
             <p className="section-kicker">{isZh ? '管理视图' : 'Management overview'}</p>
-            <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
+            <h2 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
               {isZh ? '用户中心与管理入口' : 'User center with management access'}
             </h2>
-            <p className="max-w-2xl text-sm leading-6 text-zinc-400">
+            <p className="max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
               {isZh
                 ? '管理员可以在同一套界面里快速切到用户管理、订阅交付和公告配置。'
                 : 'Admins can move between user management, subscription delivery, and announcements in one place.'}
@@ -118,18 +118,18 @@ export function HomeTab({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="surface-panel p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+              <p className="text-xs text-[var(--text-secondary)]">
                 {isZh ? '当前角色' : 'Current role'}
               </p>
-              <p className="mt-2 text-sm font-medium text-zinc-50">
+              <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
                 {isZh ? '管理员' : 'Administrator'}
               </p>
             </div>
             <div className="surface-panel p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+              <p className="text-xs text-[var(--text-secondary)]">
                 {isZh ? '工作区' : 'Workspace'}
               </p>
-              <p className="mt-2 text-sm font-medium text-zinc-50">
+              <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
                 {isZh ? '统一用户中心' : 'Unified user center'}
               </p>
             </div>
@@ -199,7 +199,7 @@ export function HomeTab({
             </span>
             <ChevronDown
               className={cn(
-                'h-4 w-4 shrink-0 text-zinc-400 transition-transform',
+                'h-4 w-4 shrink-0 text-[var(--text-secondary)] transition-transform',
                 showTechnicalDetails && 'rotate-180',
               )}
             />
@@ -324,8 +324,8 @@ function MySubscriptionHero({
     bigValue = formatTraffic(machineRemaining);
     usedPercent = Math.min(Math.max((machineUsed / machineTotal) * 100, 0), 100);
     subtitle = isZh
-      ? `剩余 · 已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
-      : `Left · used ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
+      ? `剩余，已用 ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`
+      : `Left, used ${formatTraffic(machineUsed)} / ${formatTraffic(machineTotal)}`;
     personalUsage = formatTraffic(ownUsed);
   } else if (stats && stats.total > 0) {
     const remaining = Math.max(stats.total - used, 0);
@@ -333,8 +333,8 @@ function MySubscriptionHero({
     bigValue = formatTraffic(remaining);
     usedPercent = Math.min((used / stats.total) * 100, 100);
     subtitle = isZh
-      ? `剩余 · 已用 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
-      : `Left · used ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
+      ? `剩余，已用 ${formatTraffic(used)} / ${formatTraffic(stats.total)}`
+      : `Left, used ${formatTraffic(used)} / ${formatTraffic(stats.total)}`;
   } else {
     unlimited = true;
     quotaLabel = isZh ? '已用流量' : 'Used traffic';
@@ -378,8 +378,8 @@ function MySubscriptionHero({
         <h2 className="user-sub-title">{isZh ? '导入订阅' : 'Import subscription'}</h2>
         <p className="user-section-label" data-testid="subscription-home-status">
           {isZh ? '我的订阅' : 'My subscription'}
-          {username ? ` · ${username}` : ''}
-          {` · ${statusLabel}`}
+          {username ? `，${username}` : ''}
+          {`，${statusLabel}`}
         </p>
       </div>
 
@@ -511,7 +511,7 @@ function MySubscriptionHero({
               <p className="user-section-label">{isZh ? '重置' : 'Reset'}</p>
             </div>
             <div className="user-sub-stat">
-              <p className={cn('user-figure', isExpired && 'text-red-500')}>
+              <p className={cn('user-figure', isExpired && 'text-[var(--color-red-500)]')}>
                 {expiryText ?? (isZh ? '未同步' : 'Not synced')}
               </p>
               <p className="user-section-label">{isZh ? '到期' : 'Expires'}</p>
@@ -682,13 +682,15 @@ function UsageDetailCard({
         <div className="grid gap-x-10 gap-y-3 sm:grid-cols-2">
           {rows.map((row) => (
             <div key={row.label} className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-zinc-500">{row.label}</span>
-              <span className="font-medium tabular-nums text-zinc-100">{row.value}</span>
+              <span className="text-[var(--text-secondary)]">{row.label}</span>
+              <span className="font-medium tabular-nums text-[var(--text-primary)]">
+                {row.value}
+              </span>
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-sm leading-6 text-zinc-500">
+        <p className="text-sm leading-6 text-[var(--text-secondary)]">
           {isZh ? '暂无流量数据，稍后再试。' : 'No usage data yet.'}
         </p>
       )}
@@ -698,40 +700,39 @@ function UsageDetailCard({
 
 const PRESSURE_TONE = {
   good: {
-    border: 'border-emerald-500/25',
-    text: 'text-emerald-400',
-    bg: 'bg-emerald-500',
-    soft: 'bg-emerald-500/10',
-    glow: 'bg-emerald-400/20',
+    border: 'border-[color:color-mix(in_oklab,var(--color-emerald-500)_25%,transparent)]',
+    text: 'text-[var(--color-emerald-400)]',
+    bg: 'bg-[var(--color-emerald-500)]',
+    soft: 'bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)]',
     shadow: 'shadow-[0_28px_80px_rgba(47,157,135,0.12)]',
-    badge: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-400',
+    badge:
+      'border-[color:color-mix(in_oklab,var(--color-emerald-400)_25%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)] text-[var(--color-emerald-400)]',
   },
   warn: {
-    border: 'border-amber-500/30',
-    text: 'text-amber-400',
-    bg: 'bg-amber-500',
-    soft: 'bg-amber-500/10',
-    glow: 'bg-amber-400/20',
+    border: 'border-[color:color-mix(in_oklab,var(--color-amber-500)_30%,transparent)]',
+    text: 'text-[var(--color-amber-400)]',
+    bg: 'bg-[var(--color-amber-500)]',
+    soft: 'bg-[color-mix(in_oklab,var(--color-amber-500)_10%,transparent)]',
     shadow: 'shadow-[0_28px_80px_rgba(191,133,65,0.14)]',
-    badge: 'border-amber-400/25 bg-amber-500/10 text-amber-400',
+    badge:
+      'border-[color:color-mix(in_oklab,var(--color-amber-400)_25%,transparent)] bg-[color-mix(in_oklab,var(--color-amber-500)_10%,transparent)] text-[var(--color-amber-400)]',
   },
   danger: {
-    border: 'border-red-500/35',
-    text: 'text-red-400',
-    bg: 'bg-red-500',
-    soft: 'bg-red-500/10',
-    glow: 'bg-red-400/20',
+    border: 'border-[color:color-mix(in_oklab,var(--color-red-500)_35%,transparent)]',
+    text: 'text-[var(--color-red-400)]',
+    bg: 'bg-[var(--color-red-500)]',
+    soft: 'bg-[color-mix(in_oklab,var(--color-red-500)_10%,transparent)]',
     shadow: 'shadow-[0_28px_80px_rgba(212,95,124,0.16)]',
-    badge: 'border-red-400/25 bg-red-500/10 text-red-400',
+    badge:
+      'border-[color:color-mix(in_oklab,var(--color-red-400)_25%,transparent)] bg-[color-mix(in_oklab,var(--color-red-500)_10%,transparent)] text-[var(--color-red-400)]',
   },
   unknown: {
     border: 'border-[var(--border-subtle)]',
-    text: 'text-zinc-400',
-    bg: 'bg-zinc-500',
-    soft: 'bg-zinc-500/10',
-    glow: 'bg-zinc-400/10',
+    text: 'text-[var(--text-secondary)]',
+    bg: 'bg-[var(--color-zinc-500)]',
+    soft: 'bg-[color-mix(in_oklab,var(--color-zinc-500)_10%,transparent)]',
     shadow: 'shadow-[var(--shadow-card)]',
-    badge: 'border-white/10 bg-white/5 text-zinc-400',
+    badge: 'border-white/10 bg-white/5 text-[var(--text-secondary)]',
   },
 } as const;
 
@@ -862,14 +863,6 @@ function MachineHealthCard({
         tone.shadow,
       )}
     >
-      <div
-        className={cn(
-          'pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full blur-3xl',
-          tone.glow,
-        )}
-      />
-      <div className="pointer-events-none absolute bottom-0 left-0 h-28 w-1/2 rounded-full bg-sky-400/10 blur-3xl" />
-
       {isLoading ? (
         <div className="relative grid gap-4 lg:grid-cols-3">
           {[1, 2, 3].map((item) => (
@@ -879,7 +872,7 @@ function MachineHealthCard({
       ) : (
         <div className="relative space-y-4">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="min-h-[176px] rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.025))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] md:p-6">
+            <div className="min-h-[176px] rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,var(--sheen-10),var(--sheen-015))] p-5 shadow-[inset_0_1px_0_var(--sheen-14)] md:p-6">
               <div className="flex h-full flex-col justify-between gap-5 sm:flex-row sm:items-end">
                 <div className="space-y-3">
                   <p className="section-kicker">{isZh ? '机器健康' : 'Machine health'}</p>
@@ -893,10 +886,12 @@ function MachineHealthCard({
                       <Activity className="h-5 w-5" />
                     </span>
                     <div>
-                      <h3 className="text-2xl font-semibold tracking-tight text-zinc-50 md:text-3xl">
+                      <h3 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)] md:text-3xl">
                         {pressureLabel}
                       </h3>
-                      <p className="mt-1 text-sm leading-6 text-zinc-500">{healthSummary}</p>
+                      <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
+                        {healthSummary}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -910,7 +905,7 @@ function MachineHealthCard({
                   <MiniStat
                     label={isZh ? '运行时长' : 'Uptime'}
                     value={serverStatus ? formatPortalUptime(serverStatus.uptime, isZh) : '--'}
-                    toneClass="text-zinc-100"
+                    toneClass="text-[var(--text-primary)]"
                   />
                 </div>
               </div>
@@ -920,26 +915,26 @@ function MachineHealthCard({
               <div className="flex h-full items-center justify-between gap-5">
                 <div>
                   <p className="section-kicker">{isZh ? '流量水位' : 'Traffic level'}</p>
-                  <p className="mt-3 text-2xl font-semibold tabular-nums text-zinc-50">
+                  <p className="mt-3 text-2xl font-semibold tabular-nums text-[var(--text-primary)]">
                     {trafficTotal > 0 ? formatTraffic(trafficRemaining) : '--'}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
                     {isZh
-                      ? `剩余流量 · ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`
-                      : `Remaining · ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`}
+                      ? `剩余流量，${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`
+                      : `Remaining, ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`}
                   </p>
                 </div>
                 <div
                   className="relative flex h-28 w-28 shrink-0 items-center justify-center rounded-full p-2"
                   style={{
-                    background: `conic-gradient(${dmitDialColor} ${Math.max(0, Math.min(dmitUsagePercent ?? 0, 100))}%, rgba(255,255,255,0.08) 0)`,
+                    background: `conic-gradient(${dmitDialColor} ${Math.max(0, Math.min(dmitUsagePercent ?? 0, 100))}%, var(--sheen-08) 0)`,
                   }}
                 >
-                  <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-[var(--surface-card)] text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
-                    <span className="font-mono text-2xl font-semibold text-zinc-50">
+                  <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-[var(--surface-card)] text-center shadow-[inset_0_1px_0_var(--sheen-10)]">
+                    <span className="font-mono text-2xl font-semibold text-[var(--text-primary)]">
                       {dmitUsagePercent == null ? '--' : dmitUsagePercent.toFixed(0)}
                     </span>
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                    <span className="text-[10px] text-[var(--text-secondary)]">
                       {isZh ? '已用%' : 'Used %'}
                     </span>
                   </div>
@@ -966,16 +961,16 @@ function MachineHealthCard({
             <div className="min-h-[258px] rounded-[28px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-5">
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-zinc-100">
+                  <p className="text-sm font-medium text-[var(--text-primary)]">
                     {isZh ? '实时网络节奏' : 'Live network rhythm'}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
                     {isZh
                       ? '当前上/下行吞吐，左右等宽对比。'
                       : 'Current up/down throughput with balanced comparison.'}
                   </p>
                 </div>
-                <span className="rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1 text-[11px] font-medium text-sky-400">
+                <span className="rounded-full border border-[color:color-mix(in_oklab,var(--color-sky-400)_20%,transparent)] bg-[color-mix(in_oklab,var(--color-sky-400)_10%,transparent)] px-3 py-1 text-[11px] font-medium text-[var(--color-sky-400)]">
                   LIVE
                 </span>
               </div>
@@ -987,30 +982,34 @@ function MachineHealthCard({
                   >
                     <div
                       className={cn(
-                        'pointer-events-none absolute inset-y-0 left-0 opacity-20 transition-all',
-                        bar.key === 'up' ? 'bg-sky-400' : 'bg-emerald-400',
+                        'pointer-events-none absolute inset-y-0 left-0 opacity-20 transition-colors',
+                        bar.key === 'up'
+                          ? 'bg-[var(--color-sky-400)]'
+                          : 'bg-[var(--color-emerald-400)]',
                       )}
                       style={{ width: `${bar.percent}%` }}
                     />
                     <div className="relative flex items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-2 text-xs text-zinc-400">
+                      <span className="inline-flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                         {bar.key === 'up' ? (
-                          <ArrowUp className="h-4 w-4 text-sky-400" />
+                          <ArrowUp className="h-4 w-4 text-[var(--color-sky-400)]" />
                         ) : (
-                          <ArrowDown className="h-4 w-4 text-emerald-400" />
+                          <ArrowDown className="h-4 w-4 text-[var(--color-emerald-400)]" />
                         )}
                         {bar.key === 'up' ? (isZh ? '上行' : 'Upload') : isZh ? '下行' : 'Download'}
                       </span>
                     </div>
                     <div className="relative">
-                      <span className="font-mono text-xl font-semibold tabular-nums text-zinc-50">
+                      <span className="font-mono text-xl font-semibold tabular-nums text-[var(--text-primary)]">
                         {formatSpeed(bar.value)}
                       </span>
-                      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-zinc-800/70">
+                      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_oklab,var(--color-zinc-800)_70%,transparent)]">
                         <div
                           className={cn(
-                            'h-full rounded-full transition-all',
-                            bar.key === 'up' ? 'bg-sky-400' : 'bg-emerald-400',
+                            'h-full rounded-full transition-colors',
+                            bar.key === 'up'
+                              ? 'bg-[var(--color-sky-400)]'
+                              : 'bg-[var(--color-emerald-400)]',
                           )}
                           style={{ width: `${bar.percent}%` }}
                         />
@@ -1024,16 +1023,16 @@ function MachineHealthCard({
             <div className="min-h-[258px] rounded-[28px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-5">
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-zinc-100">
+                  <p className="text-sm font-medium text-[var(--text-primary)]">
                     {isZh ? '流量账单' : 'Traffic bill'}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
                     {isZh
                       ? `同步：${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`
                       : `Synced: ${formatSyncTime(usageSummary?.machineUpdatedAt, isZh)}`}
                   </p>
                 </div>
-                <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-400">
+                <span className="rounded-full border border-[color:color-mix(in_oklab,var(--color-emerald-400)_20%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)] px-3 py-1 text-[11px] font-medium text-[var(--color-emerald-400)]">
                   {dmitUsagePercent == null ? '--' : `${dmitUsagePercent.toFixed(1)}%`}
                 </span>
               </div>
@@ -1042,30 +1041,30 @@ function MachineHealthCard({
                 <MiniStat
                   label={isZh ? '机器剩余' : 'Remaining'}
                   value={trafficTotal > 0 ? formatTraffic(trafficRemaining) : '--'}
-                  toneClass="text-emerald-400"
+                  toneClass="text-[var(--color-emerald-400)]"
                 />
                 <MiniStat
                   label={isZh ? '已用流量' : 'Used traffic'}
                   value={trafficTotal > 0 ? formatTraffic(trafficUsed) : '--'}
-                  toneClass="text-zinc-100"
+                  toneClass="text-[var(--text-primary)]"
                 />
               </div>
 
               {hasTrafficSplit ? (
                 <div className="mt-5 space-y-3">
                   {hasTrafficSplitBytes ? (
-                    <div className="flex h-4 overflow-hidden rounded-full bg-zinc-800/75 p-0.5">
+                    <div className="flex h-4 overflow-hidden rounded-full bg-[color-mix(in_oklab,var(--color-zinc-800)_75%,transparent)] p-0.5">
                       <div
-                        className="rounded-full bg-sky-400"
+                        className="rounded-full bg-[var(--color-sky-400)]"
                         style={{ width: `${inboundPercent}%` }}
                       />
                       <div
-                        className="rounded-full bg-emerald-400"
+                        className="rounded-full bg-[var(--color-emerald-400)]"
                         style={{ width: `${outboundPercent}%` }}
                       />
                     </div>
                   ) : null}
-                  <div className="grid gap-2 text-xs text-zinc-400">
+                  <div className="grid gap-2 text-xs text-[var(--text-secondary)]">
                     <TrafficRow
                       label={isZh ? '入站流量' : 'Inbound'}
                       value={
@@ -1093,7 +1092,7 @@ function MachineHealthCard({
                   </div>
                 </div>
               ) : (
-                <p className="mt-5 text-sm leading-6 text-zinc-500">
+                <p className="mt-5 text-sm leading-6 text-[var(--text-secondary)]">
                   {isZh
                     ? '暂无 DMIT 入站/出站拆分；同步脚本更新后会自动显示。'
                     : 'No DMIT inbound/outbound split yet. It appears after the sync script updates.'}
@@ -1132,16 +1131,16 @@ function ResourceMeter({
   return (
     <div className="min-h-[132px] rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4">
       <div className="flex items-center justify-between gap-2 text-sm">
-        <span className="inline-flex items-center gap-2 text-zinc-400">
+        <span className="inline-flex items-center gap-2 text-[var(--text-secondary)]">
           {icon}
           {label}
         </span>
         <span className={cn('font-medium tabular-nums', toneClass.text)}>{percent}%</span>
       </div>
-      <p className="mt-2 truncate text-xs tabular-nums text-zinc-500">{value}</p>
-      <div className="mt-7 h-2 overflow-hidden rounded-full bg-zinc-800/80">
+      <p className="mt-2 truncate text-xs tabular-nums text-[var(--text-secondary)]">{value}</p>
+      <div className="mt-7 h-2 overflow-hidden rounded-full bg-[color-mix(in_oklab,var(--color-zinc-800)_80%,transparent)]">
         <div
-          className={cn('h-full rounded-full transition-all', toneClass.bg)}
+          className={cn('h-full rounded-full transition-colors', toneClass.bg)}
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -1160,19 +1159,21 @@ function ServiceStabilityTile({
     <div className="min-h-[132px] rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4">
       <div className="flex h-full flex-col justify-between">
         <div className="flex items-center justify-between gap-2 text-sm">
-          <span className="inline-flex items-center gap-2 text-zinc-400">
+          <span className="inline-flex items-center gap-2 text-[var(--text-secondary)]">
             <Clock className="h-4 w-4" />
             {isZh ? '服务' : 'Service'}
           </span>
           <span
             className={cn(
               'h-2 w-2 rounded-full',
-              serverStatus?.xray.state === 'running' ? 'bg-emerald-400' : 'bg-red-400',
+              serverStatus?.xray.state === 'running'
+                ? 'bg-[var(--color-emerald-400)]'
+                : 'bg-[var(--color-red-400)]',
             )}
           />
         </div>
         <div>
-          <p className="truncate text-xs text-zinc-500">
+          <p className="truncate text-xs text-[var(--text-secondary)]">
             {serverStatus
               ? serverStatus.xray.state === 'running'
                 ? isZh
@@ -1185,7 +1186,7 @@ function ServiceStabilityTile({
                 ? '等待状态'
                 : 'Waiting'}
           </p>
-          <p className="mt-2 text-lg font-semibold text-zinc-50">
+          <p className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
             {serverStatus?.xray.state === 'running'
               ? isZh
                 ? '正常'
@@ -1211,7 +1212,7 @@ function MiniStat({
 }) {
   return (
     <div className="rounded-[22px] border border-white/10 bg-[var(--surface-inline)] px-4 py-3">
-      <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">{label}</p>
+      <p className="text-[10px] text-[var(--text-secondary)]">{label}</p>
       <p className={cn('mt-1 truncate text-lg font-semibold tabular-nums', toneClass)}>{value}</p>
     </div>
   );
@@ -1221,7 +1222,7 @@ function TrafficRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span>{label}</span>
-      <span className="font-medium tabular-nums text-zinc-100">{value}</span>
+      <span className="font-medium tabular-nums text-[var(--text-primary)]">{value}</span>
     </div>
   );
 }
@@ -1245,8 +1246,8 @@ function RouteStatusPill({
   const checkedAt = formatDateTime(profile?.updatedAt);
   const summaryText = stale
     ? isZh
-      ? `线路检测已过期${checkedAt ? ` · ${checkedAt}` : ''}`
-      : `Route check expired${checkedAt ? ` · ${checkedAt}` : ''}`
+      ? `线路检测已过期${checkedAt ? `，${checkedAt}` : ''}`
+      : `Route check expired${checkedAt ? `, ${checkedAt}` : ''}`
     : profile
       ? [
           isZh ? '节点' : 'Node',
@@ -1255,7 +1256,7 @@ function RouteStatusPill({
           score != null ? (isZh ? `风险 ${score}` : `risk ${score}`) : null,
         ]
           .filter(Boolean)
-          .join(' · ')
+          .join(', ')
       : isZh
         ? '线路检测结果加载中…'
         : 'Loading route status…';
@@ -1267,14 +1268,14 @@ function RouteStatusPill({
       aria-expanded={expanded}
       className="surface-card flex w-full items-center justify-between gap-3 px-5 py-3 text-left transition-colors hover:border-[var(--border-strong)]"
     >
-      <span className="inline-flex min-w-0 items-center gap-2 text-sm text-zinc-300">
+      <span className="inline-flex min-w-0 items-center gap-2 text-sm text-[var(--text-secondary)]">
         <span
           className={cn('h-1.5 w-1.5 shrink-0 rounded-full bg-current', fraudMeta.className)}
           aria-hidden="true"
         />
         <span className="truncate">{summaryText}</span>
       </span>
-      <span className="inline-flex shrink-0 items-center gap-1 text-xs text-zinc-500">
+      <span className="inline-flex shrink-0 items-center gap-1 text-xs text-[var(--text-secondary)]">
         {expanded ? (isZh ? '收起' : 'Hide') : isZh ? '查看详情' : 'Details'}
         <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} />
       </span>
@@ -1317,7 +1318,7 @@ function AdminMessagesCard({
           )}
         </div>
       ) : (
-        <p className="text-sm leading-6 text-zinc-500">
+        <p className="text-sm leading-6 text-[var(--text-secondary)]">
           {isZh ? '暂无新说明。' : 'No new notes yet.'}
         </p>
       )}

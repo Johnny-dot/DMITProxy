@@ -115,7 +115,7 @@ function OverviewTile({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'group w-full rounded-[24px] border p-4 text-left transition-all duration-200',
+        'group w-full rounded-[24px] border p-4 text-left transition-[background-color,border-color,box-shadow,transform] duration-200',
         active
           ? 'border-[color:var(--border-strong)] bg-[var(--surface-strong)] shadow-[0_0_0_1px_var(--border-strong)]'
           : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] hover:-translate-y-0.5 hover:border-[color:var(--border-strong)] hover:bg-[var(--surface-strong)]',
@@ -138,9 +138,7 @@ function OverviewTile({
         />
       </div>
       <div className="mt-4 space-y-1.5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-          {label}
-        </p>
+        <p className="text-[11px] font-semibold text-zinc-500">{label}</p>
         <p className="text-base font-semibold text-[var(--text-primary)]">{value}</p>
         <p className="text-sm leading-6 text-zinc-400">{hint}</p>
       </div>
@@ -168,7 +166,7 @@ function ActionTile({
       type="button"
       onClick={onClick}
       className={cn(
-        'group w-full rounded-[24px] border p-4 text-left transition-all duration-200',
+        'group w-full rounded-[24px] border p-4 text-left transition-[background-color,border-color,box-shadow,transform] duration-200',
         isDanger
           ? 'border-[color:var(--danger-soft-strong)] bg-[var(--danger-soft)] hover:bg-[var(--danger-soft-strong)]'
           : 'border-[color:var(--border-subtle)] bg-[var(--surface-panel)] hover:border-[color:var(--border-strong)] hover:bg-[var(--surface-strong)]',
@@ -1284,7 +1282,7 @@ export function SettingsPage() {
                     <p className="text-sm leading-6 text-zinc-400">{copy.maintenanceDesc}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-500">
+                    <span className="text-xs font-medium text-zinc-500">
                       {maintenanceOpen ? copy.maintenanceClose : copy.maintenanceOpen}
                     </span>
                     <ChevronDown
@@ -1305,7 +1303,7 @@ export function SettingsPage() {
                       onClick={handleBackup}
                     />
                     <div className="rounded-[24px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                      <p className="text-[11px] font-semibold text-zinc-500">
                         {t('settings.lastBackup')}
                       </p>
                       <p className="mt-2 break-all text-sm leading-6 text-zinc-400">

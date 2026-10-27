@@ -230,14 +230,14 @@ export function MirrorDownloadDialog({
         <CardContent className="flex-1 space-y-4 overflow-y-auto px-4 pb-4 pt-0 sm:px-7 sm:pb-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-3.5 sm:p-4">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+              <p className="text-[11px] text-[var(--text-tertiary)]">
                 {isZh ? '当前状态' : 'Current status'}
               </p>
               <p className="mt-2 text-sm leading-6 text-[var(--text-primary)]">{statusMessage}</p>
             </div>
             <div className="rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] p-3.5 sm:p-4">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+                <p className="text-[11px] text-[var(--text-tertiary)]">
                   {isZh ? '镜像文件' : 'Mirror file'}
                 </p>
                 {managed ? (
@@ -274,7 +274,7 @@ export function MirrorDownloadDialog({
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+            <p className="text-xs text-[var(--text-tertiary)]">
               {isZh ? '下载地址' : 'Download URL'}
             </p>
             <Input value={resolvedUrl} readOnly className="font-mono text-xs" />

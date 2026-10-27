@@ -728,14 +728,14 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
             <div className="space-y-5 px-5 py-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('users.username')}
                   </label>
                   <Input value={activityModal.client.username} readOnly disabled />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('users.lastOnline')}
                   </label>
                   <Input
@@ -748,7 +748,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('users.inbound')}
                   </label>
                   <Input
@@ -759,7 +759,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('users.editClientSubIdLabel')}
                   </label>
                   <Input
@@ -771,7 +771,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                <label className="text-xs font-medium text-[var(--text-secondary)]">
                   {t('users.onlineIps')}
                 </label>
                 <div className="rounded-[22px] border border-[color:var(--border-subtle)] bg-[var(--surface-panel)] px-4 py-3">
@@ -868,7 +868,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
             <div className="space-y-5 px-5 py-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('users.editClientUsernameLabel')}
                   </label>
                   <Input
@@ -883,7 +883,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('users.editClientEnabledLabel')}
                   </label>
                   <div className="flex gap-2">
@@ -921,7 +921,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('users.editClientTrafficLimitLabel')}
                   </label>
                   <Input
@@ -942,7 +942,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('users.editClientDeviceLimitLabel')}
                   </label>
                   <Input
@@ -965,7 +965,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('users.editClientExpiryLabel')}
                   </label>
                   <Input
@@ -984,7 +984,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">
                     {t('users.editClientSubIdLabel')}
                   </label>
                   <Input value={editClient.client.subId} readOnly disabled />
@@ -992,7 +992,7 @@ export function UsersPage({ embedded = false, onOpenAccounts }: UsersPageProps) 
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                <label className="text-xs font-medium text-[var(--text-secondary)]">
                   {t('users.editClientClientIdLabel')}
                 </label>
                 <Input value={editClient.client.clientId} readOnly disabled />

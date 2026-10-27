@@ -107,7 +107,7 @@ export function NodeQualityCard({
                 ? 'Proxy route check'
                 : 'Server egress check'}
           </p>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">
             {isZh
               ? isProxyProbe
                 ? '当前代理线路的风控和可达性'
@@ -116,7 +116,7 @@ export function NodeQualityCard({
                 ? 'How this proxy route is doing right now'
                 : 'How the server egress is doing right now'}
           </h2>
-          <p className="text-sm leading-6 text-zinc-400">
+          <p className="text-sm leading-6 text-[var(--text-secondary)]">
             {inboundRemark
               ? isZh
                 ? `关联入站：${inboundRemark}`
@@ -143,15 +143,15 @@ export function NodeQualityCard({
 
       <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
         <div className="surface-panel p-4">
-          <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+          <p className="inline-flex items-center gap-1 text-[11px] text-[var(--text-secondary)]">
             <span>{isZh ? '风险值' : 'Risk score'}</span>
             <InfoTooltip content={riskHelpText} />
           </p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-50">
+          <p className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
             {stale ? (isZh ? '已过期' : 'Expired') : (profile?.fraudScore ?? '--')}
           </p>
           {stale ? (
-            <p className="mt-1 text-sm font-medium text-amber-500">
+            <p className="mt-1 text-sm font-medium text-[var(--color-amber-500)]">
               {isZh ? '不要按这个旧结果判断线路' : 'Do not judge the route from this old result'}
             </p>
           ) : (
@@ -159,7 +159,9 @@ export function NodeQualityCard({
               <p className={cn('mt-1 text-sm font-medium', fraudMeta.className)}>
                 {fraudMeta.label}
               </p>
-              <p className="mt-2 text-xs leading-5 text-zinc-500">{fraudMeta.description}</p>
+              <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">
+                {fraudMeta.description}
+              </p>
             </>
           )}
         </div>
@@ -167,13 +169,22 @@ export function NodeQualityCard({
         <div className="space-y-4">
           <div className="surface-panel flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
-              <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+              <p className="inline-flex items-center gap-1 text-[11px] text-[var(--text-secondary)]">
                 <span>{isZh ? '最近检测' : 'Last checked'}</span>
                 <InfoTooltip content={checkedAtHelpText} />
               </p>
-              <p className="mt-2 text-sm font-medium text-zinc-50">{checkedAtLabel}</p>
+              <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
+                {checkedAtLabel}
+              </p>
             </div>
-            <span className={cn('text-xs', stale ? 'font-medium text-amber-500' : 'text-zinc-500')}>
+            <span
+              className={cn(
+                'text-xs',
+                stale
+                  ? 'font-medium text-[var(--color-amber-500)]'
+                  : 'text-[var(--text-secondary)]',
+              )}
+            >
               {stale
                 ? isZh
                   ? '结果已过期'
@@ -185,7 +196,7 @@ export function NodeQualityCard({
           </div>
 
           {stale ? (
-            <div className="surface-panel p-4 text-sm leading-6 text-zinc-300">
+            <div className="surface-panel p-4 text-sm leading-6 text-[var(--text-secondary)]">
               {isZh
                 ? `这是旧结果，不代表现在的线路。上次检测 ${checkedAtLabel}。线路检测不会自动刷新，点右上角「重新检测」才会更新。`
                 : `This is an old result, not the route right now. Last checked ${checkedAtLabel}. The check does not refresh by itself — use Refresh.`}
@@ -193,9 +204,11 @@ export function NodeQualityCard({
           ) : null}
 
           {!stale && summary ? (
-            <div className="surface-panel p-4 text-sm leading-6 text-zinc-300">{summary}</div>
+            <div className="surface-panel p-4 text-sm leading-6 text-[var(--text-secondary)]">
+              {summary}
+            </div>
           ) : stale ? null : (
-            <div className="surface-panel p-4 text-sm leading-6 text-zinc-500">
+            <div className="surface-panel p-4 text-sm leading-6 text-[var(--text-secondary)]">
               {isZh
                 ? '还没有检测结果，点右上角“重新检测”再试一次。'
                 : 'There is no result yet. Use Refresh to run a new check.'}
@@ -220,7 +233,7 @@ export function NodeQualityCard({
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <UnlockServiceIcon service={item.id} />
-                      <p className="inline-flex min-w-0 items-center gap-1 text-[11px] uppercase tracking-[0.14em] text-zinc-400">
+                      <p className="inline-flex min-w-0 items-center gap-1 text-[11px] text-[var(--text-secondary)]">
                         <span className="truncate">{item.label}</span>
                         <InfoTooltip content={tooltipText} />
                       </p>
@@ -236,7 +249,7 @@ export function NodeQualityCard({
 
       {!stale && hasAnyNotes ? (
         <div className="surface-panel space-y-4 p-4">
-          <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+          <p className="inline-flex items-center gap-1 text-[11px] text-[var(--text-secondary)]">
             <span>{isZh ? '检测备注' : 'Check notes'}</span>
             <InfoTooltip content={notesHelpText} />
           </p>
@@ -244,7 +257,7 @@ export function NodeQualityCard({
           {overviewLines.length > 0 && (
             <div className="grid gap-2 md:grid-cols-2">
               {overviewLines.map((line) => (
-                <p key={line} className="text-sm leading-6 text-zinc-300">
+                <p key={line} className="text-sm leading-6 text-[var(--text-secondary)]">
                   {line}
                 </p>
               ))}
@@ -253,15 +266,17 @@ export function NodeQualityCard({
 
           {shouldRenderLegacyNotes && (
             <div className="space-y-2">
-              <p className="text-xs leading-5 text-zinc-500">{legacyNotesHelpText}</p>
-              <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+              <p className="text-xs leading-5 text-[var(--text-secondary)]">
+                {legacyNotesHelpText}
+              </p>
+              <p className="whitespace-pre-wrap text-sm leading-6 text-[var(--text-secondary)]">
                 {legacyNotesText}
               </p>
             </div>
           )}
         </div>
       ) : !hasDetails ? (
-        <p className="text-sm leading-6 text-zinc-500">
+        <p className="text-sm leading-6 text-[var(--text-secondary)]">
           {isZh ? '暂无检测结果。' : 'No check results yet.'}
         </p>
       ) : null}

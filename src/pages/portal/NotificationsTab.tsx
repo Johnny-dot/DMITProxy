@@ -78,17 +78,17 @@ export function NotificationsTab({
         {variant === 'page' ? (
           <div className="space-y-2">
             <p className="section-kicker">{isZh ? '通知中心' : 'Notification center'}</p>
-            <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-zinc-50">
-              <Bell className="h-4 w-4 text-emerald-500" />
+            <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+              <Bell className="h-4 w-4 text-[var(--color-emerald-500)]" />
               <span>{isZh ? '订阅提醒与服务通知' : 'Subscription and service notices'}</span>
             </h2>
           </div>
         ) : (
           <div className="space-y-1">
-            <p className="text-sm font-medium text-zinc-50">
+            <p className="text-sm font-medium text-[var(--text-primary)]">
               {isZh ? '新消息显示在这里。' : 'New updates appear here.'}
             </p>
-            <p className="text-sm leading-6 text-zinc-400">
+            <p className="text-sm leading-6 text-[var(--text-secondary)]">
               {isZh
                 ? '订阅状态、服务说明、联系信息按时间排列。'
                 : 'Subscription status, service notes, and contact info, newest first.'}
@@ -129,16 +129,18 @@ export function NotificationsTab({
                 className={cn(
                   'surface-panel space-y-3 border-l-2 p-4',
                   item.level === 'success'
-                    ? 'border-l-emerald-500'
+                    ? 'border-l-[var(--color-emerald-500)]'
                     : item.level === 'warning'
-                      ? 'border-l-amber-500'
+                      ? 'border-l-[var(--color-amber-500)]'
                       : 'border-l-[color:var(--accent-border)]',
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-zinc-50">{localized.title}</p>
-                    <p className="mt-1 text-xs text-zinc-500">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
+                      {localized.title}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
                       {formatDateTime(item.createdAt) || (isZh ? '时间未知' : 'Unknown time')}
                     </p>
                   </div>
@@ -151,7 +153,7 @@ export function NotificationsTab({
                   )}
                 </div>
 
-                <p className="whitespace-pre-wrap text-sm leading-7 text-zinc-300">
+                <p className="whitespace-pre-wrap text-sm leading-7 text-[var(--text-secondary)]">
                   {localized.message}
                 </p>
 

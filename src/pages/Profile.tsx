@@ -68,7 +68,7 @@ function PreferencesCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-wider text-zinc-500">{t('profile.language')}</p>
+          <p className="text-xs text-zinc-500">{t('profile.language')}</p>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
@@ -87,7 +87,7 @@ function PreferencesCard() {
           </div>
         </div>
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-wider text-zinc-500">{t('profile.theme')}</p>
+          <p className="text-xs text-zinc-500">{t('profile.theme')}</p>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
@@ -273,13 +273,11 @@ function UserProfileView() {
 
           <div className="grid gap-3 md:grid-cols-2">
             <div className="surface-panel p-3">
-              <p className="text-[11px] uppercase tracking-wider text-zinc-500">
-                {isZh ? '当前显示' : 'Currently shown'}
-              </p>
+              <p className="text-[11px] text-zinc-500">{isZh ? '当前显示' : 'Currently shown'}</p>
               <p className="mt-1 text-sm">{resolvedPreviewName}</p>
             </div>
             <div className="surface-panel p-3">
-              <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-[var(--text-secondary)]">
+              <p className="inline-flex items-center gap-1 text-[11px] text-[var(--text-secondary)]">
                 <span>{isZh ? '登录账号' : 'Username'}</span>
                 <InfoTooltip content={usernameHelpText} />
               </p>
@@ -427,27 +425,19 @@ function AdminProfileView() {
 
           <div className="grid gap-3 md:grid-cols-2">
             <div className="surface-panel p-3">
-              <p className="text-[11px] uppercase tracking-wider text-zinc-500">
-                {t('profile.sessionMode')}
-              </p>
+              <p className="text-[11px] text-zinc-500">{t('profile.sessionMode')}</p>
               <p className="text-sm mt-1">{t('profile.sessionModeValue')}</p>
             </div>
             <div className="surface-panel p-3">
-              <p className="text-[11px] uppercase tracking-wider text-zinc-500">
-                {t('profile.username')}
-              </p>
+              <p className="text-[11px] text-zinc-500">{t('profile.username')}</p>
               <p className="text-sm mt-1 break-all">{profile?.username || '-'}</p>
             </div>
             <div className="surface-panel p-3 md:col-span-2">
-              <p className="text-[11px] uppercase tracking-wider text-zinc-500">
-                {t('profile.xuiServer')}
-              </p>
+              <p className="text-[11px] text-zinc-500">{t('profile.xuiServer')}</p>
               <p className="text-sm mt-1 break-all">{profile?.xuiServer || '-'}</p>
             </div>
             <div className="surface-panel p-3 md:col-span-2">
-              <p className="text-[11px] uppercase tracking-wider text-zinc-500">
-                {t('profile.xuiBasePath')}
-              </p>
+              <p className="text-[11px] text-zinc-500">{t('profile.xuiBasePath')}</p>
               <p className="text-sm mt-1 break-all">{profile?.xuiBasePath || '-'}</p>
             </div>
           </div>

@@ -370,10 +370,10 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 {stepItem.n}
               </span>
               <span className="min-w-0">
-                <span className="block text-[11px] font-medium text-zinc-50 sm:text-sm">
+                <span className="block text-[11px] font-medium text-[var(--text-primary)] sm:text-sm">
                   {stepItem.title}
                 </span>
-                <span className="hidden truncate text-xs text-zinc-500 sm:block">
+                <span className="hidden truncate text-xs text-[var(--text-secondary)] sm:block">
                   {stepItem.desc}
                 </span>
               </span>
@@ -390,10 +390,10 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
               <div className="hidden items-center gap-2.5 sm:flex">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-[13px] font-semibold text-emerald-300">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[color:color-mix(in_oklab,var(--color-emerald-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)] text-[13px] font-semibold text-[var(--color-emerald-300)]">
                   1
                 </span>
-                <p className="text-xs font-medium uppercase tracking-[0.22em] text-emerald-300/90">
+                <p className="text-xs font-medium text-[color-mix(in_oklab,var(--color-emerald-300)_90%,transparent)]">
                   {isZh ? '选择设备' : 'Choose a device'}
                 </p>
               </div>
@@ -401,7 +401,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 <h2 className="text-[1.65rem] font-semibold leading-tight tracking-tight text-[var(--text-primary)] sm:text-4xl">
                   {isZh ? '导入' : 'Import'}
                 </h2>
-                <p className="text-sm leading-7 text-zinc-400">
+                <p className="text-sm leading-7 text-[var(--text-secondary)]">
                   {isZh
                     ? '复制订阅链接，或一键导入。'
                     : 'Copy the subscription link, or import it in one step.'}
@@ -410,26 +410,26 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             </div>
             <div className="hidden grid-cols-3 gap-2 lg:grid lg:min-w-[360px]">
               <div className="min-w-0 surface-inline px-3 py-2.5 sm:px-4 sm:py-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                <p className="text-[10px] text-[var(--text-secondary)]">
                   {isZh ? '设备' : 'Device'}
                 </p>
-                <p className="mt-1 truncate text-sm font-medium text-zinc-100">
+                <p className="mt-1 truncate text-sm font-medium text-[var(--text-primary)]">
                   {activePlatformLabel}
                 </p>
               </div>
               <div className="min-w-0 surface-inline px-3 py-2.5 sm:px-4 sm:py-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                <p className="text-[10px] text-[var(--text-secondary)]">
                   {isZh ? '客户端' : 'Client'}
                 </p>
-                <p className="mt-1 truncate text-sm font-medium text-zinc-100">
+                <p className="mt-1 truncate text-sm font-medium text-[var(--text-primary)]">
                   {activeClient.name}
                 </p>
               </div>
               <div className="min-w-0 surface-inline px-3 py-2.5 sm:px-4 sm:py-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                <p className="text-[10px] text-[var(--text-secondary)]">
                   {isZh ? '状态' : 'Status'}
                 </p>
-                <p className="mt-1 truncate text-sm font-medium text-zinc-100">
+                <p className="mt-1 truncate text-sm font-medium text-[var(--text-primary)]">
                   {hasCopied ? (isZh ? '已复制' : 'Copied') : isZh ? '未复制' : 'Not copied'}
                 </p>
               </div>
@@ -443,14 +443,14 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             >
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-zinc-50">
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">
                     {isZh ? '选择设备' : 'Choose a device'}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
                     {isZh ? '可更换设备。' : 'You can change the device.'}
                   </p>
                 </div>
-                <Monitor className="h-4 w-4 text-emerald-300" />
+                <Monitor className="h-4 w-4 text-[var(--color-emerald-300)]" />
               </div>
               <div className="grid grid-cols-3 gap-2 xl:grid-cols-2">
                 {PLATFORM_OPTIONS.map((platform) => (
@@ -461,24 +461,16 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                     data-testid={`portal-setup-platform-${platform.key}`}
                     aria-pressed={activePlatform === platform.key}
                     className={cn(
-                      'group rounded-[18px] border px-3 py-2.5 text-left transition-all sm:rounded-[20px] sm:px-3.5 sm:py-3',
+                      'group rounded-[18px] border px-3 py-2.5 text-left transition-colors sm:rounded-[20px] sm:px-3.5 sm:py-3',
                       activePlatform === platform.key
-                        ? 'border-emerald-500/45 bg-emerald-500/12'
+                        ? 'border-[color:color-mix(in_oklab,var(--color-emerald-500)_45%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_12%,transparent)]'
                         : 'border-white/10 bg-white/[0.035] hover:border-[color:var(--border-strong)] hover:bg-white/[0.06]',
                     )}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-medium text-zinc-50">
-                        {isZh ? platform.zhLabel : platform.label}
-                      </p>
-                      <span
-                        className={cn(
-                          'h-2 w-2 rounded-full transition-colors',
-                          activePlatform === platform.key ? 'bg-emerald-300' : 'bg-white/20',
-                        )}
-                      />
-                    </div>
-                    <p className="mt-1 hidden text-xs leading-5 text-zinc-500 sm:line-clamp-2">
+                    <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                      {isZh ? platform.zhLabel : platform.label}
+                    </p>
+                    <p className="mt-1 hidden text-xs leading-5 text-[var(--text-secondary)] sm:line-clamp-2">
                       {getPlatformBlurb(platform.key, isZh)}
                     </p>
                   </button>
@@ -493,12 +485,14 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex items-start gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-white/10 bg-[var(--surface-inline)]">
-                    <ActiveClientIcon className="h-5 w-5 text-zinc-100" />
+                    <ActiveClientIcon className="h-5 w-5 text-[var(--text-primary)]" />
                   </span>
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-base font-semibold text-zinc-50">{activeClient.name}</p>
-                      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-300">
+                      <p className="text-base font-semibold text-[var(--text-primary)]">
+                        {activeClient.name}
+                      </p>
+                      <span className="rounded-full border border-[color:color-mix(in_oklab,var(--color-emerald-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)] px-2.5 py-1 text-[11px] text-[var(--color-emerald-300)]">
                         {activeFormat === guide.recommendedFormat
                           ? isZh
                             ? '自动匹配'
@@ -508,7 +502,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                             : 'Manual format'}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs leading-6 text-zinc-400">
+                    <p className="mt-1 text-xs leading-6 text-[var(--text-secondary)]">
                       {activeFormat === guide.recommendedFormat
                         ? isZh
                           ? `${activePlatformLabel} 推荐 ${recommendedFormatOption.label}。`
@@ -559,12 +553,16 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                       className={cn(
                         'rounded-[18px] border p-3 text-left transition-colors',
                         activeFormat === format.key
-                          ? 'border-emerald-500/40 bg-emerald-500/10'
+                          ? 'border-[color:color-mix(in_oklab,var(--color-emerald-500)_40%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)]'
                           : 'border-white/10 bg-[var(--surface-inline)] hover:border-[color:var(--border-strong)]',
                       )}
                     >
-                      <p className="text-sm font-medium text-zinc-50">{format.label}</p>
-                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">{format.desc}</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">
+                        {format.label}
+                      </p>
+                      <p className="mt-1 text-[11px] leading-5 text-[var(--text-secondary)]">
+                        {format.desc}
+                      </p>
                     </button>
                   ))}
                 </div>
@@ -574,7 +572,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 {hasSubscription ? (
                   <>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-1 text-xs text-zinc-400">
+                      <div className="flex items-center gap-1 text-xs text-[var(--text-secondary)]">
                         <span>{isZh ? '订阅链接' : 'Subscription link'}</span>
                         <InfoTooltip
                           content={
@@ -689,10 +687,10 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   </>
                 ) : (
                   <div
-                    className="space-y-2 rounded-[22px] border border-dashed border-amber-500/30 bg-amber-500/5 px-4 py-5 text-sm leading-7 text-zinc-300"
+                    className="space-y-2 rounded-[22px] border border-dashed border-[color:color-mix(in_oklab,var(--color-amber-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-amber-500)_5%,transparent)] px-4 py-5 text-sm leading-7 text-[var(--text-secondary)]"
                     data-testid="portal-setup-not-ready"
                   >
-                    <p className="font-medium text-zinc-100">
+                    <p className="font-medium text-[var(--text-primary)]">
                       {isZh ? '订阅链接还在准备' : 'The subscription link is not ready'}
                     </p>
                     <p>
@@ -734,7 +732,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
               onOpenDownload={openDownload}
             />
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+              <p className="text-xs text-[var(--text-secondary)]">
                 {isZh ? '备选客户端' : 'Alternatives'}
               </p>
               {alternativeClients.length > 0 ? (
@@ -753,7 +751,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   ))}
                 </div>
               ) : (
-                <div className="surface-panel rounded-[24px] p-4 text-sm leading-6 text-zinc-400">
+                <div className="surface-panel rounded-[24px] p-4 text-sm leading-6 text-[var(--text-secondary)]">
                   {isZh
                     ? '这个平台用当前推荐客户端就足够，直接继续下一步即可。'
                     : 'The recommended client is enough for this platform, so you can continue.'}
@@ -773,7 +771,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
           <div className="surface-panel rounded-[24px] p-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs text-zinc-400">
+                <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                   <span>{isZh ? '推荐格式' : 'Recommended format'}</span>
                   <InfoTooltip
                     content={
@@ -784,17 +782,17 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                   />
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">
+                  <span className="rounded-full border border-[color:color-mix(in_oklab,var(--color-emerald-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-emerald-500)_10%,transparent)] px-2.5 py-1 text-xs text-[var(--color-emerald-300)]">
                     {formatOptions.find((item) => item.key === guide.recommendedFormat)?.label ??
                       'Shadowrocket / V2Ray'}
                   </span>
-                  <span className="text-xs text-zinc-400">{guide.note}</span>
+                  <span className="text-xs text-[var(--text-secondary)]">{guide.note}</span>
                   {guide.sourceUrl ? (
                     <a
                       href={guide.sourceUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-emerald-300 hover:text-emerald-200"
+                      className="inline-flex items-center gap-1 text-xs text-[var(--color-emerald-300)] hover:text-[var(--color-emerald-200)]"
                     >
                       {guide.sourceLabel ?? 'Source'}
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -803,10 +801,10 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
                 </div>
               </div>
               <div className="rounded-[20px] border border-[color:var(--border-subtle)] bg-[var(--surface-inline)] px-4 py-3 text-right">
-                <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+                <p className="text-xs text-[var(--text-secondary)]">
                   {isZh ? '当前教程' : 'Current guide'}
                 </p>
-                <p className="mt-2 text-sm font-medium text-zinc-100">
+                <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
                   {activeClient.name} / {guidePlatformLabel}
                 </p>
               </div>
@@ -822,7 +820,7 @@ export function SubscriptionTab({ initialFocus = 'overview', subId }: Subscripti
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-[20px] border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm leading-6 text-[var(--warning)]">
+              <div className="rounded-[20px] border border-[color:color-mix(in_oklab,var(--color-amber-500)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-amber-500)_10%,transparent)] px-4 py-3 text-sm leading-6 text-[var(--warning)]">
                 {isZh
                   ? '当前客户端暂时只有简化步骤，没有站内真机图文教程。'
                   : 'This client currently uses a simplified text guide without on-site screenshots.'}
